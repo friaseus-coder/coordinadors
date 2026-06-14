@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal NyN | Coordinadors</title>
+    <script src="js/calendari.js"></script>
+    <script src="js/i18n.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        .lang-nav-btn {
+            border: none;
+            background: transparent;
+            color: #64748b;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lang-nav-btn.active {
+            background: #ffffff;
+            color: #0f2d4a;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+        }
+        body, html { 
+            font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; padding: 0; height: 100%; overflow: hidden; background-color: #f8fafc;
+        }
+        
+        /* BARRA SUPERIOR MODERNIZADA */
+        .portal-nav {
+            background: #ffffff;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; gap: 16px;
+            position: sticky; top: 0; z-index: 9999;
+            height: 64px; 
+            border-bottom: 1px solid #e2e8f0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+            box-sizing: border-box;
+        }
+
+        /* LOGO ESTILO IMAGEN 2 */
+        .logo-container {
+            display: flex;
+            align-items: center;
+            user-select: none;
+            flex-shrink: 0;
+        }
+
+        .logo-circle {
+            background-color: #063931; /* Verde pino muy oscuro corporativo */
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            color: #ffffff;
+            font-size: 15px;
+            margin-right: 12px;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+            line-height: 1.15;
+        }
+
+        .logo-grup {
+            font-size: 9px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-nyn {
+            font-size: 13px;
+            color: #0f2d4a;
+            font-weight: 700;
+        }
+
+        .logo-brand {
+            font-size: 16px;
+            font-weight: 300;
+            color: #475569;
+            margin-left: 12px;
+            padding-left: 12px;
+            border-left: 1px solid #e2e8f0;
+            height: 24px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* TABS ESTILO PILLS IMAGEN 2 */
+        .tabs-container {
+            display: flex;
+            align-items: center;
+            background: #f1f5f9;
+            padding: 4px;
+            border-radius: 9999px;
+            gap: 2px;
+            overflow-x: auto;
+            max-width: 60%;
+            scrollbar-width: none; /* Firefox */
+        }
+        
+        .tabs-container::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+
+        .tab-button {
+            padding: 6px 16px; 
+            height: 28px; 
+            border: none;
+            border-radius: 9999px;
+            background: transparent;
+            color: #475569; 
+            cursor: pointer;
+            font-weight: 500; 
+            font-size: 12px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex; align-items: center; gap: 6px; 
+            white-space: nowrap;
+        }
+
+        .tab-button:hover { 
+            background: rgba(255,255,255,0.4); 
+            color: #0f2d4a; 
+        }
+
+        .tab-button.active { 
+            background: #ffffff; 
+            color: #0f2d4a; 
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+            font-weight: 600;
+        }
+
+        .tab-content { display: none; height: calc(100vh - 64px); width: 100%; overflow: hidden; }
+        .tab-content.active { display: block; }
+
+        #home-screen {
+            display: flex; flex-direction: column; justify-content: center;
+            align-items: center; height: 100%;
+            background: #f8fafc;
+            text-align: center;
+        }
+
+        .clock-container {
+            padding: 40px 60px;
+            min-width: 500px; 
+            display: flex; flex-direction: column; justify-content: center;
+            background: #ffffff; border-radius: 24px;
+            box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05), 0 1px 3px rgba(0,0,0,0.01);
+            border: 1px solid #e2e8f0;
+        }
+
+        .welcome-msg { color: #0f2d4a; font-size: 32px; font-weight: 700; margin: 0; }
+        .dept-msg { color: #64748b; font-size: 16px; font-weight: 500; margin: 6px 0 2px; }
+        .company-msg { color: #063931; font-size: 20px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 1px; }
+
+        #digital-date { font-size: 16px; color: #64748b; font-weight: 500; margin-bottom: 8px; }
+
+        #digital-clock { 
+            font-size: 48px; 
+            font-weight: 700; 
+            margin: 12px 0; 
+            font-variant-numeric: tabular-nums;
+            color: #0f2d4a;
+            letter-spacing: -1px;
+        }
+        .d1, .d2, .sep1, .d3, .d4, .sep2, .d5, .d6 { color: inherit; }
+        .sep1, .sep2 { opacity: 0.4; animation: blink 1s infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        #birthday-msg { display: none; margin: 12px 0; animation: pulse 2s infinite; }
+        #bday-text { font-size: 16px; font-weight: 700; text-transform: uppercase;
+            background: linear-gradient(to right, #063931, #0f2d4a);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+        #celebration-msg {
+            font-size: 13px; color: #475569; font-weight: 500;
+            background: #f1f5f9; padding: 10px 24px;
+            border-radius: 9999px; display: inline-block;
+            margin-top: 20px; border: 1px solid #e2e8f0;
+        }
+
+        /* SECCIÓN DE USUARIO A LA DERECHA */
+        .user-section {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .user-badge {
+            font-size: 11px;
+            font-weight: 600;
+            color: #334155;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 9999px;
+            text-transform: capitalize;
+            border: 1px solid #e2e8f0;
+        }
+
+        .user-badge.admin { 
+            background: #ecfdf5; 
+            color: #065f46; 
+            border-color: #a7f3d0;
+        }
+        .user-badge.coord { 
+            background: #eff6ff; 
+            color: #1e40af; 
+            border-color: #bfdbfe;
+        }
+        .user-badge.other { 
+            background: #fffbeb; 
+            color: #92400e; 
+            border-color: #fde68a;
+        }
+
+        .btn-unlock-global {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+            border-radius: 9999px;
+            padding: 6px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-unlock-global:hover { 
+            background: #fca5a5; 
+            color: #7f1d1d;
+        }
+
+        .btn-manage-coord {
+            background: #f3e8ff; 
+            color: #6b21a8; 
+            border: 1px solid #e9d5ff;
+            border-radius: 9999px; 
+            padding: 6px 12px; 
+            font-size: 11px;
+            font-weight: 600; 
+            cursor: pointer; 
+            transition: all 0.2s;
+        }
+        .btn-manage-coord:hover { 
+            background: #e9d5ff; 
+            color: #581c87;
+        }
+        
+        .version-tag {
+            font-size: 9px;
+            color: #94a3b8;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .footer-nyn { margin-top: 20px; font-size: 10px; color: #94a3b8; text-transform: uppercase; font-weight: 600; }
+        iframe { width: 100%; height: 100%; border: none; display: block; }
+        
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.03); } 100% { transform: scale(1); } }
+
+        /* Modal de gestión de coordinadores */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 99999;
+            justify-content: center; align-items: center;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: white; border-radius: 16px; padding: 24px 28px;
+            min-width: 420px; max-width: 520px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            animation: modalIn 0.25s ease;
+            border: 1px solid #e2e8f0;
+        }
+        @keyframes modalIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .modal-title { font-size: 16px; font-weight: 700; color: #0f2d4a; margin: 0 0 16px; display: flex; align-items: center; gap: 8px; }
+        .modal-list { max-height: 250px; overflow-y: auto; margin-bottom: 16px; }
+        .modal-list-item {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 12px; border-bottom: 1px solid #f1f5f9; font-size: 13px;
+        }
+        .modal-list-item:hover { background: #f8fafc; }
+        .modal-list-item .coord-name { font-weight: 600; color: #334155; }
+        .modal-list-item .coord-folder { font-size: 11px; color: #94a3b8; margin-left: 8px; }
+        .btn-remove-coord {
+            background: #fee2e2; color: #dc2626; border: none; border-radius: 6px;
+            padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;
+        }
+        .btn-remove-coord:hover { background: #dc2626; color: white; }
+        .modal-add-form { display: flex; gap: 6px; margin-bottom: 12px; }
+        .modal-add-form input {
+            flex: 1; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px;
+            font-size: 12px; outline: none; font-family: inherit;
+        }
+        .modal-add-form input:focus { border-color: #063931; }
+        .btn-add-coord {
+            background: #063931; color: white; border: none; border-radius: 8px;
+            padding: 8px 16px; font-size: 11px; font-weight: 600; cursor: pointer;
+        }
+        .btn-add-coord:hover { background: #004d40; }
+        .btn-close-modal {
+            background: #f1f5f9; color: #475569; border: none; border-radius: 8px;
+            padding: 8px 20px; font-size: 12px; cursor: pointer; font-weight: 600;
+        }
+        .btn-close-modal:hover { background: #e2e8f0; }
+        .modal-footer { display: flex; justify-content: flex-end; }
+    </style>
+</head>
+<body>
+
+    <!-- Redirección de seguridad si no hay sesión -->
+    <script>
+        const userRole = sessionStorage.getItem('userRole');
+        const userName = sessionStorage.getItem('userName');
+        if (!userRole || !userName) {
+            window.location.href = 'index.html';
+        }
+    </script>
+
+    <nav class="portal-nav">
+        <!-- Logo Corporativo basado en la Imagen 2 -->
+        <div class="logo-container">
+            <div class="logo-circle">NN</div>
+            <div class="logo-text">
+                <span class="logo-grup">Grup</span>
+                <span class="logo-nyn">Núñez i Navarro</span>
+            </div>
+            <div class="logo-brand">_parkings</div>
+        </div>
+
+        <!-- Contenedor central de pestañas -->
+        <div class="tabs-container">
+            <button class="tab-button active" onclick="openTab('home', this)" data-i18n="tabHome">🏠 Inici</button>
+            <button class="tab-button" onclick="openTab('quadrant', this)" data-i18n="tabQuadrant">📋 Quadrant</button>
+            <button class="tab-button" onclick="openTab('rutes', this)" data-i18n="tabRoutes">📍 Rutes</button>
+            <button class="tab-button" onclick="openTab('ranking', this)" data-i18n="tabRanking">⭐ Ranking</button>
+            <button class="tab-button" onclick="openTab('comercials', this)" data-i18n="tabComercials">💰 Comercials</button>
+            <button class="tab-button" onclick="openTab('vacances', this)" data-i18n="tabVacances">🏖️ Vacances</button>
+            <button class="tab-button" onclick="openTab('deutes', this)" data-i18n="tabDeutes">⏳ Deutes</button>
+            <button class="tab-button" onclick="openTab('checklist', this)" data-i18n="tabChecklist">✅ Chklst</button>
+            <button class="tab-button" onclick="openTab('gastos', this)" data-i18n="tabGastos">💸 Despeses</button>
+            <button class="tab-button" onclick="openTab('inventari', this)" data-i18n="tabInventari">📦 Inventari</button>
+            <button class="tab-button" onclick="openTab('sac_incidencies', this)" data-i18n="tabSac">🛠️ SAC</button>
+            <button class="tab-button" onclick="openTab('notificador', this)" data-i18n="tabNotificador">📩 Notificador</button>
+            <button class="tab-button" onclick="openTab('log', this)" data-i18n="tabLog">📜 Log</button>
+        </div>
+        
+        <!-- Identificador de Usuario, Rol e Info a la derecha -->
+        <div class="user-section">
+            <!-- Selector de Idioma Mini Premium -->
+            <div class="lang-selector-nav" style="display: flex; background: #f1f5f9; padding: 2px; border-radius: 9999px; gap: 1px; border: 1px solid #e2e8f0; margin-right: 8px;">
+                <button class="lang-nav-btn" onclick="i18n.setLanguage('ca');">CAT</button>
+                <button class="lang-nav-btn" onclick="i18n.setLanguage('es');">ESP</button>
+            </div>
+            <div id="userDisplayBadge" class="user-badge"></div>
+            <button id="btnManageCoord" class="btn-manage-coord" style="display: none;" onclick="openCoordModal()" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
+            <button id="btnManageAparcaments" class="btn-manage-coord" style="display: none; background: #e2e8f0; color: #0f2d4a; border-color: #cbd5e1; margin-right: 4px;" onclick="openAparcamentModal()" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
+            <button id="btnForceUnlockGlobal" class="btn-unlock-global" style="display: none;" onclick="triggerGlobalForceUnlock()" data-i18n="btnUnlockFiles">Desbloquejar Fitxers</button>
+            <div class="version-tag">v1.0 beta</div>
+        </div>
+    </nav>
+ 
+    <!-- Modal de Gestión de Coordinadores -->
+    <div id="coordModal" class="modal-overlay" onclick="if(event.target===this) closeCoordModal()">
+        <div class="modal-box">
+            <div class="modal-title" data-i18n="modalTitle">⚙️ Gestió de Coordinadors</div>
+            <div class="modal-add-form">
+                <input type="text" id="newCoordNom" placeholder="Nom (ex: Marc)" data-i18n="inputNomPlaceholder">
+                <input type="text" id="newCoordCognom" placeholder="Cognom (ex: López)" data-i18n="inputCognomPlaceholder">
+                <button class="btn-add-coord" onclick="addCoordinador()" data-i18n="btnAdd">➕ Afegir</button>
+            </div>
+            <div id="coordList" class="modal-list"></div>
+            <div class="modal-footer">
+                <button class="btn-close-modal" onclick="closeCoordModal()" data-i18n="btnClose">Tancar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Gestión de Aparcamientos -->
+    <div id="aparcamentModal" class="modal-overlay" onclick="if(event.target===this) closeAparcamentModal()">
+        <div class="modal-box" style="min-width: 520px; max-width: 600px; position: relative;">
+            <!-- Overlay de Carga Premium / Barra de Espera -->
+            <div id="aparcamentLoadingOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); border-radius: 16px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #063931; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div style="margin-top: 12px; font-weight: 600; color: #0f2d4a; font-size: 13px;">Actualitzant base de dades...</div>
+                <div style="margin-top: 4px; color: #64748b; font-size: 11px;">Processant fitxers en xarxa, esperi un moment.</div>
+            </div>
+            <div class="modal-title" data-i18n="modalAparcamentTitle">🚗 Gestió d'Aparcaments</div>
+            <div class="modal-add-form" style="gap: 8px;">
+                <input type="text" id="newAparcamentNom" placeholder="Nom de l'aparcament (ex: BEJAR 63)" data-i18n="inputAparcamentPlaceholder" style="flex: 2;">
+                <select id="newAparcamentCoord" style="flex: 1.5; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: inherit; outline: none; background: white;">
+                    <option value="" disabled selected data-i18n="selectCoordPlaceholder">-- Coordinador --</option>
+                </select>
+                <button class="btn-add-coord" onclick="addAparcament()" data-i18n="btnAdd" style="flex: 0.8;">➕ Afegir</button>
+            </div>
+            <div id="aparcamentList" class="modal-list" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;"></div>
+            <div class="modal-footer">
+                <button class="btn-close-modal" onclick="closeAparcamentModal()" data-i18n="btnClose">Tancar</button>
+            </div>
+        </div>
+    </div>
+ 
+    <div id="home" class="tab-content active">
+        <div id="home-screen">
+            <div class="clock-container">
+                <div class="welcome-msg" id="welcomeMsg" data-i18n="welcome">Benvingut!</div>
+                <div class="dept-msg" data-i18n="datacenter">(centre de dades coordinadors)</div>
+                <div class="company-msg">NN PÀRKINGS</div>
+                
+                <div id="digital-date"></div>
+                <div id="digital-clock">
+                    <span class="d1" id="h1">0</span><span class="d2" id="h2">0</span><span class="sep1">:</span><span class="d3" id="m1">0</span><span class="d4" id="m2">0</span><span class="sep2">:</span><span class="d5" id="s1">0</span><span class="d6" id="s2">0</span>
+                </div>
+                
+                <div id="birthday-msg"><span>🎂</span> <span id="bday-text"></span> <span>🥳🎉🎈</span></div>
+                <div id="celebration-msg">🙁</div>
+                
+                <div class="footer-nyn">Núñez i Navarro Pàrkings © 2026</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="quadrant" class="tab-content"><iframe data-src="quadrant/quadrant.html"></iframe></div>
+    <div id="rutes" class="tab-content"><iframe data-src="ruta/ruta.html"></iframe></div>
+    <div id="ranking" class="tab-content"><iframe data-src="ranking/ranking.html"></iframe></div>
+    <div id="comercials" class="tab-content"><iframe data-src="comercials/comercials.html"></iframe></div>
+    <div id="vacances" class="tab-content"><iframe data-src="vacances/vacances.html"></iframe></div>
+    
+    <div id="deutes" class="tab-content"><iframe data-src="deutes/deutes.html"></iframe></div>
+
+    <div id="checklist" class="tab-content"><iframe data-src="chklst/chklst.html"></iframe></div>
+    <div id="gastos" class="tab-content"><iframe data-src="despeses/despeses.html"></iframe></div>
+    <div id="inventari" class="tab-content"><iframe data-src="inventari/inventari.html"></iframe></div>
+    <div id="sac_incidencies" class="tab-content"><iframe data-src="sac/sac.html"></iframe></div>
+    <div id="notificador" class="tab-content"><iframe data-src="notificador/notificador.html"></iframe></div>
+    <div id="log" class="tab-content"><iframe data-src="log/log.html"></iframe></div>
+
+    <script>
+        // Configurar los badges del usuario y bienvenida
+        document.addEventListener('DOMContentLoaded', () => {
+            const role = sessionStorage.getItem('userRole');
+            const user = sessionStorage.getItem('userName');
+            const badge = document.getElementById('userDisplayBadge');
+
+            // Propagar la API de Electron en caliente a todos los iframes al cargarse (redundancia de seguridad)
+            document.querySelectorAll('iframe').forEach(iframe => {
+                iframe.addEventListener('load', () => {
+                    try {
+                        if (window.api) {
+                            let newlyInjected = false;
+                            if (!iframe.contentWindow.api) {
+                                try {
+                                    iframe.contentWindow.api = window.api;
+                                    newlyInjected = true;
+                                } catch (err) {
+                                    console.warn('[PORTAL] No se pudo asignar api en contentWindow:', err);
+                                }
+                            }
+                            console.log(`[PORTAL] Inicializando iframe: ${iframe.parentNode.id}, newlyInjected=${newlyInjected}`);
+                            // Solo relanzamos la carga si acabamos de inyectar la API manualmente
+                            // (para evitar dobles llamadas concurrentes si el preload ya la inyectó)
+                            if (newlyInjected) {
+                                if (iframe.contentWindow.load) {
+                                    iframe.contentWindow.load();
+                                } else if (iframe.contentWindow.inicialitzar) {
+                                    iframe.contentWindow.inicialitzar();
+                                } else if (iframe.contentWindow.carregar) {
+                                    iframe.contentWindow.carregar();
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.warn('[PORTAL] Error al procesar la carga del iframe:', e);
+                    }
+                });
+            });
+
+            // Función para sincronizar la UI del idioma seleccionado en portal.html
+            function refreshLangUI() {
+                const activeLang = i18n.getLanguage();
+                document.querySelectorAll('.lang-nav-btn').forEach(btn => {
+                    if (btn.innerText.toLowerCase() === (activeLang === 'ca' ? 'cat' : 'esp')) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                });
+
+                // Actualizar textos dinámicos
+                const role = sessionStorage.getItem('userRole');
+                const user = sessionStorage.getItem('userName');
+                const welcomeMsg = document.getElementById('welcomeMsg');
+                if (welcomeMsg) {
+                    welcomeMsg.textContent = `${i18n.t('welcome')}, ${user}!`;
+                }
+                const badge = document.getElementById('userDisplayBadge');
+                if (badge) {
+                    const displayRole = role === 'jefe operaciones' 
+                        ? (i18n.getLanguage() === 'ca' ? 'Operacions' : 'Operaciones')
+                        : (role === 'comercial' ? i18n.t('roleComercialTitle') : role);
+                    badge.textContent = `${displayRole}: ${user}`;
+                }
+            }
+
+            // Escuchar el evento de cambio de idioma global
+            window.addEventListener('languageChanged', refreshLangUI);
+            
+            // Sincronización inicial
+            refreshLangUI();
+            
+            if (role === 'jefe operaciones') {
+                badge.classList.add('admin');
+                document.getElementById('btnForceUnlockGlobal').style.display = 'block';
+                document.getElementById('btnManageCoord').style.display = 'block';
+                document.getElementById('btnManageAparcaments').style.display = 'block';
+            } else if (role === 'coordinador') {
+                badge.classList.add('coord');
+            } else {
+                badge.classList.add('other');
+            }
+
+            // Restricción de navegación para el perfil Comercial
+            if (role === 'comercial') {
+                // Ocultar todos los botones de pestañas que no sean Comercials
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    const onclickAttr = btn.getAttribute('onclick');
+                    if (onclickAttr && !onclickAttr.includes('comercials')) {
+                        btn.style.display = 'none';
+                    }
+                });
+                
+                // Abrir directamente la pestaña de Comerciales al iniciar
+                const btnComercials = Array.from(document.querySelectorAll('.tab-button')).find(btn => {
+                    const onclickAttr = btn.getAttribute('onclick');
+                    return onclickAttr && onclickAttr.includes('comercials');
+                });
+                if (btnComercials) {
+                    // Esperar un instante para que el render del DOM se complete antes de la redirección inicial
+                    setTimeout(() => {
+                        openTab('comercials', btnComercials);
+                    }, 50);
+                }
+            }
+        });
+
+        // Función para forzar desbloqueo global de emergencia (dinámico con coordinadores)
+        async function triggerGlobalForceUnlock() {
+            if (confirm(i18n.t('confirmUnlockAll'))) {
+                try {
+                    const coordinadores = await window.api.getCoordinadores();
+                    const modules = ['quadrant', 'Vacances_2026_07-04-2026', 'despeses', 'deutes', 'inventari', 'ranking', 'ruta'];
+                    
+                    for (const coord of coordinadores) {
+                        const folder = `dades ${coord.nombre}`;
+                        for (const mod of modules) {
+                            await window.api.forceReleaseLock(`${folder}/${mod}.json`);
+                        }
+                        // Comercials dinámicos
+                        const mesActual = new Date().toLocaleString('ca-ES', { month: 'long' }).toLowerCase();
+                        const anyActual = new Date().getFullYear().toString();
+                        await window.api.forceReleaseLock(`${folder}/comercials_${coord.id}_${mesActual}_${anyActual}.json`);
+                    }
+                    alert(i18n.t('successUnlockAll'));
+                    const activeContent = document.querySelector('.tab-content.active');
+                    if (activeContent) {
+                        const iframe = activeContent.querySelector('iframe');
+                        if (iframe && iframe.src) { iframe.src = iframe.src; }
+                    }
+                } catch (error) {
+                    alert(i18n.t('errorUnlockAll') + error.message);
+                }
+            }
+        }
+
+        // ========== GESTIÓN DE COORDINADORES (Modal) ==========
+        async function openCoordModal() {
+            document.getElementById('coordModal').classList.add('active');
+            await refreshCoordList();
+        }
+
+        function closeCoordModal() {
+            document.getElementById('coordModal').classList.remove('active');
+        }
+
+        async function refreshCoordList() {
+            const list = document.getElementById('coordList');
+            list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
+            
+            const coordinadores = await window.api.getCoordinadores();
+            list.innerHTML = '';
+            
+            if (coordinadores.length === 0) {
+                list.innerHTML = '<div style="padding:12px;color:#999;font-size:12px;text-align:center;">No hi ha coordinadors registrats.</div>';
+                return;
+            }
+            
+            coordinadores.forEach(c => {
+                const item = document.createElement('div');
+                item.className = 'modal-list-item';
+                item.innerHTML = `
+                    <div>
+                        <span class="coord-name">${c.nombre} ${c.apellido}</span>
+                        <span class="coord-folder">📁 dades ${c.nombre}/</span>
+                    </div>
+                    <button class="btn-remove-coord" onclick="removeCoordinador('${c.id}', '${c.nombre} ${c.apellido}')">✕ Eliminar</button>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        async function addCoordinador() {
+            const nom = document.getElementById('newCoordNom').value.trim();
+            const cognom = document.getElementById('newCoordCognom').value.trim();
+            
+            if (!nom) { alert('⚠️ Has d\'escriure un nom.'); return; }
+            if (!cognom) { alert('⚠️ Has d\'escriure un cognom.'); return; }
+            
+            // Capitalizar primera letra
+            const nomCap = nom.charAt(0).toUpperCase() + nom.slice(1);
+            const cognomCap = cognom.charAt(0).toUpperCase() + cognom.slice(1);
+            
+            const result = await window.api.addCoordinador(nomCap, cognomCap);
+            
+            if (result.success) {
+                document.getElementById('newCoordNom').value = '';
+                document.getElementById('newCoordCognom').value = '';
+                await refreshCoordList();
+                alert(`✅ Coordinador ${nomCap} ${cognomCap} afegit correctament.`);
+            } else {
+                alert('❌ Error: ' + result.error);
+            }
+        }
+
+        async function removeCoordinador(id, fullName) {
+            if (!confirm(`⚠️ Estàs segur que vols eliminar a ${fullName} de la llista de coordinadors?\n\n(Les seves dades NO s'esborraran)`)) return;
+            
+            const result = await window.api.removeCoordinador(id);
+            if (result.success) {
+                await refreshCoordList();
+                alert(`✅ ${fullName} eliminat del registre. Les seves dades es conserven a la carpeta.`);
+            } else {
+                alert('❌ Error: ' + result.error);
+            }
+        }
+
+        // ========== GESTIÓN DE APARCAMIENTOS (Modal) ==========
+        async function openAparcamentModal() {
+            document.getElementById('aparcamentModal').classList.add('active');
+            
+            // Cargar selector de coordinadores en el formulario de añadir
+            const select = document.getElementById('newAparcamentCoord');
+            select.innerHTML = `<option value="" disabled selected>${i18n.t('selectCoordPlaceholder')}</option>`;
+            
+            const coordinadores = await window.api.getCoordinadores();
+            coordinadores.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = `${c.nombre} ${c.apellido}`;
+                select.appendChild(opt);
+            });
+            
+            await refreshAparcamentList();
+        }
+
+        function closeAparcamentModal() {
+            document.getElementById('aparcamentModal').classList.remove('active');
+        }
+
+        async function refreshAparcamentList() {
+            const list = document.getElementById('aparcamentList');
+            list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
+            
+            const [aparcamientos, coordinadores] = await Promise.all([
+                window.api.getAparcamientos(),
+                window.api.getCoordinadores()
+            ]);
+            
+            list.innerHTML = '';
+            
+            if (aparcamientos.length === 0) {
+                list.innerHTML = `<div style="padding:12px;color:#999;font-size:12px;text-align:center;">No hi ha aparcaments registrats.</div>`;
+                return;
+            }
+            
+            // Ordenar alfabéticamente
+            aparcamientos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'ca'));
+            
+            aparcamientos.forEach(ap => {
+                const item = document.createElement('div');
+                item.className = 'modal-list-item';
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.padding = '8px 12px';
+                item.style.borderBottom = '1px solid #f1f5f9';
+                
+                // Generar dropdown de coordinadores para cambiar asignación
+                let options = `<option value="" ${!ap.coordinadorId ? 'selected' : ''}>-- Sense Coordinador --</option>`;
+                coordinadores.forEach(c => {
+                    options += `<option value="${c.id}" ${ap.coordinadorId === c.id ? 'selected' : ''}>${c.nombre} ${c.apellido}</option>`;
+                });
+                
+                item.innerHTML = `
+                    <div style="flex: 1.5; display: flex; align-items: center; min-width: 0;">
+                        <input type="text" value="${ap.nombre}" onchange="renameAparcament('${ap.nombre.replace(/'/g, "\\'")}', this.value)" style="font-weight: 600; color: #334155; border: 1px solid transparent; background: transparent; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box; outline: none; transition: all 0.2s;" onfocus="this.style.borderColor='#cbd5e1'; this.style.background='white'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';" onblur="this.style.borderColor='transparent'; this.style.background='transparent'; this.style.boxShadow='none';" placeholder="Nom de l'aparcament">
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center; flex: 1.5; justify-content: flex-end; flex-shrink: 0;">
+                        <select onchange="updateAparcamentCoordinador('${ap.nombre.replace(/'/g, "\\'")}', this.value)" style="padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-family: inherit; background: white; width: 140px;">
+                            ${options}
+                        </select>
+                        <button class="btn-remove-coord" onclick="removeAparcament('${ap.nombre.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        // Renombrar un aparcamiento de forma global (catálogo maestro, ficheros compartidos en red y localStorage local)
+        async function renameAparcament(oldName, newName) {
+            const oldNameUpper = oldName.trim().toUpperCase();
+            const newNameUpper = newName.trim().toUpperCase();
+            
+            if (!newNameUpper) {
+                alert('⚠️ El nom de l\'aparcament no pot ser buit.');
+                await refreshAparcamentList();
+                return;
+            }
+            if (oldNameUpper === newNameUpper) return;
+
+            // Confirmación antes de propagar cambios globales
+            if (!confirm(`⚠️ Estàs segur que vols renombrar "${oldNameUpper}" a "${newNameUpper}"?\n\nAquest canvi es propagarà automàticament en tots els registres històrics (Comercials, Despeses i Rutes).`)) {
+                await refreshAparcamentList();
+                return;
+            }
+
+            const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
+            try {
+                // Activar overlay de carga y bloquear interacción
+                if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+                // Modificar la base de datos de red (ficheros físicos)
+                const result = await window.api.renameAparcamiento(oldNameUpper, newNameUpper);
+                
+                if (result.success) {
+                    // Modificar el localStorage local del portal de forma reactiva
+                    for (let i = 0; i < localStorage.length; i++) {
+                        const key = localStorage.key(i);
+                        try {
+                            const dataStr = localStorage.getItem(key);
+                            if (dataStr && (dataStr.startsWith('{') || dataStr.startsWith('['))) {
+                                const data = JSON.parse(dataStr);
+                                const updatedData = replaceValueRecursivelyFrontend(data, oldNameUpper, newNameUpper);
+                                if (JSON.stringify(data) !== JSON.stringify(updatedData)) {
+                                    localStorage.setItem(key, JSON.stringify(updatedData));
+                                }
+                            } else if (dataStr && dataStr.toUpperCase() === oldNameUpper) {
+                                localStorage.setItem(key, newNameUpper);
+                            }
+                        } catch (e) {
+                            // Ignorar si no es parseable o es clave no relacionada
+                        }
+                    }
+
+                    // Recargar todos los iframes activos en la UI para reflejar el cambio en tiempo real
+                    document.querySelectorAll('iframe').forEach(iframe => {
+                        if (iframe.src) {
+                            iframe.src = iframe.src;
+                        }
+                    });
+
+                    await refreshAparcamentList();
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    alert(`✅ Aparcament "${oldNameUpper}" renombrat a "${newNameUpper}" i actualitzat en toda la base de dades.`);
+                } else {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    alert('❌ Error al reanomenar l\'aparcament: ' + result.error);
+                    await refreshAparcamentList();
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                alert('❌ Error en el procés de reanomenat: ' + err.message);
+                await refreshAparcamentList();
+            }
+        }
+
+        // Función recursiva helper para el renombrado en el localStorage local
+        function replaceValueRecursivelyFrontend(val, oldVal, newVal) {
+            if (typeof val === 'string') {
+                if (val.trim().toUpperCase() === oldVal.toUpperCase()) {
+                    return newVal;
+                }
+                if (val.includes("  ➤  ")) {
+                    const parts = val.split("  ➤  ");
+                    let changed = false;
+                    const newParts = parts.map(part => {
+                        if (part.trim().toUpperCase() === oldVal.toUpperCase()) {
+                            changed = true;
+                            return newVal;
+                        }
+                        return part;
+                    });
+                    if (changed) {
+                        return newParts.join("  ➤  ");
+                    }
+                }
+                return val;
+            }
+            if (Array.isArray(val)) {
+                return val.map(item => replaceValueRecursivelyFrontend(item, oldVal, newVal));
+            }
+            if (val !== null && typeof val === 'object') {
+                const res = {};
+                for (const key in val) {
+                    if (Object.prototype.hasOwnProperty.call(val, key)) {
+                        res[key] = replaceValueRecursivelyFrontend(val[key], oldVal, newVal);
+                    }
+                }
+                return res;
+            }
+            return val;
+        }
+
+        async function addAparcament() {
+            const nom = document.getElementById('newAparcamentNom').value.trim();
+            const coordId = document.getElementById('newAparcamentCoord').value;
+            
+            if (!nom) { alert('⚠️ Has d\'escriure un nom d\'aparcament.'); return; }
+            if (!coordId) { alert('⚠️ Selecciona un coordinador.'); return; }
+            
+            const nomUpper = nom.toUpperCase();
+            
+            const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                const aparcamientos = await window.api.getAparcamientos();
+                if (aparcamientos.some(ap => ap.nombre.toLowerCase() === nomUpper.toLowerCase())) {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    alert(`⚠️ L'aparcament "${nomUpper}" ja existeix.`);
+                    return;
+                }
+                
+                aparcamientos.push({ nombre: nomUpper, coordinadorId: coordId });
+                const result = await window.api.saveAparcamientos(aparcamientos);
+                
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                if (result.success) {
+                    document.getElementById('newAparcamentNom').value = '';
+                    document.getElementById('newAparcamentCoord').value = '';
+                    await refreshAparcamentList();
+                    
+                    // Recargar el iframe activo para actualizar listados
+                    const activeContent = document.querySelector('.tab-content.active');
+                    if (activeContent) {
+                        const iframe = activeContent.querySelector('iframe');
+                        if (iframe) iframe.src = iframe.src;
+                    }
+                    
+                    alert(`✅ Aparcament "${nomUpper}" afegit correctament.`);
+                } else {
+                    alert('❌ Error al desar l\'aparcament: ' + result.error);
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                alert('❌ Error: ' + err.message);
+            }
+        }
+
+        async function updateAparcamentCoordinador(aparcamentNombre, nuevoCoordId) {
+            const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                const aparcamientos = await window.api.getAparcamientos();
+                const ap = aparcamientos.find(a => a.nombre.toLowerCase() === aparcamentNombre.toLowerCase());
+                if (ap) {
+                    ap.coordinadorId = nuevoCoordId;
+                    const result = await window.api.saveAparcamientos(aparcamientos);
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    if (result.success) {
+                        // Recargar el iframe activo para actualizar visualización
+                        const activeContent = document.querySelector('.tab-content.active');
+                        if (activeContent) {
+                            const iframe = activeContent.querySelector('iframe');
+                            if (iframe) iframe.src = iframe.src;
+                        }
+                    } else {
+                        alert('❌ Error al reassignar: ' + result.error);
+                    }
+                } else {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                alert('❌ Error: ' + err.message);
+            }
+        }
+
+        async function removeAparcament(aparcamentNombre) {
+            const confirmMsg = i18n.t('confirmRemoveAparcament', { name: aparcamentNombre });
+            if (!confirm(confirmMsg)) return;
+            
+            const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                let aparcamientos = await window.api.getAparcamientos();
+                aparcamientos = aparcamientos.filter(a => a.nombre.toLowerCase() !== aparcamentNombre.toLowerCase());
+                
+                const result = await window.api.saveAparcamientos(aparcamientos);
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                if (result.success) {
+                    await refreshAparcamentList();
+                    // Recargar el iframe activo
+                    const activeContent = document.querySelector('.tab-content.active');
+                    if (activeContent) {
+                        const iframe = activeContent.querySelector('iframe');
+                        if (iframe) iframe.src = iframe.src;
+                    }
+                } else {
+                    alert('❌ Error al eliminar l\'aparcament: ' + result.error);
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                alert('❌ Error: ' + err.message);
+            }
+        }
+
+        function registrarLog(usuari, accio) {
+            const logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+            const nouLog = {
+                data: new Date().toLocaleString('ca-ES'),
+                usuari: usuari,
+                fitxer: "PORTAL",
+                accio: accio
+            };
+            logs.unshift(nouLog);
+            localStorage.setItem('nyn_logs', JSON.stringify(logs));
+        }
+
+        function updateClock() {
+            const ara = new Date();
+            const h = String(ara.getHours()).padStart(2, '0');
+            const m = String(ara.getMinutes()).padStart(2, '0');
+            const s = String(ara.getSeconds()).padStart(2, '0');
+
+            document.getElementById('h1').textContent = h[0];
+            document.getElementById('h2').textContent = h[1];
+            document.getElementById('m1').textContent = m[0];
+            document.getElementById('m2').textContent = m[1];
+            document.getElementById('s1').textContent = s[0];
+            document.getElementById('s2').textContent = s[1];
+            
+            const opcions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('digital-date').textContent = ara.toLocaleDateString('ca-ES', opcions);
+
+            const avui = `${String(ara.getDate()).padStart(2, '0')}-${String(ara.getMonth() + 1).padStart(2, '0')}`;
+
+            const bdayContainer = document.getElementById('birthday-msg');
+            if (typeof aniversaris !== 'undefined' && aniversaris[avui]) {
+                document.getElementById('bday-text').textContent = `Feliç aniversari ${aniversaris[avui]}!!`;
+                bdayContainer.style.display = "block";
+            } else { bdayContainer.style.display = "none"; }
+
+            const msgEle = document.getElementById('celebration-msg');
+            if (typeof calendari !== 'undefined' && calendari[avui]) {
+                msgEle.innerHTML = `🌟 Feliç dia de <b>${calendari[avui]}</b>!`;
+                msgEle.style.backgroundColor = "#e8f5e9";
+                msgEle.style.borderColor = "#008d36";
+            } else {
+                msgEle.innerHTML = "Avui no se celebra res especial al món 🙁";
+                msgEle.style.backgroundColor = "#f8f8f8";
+                msgEle.style.borderColor = "#ddd";
+            }
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        function openTab(tabId, btnElement) {
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            const selectedTab = document.getElementById(tabId);
+            if(selectedTab) {
+                selectedTab.classList.add('active');
+                btnElement.classList.add('active');
+                
+                const iframe = selectedTab.querySelector('iframe');
+                if (iframe) {
+                    const dataSrc = iframe.getAttribute('data-src');
+                    if (dataSrc && (!iframe.src || iframe.src === 'about:blank' || iframe.src.endsWith('about:blank'))) {
+                        const role = sessionStorage.getItem('userRole') || '';
+                        const user = sessionStorage.getItem('userName') || '';
+                        iframe.src = `${dataSrc}?role=${encodeURIComponent(role)}&username=${encodeURIComponent(user)}`;
+                    }
+                }
+            }
+        }
+
+        function autoNetejaLogs() {
+            const ARA = new Date().getTime();
+            const DOS_DIES = 2 * 24 * 60 * 60 * 1000; 
+            const ultimManteniment = localStorage.getItem('nyn_ultim_manteniment');
+
+            if (!ultimManteniment || (ARA - parseInt(ultimManteniment)) > DOS_DIES) {
+                let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+                if (logs.length > 50) {
+                    const logsNets = logs.slice(0, 50); 
+                    localStorage.setItem('nyn_logs', JSON.stringify(logsNets));
+                }
+                localStorage.setItem('nyn_ultim_manteniment', ARA.toString());
+            }
+        }
+        autoNetejaLogs();
+    </script>
+</body>
+</html>

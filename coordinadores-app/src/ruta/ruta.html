@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8" />
+<title>Fulla de Visites 2026</title>
+<script src="../js/persistence.js"></script>
+
+<style>
+/* --- EL TEU CSS ORIGINAL MANTINGUT INTEGRALMENT --- */
+body {
+    font-family: Arial, sans-serif;
+    margin: 6px; 
+    font-size: 12px;
+    overflow-y: auto; 
+    overflow-x: hidden;
+    height: auto; 
+    min-height: 100vh;
+}
+
+.btn-nyn {
+    border: none; padding: 5px 10px; cursor: pointer; border-radius: 0;
+    font-weight: bold; font-size: 10px; text-transform: uppercase;
+    transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 5px;
+    background: #008d36; color: white;
+    height: 24px; 
+    box-sizing: border-box;
+}
+.btn-nyn:hover { opacity: 0.8; }
+
+.btn-export { background: #6a1b9a !important; }
+.btn-import { background: #ef6c00 !important; }
+
+.calendar-container {
+    background-color: rgba(0, 100, 0, 0.07);
+    padding: 5px 10px; 
+    border-radius: 6px;
+    border: 1px solid #bbb;
+    flex: 1 1 48%;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.controls-add-month {
+    display: flex;
+    flex-wrap: nowrap; 
+    gap: 15px; 
+    align-items: center;
+    margin-bottom: 5px; 
+}
+
+.controls-month {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.wrapper {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 5px; 
+}
+
+#container-albert { background-color: rgba(208, 231, 255, 0.5); }
+#container-laura { background-color: #fff0f5; }
+
+h2 { margin: 1px 0; font-size: 15px; text-align: center; }
+
+table { border-collapse: collapse; width: 100%; table-layout: fixed; }
+th, td { border: 1px solid #bbb; padding: 1px; vertical-align: top; }
+th { background: #f2f2f2; font-size: 11px; }
+td { height: 105px; }
+
+.day-number { font-weight: bold; color: black; font-size: 11px; line-height: 14px; height: 16px; }
+select { width: 100%; font-size: 10px; }
+
+.weekend { background: #f8d7da; }
+.national { background: #ff4d4d !important; }
+.local { background: #4da6ff !important; }
+.convenio { background: #b366ff !important; }
+.empresa { background: #4dff88 !important; }
+.vigilia { background: #fff066 !important; }
+
+.chart-container { width: 100%; height: 175px; margin: 0 auto 5px; }
+
+.legend-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  margin: 0 0 0 15px; 
+  flex-grow: 1;
+}
+
+.legend-item { display: flex; align-items: center; gap: 4px; }
+.legend-box { width: 12px; height: 12px; border: 1px solid #bbb; }
+
+.visit-row { position: relative; display: flex; align-items: center; width: 100%; }
+.visit-row select {
+    height: 16px; padding: 0 10px 0 2px; font-size: 8.5px;
+    appearance: none; -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+    background-repeat: no-repeat; background-position: right 2px center; background-size: 8px; background-color: white; 
+}
+
+.night-btn, .holiday-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 9px; height: 9px; border-radius: 50%; border: 1px solid #666;
+    background: transparent; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; z-index: 5;
+}
+.holiday-btn { right: 22px; } .night-btn { right: 13px; }
+.night-btn::after { content: ''; width: 3.5px; height: 3.5px; border-radius: 50%; background-color: #007bff; }
+.holiday-btn::after { content: ''; width: 3.5px; height: 3.5px; border-radius: 50%; background-color: #ff4d4d; }
+.night-btn.active, .holiday-btn.active { background-color: #fff; opacity: 1; border-width: 1.5px; }
+
+.night-select { background: #B0E0E6 !important; }
+.holiday-select { background: #ffcccc !important; }
+
+.legend-box.night-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background-color: #007bff; }
+.legend-box.holiday-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background-color: #ff4d4d; }
+.legend-box.night-circle, .legend-box.holiday-circle { display: flex; justify-content: center; align-items: center; border-radius: 50%; }
+
+#panelGestio {
+    display: none; position: absolute; top: 40px; left: 280px; background: #fff;
+    border: 2px solid #008d36; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 10000; width: 280px;
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+</head>
+<body>
+
+<div class="controls-add-month">
+    <div class="controls-month">
+        <label for="monthPicker">Mes:</label>
+        <input type="month" id="monthPicker" style="height:24px; box-sizing:border-box;" />
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <button class="btn-nyn" id="btnGestioCentres" onclick="obrirGestio()">⚙️ Editar Centres / Backup</button>
+        
+        <div id="panelGestio">
+            <h3 style="margin-top:0; font-size:12px; text-transform:uppercase; border-bottom:2px solid #008d36; padding-bottom:5px; color: #008d36;">Gestió de Centres</h3>
+            <div style="margin-bottom:10px">
+                <input type="text" id="nouNomInput" style="width:120px; border:1px solid #999; padding:3px; border-radius:4px;">
+                <button onclick="afegirC()" style="background:#008d36; color:white; border:none; padding:4px 10px; cursor:pointer; font-weight:bold; border-radius:4px;">+</button>
+            </div>
+            <div style="margin-bottom:10px">
+                <select id="selGestio" style="width:140px; border:1px solid #999; padding:2px; border-radius:4px;"></select>
+            </div>
+            <div style="display:flex; gap:5px; margin-bottom:15px;">
+                <button onclick="editarC()" style="background:#e8f5e9; color:#2e7d32; border:1px solid #2e7d32; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;">📝 Editar</button>
+                <button onclick="borrarC()" style="background:#ffebee; color:#c62828; border:1px solid #c62828; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;">🗑️ Eliminar</button>
+            </div>
+            <button onclick="document.getElementById('panelGestio').style.display='none'" style="display:block; width:100%; background:#008d36; color:white; border:none; padding:8px; cursor:pointer; font-weight:bold; text-transform:uppercase; border-radius:4px;">Tancar</button>
+        </div>
+
+        <div class="legend-wrapper">
+          <div style="display: flex; gap: 10px; align-items: center;">
+             <div class="legend-item"><div class="legend-box national"></div><span>Festiu nacional</span></div>
+            <div class="legend-item"><div class="legend-box local"></div><span>Festiu local</span></div>
+            <div class="legend-item"><div class="legend-box convenio"></div><span>Festiu conveni</span></div>
+            <div class="legend-item"><div class="legend-box empresa"></div><span>Festiu empresa</span></div>
+            <div class="legend-item"><div class="legend-box vigilia"></div><span>Vigília</span></div>
+            <div class="legend-item"><div class="legend-box night-circle"></div><span> Visita nocturna</span></div>
+            <div class="legend-item"><div class="legend-box holiday-circle"></div><span>Festiu</span></div>
+
+            <span id="llegendaExport" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; gap: 112px; text-transform: none; text-shadow: none; font-weight: normal; margin-left: 25px;">
+                |  Darrera exportació rutes: Cap dada encara
+            </span>
+          </div>
+        </div>
+    </div>
+</div>
+
+<div class="wrapper">
+    <div class="calendar-container">
+        <div id="container-albert">
+            <h2>ALBERT</h2>
+            <div class="chart-container"><canvas id="chartAlbert"></canvas></div>
+            <div id="calendar-albert"></div>
+            <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
+                <button id="resetAlbertBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;">⚠️ Reset Albert</button>
+                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Albert')">💾 Exportar Albert</button>
+                <button class="btn-nyn btn-import" onclick="document.getElementById('fileAlbert').click()">📂 Importar Albert</button>
+                <input type="file" id="fileAlbert" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Albert')">
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-container">
+        <div id="container-laura">
+            <h2>LAURA</h2>
+            <div class="chart-container"><canvas id="chartLaura"></canvas></div>
+            <div id="calendar-laura"></div>
+            <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
+                <button id="resetLauraBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;">⚠️ Reset Laura</button>
+                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Laura')">💾 Exportar Laura</button>
+                <button class="btn-nyn btn-import" onclick="document.getElementById('fileLaura').click()">📂 Importar Laura</button>
+                <input type="file" id="fileLaura" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Laura')">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// --- FUNCIONS DE LLEGENDA INDEPENDENTS PER A RUTA ---
+
+function refrescarLlegendaGlobal() {
+    // Utilitzem una clau única per a RUTA
+    const data = localStorage.getItem('nyn_ruta_export_data');
+    const autor = localStorage.getItem('nyn_ruta_export_autor');
+    const el = document.getElementById('llegendaExport');
+    
+    if (el) {
+        if (data && autor) {
+            el.innerHTML = ` |  Darrera exportació rutes: ${data} (per ${autor})`;
+        } else {
+            el.innerHTML = " |  Darrera exportació rutes: Cap dada encara";
+        }
+    }
+}
+
+function registrarLog(usuari, accio) {
+    const logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+    logs.unshift({ data: new Date().toLocaleString('ca-ES'), usuari: usuari, fitxer: "ruta.html", accio: accio });
+    localStorage.setItem('nyn_logs', JSON.stringify(logs));
+}
+
+function exportarDadesUsuari(nomUsuari) {
+    let dades = {};
+    for (let i = 0; i < localStorage.length; i++) {
+        let clau = localStorage.key(i);
+        if (clau.startsWith(nomUsuari)) {
+            dades[clau] = localStorage.getItem(clau);
+        }
+    }
+    
+    if (Object.keys(dades).length === 0) {
+        alert("No hi ha dades guardades de " + nomUsuari);
+        return;
+    }
+
+    const ara = new Date();
+    const dataFormatada = ara.toLocaleString('ca-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit' 
+    });
+    
+    const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
+    let autorLog = "SISTEMA";
+    if (nomSencer.toUpperCase().includes("ALBERT")) autorLog = "ALBERT";
+    else if (nomSencer.toUpperCase().includes("LAURA")) autorLog = "LAURA";
+
+    // Afegim metadades al JSON d'exportació
+    dades["METADATA_EXPORT_DATA"] = dataFormatada;
+    dades["METADATA_EXPORT_AUTOR"] = autorLog;
+
+    const blob = new Blob([JSON.stringify(dades, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ruta_${nomUsuari}_${autorLog}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // GUARDEM NOMÉS EN CLAUS DE RUTA PER NO BARREJAR AMB RANKING
+    localStorage.setItem('nyn_ruta_export_data', dataFormatada);
+    localStorage.setItem('nyn_ruta_export_autor', autorLog);
+    
+    refrescarLlegendaGlobal();
+    registrarLog(autorLog, `Ha exportat TOTES les rutes de ${nomUsuari}.`);
+}
+
+function importarDadesUsuari(event, nomUsuari) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const dades = JSON.parse(e.target.result);
+            
+            // Si el fitxer porta signatura, actualitzem la llegenda DE RUTA
+            if (dades.METADATA_EXPORT_DATA) {
+                localStorage.setItem('nyn_ruta_export_data', dades.METADATA_EXPORT_DATA);
+                localStorage.setItem('nyn_ruta_export_autor', dades.METADATA_EXPORT_AUTOR);
+            }
+
+            let comptador = 0;
+            Object.keys(dades).forEach(clau => {
+                if (clau.startsWith("Albert") || clau.startsWith("Laura")) {
+                    localStorage.setItem(clau, dades[clau]);
+                    comptador++;
+                }
+            });
+
+            alert(`✅ S'han importat ${comptador} entrades de rutes.\nAutor: ${dades.METADATA_EXPORT_AUTOR || 'Desconegut'}`);
+            
+            refrescarLlegendaGlobal();
+            registrarLog("SISTEMA", `Importació de backup rutes (${nomUsuari}).`);
+            
+            generateCalendars(); 
+            updateCharts(); 
+            event.target.value = '';
+            
+        } catch (err) { 
+            alert("Error en llegir el fitxer JSON."); 
+        }
+    };
+    reader.readAsText(file);
+}
+
+// --- RESTA DE LÒGICA (CENTRES, CALENDARIS, CHARTS) SENSE CANVIS ---
+
+const baseAddresses = ["--- >", "ARAGÓ 182", "ARIBAU 225", "AV. ROMA 120", "AV. ROMA 210", "AV. ROMA 69", "BEJAR 63", "BISBE LAGUARDA", "BONANOVA 59", "BORRELL 26", "BRUC 103", "CAP DE SETMANA", "COLLBLANC 101", "CONCEPT", "CÒRSEGA 344", "CURSO PRL", "DIA CONVENI", "DIAGONAL 593", "DOS DE MAIG 218", "ESPRONCEDA 254", "ASPY", "ESPRONCEDA 348", "ESTEVE TARRADAS 17", "FESTIU", "GEIGLE", "GRAN VÍA 641", "HERCEGOVINA 19", "LA ROTONDA", "LA TAMARITA", "LEPANTO 199", "LLIURE", "LLORENS BARBA 66", "LLULL 17", "MALLORCA 508", "MALLORCA 51", "MASTER CATALONIA", "MELCIOR PALAU", "MORAGAS 15", "MOSSOS ESQUADRA", "OFICINES", "PAU ALSINA 74", "PAU ALSINA 32", "PEDRALBES", "PONS GALLARZA", "PROVENÇA 111", "REINA AMALIA", "ROCAFORT 64", "SANTA CAROLINA", "SANTALÓ 14", "SENTMENAT 2", "SENTMENAT 54", "SEPÚLVEDA 65", "TARRAGONA 141", "TORRAS BAGES", "TRAV. GRACIA 183", "URGELL 154", "URGELL 234", "VACANCES", "VALENCIA 243", "VALENCIA 375", "VALENCIA 511", "VIA AUGUSTA 349", "ZONA FRANCA 131"];
+let addresses = [];
+const fixedAuxiliary = ["CAP DE SETMANA", "CURSO PRL", "DIA CONVENI", "FESTIU", "ASPY", "LLIURE", "OFICINES", "VACANCES"];
+
+async function loadAddresses() {
+    try {
+        let api = window.api;
+        if (!api && window.parent && window.parent.api) {
+            api = window.parent.api;
+        }
+        if (api && api.getAparcamientos) {
+            const aparcamientos = await api.getAparcamientos();
+            const nombresAparcamientos = aparcamientos.map(ap => ap.nombre);
+            addresses = ["--- >", ...Array.from(new Set([...nombresAparcamientos, ...fixedAuxiliary]))].sort((a, b) => {
+                if (a === "--- >") return -1;
+                if (b === "--- >") return 1;
+                return a.localeCompare(b, 'ca');
+            });
+        } else {
+            addresses = [...new Set([...baseAddresses, ...JSON.parse(localStorage.getItem("customCenters") || "[]")])];
+        }
+    } catch (e) {
+        console.error('Error cargando direcciones de aparcamientos:', e);
+        addresses = [...new Set([...baseAddresses, ...JSON.parse(localStorage.getItem("customCenters") || "[]")])];
+    }
+}
+
+const holidays = { national:["2026-01-01","2026-01-06","2026-04-03","2026-04-06","2026-05-01","2026-06-24","2026-08-15","2026-09-11","2026-10-12","2026-12-08","2026-12-25","2026-12-26"], local:["2026-05-25","2026-09-24"], convenio:["2026-06-15","2026-12-28","2026-12-29","2026-12-30","2026-12-31"], empresa:["2026-01-02","2026-04-02","2026-09-25","2026-12-07"], vigilia:["2026-01-05","2026-12-24"] };
+
+function generateCalendars(){ generateCalendar("calendar-albert","Albert"); generateCalendar("calendar-laura","Laura"); updateCharts(); }
+function generateCalendar(containerId, person){
+    const container = document.getElementById(containerId); container.innerHTML = "";
+    const date = new Date(monthPicker.value); const year = date.getFullYear(), month = date.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const table = document.createElement("table");
+    const headerRow = document.createElement("tr");
+    ["Dl","Dm","Dc","Dj","Dv","Ds","Dg"].forEach(d=>{ const th = document.createElement("th"); th.textContent = d; headerRow.appendChild(th); });
+    table.appendChild(headerRow);
+    let row = document.createElement("tr");
+    let firstDay = new Date(year, month, 1).getDay() || 7;
+    for(let i=1; i<firstDay; i++) row.appendChild(document.createElement("td"));
+    for(let day=1; day<=daysInMonth; day++){
+        const isoDate = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        const cell = document.createElement("td");
+        if((new Date(year, month, day).getDay() || 7) >= 6) cell.classList.add("weekend");
+        
+        if(holidays.national.includes(isoDate)) cell.classList.add("national");
+        else if(holidays.local.includes(isoDate)) cell.classList.add("local");
+        else if(holidays.convenio.includes(isoDate)) cell.classList.add("convenio");
+        else if(holidays.empresa.includes(isoDate)) cell.classList.add("empresa");
+        else if(holidays.vigilia.includes(isoDate)) cell.classList.add("vigilia");
+        
+        const title = document.createElement("div"); title.className = "day-number"; title.textContent = day; cell.appendChild(title);
+        for(let i=0;i<6;i++){
+            const key = `${person}-${year}-${month}-${day}-${i}`, nKey = `${key}-night`, hKey = `${key}-holiday`;
+            const rowDiv = document.createElement("div"); rowDiv.className = "visit-row";
+            const sel = document.createElement("select");
+            sel.innerHTML = '<option value="">--- ></option>';
+            addresses.sort((a,b)=>a.localeCompare(b,'ca')).forEach(a => { if(a !== "--- >") sel.innerHTML += `<option value="${a}">${a}</option>`; });
+            sel.value = localStorage.getItem(key) || "";
+            
+            const nBtn = document.createElement("button"); nBtn.className = "night-btn";
+            if(localStorage.getItem(nKey)){ nBtn.classList.add("active"); sel.classList.add("night-select"); }
+            const hBtn = document.createElement("button"); hBtn.className = "holiday-btn";
+            if(localStorage.getItem(hKey)){ hBtn.classList.add("active"); sel.classList.add("holiday-select"); }
+
+            sel.onchange = () => { localStorage.setItem(key, sel.value); updateCharts(); };
+            nBtn.onclick = () => {
+                if(localStorage.getItem(nKey)){ localStorage.removeItem(nKey); nBtn.classList.remove("active"); sel.classList.remove("night-select"); }
+                else { localStorage.setItem(nKey, "1"); nBtn.classList.add("active"); sel.classList.add("night-select"); }
+            };
+            hBtn.onclick = () => {
+                if(localStorage.getItem(hKey)){ localStorage.removeItem(hKey); hBtn.classList.remove("active"); sel.classList.remove("holiday-select"); }
+                else { localStorage.setItem(hKey, "1"); hBtn.classList.add("active"); sel.classList.add("holiday-select"); }
+            };
+            rowDiv.append(sel, hBtn, nBtn); cell.appendChild(rowDiv);
+        }
+        row.appendChild(cell);
+        if((new Date(year, month, day).getDay() || 7) === 7){ table.appendChild(row); row = document.createElement("tr"); }
+    }
+    table.appendChild(row); container.appendChild(table);
+}
+
+function obrirGestio() { document.getElementById('panelGestio').style.display = 'block'; omplirGestio(); }
+function omplirGestio() {
+    const sel = document.getElementById("selGestio"); sel.innerHTML = "";
+    addresses.filter(a => a !== "--- >").sort((a,b)=>a.localeCompare(b,'ca')).forEach(a => { sel.innerHTML += `<option value="${a}">${a}</option>`; });
+}
+function afegirC() {
+    const nou = document.getElementById("nouNomInput").value.trim().toUpperCase();
+    if(nou && !addresses.includes(nou)) {
+        let custom = JSON.parse(localStorage.getItem("customCenters") || "[]"); custom.push(nou);
+        localStorage.setItem("customCenters", JSON.stringify(custom));
+        addresses.push(nou); document.getElementById("nouNomInput").value = ""; omplirGestio(); generateCalendars();
+    }
+}
+function borrarC() {
+    const sel = document.getElementById("selGestio").value;
+    if(sel && confirm(`Eliminar ${sel}?`)) {
+        let custom = JSON.parse(localStorage.getItem("customCenters") || "[]").filter(c => c !== sel);
+        localStorage.setItem("customCenters", JSON.stringify(custom));
+        addresses = [...new Set([...baseAddresses, ...custom])]; omplirGestio(); generateCalendars();
+    }
+}
+
+let chartA, chartL;
+function updateCharts(){
+    const labs = addresses.filter(a=>a!=="--- >").sort();
+    const [selYear, selMonth] = monthPicker.value.split("-");
+    const monthIdx = parseInt(selMonth) - 1;
+    const count = (p) => {
+        let res = {}; labs.forEach(l=>res[l]=0);
+        Object.keys(localStorage).forEach(k=>{
+            if(k.startsWith(`${p}-${selYear}-${monthIdx}-`) && !k.endsWith("-night") && !k.endsWith("-holiday")){
+                let v = localStorage.getItem(k); if(res[v]!==undefined) res[v]++;
+            }
+        });
+        return labs.map(l=>res[l]);
+    };
+    if(chartA) chartA.destroy(); if(chartL) chartL.destroy();
+    const opt = (id, label, data, col) => new Chart(document.getElementById(id), {
+        type: 'bar', 
+        data: {
+            labels: labs, 
+            datasets: [{label, data, backgroundColor: col}]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+                x: {
+                    ticks: {
+                        font: { size: 7 }, // Una mica més petita per encabir-ho tot
+                        maxRotation: 90,
+                        minRotation: 90,   // Força la verticalitat
+                        autoSkip: false    // NO et saltis cap centre (com Rocafort)
+                    }
+                }, 
+                y: {
+                    beginAtZero: true, 
+                    ticks: { stepSize: 1 }
+                } 
+            } 
+        }
+    });
+    chartA = opt("chartAlbert", "Albert", count("Albert"), "rgba(54, 162, 235, 0.8)");
+    chartL = opt("chartLaura", "Laura", count("Laura"), "rgba(255, 99, 132, 0.8)");
+}
+
+const monthPicker = document.getElementById("monthPicker");
+const avui = new Date();
+monthPicker.value = avui.getFullYear() + "-" + String(avui.getMonth() + 1).padStart(2, '0');
+monthPicker.onchange = generateCalendars;
+
+function resetMesUsuari(person) {
+    const [selYear, selMonth] = monthPicker.value.split("-");
+    const monthIdx = parseInt(selMonth) - 1;
+    const prefixMes = `${person}-${selYear}-${monthIdx}-`;
+    
+    if(confirm(`⚠️ ATENCIÓ: Es perdran només les dades de ${person} del mes ${selMonth}/${selYear}.\n(La resta de mesos es mantindran).\n\nVols continuar?`)){ 
+        Object.keys(localStorage).forEach(k => {
+            if(k.startsWith(prefixMes)) localStorage.removeItem(k);
+        }); 
+        registrarLog(person.toUpperCase(), `⚠️ RESET del mes ${selMonth}/${selYear}`);
+        generateCalendars(); updateCharts(); 
+    } 
+}
+
+document.getElementById("resetAlbertBtn").onclick = () => resetMesUsuari("Albert");
+document.getElementById("resetLauraBtn").onclick = () => resetMesUsuari("Laura");
+
+async function initRuta() {
+    await persistence.syncLoad('ruta');
+    await loadAddresses();
+    
+    // Ocultar botón de gestión local si el rol es coordinador o comercial
+    const role = sessionStorage.getItem('userRole') || (window.parent && window.parent.sessionStorage.getItem('userRole'));
+    if (role === 'coordinador' || role === 'comercial') {
+        const btn = document.getElementById('btnGestioCentres');
+        if (btn) btn.style.display = 'none';
+    }
+    
+    refrescarLlegendaGlobal();
+    generateCalendars();
+}
+initRuta();
+</script>
+</body>
+</html>

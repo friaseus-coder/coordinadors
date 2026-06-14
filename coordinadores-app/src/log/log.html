@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>NyN Pàrquings | Control de Logs</title>
+    
+<style>
+    body {
+        font-family: 'Segoe UI', Arial, sans-serif;
+        margin: 10px; 
+        font-size: 12px;
+        background: #f4f4f4;
+        color: #333;
+    }
+
+    /* BARRA TÍTOL INTERNA (SENSE BOTONS) */
+    .internal-header {
+        display: flex;
+        align-items: center;
+        padding: 8px 15px;
+        background: white;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        margin-bottom: 10px;
+    }
+
+    .header-title-nyn {
+        font-weight: bold;
+        text-transform: uppercase;
+        color: #008d36;
+        font-size: 13px;
+    }
+
+    .main-layout {
+        display: flex;
+        gap: 10px;
+        height: calc(100vh - 60px); /* Ajustat per l'espai del portal */
+    }
+
+    /* FILTRES LATERALS */
+    .sidebar {
+        flex: 0 0 240px;
+        background: white;
+        border: 1px solid #bbb;
+        padding: 15px;
+        border-radius: 6px;
+        height: fit-content;
+    }
+
+    /* VISTA DE CONTINGUT */
+    .content-view {
+        flex: 1;
+        background: white;
+        border: 1px solid #bbb;
+        border-radius: 6px;
+        overflow-y: auto;
+        padding: 0; /* Taula neta */
+    }
+
+    h2 { margin-top: 0; font-size: 13px; color: #008d36; border-bottom: 2px solid #008d36; padding-bottom: 5px; text-transform: uppercase; }
+
+    label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; color: #666; }
+    
+    input[type="date"] {
+        width: 100%;
+        padding: 5px;
+        border: 1px solid #ccc;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        font-family: inherit;
+    }
+
+    .btn-nyn {
+        border: none; padding: 6px 12px; cursor: pointer;
+        font-weight: bold; font-size: 10px; text-transform: uppercase;
+        background: #008d36; color: white;
+        transition: background 0.2s;
+        display: flex; align-items: center; justify-content: center; gap: 5px;
+    }
+    .btn-nyn:hover { background: #005a22; }
+
+    /* TAULA DE LOGS */
+    table { width: 100%; border-collapse: collapse; font-size: 11px; }
+    th { 
+        background: #f8f8f8; padding: 10px; border-bottom: 2px solid #008d36; 
+        text-align: left; text-transform: uppercase; position: sticky; top: 0;
+    }
+    td { padding: 10px; border-bottom: 1px solid #eee; }
+    tr:nth-child(even) { background: #fafafa; }
+    tr:hover { background: #f1f1f1; }
+
+    .timestamp { font-weight: bold; color: #008d36; width: 150px; white-space: nowrap; }
+    .btn-delete { background: #dc3545 !important; width: 100%; margin-top: 5px; }
+    .btn-delete:hover { background: #a71d2a !important; }
+
+</style>
+</head>
+<body>
+
+    <div class="internal-header">
+        <div class="header-title-nyn">📜 Registre d'activitat del sistema (Logs)</div>
+    </div>
+
+    <div class="main-layout">
+        <div class="sidebar">
+            <h2>Filtres de cerca</h2>
+            <label>Data d'inici:</label>
+            <input type="date" id="dateStart">
+            
+            <label>Data final:</label>
+            <input type="date" id="dateEnd">
+
+            <div style="display: flex; gap: 5px;">
+                <button class="btn-nyn" style="flex:1;" onclick="renderLogs()">Cercar</button>
+                <button class="btn-nyn" style="flex:1; background:#666;" onclick="resetFilters()">Tots</button>
+            </div>
+
+            <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
+                <label>Administració:</label>
+                <button class="btn-nyn btn-delete" onclick="autoritzarEsborrat()">🗑️ Netejar Període</button>
+            </div>
+        </div>
+
+        <div class="content-view">
+            <table id="logTable">
+                <thead>
+                    <tr>
+                        <th>Data i Hora</th>
+			<th>USUARI</th> 
+			<th>FITXER</th>
+                        <th>Descripció de l'Acció</th>
+                    </tr>
+                </thead>
+                <tbody id="logBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    function parseLogDate(dateStr) {
+        if(!dateStr) return new Date(0);
+        // Suporta formats "DD/MM/YYYY" o "DD/MM/YYYY, HH:mm:ss"
+        const parts = dateStr.split(',')[0].trim().split('/');
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+
+   
+function renderLogs() {
+    const body = document.getElementById('logBody'); // El teu ID original
+    const logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+    const start = document.getElementById('dateStart').value;
+    const end = document.getElementById('dateEnd').value;
+
+    const startDate = start ? new Date(start) : null;
+    const endDate = end ? new Date(end) : null;
+    if(startDate) startDate.setHours(0,0,0,0);
+    if(endDate) endDate.setHours(23,59,59,999);
+
+    body.innerHTML = "";
+
+    // Nota: El nou sistema ja guarda els logs amb "unshift" (els nous primer)
+    // però per si de cas, mantenim el criteri de mostrar-ho tot bé
+    logs.forEach(log => {
+        const logDate = parseLogDate(log.data);
+        let mostrar = true;
+        
+        if (startDate && logDate < startDate) mostrar = false;
+        if (endDate && logDate > endDate) mostrar = false;
+
+        if (mostrar) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="timestamp">${log.data}</td>
+                <td style="font-weight:bold; color:#008d36;">${log.usuari || 'SISTEMA'}</td>
+                <td style="color:#666; font-size:10px;">${log.fitxer || '-'}</td>
+                <td>${log.accio}</td>
+            `;
+            body.appendChild(tr);
+        }
+    });
+
+    if (body.innerHTML === "") {
+        body.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:50px; color:#999; font-style:italic;'>No s'han trobat registres per aquestes dates o filtres.</td></tr>";
+    }
+}
+
+
+
+    function autoritzarEsborrat() {
+        const start = document.getElementById('dateStart').value;
+        const end = document.getElementById('dateEnd').value;
+        if (!start || !end) { alert("Si us plau, selecciona un rang de dates per esborrar."); return; }
+
+        if (confirm("Atenció: Estàs a punt d'esborrar registres del sistema. Vols continuar?")) {
+            const pw = prompt("Introdueix la clau de seguretat:");
+            if (pw === "1234") {
+                let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+                const startDate = new Date(start); startDate.setHours(0,0,0,0);
+                const endDate = new Date(end); endDate.setHours(23,59,59,999);
+
+                const filtrats = logs.filter(log => {
+                    const d = parseLogDate(log.data);
+                    return (d < startDate || d > endDate);
+                });
+
+                localStorage.setItem('nyn_logs', JSON.stringify(filtrats));
+                renderLogs();
+            } else { alert("Clau incorrecta."); }
+        }
+    }
+
+    function resetFilters() {
+        document.getElementById('dateStart').value = "";
+        document.getElementById('dateEnd').value = "";
+        renderLogs();
+    }
+
+   window.addEventListener('storage', function(e) {
+        if (e.key === 'nyn_logs') {
+            renderLogs(); 
+        }
+    });
+
+    window.addEventListener('focus', function() {
+        renderLogs();
+    });
+    // --------------------------
+
+    window.onload = renderLogs;
+</script>
+</body>
+</html>

@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>NyN Pàrquings | Gestió Vacances</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="../js/persistence.js"></script>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ca.js"></script>
+
+    <style>
+        :root { 
+            --nyn-verd: #008d36; 
+            --nyn-lila: #8e24aa;     
+            --nyn-taronja: #ff9800;
+            --nyn-blau-apagat: #546e7a;
+        }
+        
+        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: white; font-size: 11px; }
+        
+        .header { 
+            background: var(--nyn-verd); color: white; padding: 0 15px; 
+            display: flex; align-items: center; justify-content: space-between; 
+            flex-shrink: 0; height: 48px; box-sizing: border-box; z-index: 1000;
+            position: relative;
+        }
+
+        .header-left { display: flex; gap: 6px; align-items: center; flex-grow: 1; }
+        
+        .header-center { 
+            display: flex; align-items: center; gap: 15px;
+            position: absolute; left: 50%; transform: translateX(-50%);
+        }
+        
+        .header-center h1 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+        
+        #lastExport { font-size: 9px; color: #e0e0e0; font-style: normal; margin-left: 10px; white-space: nowrap; }
+
+        .btn-nyn { 
+            padding: 3px 8px; border-radius: 2px; font-size: 9px; cursor: pointer; 
+            background: var(--nyn-verd); color: white; font-weight: bold; 
+            border: 1px solid rgba(255,255,255,0.4); text-transform: uppercase; height: 26px;
+        }
+
+        #selectAny {
+            width: 80px; height: 26px; background: white; color: black; 
+            border: 1.5px solid black; border-radius: 2px; font-weight: bold;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="black"/></svg>');
+            background-repeat: no-repeat; background-position: right 8px center; padding-right: 20px;
+            text-align: center; cursor: pointer; font-size: 11px;
+        }
+
+        .table-container { flex-grow: 1; overflow: auto; padding: 0; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+        
+        th { 
+            background: #f0f0f0; color: #444; padding: 0px 2px; border: 1px solid #ddd; 
+            font-size: 9px; position: sticky; top: 0; z-index: 10; font-weight: bold;
+            text-align: center; vertical-align: middle; height: 19px;
+        }
+
+        .filter-select { 
+            width: 100%; height: 100%; border: none; background: transparent; 
+            font-family: inherit; font-size: 9px; font-weight: bold;
+            text-align: center; text-align-last: center; cursor: pointer; outline: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="%23666"/></svg>');
+            background-repeat: no-repeat; background-position: right 4px center; padding-right: 12px;
+        }
+
+        td { border: 1px solid #eee; padding: 0; height: 18px; overflow: hidden; text-align: center; }
+
+        tr.group-item td:first-child { border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
+        tr.group-start td:first-child { border-top: 1.5px solid black !important; }
+        tr.group-end td:first-child { border-bottom: 1.5px solid black !important; }
+
+        select { 
+            width: 100%; height: 100%; border: none; background: transparent; font-family: inherit; font-size: 10px; 
+            outline: none; cursor: pointer; appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="%23666"/></svg>');
+            background-repeat: no-repeat; background-position: right 4px center; padding-right: 12px;
+        }
+
+        .col-centre { width: 145px; text-align: left; font-weight: bold; }
+        .col-centre select { padding-left: 10px; text-align: left; }
+        .col-nom { width: 175px; text-align: left; }
+        .col-nom select { padding-left: 10px; text-align: left; }
+
+        .bg-disfrutats { background-color: rgba(46, 204, 113, 0.08) !important; color: #1e8449 !important; font-weight: bold; }
+        .bg-disfrutats input { color: #1e8449 !important; font-weight: bold; }
+        
+        .bg-pendents { background-color: rgba(231, 76, 60, 0.06) !important; color: #c0392b !important; font-weight: bold; }
+        
+        .bg-corresp { background-color: rgba(52, 152, 219, 0.06) !important; color: #21618c !important; font-weight: bold; }
+        .bg-corresp input { color: #21618c !important; font-weight: bold; }
+
+        .bg-festiuper { background-color: rgba(241, 196, 15, 0.2) !important; }
+        .bg-festius { background-color: rgba(155, 89, 182, 0.06) !important; }
+
+        input { width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-family: inherit; font-size: 10px; outline: none; }
+        .input-periode { font-weight: bold !important; color: #008d36 !important; cursor: pointer; font-size: 9.5px; }
+        
+        .btn-delete-row { border:none; background:none; color:#ccc; cursor:pointer; font-weight: bold; }
+        .btn-delete-row:hover { color: #d32f2f !important; }
+
+        #deleteModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border:2px solid var(--nyn-verd); z-index:2000; border-radius:8px; width:320px; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
+        .modal-input { border:1px solid #ccc; width:100%; margin-bottom:10px; height:28px; padding-left:5px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-left">
+        <button class="btn-nyn" onclick="afegirFila()">➕ Afegir Fila</button>
+        <button class="btn-nyn" onclick="openDeleteModal()" style="background:var(--nyn-blau-apagat);">⚙️ Gestionar Dades</button>
+        <button class="btn-nyn" onclick="exportarExcel()" style="background:#2e7d32;">📥 Exportar Excel</button>
+        <button class="btn-nyn" onclick="exportarJSON()" style="background:var(--nyn-lila);">💾 Exportar</button>
+        <button class="btn-nyn" onclick="document.getElementById('inputImportar').click()" style="background:var(--nyn-taronja);">📂 Importar</button>
+        <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
+        <button class="btn-nyn" onclick="reiniciarTot()" style="background:#d32f2f;">🗑️ Esborrar dades</button>
+        <div id="lastExport">Última exportació: Mai</div>
+    </div>
+
+    <div class="header-center">
+        <h1>VACANCES PÀRKINGS</h1>
+        <select id="selectAny" onchange="inicialitzar()"></select>
+    </div>
+</div>
+
+<div class="table-container">
+    <table id="tablaVacances">
+        <thead>
+            <tr>
+                <th style="width: 145px;"><select id="filterCentre" class="filter-select" onchange="filtrarTaula()"><option value="">CENTRE</option></select></th>
+                <th style="width: 175px;"><select id="filterNom" class="filter-select" onchange="filtrarTaula()"><option value="">TREBALLADOR</option></select></th>
+                <th style="width: 85px;"><select id="filterJornada" class="filter-select" onchange="filtrarTaula()"><option value="">JORNADA</option></select></th>
+                <th style="width: 155px;">1er PERÍODE</th>
+                <th style="width: 155px;">2on PERÍODE</th>
+                <th style="width: 75px;" class="bg-disfrutats">DISFRUTATS</th>
+                <th style="width: 75px;" class="bg-pendents">PENDENTS</th>
+                <th style="width: 85px;" class="bg-corresp">CORRESPONENTS</th>
+                <th style="width: 110px;" class="bg-festiuper">FESTIUS PERÍODE</th>
+                <th style="width: 65px;" class="bg-festius">Nº FESTIUS</th>
+                <th style="width: 90px;">BOSSA HORES</th>
+                <th>OBSERVACIONS</th>
+                <th style="width: 25px;">🗑️</th>
+            </tr>
+        </thead>
+        <tbody id="listaVacances"></tbody>
+    </table>
+</div>
+
+<div id="deleteModal">
+    <div style="font-weight:bold; margin-bottom:12px; font-size: 13px;">⚙️ GESTIONAR DADES</div>
+    
+    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;">TIPUS DE LLISTA:</label>
+    <select id="deleteType" onchange="updateDeleteOptions()" class="modal-input" style="appearance: auto; padding: 0 5px;">
+        <option value="centres">Centres</option>
+        <option value="plantilla">Treballadors</option>
+        <option value="anys">Anys</option>
+    </select>
+
+    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;">SELECCIONA ELEMENT:</label>
+    <select id="deleteItem" onchange="syncEditInput()" class="modal-input" style="appearance: auto; padding: 0 5px;"></select>
+
+    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;">NOM (AFEGIR O MODIFICAR):</label>
+    <input type="text" id="editInput" class="modal-input" placeholder="Escriu aquí...">
+
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top: 5px;">
+        <button onclick="addNewItem()" class="btn-nyn" style="background:var(--nyn-verd);">➕ Afegir Nou</button>
+        <button onclick="modifyItem()" class="btn-nyn" style="background:var(--nyn-taronja);">✏️ Modificar</button>
+        <button onclick="confirmDelete()" class="btn-nyn" style="background:#d32f2f;">🗑️ Eliminar</button>
+        <button onclick="document.getElementById('deleteModal').style.display='none'" class="btn-nyn" style="background:#666;">Tancar</button>
+    </div>
+</div>
+
+<script>
+
+// Festius oficials extrets del teu quadrant.html
+const FESTIUS_BCN = ["0-1", "0-6", "3-3", "3-6", "4-1", "4-25", "5-24", "7-15", "8-11", "8-24", "9-12", "11-8", "11-25", "11-26"];
+const FESTIUS_REUS = ["0-1", "0-6", "3-3", "3-6", "4-1", "5-24", "5-29", "7-15", "8-11", "8-25", "9-12", "11-8", "11-25", "11-26"];
+
+// Funció per saber si un dia és festiu segons el centre
+function esDiaFestiu(data, centre) {
+    const m = data.getMonth();
+    const d = data.getDate();
+    const clau = `${m}-${d}`;
+    const esReus = (centre || "").toUpperCase().includes("PALLOL") || (centre || "").toUpperCase().includes("REUS");
+    
+    return esReus ? FESTIUS_REUS.includes(clau) : FESTIUS_BCN.includes(clau);
+}
+
+
+
+    let CENTRES = JSON.parse(localStorage.getItem('nyn_centres')) || ["NN CENTRAL", "NN LA TAMARITA", "P. Gran Via"];
+    let PLANTILLA = JSON.parse(localStorage.getItem('nyn_plantilla')) || ["Albert", "Joan", "Marta"];
+    let ANYS = JSON.parse(localStorage.getItem('nyn_anys')) || ["2025", "2026", "2027", "2028"];
+    let colorsMap = {};
+
+    function generarColors() {
+        const centresOrdenats = [...CENTRES].sort();
+        centresOrdenats.forEach((c, i) => {
+            const hue = (i * (360 / Math.max(centresOrdenats.length, 1))) % 360;
+            colorsMap[c] = `hsl(${hue}, 85%, 92%)`; 
+        });
+    }
+
+    async function inicialitzar() {
+        await persistence.syncLoad('vacances');
+        generarColors();
+        const selAny = document.getElementById('selectAny');
+        const valorActual = selAny.value;
+        selAny.innerHTML = "";
+        ANYS.sort().forEach(a => {
+            const opt = document.createElement('option');
+            opt.value = a;
+            opt.innerText = a;
+            if(a === valorActual || (valorActual === "" && a === "2026")) opt.selected = true;
+            selAny.appendChild(opt);
+        });
+        if (selAny.value === "") selAny.value = ANYS.includes("2026") ? "2026" : ANYS[0];
+
+        const storedExport = localStorage.getItem('nyn_last_export_' + selAny.value);
+        document.getElementById('lastExport').innerText = storedExport ? "Última exportació: " + storedExport : "Última exportació: Mai";
+        actualitzarFiltres();
+        renderTable();
+    }
+
+    function actualitzarFiltres() {
+        document.getElementById('filterCentre').innerHTML = '<option value="">CENTRE</option>' + CENTRES.sort().map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('filterNom').innerHTML = '<option value="">TREBALLADOR</option>' + PLANTILLA.sort().map(n => `<option value="${n}">${n}</option>`).join('');
+        document.getElementById('filterJornada').innerHTML = '<option value="">JORNADA</option><option value="T.C.">T.C.</option><option value="T.P.">T.P.</option>';
+    }
+
+    function filtrarTaula() {
+        const fC = document.getElementById('filterCentre').value;
+        const fN = document.getElementById('filterNom').value;
+        const fJ = document.getElementById('filterJornada').value;
+        Array.from(document.querySelectorAll('#listaVacances tr')).forEach(tr => {
+            const vC = tr.cells[0].querySelector('select').value;
+            const vN = tr.cells[1].querySelector('select').value;
+            const vJ = tr.cells[2].querySelector('select').value;
+            tr.style.display = ((!fC || vC === fC) && (!fN || vN === fN) && (!fJ || vJ === fJ)) ? "" : "none";
+        });
+        marcarSeparadors();
+    }
+
+  function renderTable() {
+    const any = document.getElementById('selectAny').value;
+    if(!any) return;
+    const dades = JSON.parse(localStorage.getItem('nyn_vacances_' + any)) || [];
+    const tbody = document.getElementById('listaVacances');
+    tbody.innerHTML = "";
+
+    if (dades.length > 0) {
+        // Fem una còpia de les dades i les invertim per mantenir l'ordre original al fer prepend
+        dades.reverse().forEach(d => {
+            afegirFila(d);
+            // Agafem la fila que acabem de crear (la primera que s'ha inserit)
+            const tr = tbody.rows[0];
+            
+            // BUSQUEM EL SELECT DE CENTRE DINS LA FILA
+            const selectCentre = tr.cells[0].querySelector('select');
+            
+            // Si té un centre triat (que no sigui "-"), disparem l'event de canvi
+            // per a que la funció 'configurarCalendari' s'activi i busqui els festius
+            if (selectCentre && selectCentre.value !== "-") {
+                const event = new Event('change');
+                selectCentre.dispatchEvent(event);
+            }
+        });
+    } else {
+        afegirFila();
+    }
+    ordenarTaula();
+}
+
+
+
+
+
+    function afegirFila(d = {}) {
+        const tbody = document.getElementById('listaVacances');
+        const tr = document.createElement('tr');
+        const cSel = d.c || "-";
+        const nSel = d.n || "-";
+        const j = d.j || "T.C.";
+        tr.innerHTML = `
+            <td class="col-centre" style="background:${colorsMap[cSel] || '#fff'}">
+                <select onchange="canviCentre(this)" style="font-weight:bold;">
+                    <option value="-">-</option>
+                    ${CENTRES.sort().map(v => `<option value="${v}" ${v===cSel?'selected':''}>${v}</option>`).join('')}
+                </select>
+            </td>
+            <td class="col-nom">
+                <select onchange="desar()">
+                    <option value="-">-</option>
+                    ${PLANTILLA.sort().map(v => `<option value="${v}" ${v===nSel?'selected':''}>${v}</option>`).join('')}
+                </select>
+            </td>
+            <td>
+                <select onchange="aplicarColorJornada(this); desar()" style="text-align-last: center;">
+                    <option ${j==='T.C.'?'selected':''}>T.C.</option>
+                    <option ${j==='T.P.'?'selected':''}>T.P.</option>
+                </select>
+            </td>
+            <td style="background:#f9f9f9"><input type="text" class="input-periode" value="${d.p||''}" readonly></td>
+            <td style="background:#fcfcfc"><input type="text" class="input-periode" value="${d.p2||''}" readonly></td>
+            <td class="bg-disfrutats"><input type="number" min="0" value="${d.d||0}" oninput="validarPositiu(this); calcular(this)"></td>
+            <td class="bg-pendents">0</td>
+            <td class="bg-corresp"><input type="number" min="0" value="${d.cor||30}" oninput="validarPositiu(this); calcular(this)"></td>
+            <td class="bg-festiuper"><input type="text" class="input-festius-multi" value="${d.fp||''}" readonly style="font-size:9px; cursor:pointer;"></td>
+            <td class="bg-festius"><input type="number" min="0" value="${d.f||0}" oninput="validarPositiu(this); aplicarColorFestius(this); desar()"></td>
+            <td><input type="text" value="${d.b||'-'}" oninput="desar()"></td>
+            <td><input type="text" style="text-align:left; padding-left:5px" value="${d.obs||''}" oninput="desar()"></td>
+            <td><button class="btn-delete-row" onclick="this.closest('tr').remove(); desar(); marcarSeparadors();">✖</button></td>
+        `;
+        tbody.prepend(tr);
+        configurarCalendari(tr);
+        aplicarColorJornada(tr.cells[2].querySelector('select'));
+        aplicarColorFestius(tr.querySelector('td.bg-festius input'));
+        calcular(tr.querySelector('input[type="number"]'));
+    }
+
+    function canviCentre(sel) { sel.closest('td').style.backgroundColor = colorsMap[sel.value] || "#fff"; desar(); ordenarTaula(); }
+    function ordenarTaula() { const tbody = document.getElementById('listaVacances'); const files = Array.from(tbody.rows); files.sort((a, b) => a.cells[0].querySelector('select').value.localeCompare(b.cells[0].querySelector('select').value)); files.forEach(f => tbody.appendChild(f)); marcarSeparadors(); }
+    function marcarSeparadors() { const files = Array.from(document.querySelectorAll('#listaVacances tr')).filter(tr => tr.style.display !== "none"); files.forEach((tr, index) => { tr.classList.remove('group-start', 'group-item', 'group-end'); const cA = tr.cells[0].querySelector('select').value; if (cA === "-") return; tr.classList.add('group-item'); if (index === 0 || files[index - 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-start'); if (index === files.length - 1 || files[index + 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-end'); }); }
+    function aplicarColorJornada(sel) { sel.style.color = (sel.value === "T.P.") ? "var(--nyn-lila)" : "black"; }
+    function validarPositiu(input) { if (input.value < 0) input.value = 0; }
+    function aplicarColorFestius(input) { const v = parseFloat(input.value) || 0; input.style.fontWeight = (v > 2) ? "bold" : "normal"; input.style.color = (v === 1) ? "#d4ac0d" : (v >= 2) ? "red" : "black"; }
+    
+
+
+function configurarCalendari(tr) {
+    const actualitzarTotAut = () => {
+        const inputP1 = tr.cells[3].querySelector('input');
+        const inputP2 = tr.cells[4].querySelector('input');
+        const centreNom = tr.cells[0].querySelector('select').value.toUpperCase();
+        
+        // --- PART A: CÀLCUL AUTOMÀTIC DE FESTIUS ---
+        if (centreNom !== "-" && (inputP1.value || inputP2.value)) {
+            const extreureDatesDeRang = (val) => {
+                if (!val) return [];
+                const parts = val.includes(" a ") ? val.split(" a ") : val.split(" to ");
+                if (parts.length < 2) return [];
+                const [d1, m1, a1] = parts[0].split("/").map(Number);
+                const [d2, m2, a2] = parts[1].split("/").map(Number);
+                let inici = new Date(a1, m1 - 1, d1), fi = new Date(a2, m2 - 1, d2), llista = [], temp = new Date(inici);
+                while (temp <= fi) {
+                    llista.push(new Date(temp.getFullYear(), temp.getMonth(), temp.getDate()));
+                    temp.setDate(temp.getDate() + 1);
+                }
+                return llista;
+            };
+
+            const totesLesDates = [...extreureDatesDeRang(inputP1.value), ...extreureDatesDeRang(inputP2.value)];
+            let festiusTrobats = [];
+            totesLesDates.forEach(data => {
+                const m = data.getMonth(), d = data.getDate(), clau = `${m}-${d}`;
+                const esReus = centreNom.includes("PALLOL") || centreNom.includes("REUS");
+                const comunes = ["0-1", "0-6", "3-3", "3-6", "4-1", "5-24", "7-15", "8-11", "9-12", "11-8", "11-25", "11-26"];
+                const locals = esReus ? ["5-29", "8-25"] : ["4-25", "8-24"];
+                if (comunes.includes(clau) || locals.includes(clau)) {
+                    festiusTrobats.push(`${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`);
+                }
+            });
+            const festiusUnics = [...new Set(festiusTrobats)];
+            tr.querySelector('.input-festius-multi').value = festiusUnics.join(", ");
+            const inputNumF = tr.querySelector('td.bg-festius input');
+            inputNumF.value = festiusUnics.length;
+            aplicarColorFestius(inputNumF);
+        }
+
+        // --- PART B: CÀLCUL AUTOMÀTIC DE DIES DISFRUTATS (NOVETAT) ---
+        const diesP1 = calcularDiesPassats(inputP1.value);
+        const diesP2 = calcularDiesPassats(inputP2.value);
+        const inputDisfrutats = tr.cells[5].querySelector('input');
+        
+        inputDisfrutats.value = diesP1 + diesP2; // Assignem els dies automàticament
+        
+        calcular(inputDisfrutats); // Això actualitza la columna "Pendents"
+        desar(); // Ho guardem al LocalStorage
+    };
+
+    // Vinculació amb els calendaris
+    tr.querySelectorAll(".input-periode").forEach(input => {
+        flatpickr(input, { 
+            mode: "range", dateFormat: "d/m/Y", locale: "ca", allowInput: true,
+            onClose: () => { actualitzarTotAut(); }
+        });
+    });
+
+    tr.querySelectorAll(".input-festius-multi").forEach(input => {
+        flatpickr(input, { 
+            mode: "multiple", dateFormat: "d/m/Y", locale: "ca", conjunction: ", ",
+            onClose: (dates) => {
+                const inputNum = tr.querySelector('td.bg-festius input');
+                if (inputNum) { inputNum.value = dates.length; aplicarColorFestius(inputNum); }
+                desar();
+            }
+        });
+    });
+
+    const elSelect = tr.cells[0].querySelector('select');
+    elSelect.onchange = (e) => {
+        canviCentre(e.target);
+        actualitzarTotAut(); 
+    };
+}
+
+
+
+function calcularDiesPassats(rang) {
+        if (!rang || (!rang.includes(" a ") && !rang.includes(" to "))) return 0;
+        const separador = rang.includes(" a ") ? " a " : " to ";
+        const parts = rang.split(separador);
+        if (parts.length < 2) return 0;
+
+        const [d1, m1, a1] = parts[0].split("/").map(Number);
+        const [d2, m2, a2] = parts[1].split("/").map(Number);
+        const inici = new Date(a1, m1 - 1, d1);
+        const fi = new Date(a2, m2 - 1, d2);
+        const avui = new Date();
+        avui.setHours(0, 0, 0, 0); 
+
+        if (avui < inici) return 0; 
+        const dataReferencia = (avui > fi) ? fi : avui;
+        const diferenciaMs = dataReferencia - inici;
+        return Math.floor(diferenciaMs / (1000 * 60 * 60 * 24)) + 1;
+    }
+
+
+
+    function calcular(el) { const tr = el.closest('tr'); const d = parseFloat(tr.cells[5].querySelector('input').value) || 0; const c = parseFloat(tr.cells[7].querySelector('input').value) || 0; tr.cells[6].innerText = Math.max(0, c - d); desar(); }
+
+    function desar() { 
+        const any = document.getElementById('selectAny').value;
+        if(!any) return;
+        const rows = Array.from(document.querySelectorAll('#listaVacances tr')).map(tr => ({
+            c: tr.cells[0].querySelector('select').value, 
+            n: tr.cells[1].querySelector('select').value, 
+            j: tr.cells[2].querySelector('select').value, 
+            p: tr.cells[3].querySelector('input').value, 
+            p2: tr.cells[4].querySelector('input').value, 
+            d: tr.cells[5].querySelector('input').value, 
+            cor: tr.cells[7].querySelector('input').value, 
+            fp: tr.cells[8].querySelector('input').value, 
+            f: tr.cells[9].querySelector('input').value, 
+            b: tr.cells[10].querySelector('input').value, 
+            obs: tr.cells[11].querySelector('input').value 
+        }));
+        localStorage.setItem('nyn_vacances_' + any, JSON.stringify(rows)); 
+    }
+
+    function openDeleteModal() { document.getElementById('deleteModal').style.display='block'; updateDeleteOptions(); }
+    
+    function updateDeleteOptions() { 
+        const type = document.getElementById('deleteType').value; 
+        let items = [];
+        if(type === 'centres') items = CENTRES;
+        else if(type === 'plantilla') items = PLANTILLA;
+        else if(type === 'anys') items = ANYS;
+        
+        const sel = document.getElementById('deleteItem'); 
+        sel.innerHTML = items.sort().map(i => `<option value="${i}">${i}</option>`).join(''); 
+        syncEditInput(); 
+    }
+
+    function syncEditInput() { document.getElementById('editInput').value = document.getElementById('deleteItem').value; }
+    
+    function addNewItem() { 
+        const type = document.getElementById('deleteType').value; 
+        const val = document.getElementById('editInput').value.trim(); 
+        if(!val) return; 
+        if(type === 'centres') { if(!CENTRES.includes(val)) CENTRES.push(val); } 
+        else if(type === 'plantilla') { if(!PLANTILLA.includes(val)) PLANTILLA.push(val); }
+        else if(type === 'anys') { if(!ANYS.includes(val)) ANYS.push(val); }
+        saveAndReload(); 
+    }
+
+    function modifyItem() { 
+        const type = document.getElementById('deleteType').value; 
+        const vell = document.getElementById('deleteItem').value; 
+        const nou = document.getElementById('editInput').value.trim(); 
+        if(!nou || vell === nou) return; 
+        if(type === 'centres') { CENTRES = CENTRES.map(c => c === vell ? nou : c); } 
+        else if(type === 'plantilla') { PLANTILLA = PLANTILLA.map(p => p === vell ? nou : p); }
+        else if(type === 'anys') { ANYS = ANYS.map(a => a === vell ? nou : a); }
+        saveAndReload(); 
+    }
+
+    function confirmDelete() { 
+        const type = document.getElementById('deleteType').value; 
+        const val = document.getElementById('deleteItem').value; 
+        if(!confirm(`Segur que vols eliminar "${val}"?`)) return; 
+        if(type === 'centres') CENTRES = CENTRES.filter(i => i !== val); 
+        else if(type === 'plantilla') PLANTILLA = PLANTILLA.filter(i => i !== val); 
+        else if(type === 'anys') ANYS = ANYS.filter(i => i !== val);
+        saveAndReload(); 
+    }
+
+    function saveAndReload() { 
+        localStorage.setItem('nyn_centres', JSON.stringify(CENTRES)); 
+        localStorage.setItem('nyn_plantilla', JSON.stringify(PLANTILLA)); 
+        localStorage.setItem('nyn_anys', JSON.stringify(ANYS));
+        location.reload(); 
+    }
+
+    function registrarExportacio() { const now = new Date(); const dataStr = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); localStorage.setItem('nyn_last_export_' + document.getElementById('selectAny').value, dataStr); document.getElementById('lastExport').innerText = "Última exportació: " + dataStr; }
+    
+    function exportarJSON() { 
+        registrarExportacio(); 
+        const any = document.getElementById('selectAny').value;
+        const dadesBrutes = localStorage.getItem('nyn_vacances_' + any) || "[]";
+        const dadesParsejades = JSON.parse(dadesBrutes);
+        const avui = new Date();
+        const dataStr = avui.getDate().toString().padStart(2, '0') + '-' + (avui.getMonth() + 1).toString().padStart(2, '0') + '-' + avui.getFullYear();
+
+        const exportacioFinal = {
+            any: any,
+            exportatEl: dataStr,
+            dades: dadesParsejades,
+            configuracio: { centres: CENTRES, plantilla: PLANTILLA }
+        };
+
+        const blob = new Blob([JSON.stringify(exportacioFinal, null, 2)], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `Vacances_${any}_${dataStr}.json`; 
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    function importarJSON(e) { 
+        const reader = new FileReader(); 
+        reader.onload = f => { 
+            try {
+                const contingut = JSON.parse(f.target.result);
+                const anyActual = document.getElementById('selectAny').value;
+                let dadesFinals = contingut.dades || contingut;
+                localStorage.setItem('nyn_vacances_' + anyActual, JSON.stringify(dadesFinals)); 
+                location.reload(); 
+            } catch (err) { alert("⚠️ Error al importar."); }
+        }; 
+        reader.readAsText(e.target.files[0]); 
+    }
+
+    function exportarExcel() {
+        registrarExportacio();
+        const any = document.getElementById('selectAny').value;
+        
+        // 1. Recollim totes les files de la taula que no estiguin filtrades
+        const rows = Array.from(document.querySelectorAll('#listaVacances tr'))
+                          .filter(tr => tr.style.display !== "none");
+        
+        if (rows.length === 0) {
+            alert("No hi ha dades visibles per exportar.");
+            return;
+        }
+
+        // 2. Mapegem les dades per a l'Excel (agafant els valors dels inputs i selects)
+        const dadesPerExcel = rows.map(tr => ({
+            "CENTRE": tr.cells[0].querySelector('select').value,
+            "TREBALLADOR/A": tr.cells[1].querySelector('select').value,
+            "JORNADA": tr.cells[2].querySelector('select').value,
+            "1er PERÍODE": tr.cells[3].querySelector('input').value,
+            "2on PERÍODE": tr.cells[4].querySelector('input').value,
+            "DISFRUTATS": parseFloat(tr.cells[5].querySelector('input').value) || 0,
+            "PENDENTS": parseFloat(tr.cells[6].innerText) || 0,
+            "CORRESPONENTS": parseFloat(tr.cells[7].querySelector('input').value) || 0,
+            "FESTIUS PERÍODE": tr.cells[8].querySelector('input').value,
+            "Nº FESTIUS": parseFloat(tr.cells[9].querySelector('input').value) || 0,
+            "BOSSA HORES": tr.cells[10].querySelector('input').value,
+            "OBSERVACIONS": tr.cells[11].querySelector('input').value
+        }));
+
+        // 3. Creem el full de càlcul
+        const worksheet = XLSX.utils.json_to_sheet(dadesPerExcel);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Vacances " + any);
+
+        // 4. Ajustem l'amplada de les columnes perquè es llegeixi bé
+        const wscols = [
+            {wch: 20}, {wch: 25}, {wch: 10}, {wch: 20}, {wch: 20}, 
+            {wch: 12}, {wch: 10}, {wch: 15}, {wch: 30}, {wch: 10}, 
+            {wch: 15}, {wch: 35}
+        ];
+        worksheet['!cols'] = wscols;
+
+        // 5. Generem i descarreguem el fitxer .xlsx
+        const dataAvui = new Date().toISOString().slice(0,10);
+        XLSX.writeFile(workbook, `Vacances_NyN_${any}_exportat_${dataAvui}.xlsx`);
+    }
+    function reiniciarTot() { if(confirm("⚠️ Esborrar tot?")) { localStorage.removeItem('nyn_vacances_' + document.getElementById('selectAny').value); location.reload(); }}
+
+    window.onload = inicialitzar;
+</script>
+</body>
+</html>

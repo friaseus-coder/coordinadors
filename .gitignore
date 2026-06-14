@@ -1,0 +1,8 @@
+coordinadores-app/node_modules/
+coordinadores-app/dist/
+dist/
+distr/
+node_modules/
+**/node_modules/
+**/dist/
+**/distr/

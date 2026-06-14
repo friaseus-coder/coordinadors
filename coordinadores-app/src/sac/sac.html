@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>SAC - incidències pàrkings</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
+    <style>
+        :root {
+            --verd-corporatiu: #004d00;
+            --verd-clar: #e6f2e6;
+            --fons: #ffffff;
+            --text-primari: #333333;
+        }
+        
+        body { 
+            font-family: 'Segoe UI', Tahoma, sans-serif; 
+            margin: 0;
+            padding: 10px;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden; 
+        }
+
+        .contenedor-app {
+            background-color: var(--fons);
+            width: 100%;
+            max-width: 650px; 
+            border: 2px solid var(--verd-corporatiu);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            max-height: 98vh; 
+        }
+
+        .capçalera-app {
+            background-color: var(--verd-corporatiu);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px 10px 0 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .capçalera-titol {
+            margin: 0;
+            text-transform: uppercase;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .capçalera-logo {
+            height: 33px; 
+        }
+
+        .formulari-app {
+            padding: 10px 15px;
+            overflow-y: auto; 
+            flex-grow: 1;
+        }
+
+        label { 
+            display: block; 
+            margin-top: 8px; 
+            font-weight: bold; 
+            color: var(--verd-corporatiu);
+            font-size: 14px;
+        }
+
+        input, textarea, select { 
+            width: 100%; 
+            padding: 8px; 
+            margin-top: 4px; 
+            box-sizing: border-box; 
+            border: 1px solid var(--verd-corporatiu); 
+            border-radius: 4px; 
+            font-size: 14px;
+            color: var(--text-primari);
+        }
+
+        textarea { 
+            height: 110px; 
+            resize: vertical;
+        }
+
+        .opcionals { 
+            background: var(--verd-clar); 
+            padding: 10px 15px; 
+            margin-top: 15px; 
+            border-radius: 8px; 
+            border: 1px dashed var(--verd-corporatiu); 
+        }
+
+        .titol-opcionals {
+            color: var(--verd-corporatiu);
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+            display: block;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-item { 
+            display: flex; 
+            align-items: center; 
+        }
+
+        .checkbox-item input { 
+            width: auto; 
+            margin: 0 6px 0 0; 
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            font-weight: normal;
+            font-size: 13px;
+        }
+
+        .peu-app {
+            padding: 10px 15px;
+            border-top: 1px solid #eee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            background-color: var(--verd-corporatiu); 
+            color: white; 
+            border: none; 
+            border-radius: 6px; 
+            cursor: pointer; 
+            font-size: 16px; 
+            font-weight: bold;
+        }
+
+        button:hover { 
+            background-color: #003300; 
+        }
+
+        .llegenda-beta {
+            font-size: 11px;
+            color: #888;
+            margin-top: 8px;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="contenedor-app">
+        <header class="capçalera-app">
+            <h2 class="capçalera-titol">Gestor d'incidències pàrkings (SAC)</h2>
+            <img src="descarga.png" alt="Grup Núñez i Navarro" class="capçalera-logo">
+        </header>
+
+        <form class="formulari-app" id="formComunicacio">
+            <label for="ubicacio">Selecciona el centre:</label>
+            <select id="ubicacio" required>
+                <option value="" disabled selected>-- Escull el centre --</option>
+                <option value="567 - N.N. ARAGO - Aragón, 182 (JOSEL, S.L.U.)">567 - N.N. ARAGO - Aragón, 182 (JOSEL, S.L.U.)</option>
+                <option value="427 - N.N. BONANOVA - Psg. Bonanova, 59-Escoles Pies, 10 (JOSEL, S.L.U.)">427 - N.N. BONANOVA - Psg. Bonanova, 59-Escoles Pies, 10 (JOSEL, S.L.U.)</option>
+                <option value="675 - N.N. BORRELL - Comte Borrell, 28 (JOSEL, S.L.U.)">675 - N.N. BORRELL - Comte Borrell, 28 (JOSEL, S.L.U.)</option>
+                <option value="667 - N.N. BRUC - Bruc, 103-Valencia, 299 (NUÑEZ IRIS, S.A)">667 - N.N. BRUC - Bruc, 103-Valencia, 299 (NUÑEZ IRIS, S.A)</option>
+                <option value="51 - N.N. CONCEPT - Valencia, 307-313 (JOSEL, S.L.U.)">51 - N.N. CONCEPT - Valencia, 307-313 (JOSEL, S.L.U.)</option>
+                <option value="1335 - N.N. CORSEGA - Còrsega, 344-352 (JOSEL, S.L.U.)">1335 - N.N. CORSEGA - Còrsega, 344-352 (JOSEL, S.L.U.)</option>
+                <option value="304 - N.N. DIAGONAL - Av. Diagonal, 593 (JOSEL, S.L.U.)">304 - N.N. DIAGONAL - Av. Diagonal, 593 (JOSEL, S.L.U.)</option>
+                <option value="1471 - N.N. EL PALLOL - Raval del Pallol, 1 Reus (JOSEL, S.L.U.)">1471 - N.N. EL PALLOL - Raval del Pallol, 1 Reus (JOSEL, S.L.U.)</option>
+                <option value="1460 - N.N. ESTEVE TERRADAS - Esteve Terradas, 17-31 (JOSEL, S.L.U.)">1460 - N.N. ESTEVE TERRADAS - Esteve Terradas, 17-31 (JOSEL, S.L.U.)</option>
+                <option value="1202 - N.N. ESPRONCEDA - Victoria Kent, 1 (JOSEL, S.L.U.)">1202 - N.N. ESPRONCEDA - Victoria Kent, 1 (JOSEL, S.L.U.)</option>
+                <option value="626 - N.N. GEIGLE - Dr. Roux, 69-Via Augusta, 281 (HNOS GEIGLE-EDONU, CB)">626 - N.N. GEIGLE - Dr. Roux, 69-Via Augusta, 281 (HNOS GEIGLE-EDONU, CB)</option>
+                <option value="412 - N.N. HERCEGOVINA - Hercegovina, 19-23 (JOSEL, S.L.U.)">412 - N.N. HERCEGOVINA - Hercegovina, 19-23 (JOSEL, S.L.U.)</option>
+                <option value="1340 - N.N. ILLA AUGUSTA - Via Augusta, 349-355 (JOSEL, S.L.U.)">1340 - N.N. ILLA AUGUSTA - Via Augusta, 349-355 (JOSEL, S.L.U.)</option>
+                <option value="1424 - N.N. LA ROTONDA - Psg de Sant Gervasi, 51-53 (JOSEL, S.L.U.)">1424 - N.N. LA ROTONDA - Psg de Sant Gervasi, 51-53 (JOSEL, S.L.U.)</option>
+                <option value="424 - N.N. LA TAMARITA - Psg de Sant Gervasi, 39 (JOSEL, S.L.U.)">424 - N.N. LA TAMARITA - Psg de Sant Gervasi, 39 (JOSEL, S.L.U.)</option>
+                <option value="2001 - N.N. MASTER CATALONIA - Roselló, 1-13 (JOSEL, S.L.U.)">2001 - N.N. MASTER CATALONIA - Roselló, 1-13 (JOSEL, S.L.U.)</option>
+                <option value="1126 - N.N. PAU ALSINA - Providència, 160-Pau Alsina, 74 (JOSEL, S.L.U.)">1126 - N.N. PAU ALSINA - Providència, 160-Pau Alsina, 74 (JOSEL, S.L.U.)</option>
+                <option value="2004 - N.N. PEDRALBES - Lluis Pericot, 12 (JOSEL, S.L.U.)">2004 - N.N. PEDRALBES - Lluis Pericot, 12 (JOSEL, S.L.U.)</option>
+                <option value="655 - N.N. ROCAFORT - Rocafort, 64-Sepúlveda, 63 (JOSEL, S.L.U.)">655 - N.N. ROCAFORT - Rocafort, 64-Sepúlveda, 63 (JOSEL, S.L.U.)</option>
+                <option value="507 - N.N. SABADELL - Gracia, 51 Sabadell (NN RENTA)">507 - N.N. SABADELL - Gracia, 51 Sabadell (NN RENTA)</option>
+                <option value="974 - N.N. SANT GERVASI - Moragas, 15 (JOSEL, S.L.U.)">974 - N.N. SANT GERVASI - Moragas, 15 (JOSEL, S.L.U.)</option>
+                <option value="656 - N.N. SANTALÓ - Santaló, 14-Avenir, 39 (NUÑEZ SANTALÓ, S.A.)">656 - N.N. SANTALÓ - Santaló, 14-Avenir, 39 (NUÑEZ SANTALÓ, S.A.)</option>
+                <option value="977 - N.N. SENMENAT-2 - Marques Sentmenat, 6 (JOSEL, S.L.U.)">977 - N.N. SENMENAT-2 - Marques Sentmenat, 6 (JOSEL, S.L.U.)</option>
+                <option value="2003 - N.N. TORRE NIN - Tarragona, 141-157 (JOSEL, S.L.U.)">2003 - N.N. TORRE NIN - Tarragona, 141-157 (JOSEL, S.L.U.)</option>
+                <option value="2002 - N.N. TRAVESSERA - Travessera de Gracia, 183-185 (JOSEL, S.L.U.)">2002 - N.N. TRAVESSERA - Travessera de Gracia, 183-185 (JOSEL, S.L.U.)</option>
+                <option value="653 - N.N. URGELL - Córcega, 171-Comte Urgell, 234 (NUÑEZ URGELL, S.A.)">653 - N.N. URGELL - Córcega, 171-Comte Urgell, 234 (NUÑEZ URGELL, S.A.)</option>
+                <option value="674 - N.N. URGELL-2 - Comte d'Urgell, 154-156 (FINAPARK, S.A.)">674 - N.N. URGELL-2 - Comte d'Urgell, 154-156 (FINAPARK, S.A.)</option>
+                <option value="657 - N.N. VALENCIA - Valencia, 375-377 (PANUVA, S.A.)">657 - N.N. VALENCIA - Valencia, 375-377 (PANUVA, S.A.)</option>
+                <option value="260 - N.N. VALENCIA 3 - Valencia, 511-P. Vilaret (JOSEL, S.L.U.)">260 - N.N. VALENCIA 3 - Valencia, 511-P. Vilaret (JOSEL, S.L.U.)</option>
+                <option value="670 - N.N. VALENCIA-2 - Valencia, 245-P-Domingo (PANUFER, S.A.)">670 - N.N. VALENCIA-2 - Valencia, 245-P-Domingo (PANUFER, S.A.)</option>
+                <option value="799 - N.N. ZONA FRANCA - Pg. Zona Franca, 131-139 (JOSEL, S.L.U.)">799 - N.N. ZONA FRANCA - Pg. Zona Franca, 131-139 (JOSEL, S.L.U.)</option>
+                <option value="566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641 (JOSEL, S.L.U.)">566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641 (JOSEL, S.L.U.)</option>
+            </select>
+
+            <label for="zona_especifica">Zona específica de la incidència:</label>
+            <input type="text" id="zona_especifica" placeholder="Ex: Planta -2, rampa d'entrada, plaça 22..." required>
+
+            <label for="assumpte_breu">Resum breu (per l'assumpte):</label>
+            <input type="text" id="assumpte_breu" placeholder="Ex: Enllumenat fos, Mirall trencat" required>
+
+            <label for="motiu">Motiu detallat:</label>
+            <textarea id="motiu" placeholder="Descriviu aquí els detalls..." required></textarea>
+
+            <label for="urgencia">Nivell d'urgència:</label>
+            <select id="urgencia">
+                <option value="baixa">baixa</option>
+                <option value="mitjana" selected>mitjana</option>
+                <option value="alta">alta</option>
+                <option value="urgent">urgent</option>
+                <option value="CRÍTICA">CRÍTICA</option>
+            </select>
+
+            <div class="opcionals">
+                <strong class="titol-opcionals">Còpia opcional a:</strong>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="albert"> <label for="albert">Albert Campins</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="laura"> <label for="laura">Laura Navarro</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="aleix"> <label for="aleix">Aleix Prat</label>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+        <footer class="peu-app">
+            <button type="button" onclick="generarCorreu()">GENERAR CORREU</button>
+            <div class="llegenda-beta">NN pàrkings 2026 v1.0 beta</div>
+        </footer>
+    </div>
+
+    <script>
+        function generarCorreu() {
+            const form = document.getElementById('formComunicacio');
+            if (!form.checkValidity()) {
+                alert("Si us plau, omple tots els camps obligatoris.");
+                return;
+            }
+
+            const centreFull = document.getElementById('ubicacio').value;
+            const zona = document.getElementById('zona_especifica').value;
+            const resum = document.getElementById('assumpte_breu').value;
+            const motiu = document.getElementById('motiu').value;
+            const urgencia = document.getElementById('urgencia').value;
+
+            const ara = new Date();
+            const data = ara.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const hora = ara.toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' }) + "h";
+
+            const parts = centreFull.split(' - ');
+            const adreçaYSocietat = parts[parts.length - 1];
+
+            const to = "SAC@grupnn.com";
+            let cc = "marroyo@nnparkings.com"; 
+            
+            if (document.getElementById('albert').checked) cc += "; acampins@nnparkings.com";
+            if (document.getElementById('laura').checked) cc += "; lnavarrog@nnparkings.com";
+            if (document.getElementById('aleix').checked) cc += "; aprat@nnparkings.com";
+
+            const subject = `nº ${centreFull} - ${resum}`;
+            
+            // Capçalera en minúscules per semblar font més petita amb || i espais extra
+            let header = "*** gestor d'incidències pàrkings - sac  ||  " + data + " - " + hora + " ***\n\n\n";
+
+            let body = header + "Bon dia,\n\n";
+            body += "UBICACIÓ: " + adreçaYSocietat + " - " + zona + "\n";
+            body += "MOTIU:    " + motiu + "\n";
+            body += "URGÈNCIA: " + (urgencia === "CRÍTICA" ? "!!! CRÍTICA !!!" : urgencia) + "\n\n";
+            body += "Gràcies.";
+
+            window.location.href = `mailto:${to}?cc=${cc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+        }
+    </script>
+
+<script>
+// --- VIGILANT PER AL SAC (INCIDÈNCIES) ---
+
+// 1. Funció de Log (imprescindible en cada fitxer)
+function registrarLog(usuari, accio) {
+    const ara = new Date();
+    const dataFormatada = ara.toLocaleString('ca-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    });
+    const nouLog = {
+        data: dataFormatada,
+        usuari: usuari.toUpperCase(),
+        fitxer: "sac.html",
+        accio: accio.trim()
+    };
+    let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+    logs.unshift(nouLog);
+    if (logs.length > 500) logs.pop();
+    localStorage.setItem('nyn_logs', JSON.stringify(logs));
+}
+
+// 2. Modificació de la funció original per incloure el registre
+// Busquem la teva funció generarCorreu() i hi afegim el log al final
+const funcioOriginalGenerarCorreu = generarCorreu;
+
+generarCorreu = function() {
+    // Primer executem la lògica de validació original
+    const form = document.getElementById('formComunicacio');
+    if (form.checkValidity()) {
+        const centre = document.getElementById('ubicacio').value.split(' - ')[0]; // Agafem només el número
+        const resum = document.getElementById('assumpte_breu').value;
+        const urgencia = document.getElementById('urgencia').value.toUpperCase();
+
+        // Enregistrem l'acció abans d'obrir el mailto
+        registrarLog("SISTEMA", `SAC: Generada incidència centre ${centre} [Urgència: ${urgencia}] -> ${resum}`);
+    }
+    
+    // Cridem a la funció original perquè obri el correu
+    funcioOriginalGenerarCorreu();
+};
+
+// 3. Registre de visualització
+window.addEventListener('load', function() {
+    registrarLog("SISTEMA", "SAC: Obert formulari d'incidències");
+});
+</script>
+
+</body>
+</html>

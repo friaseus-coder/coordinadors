@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>NN Control Excés Jornada</title>
+    <script src="../js/persistence.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: white; margin: 0; color: #333; font-size: 11px; display: flex; flex-direction: column; height: 100vh; }
+        
+        .header-top { 
+            background: #008d36; color: white; padding: 0 15px; display: flex; align-items: center; 
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; height: 45px; box-sizing: border-box; z-index: 1000;
+        }
+
+        .title-wrapper { flex-grow: 1; display: flex; justify-content: center; }
+        .header-top h1 { font-size: 13px; font-weight: 800; margin: 0; text-transform: uppercase; white-space: nowrap; }
+        
+        .controls-wrapper { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+        
+        .stats-wrapper { 
+            display: flex; align-items: center; gap: 1px; background: #444; padding: 2px; border-radius: 3px; 
+            font-weight: bold; font-size: 10px; flex-shrink: 0; margin-left: 15px;
+        }
+        .stat-box { padding: 2px 6px; display: flex; flex-direction: row; gap: 4px; align-items: center; height: 24px; color: white; }
+        .stat-label { color: #ddd; font-size: 8.5px; text-transform: uppercase; }
+        .stat-val-red { background: #ff0000; color: white; min-width: 40px; text-align: center; padding: 0 4px; }
+        .stat-val-yellow { background: #ffff00; color: black; min-width: 40px; text-align: center; padding: 0 4px; }
+        .stat-val-black { background: #000000; color: #ffff00; min-width: 40px; text-align: center; padding: 0 4px; }
+        .stat-val-blue { background: #00b0f0; color: white; min-width: 40px; text-align: center; padding: 0 4px; }
+
+        .stats-legend {
+            font-size: 7.5px; color: #bbb; line-height: 1; padding: 0 8px; border-left: 1px solid #555;
+            display: flex; flex-direction: column; justify-content: center; gap: 2px; text-transform: uppercase;
+        }
+
+        .btn-nyn { border: none; padding: 4px 8px; cursor: pointer; font-weight: bold; font-size: 10px; text-transform: uppercase; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 5px; height: 24px; 
+			border-radius: 2px; color: white; }
+        .btn-import { background: #ef6c00 !important; }
+        .btn-export { background: #6a1b9a !important; }
+        .btn-manage { background: #0277bd !important; }
+        .btn-add { background: #ffffff !important; color: #008d36 !important; border: 1px solid #008d36; }
+        
+        .sel-any-header { background: #ffffff; color: #333333; border: 1px solid #ccc; font-weight: bold; padding: 2px 5px; cursor: pointer; border-radius: 2px; outline: none; height: 24px; }
+        
+        .main-container { display: flex; flex: 1; overflow: hidden; }
+        .table-container { flex: 1; overflow: auto; }
+
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; border: none; }
+        
+        th { 
+            background-color: #f0f0f0; color: #444; padding: 2px; text-align: center; font-size: 11px; 
+            border: 1px solid #ddd; font-weight: 400; position: sticky; top: 0; z-index: 900;
+            text-transform: none; 
+        }
+        
+        .thead-double th { top: 0; }
+        .thead-double tr:nth-child(2) th { top: 18px; }
+
+        td { padding: 0 2px; border: 1px solid #eee; font-size: 11px; height: 18px; text-align: center; vertical-align: middle; background-color: white; }
+        
+        .col-centre { width: 150px; text-align: left; padding-left: 5px; font-weight: bold !important; }
+        .col-nom { width: 150px; text-align: left; padding-left: 5px; }
+        .col-jornada { width: 60px; text-align: center; }
+        .col-data { width: 115px; } 
+        .col-obs { width: 300px; text-align: center; }
+        .col-del { width: 30px; font-size: 12px; }
+
+        /* RECUADRE AGRUPACIÓ CENTRE */
+        tr.group-item td:first-child { border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
+        tr.group-start td:first-child { border-top: 1.5px solid black !important; }
+        tr.group-end td:first-child { border-bottom: 1.5px solid black !important; }
+
+        .col-obs input { 
+            width: 100%; border: none; background: transparent; font-family: inherit; font-size: 11px; 
+            text-align: center; outline: none; height: 100%; padding: 0;
+        }
+
+        .col-centre select, .col-nom select, .filter-select, .col-jornada select { 
+            width: 100%; border: none; background: transparent; font-family: inherit; font-size: 11px; 
+            outline: none; color: inherit; cursor: pointer; appearance: none;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="%23666"/></svg>');
+            background-repeat: no-repeat; background-position: right 4px center; padding-right: 12px;
+        }
+        .filter-select { text-align: center; font-size: 10px; font-weight: 400; }
+        
+        .text-tp { color: #9b59b6 !important; font-weight: normal !important; }
+
+        .cell-wrapper { display: flex; align-items: center; width: 100%; height: 100%; }
+        .cell-wrapper input[type="date"] { flex: 1; border: none; background: transparent; font-family: inherit; font-size: 9px; text-align: center; outline: none; height: 100%; }
+        .btn-nc-trigger { width: 15px; border: none; background: transparent; cursor: pointer; color: #ccc; font-size: 9px; padding: 0; }
+        .btn-nc-trigger:hover { color: red; }
+
+        .bg-nc { background-color: #ff4d4d !important; color: white !important; }
+        .bg-conv-dat {  background-color: rgba(241, 196, 15, 0.5) !important; color: #333 !important; }
+        .bg-vac-dat { background-color: #2ecc71 !important; }
+        .bg-noc-dat { background-color: #0070c0 !important; color: white !important; }
+
+        .data-antiga { color: #8e44ad !important;  }
+
+        .header-conveni { background-color: #f1c40f !important; color: black !important; border-color: #d4ac0d !important; }
+        .header-vacances { background-color: #2ecc71 !important; color: white !important; border-color: #27ae60 !important; }
+        .header-nocturn { background-color: #0070c0 !important; color: white !important; border-color: #005fa3 !important; }
+        .header-reajust { background-color: #00b0f0 !important; color: white !important; border-color: #0096ce !important; }
+
+        .side-charts { width: 260px; background: #f9f9f9; border-left: 1px solid #ddd; padding: 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+        .chart-card-ranking { background: white; border: 1px solid #eee; border-radius: 4px; padding: 10px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+        .chart-card-pie { background: white; border: 1px solid #eee; border-radius: 4px; padding: 10px; margin-top: 15px; flex-shrink: 0; }
+        .chart-title { font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: #008d36; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        
+        #rankingTreballadors { flex-grow: 1; }
+        .bar-row { margin-bottom: 4px; }
+        .bar-label { font-size: 8.5px; display: flex; justify-content: space-between; margin-bottom: 1px; }
+        .bar-outer { background: #eee; height: 6px; border-radius: 3px; overflow: hidden; }
+        .bar-inner { height: 100%; background: #008d36; }
+
+        .pie-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px 0; }
+        .pie-chart { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(#f1c40f 0% 0%, #eee 0% 100%); display: flex; align-items: center; justify-content: center; position: relative; }
+        .pie-chart::before { content: ""; position: absolute; width: 48px; height: 48px; background: white; border-radius: 50%; }
+        .pie-percentage { position: relative; font-size: 14px; font-weight: 800; color: #444; }
+        .pie-legend { font-size: 9px; margin-top: 8px; display: flex; gap: 10px; }
+        .legend-item { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 8px; height: 8px; border-radius: 2px; }
+
+        #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border:2px solid #008d36; padding:20px; z-index:2000; box-shadow: 0 0 20px rgba(0,0,0,0.5); width:500px; }
+        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999; }
+    </style>
+</head>
+<body>
+
+<div class="header-top">
+    <div class="controls-wrapper">
+        <select id="anyActual" class="sel-any-header" onchange="canviarAny()"></select>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarJSON(event)">
+        <button class="btn-nyn btn-import" onclick="document.getElementById('importFile').click()">📂 Importar</button>
+        <button class="btn-nyn btn-export" onclick="exportarJSON()">💾 Exportar</button>
+        <button class="btn-nyn btn-manage" onclick="obrirGestio()">⚙️ Gestionar Dades</button>
+        <button class="btn-nyn btn-add" onclick="afegirFila()">✚ Fila Nova</button>
+    </div>
+
+    <div class="stats-wrapper">
+        <div class="stat-box"><span class="stat-label">% pendent:</span><span id="statPendentPct" class="stat-val-red">0%</span></div>
+        <div class="stat-box"><span class="stat-label">% liquidat:</span><span id="statLiquidatPct" class="stat-val-yellow">0%</span></div>
+        <div class="stat-box"><span class="stat-label">totals:</span><span id="statTotals" class="stat-val-black">0</span></div>
+        <div class="stat-box"><span class="stat-label">pendents:</span><span id="statPendentAbs" class="stat-val-blue">0</span></div>
+        <div class="stats-legend">
+            <span id="countFiles">nº files: 0</span>
+            <span id="countCelles">nº cel·les: 0</span>
+        </div>
+    </div>
+    <span id="llegendaExportDeutes" style="margin-left: 15px; font-size: 11px; color: #111; border-left: 1px solid #ccc; padding-left: 10px; display: inline-block; vertical-align: middle;">
+        Darrera exportació: Cap dada encara
+    </span>
+    <div class="title-wrapper">
+        <h1 id="titolPrincipal">Control Excés Jornada</h1>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="table-container">
+        <table id="taulaPrincipal">
+            <thead id="capTaula" class="thead-double"></thead>
+            <tbody id="cosTaula"></tbody>
+        </table>
+    </div>
+
+    <div class="side-charts">
+        <div class="chart-card-ranking">
+            <div class="chart-title">rànquing gaudits (%)</div>
+            <div id="rankingTreballadors"></div>
+        </div>
+        <div class="chart-card-pie">
+            <div class="chart-title">estat global anual</div>
+            <div class="pie-container">
+                <div class="pie-chart" id="pieChart"><span class="pie-percentage" id="piePctText">0%</span></div>
+                <div class="pie-legend">
+                    <div class="legend-item"><div class="dot" style="background:#f1c40f"></div><span>Liquidat</span></div>
+                    <div class="legend-item"><div class="dot" style="background:#eee"></div><span>Pendent</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="overlay" onclick="tancarGestio()"></div>
+<div id="modalGestio">
+    <h3 style="margin-top:0; color:#008d36;">Configuració</h3>
+    <div style="display:flex; gap:20px;">
+        <div style="flex:1;">
+            <strong>Centres:</strong>
+            <div id="llistaCentresModal" style="max-height:100px; overflow-y:auto; border:1px solid #eee; margin-bottom:5px;"></div>
+            <div style="display:flex; gap:3px;"><input type="text" id="nouCentre" style="width:70%"><button onclick="afegirMestre('centres', 'nouCentre')">+</button></div>
+        </div>
+        <div style="flex:1;">
+            <strong>Treballadors:</strong>
+            <div id="llistaNomsModal" style="max-height:100px; overflow-y:auto; border:1px solid #eee; margin-bottom:5px;"></div>
+            <div style="display:flex; gap:3px;"><input type="text" id="nouNom" style="width:70%"><button onclick="afegirMestre('noms', 'nouNom')">+</button></div>
+        </div>
+    </div>
+    <hr>
+    <strong>Anys i Dies d'Excés:</strong>
+    <div id="llistaAnysModal" style="max-height:80px; overflow-y:auto; margin-bottom:5px;"></div>
+    <div style="display:flex; gap:5px;"><input type="number" id="nouAnyVal" placeholder="2028" style="width:80px"><input type="number" id="nousDiesVal" placeholder="Dies" style="width:60px"><button onclick="afegirAnyConfig()">Afegir Any</button></div>
+    <button onclick="tancarGestio()" style="width:100%; padding:10px; background:#008d36; color:white; border:none; font-weight:bold; cursor:pointer; margin-top:10px;">TANCAR I APLICAR</button>
+</div>
+
+<script>
+    let dadesGlobals = { "2026": [] }; 
+    let mestres = { centres: ["-"], noms: ["-"] };
+    let configAnys = { "2026": 5 };
+    let anySeleccionat = "2026";
+    let colorsCentresMap = {};
+
+    function guardarAlLocal() { localStorage.setItem('dadesControlJornada', JSON.stringify({ dadesGlobals, mestres, configAnys, anySeleccionat, colorsCentresMap })); }
+    
+    function carregarDelLocal() {
+        const d = localStorage.getItem('dadesControlJornada');
+        if (d) {
+            const p = JSON.parse(d);
+            dadesGlobals = p.dadesGlobals || dadesGlobals;
+            mestres = p.mestres || { centres: ["-"], noms: ["-"] };
+            configAnys = p.configAnys || { "2026": 5 };
+            anySeleccionat = p.anySeleccionat || "2026";
+            colorsCentresMap = p.colorsCentresMap || {};
+        }
+        reassignarColors(); 
+    }
+
+    function reassignarColors() {
+        const llistaCentres = (mestres.centres || []).filter(c => c !== "-");
+        llistaCentres.forEach((centre, i) => {
+            const hue = (i * (360 / Math.max(1, llistaCentres.length))) % 360;
+            colorsCentresMap[centre] = `hsl(${hue}, 85%, 92%)`;
+        });
+    }
+
+    function calcularStats() {
+        const llistaActual = dadesGlobals[anySeleccionat] || [];
+        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
+        const totalColsPerFila = numExces + 5; 
+        
+        const filesAComptar = llistaActual; 
+        
+        let totalCellesGlobals = filesAComptar.length * totalColsPerFila;
+        let liquidatsGlobals = 0;
+        let statsPerTreballador = [];
+
+        filesAComptar.forEach(t => {
+            let userLiquidats = 0;
+            if (t.d) {
+                for(let i=0; i < totalColsPerFila; i++) {
+                    let valor = (t.d[i]) ? t.d[i].toString().trim() : "";
+                    if (valor !== "") {
+                        userLiquidats++;
+                        liquidatsGlobals++;
+                    }
+                }
+            }
+            if (t.nom !== "-") {
+                statsPerTreballador.push({ 
+                    nom: t.nom, 
+                    pct: (userLiquidats / totalColsPerFila) * 100 
+                });
+            }
+        });
+
+        const liquidatPct = totalCellesGlobals > 0 ? (liquidatsGlobals / totalCellesGlobals * 100) : 0;
+        
+        document.getElementById('statTotals').innerText = totalCellesGlobals;
+        document.getElementById('statPendentAbs').innerText = totalCellesGlobals - liquidatsGlobals;
+        document.getElementById('statLiquidatPct').innerText = liquidatPct.toFixed(1) + "%";
+        document.getElementById('statPendentPct').innerText = (100 - liquidatPct).toFixed(1) + "%";
+        
+        document.getElementById('countFiles').innerText = "nº files: " + llistaActual.length;
+        document.getElementById('countCelles').innerText = "nº cel·les: " + totalCellesGlobals;
+
+        const pieChart = document.getElementById('pieChart');
+        if (pieChart) {
+            pieChart.style.background = `conic-gradient(#f1c40f 0% ${liquidatPct}%, #eeeeee ${liquidatPct}% 100%)`;
+        }
+        document.getElementById('piePctText').innerText = Math.round(liquidatPct) + "%";
+
+        statsPerTreballador.sort((a,b) => b.pct - a.pct);
+        document.getElementById('rankingTreballadors').innerHTML = statsPerTreballador.map(s => `
+            <div class="bar-row">
+                <div class="bar-label"><span>${s.nom}</span><b>${s.pct.toFixed(0)}%</b></div>
+                <div class="bar-outer"><div class="bar-inner" style="width:${s.pct}%"></div></div>
+            </div>
+        `).join('');
+    }
+
+    function canviarAny() {
+        anySeleccionat = document.getElementById('anyActual').value;
+        if (!dadesGlobals[anySeleccionat]) dadesGlobals[anySeleccionat] = [];
+        guardarAlLocal(); renderCapcalera(); renderTable();
+    }
+
+    function renderCapcalera() {
+        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
+        const cap = document.getElementById('capTaula');
+        document.getElementById('titolPrincipal').innerText = `Control Excés Jornada ${anySeleccionat}`;
+        
+        cap.innerHTML = `
+            <tr>
+                <th rowspan="2" class="col-centre"><select id="selCentre" class="filter-select" onchange="renderTable()"></select></th>
+                <th rowspan="2" class="col-nom"><select id="selNom" class="filter-select" onchange="renderTable()"></select></th>
+                <th rowspan="2" class="col-jornada"><select id="selJornada" class="filter-select" onchange="renderTable()">
+                    <option value="">Jornada</option>
+                    <option value="T.C.">T.C.</option>
+                    <option value="T.P.">T.P.</option>
+                </select></th>
+                <th colspan="${numExces + 1}">dies d'excés</th>
+                <th colspan="4" class="header-reajust">reajust</th>
+                <th rowspan="2" class="col-obs">observacions</th>
+                <th rowspan="2" class="col-del">🗑️</th>
+            </tr>
+            <tr>
+                ${Array.from({length: numExces}, (_, i) => `<th class="col-data">e${i+1}</th>`).join('')}
+                <th class="header-conveni">conveni</th>
+                <th class="header-vacances">vacances</th>
+                <th colspan="3" class="header-nocturn">nocturn</th>
+            </tr>`;
+        poblarFiltres();
+    }
+
+    function renderTable() {
+        const filtreC = document.getElementById('selCentre').value;
+        const filtreN = document.getElementById('selNom').value;
+        const filtreJ = document.getElementById('selJornada') ? document.getElementById('selJornada').value : "";
+        const cos = document.getElementById('cosTaula');
+        cos.innerHTML = "";
+        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
+        const totalCols = numExces + 5;
+        const llistaActual = dadesGlobals[anySeleccionat] || [];
+        const anyAvui = new Date().getFullYear();
+
+        llistaActual.forEach((treb, idx) => {
+            if (!treb.jornada) treb.jornada = "T.C."; 
+
+            if ((filtreC === "" || treb.centre === filtreC) && (filtreN === "" || treb.nom === filtreN) && (filtreJ === "" || treb.jornada === filtreJ)) {
+                let fila = document.createElement('tr');
+                const bgColor = treb.centre !== "-" ? (colorsCentresMap[treb.centre] || "#fff") : "#fff";
+                const claseTP = treb.jornada === "T.P." ? "text-tp" : "";
+                
+                let html = `<td class="col-centre" style="background-color:${bgColor}"><select style="font-weight:bold" onchange="actualitzarDada(${idx}, 'centre', this.value)">`;
+                mestres.centres.forEach(c => html += `<option value="${c}" ${treb.centre===c?'selected':''}>${c}</option>`);
+                html += `</select></td><td class="col-nom"><select onchange="actualitzarDada(${idx}, 'nom', this.value)">`;
+                mestres.noms.forEach(n => html += `<option value="${n}" ${treb.nom===n?'selected':''}>${n}</option>`);
+                html += `</select></td><td class="col-jornada"><select class="${claseTP}" style="text-align-last: center;" onchange="actualitzarDada(${idx}, 'jornada', this.value)">
+                    <option value="T.C." ${treb.jornada==='T.C.'?'selected':''}>T.C.</option>
+                    <option value="T.P." ${treb.jornada==='T.P.'?'selected':''}>T.P.</option>
+                </select></td>`;
+                
+                for(let i=0; i<totalCols; i++) {
+                    let valor = (treb.d && treb.d[i]) ? treb.d[i].toString().trim() : "";
+                    let colorCls = "";
+                    let estilDataCls = ""; 
+                    
+                    if (valor === "NC") {
+                        colorCls = "bg-nc";
+                    } else if (valor !== "") {
+                        const parts = valor.split('-');
+                        if (parts.length === 3) {
+                            if (parseInt(parts[0]) < anyAvui) estilDataCls = "data-antiga";
+                        }
+                        if (i === numExces) colorCls = "bg-conv-dat";
+                        else if (i === numExces + 1) colorCls = "bg-vac-dat";
+                        else if (i > numExces + 1) colorCls = "bg-noc-dat";
+                    }
+
+                    let intensitat = 248 - (i * (48 / Math.max(1, numExces))); 
+                    let estilGris = (valor !== "" && valor !== "NC" && i < numExces) ? 
+                        `background-color: rgb(${intensitat}, ${intensitat}, ${intensitat}) !important;` : "";
+
+                    let inputVal = (valor === "NC") ? "" : valor;
+
+                    html += `<td class="col-data ${colorCls}" style="${estilGris}">
+                        <div class="cell-wrapper">
+                            <button class="btn-nc-trigger" onclick="marcarNC(${idx}, ${i})" title="No Correspon">x</button>
+                            <input type="date" class="${estilDataCls}" value="${inputVal}" onchange="guardarDiaInstant(${idx}, ${i}, this.value)">
+                        </div>
+                    </td>`;
+                }
+
+                html += `<td class="col-obs"><input type="text" value="${treb.obs||''}" onchange="dadesGlobals['${anySeleccionat}'][${idx}].obs=this.value; guardarAlLocal();"></td>`;
+                html += `<td class="col-del"><span style="cursor:pointer" onclick="esborrarFila(${idx})">✖</span></td>`;
+                fila.innerHTML = html; cos.appendChild(fila);
+            }
+        });
+        marcarSeparadors();
+        calcularStats();
+    }
+
+    function marcarSeparadors() {
+        const files = Array.from(document.querySelectorAll('#cosTaula tr')).filter(tr => tr.style.display !== "none");
+        files.forEach((tr, index) => {
+            tr.classList.remove('group-start', 'group-item', 'group-end');
+            const cA = tr.cells[0].querySelector('select').value;
+            if (cA === "-") return;
+            tr.classList.add('group-item');
+            if (index === 0 || files[index - 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-start');
+            if (index === files.length - 1 || files[index + 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-end');
+        });
+    }
+
+    function marcarNC(idx, diaIdx) {
+        if(!dadesGlobals[anySeleccionat][idx].d) dadesGlobals[anySeleccionat][idx].d = [];
+        let actual = dadesGlobals[anySeleccionat][idx].d[diaIdx];
+        dadesGlobals[anySeleccionat][idx].d[diaIdx] = (actual === "NC") ? "" : "NC";
+        guardarAlLocal(); renderTable();
+    }
+
+    function guardarDiaInstant(idx, diaIdx, valor) {
+        if(!dadesGlobals[anySeleccionat][idx].d) dadesGlobals[anySeleccionat][idx].d = [];
+        dadesGlobals[anySeleccionat][idx].d[diaIdx] = valor; 
+        guardarAlLocal(); renderTable(); 
+    }
+
+    function actualitzarDada(idx, camp, valor) { 
+        dadesGlobals[anySeleccionat][idx][camp] = valor; 
+        if (camp !== 'jornada' && valor !== "-") dadesGlobals[anySeleccionat].sort((a,b) => a.centre.localeCompare(b.centre) || a.nom.localeCompare(b.nom)); 
+        guardarAlLocal(); renderTable(); 
+    }
+
+    function afegirFila() { 
+        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
+        const totalCols = numExces + 5;
+        let nousDies = [];
+        for(let i = 0; i < totalCols; i++) { nousDies[i] = ""; }
+        dadesGlobals[anySeleccionat].unshift({ centre: "-", nom: "-", jornada: "T.C.", d: nousDies, obs: "" }); 
+        guardarAlLocal(); 
+        renderTable();
+    }
+
+    function esborrarFila(idx) { 
+        if(confirm("eliminar fila?")) { dadesGlobals[anySeleccionat].splice(idx, 1); guardarAlLocal(); renderTable(); } 
+    }
+
+    function importarJSON(event) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const json = JSON.parse(e.target.result);
+                const dataLocal = parseInt(localStorage.getItem('nyn_deutes_export_raw')) || 0;
+                const dataImportada = json.METADATA_EXPORT_RAW || 0;
+                if (dataImportada < dataLocal && dataImportada !== 0) {
+                    const conf = confirm(`⚠️ ATENCIÓ: Estàs intentant importar un fitxer MÉS ANTIC...\n\nData fitxer: ${json.METADATA_EXPORT_DATA}\nData actual: ${localStorage.getItem('nyn_deutes_export_data')}\n\nSegur?`);
+                    if (!conf) return;
+                }
+                if (json.configAnys) configAnys = json.configAnys;
+                if (json.mestres) mestres = json.mestres;
+                if (json.dades) dadesGlobals = json.dades; 
+                else if (json["2026"]) dadesGlobals = json;
+                if (json.METADATA_EXPORT_DATA) {
+                    localStorage.setItem('nyn_deutes_export_data', json.METADATA_EXPORT_DATA);
+                    localStorage.setItem('nyn_deutes_export_autor', json.METADATA_EXPORT_AUTOR);
+                    localStorage.setItem('nyn_deutes_export_raw', json.METADATA_EXPORT_RAW);
+                }
+                reassignarColors(); 
+                guardarAlLocal(); 
+                actualitzarSelectorsAny(); 
+                renderCapcalera(); 
+                renderTable();
+                refrescarLlegendaDeutes();
+                alert("✅ Importació completada.");
+            } catch (err) { alert("❌ Fitxer no vàlid."); }
+        };
+        reader.readAsText(event.target.files[0]);
+    }
+
+    function exportarJSON() {
+        const ara = new Date();
+        const timestampRaw = ara.getTime(); 
+        const dataFormatada = ara.toLocaleString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        const dataNomFitxer = ara.toLocaleDateString('ca-ES').replace(/\//g, '-');
+        const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
+        let autorLog = "SISTEMA";
+        if (nomSencer.toUpperCase().includes("ALBERT")) autorLog = "ALBERT";
+        else if (nomSencer.toUpperCase().includes("LAURA")) autorLog = "LAURA";
+        const dadesAExportar = { dades: dadesGlobals, mestres: mestres, configAnys: configAnys, METADATA_EXPORT_DATA: dataFormatada, METADATA_EXPORT_AUTOR: autorLog, METADATA_EXPORT_RAW: timestampRaw };
+        localStorage.setItem('nyn_deutes_export_data', dataFormatada);
+        localStorage.setItem('nyn_deutes_export_autor', autorLog);
+        localStorage.setItem('nyn_deutes_export_raw', timestampRaw); 
+        refrescarLlegendaDeutes();
+        const blob = new Blob([JSON.stringify(dadesAExportar, null, 2)], {type: "application/json"});
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `deutes_${dataNomFitxer}_${autorLog}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    function refrescarLlegendaDeutes() {
+        const data = localStorage.getItem('nyn_deutes_export_data');
+        const autor = localStorage.getItem('nyn_deutes_export_autor');
+        const el = document.getElementById('llegendaExportDeutes');
+        const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
+        let joSoc = "SISTEMA";
+        if (nomSencer.toUpperCase().includes("ALBERT")) joSoc = "ALBERT";
+        else if (nomSencer.toUpperCase().includes("LAURA")) joSoc = "LAURA";
+        if (el) {
+            if (data && autor) {
+                el.innerHTML = `| Darrera exportació: ${data} (per ${autor})`;
+                if (autor !== joSoc && autor !== "SISTEMA") {
+                    el.style.color = "#d35400"; el.style.backgroundColor = "#fff3cd"; el.style.padding = "2px 8px"; el.style.borderRadius = "4px";
+                } else { el.style.color = "#111"; el.style.backgroundColor = "transparent"; }
+            } else { el.innerHTML = "| Darrera exportació: Cap dada encara"; }
+        }
+    }
+
+    function actualitzarSelectorsAny() {
+        document.getElementById('anyActual').innerHTML = Object.keys(configAnys).sort().map(a => `<option value="${a}" ${a===anySeleccionat?'selected':''}>${a}</option>`).join('');
+    }
+    
+    function obrirGestio() { document.getElementById('modalGestio').style.display='block'; document.getElementById('overlay').style.display='block'; actualitzarLlistesModal(); }
+    function tancarGestio() { document.getElementById('modalGestio').style.display='none'; document.getElementById('overlay').style.display='none'; reassignarColors(); renderCapcalera(); renderTable(); }
+    
+    function afegirMestre(tipus, inputId) { 
+        const v = document.getElementById(inputId).value.trim(); 
+        if(v && !mestres[tipus].includes(v)) { 
+            mestres[tipus].push(v); mestres[tipus].sort((a, b) => a.localeCompare(b));
+            document.getElementById(inputId).value=""; guardarAlLocal(); actualitzarLlistesModal(); 
+        } 
+    }
+
+    function borrarMestre(tipus, v) { 
+        if(v==="-") return; 
+        mestres[tipus] = (mestres[tipus] || []).filter(x => x!==v); 
+        guardarAlLocal(); actualitzarLlistesModal(); 
+    }
+
+    function afegirAnyConfig() { 
+        const a = document.getElementById('nouAnyVal').value; const d = parseInt(document.getElementById('nousDiesVal').value); 
+        if (a && d) { configAnys[a] = d; if (!dadesGlobals[a]) dadesGlobals[a] = []; guardarAlLocal(); actualitzarSelectorsAny(); actualitzarLlistesModal(); } 
+    }
+
+    function actualitzarLlistesModal() {
+        ['centres', 'noms'].forEach(t => {
+            document.getElementById(`llista${t.charAt(0).toUpperCase()+t.slice(1)}Modal`).innerHTML = (mestres[t] || []).map(v => `<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;"><span>${v}</span>${v!=='-' ? `<span style="color:red;cursor:pointer" onclick="borrarMestre('${t}','${v}')">✖</span>`:''}</div>`).join('');
+        });
+        document.getElementById('llistaAnysModal').innerHTML = Object.keys(configAnys).sort().map(a => `<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;"><span>any ${a} (${configAnys[a]} dies)</span></div>`).join('');
+    }
+    
+    function poblarFiltres() {
+        const selC = document.getElementById('selCentre');
+        const selN = document.getElementById('selNom');
+        if(selC) selC.innerHTML = '<option value="">centre</option>' + (mestres.centres || []).filter(c=>c!=="-").map(c => `<option value="${c}">${c}</option>`).join('');
+        if(selN) selN.innerHTML = '<option value="">nom treballador</option>' + (mestres.noms || []).filter(n=>n!=="-").map(n => `<option value="${n}">${n}</option>`).join('');
+    }
+
+    window.onload = async () => { 
+        await persistence.syncLoad('deutes');
+        carregarDelLocal(); 
+        actualitzarSelectorsAny(); 
+        renderCapcalera(); 
+        renderTable(); 
+        refrescarLlegendaDeutes(); 
+    };
+</script>
+</body>
+</html>

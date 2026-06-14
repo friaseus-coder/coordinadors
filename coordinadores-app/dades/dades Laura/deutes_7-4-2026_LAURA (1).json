@@ -1,0 +1,1824 @@
+{
+  "dades": {
+    "2026": [
+      {
+        "centre": "NN ARAGÓ",
+        "nom": "Pia Fiorella",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN BONANOVA",
+        "nom": "Carlos Jurado",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN BONANOVA",
+        "nom": "José Luis Rey",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN BORRELL",
+        "nom": "Alexis Raza",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN BORRELL",
+        "nom": "Ariadna bergés",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN BORRELL",
+        "nom": "Ignacio Álvarez",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN BORRELL",
+        "nom": "Marta Medina",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN BORRELL",
+        "nom": "Noemí Álvarez",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN BRUC",
+        "nom": "Arnau Tarradas",
+        "d": [
+          "2026-01-22",
+          "2026-01-23",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN BRUC",
+        "nom": "Ilune Díaz",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN BRUC",
+        "nom": "J.A.L. Lama",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN BRUC",
+        "nom": "José Luis Arceiz",
+        "d": [
+          "2026-02-13",
+          "2026-02-16",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN BRUC",
+        "nom": "Laura Puig",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN BRUC",
+        "nom": "Miguel Hernández",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN CONCEPT",
+        "nom": "Ainara Álvarez",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN CONCEPT",
+        "nom": "Ainhoa Díaz",
+        "d": [
+          "2026-02-16",
+          "2026-02-17",
+          "2026-02-18",
+          "2026-02-19",
+          "2026-05-11",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN CORSEGA",
+        "nom": "Alex Benito",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN CORSEGA",
+        "nom": "Arnau Rodríguez",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN CORSEGA",
+        "nom": "Cintia García",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "2026-03-10",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN CORSEGA",
+        "nom": "Natalia Lozano",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN CORSEGA",
+        "nom": "Yaiza Jiménez",
+        "d": [
+          "2025-12-19",
+          "2026-03-06",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN DIAGONAL",
+        "nom": "Mustapha Moukati",
+        "d": [
+          "2026-03-20",
+          "2026-04-07",
+          "2026-04-08",
+          "2026-04-09",
+          "2026-04-10",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN EL PALLOL",
+        "nom": "Fran Díaz",
+        "d": [
+          "2026-03-23",
+          "2026-03-24",
+          "2026-03-25",
+          "2026-03-26",
+          "2026-03-27",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN EL PALLOL",
+        "nom": "Jordi Prió",
+        "d": [
+          "2026-03-06",
+          "2026-03-09",
+          "2026-03-10",
+          "2026-03-12",
+          "2026-03-13",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN EL PALLOL",
+        "nom": "Laura Perales",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN EL PALLOL",
+        "nom": "Mónica Jornet",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN EL PALLOL",
+        "nom": "Núria de La Torre",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN EL PALLOL",
+        "nom": "Olesia Voronkina",
+        "d": [
+          "2026-03-16",
+          "2026-03-17",
+          "2026-03-18",
+          "2026-03-19",
+          "2026-03-20",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN ESPRONCEDA",
+        "nom": "Montse Álvarez",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN ESTEVE TARRADAS",
+        "nom": "Marta Cortés",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN ESTEVE TARRADAS",
+        "nom": "Yaiza Caballero",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN GEIGLE",
+        "nom": "Aida Miravitlles",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN GEIGLE",
+        "nom": "Andrea Donoso",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN GRAN VIA",
+        "nom": "Sara Álvarez",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "2026-03-30",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN HERCEGOVINA",
+        "nom": "Andrea Leyton",
+        "d": [
+          "2026-02-16",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN HERCEGOVINA",
+        "nom": "Carla Català",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN HERCEGOVINA",
+        "nom": "Eloi Esteve",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN HERCEGOVINA",
+        "nom": "Eva palleiro",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN HERCEGOVINA",
+        "nom": "Nickole Gonzales",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN HERCEGOVINA",
+        "nom": "Salomé Barba",
+        "d": [
+          "2026-02-12",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN LA ROTONDA",
+        "nom": "Samuel Hidalgo",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN MASTER CATALONIA",
+        "nom": "Noelia Rondón",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN MASTER CATALONIA",
+        "nom": "Oscar Reche",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN PEDRALBES",
+        "nom": "Javier Castro",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN ROCAFORT",
+        "nom": "Ariadna jimenez",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN ROCAFORT",
+        "nom": "Genís Vargas",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN ROCAFORT",
+        "nom": "Luis López",
+        "d": [
+          "2026-04-07",
+          "2026-04-08",
+          "2026-04-09",
+          "2026-04-10",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN SANT GERVASI",
+        "nom": "Adriana Carbajo",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN SANT GERVASI",
+        "nom": "Carla Condeminas",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "2026-01-07",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN SANT GERVASI",
+        "nom": "Fsco. Javier Toro",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN SANT GERVASI",
+        "nom": "Maryam Kaichouh",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "2026-03-22",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN SANT GERVASI",
+        "nom": "Raúl Castillo",
+        "d": [
+          "2026-03-06",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN SANT GERVASI",
+        "nom": "Robert Suarez",
+        "d": [
+          "2026-03-27",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN SANTALÓ",
+        "nom": "Marta Díaz",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "2026-03-06",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN SANTALÓ",
+        "nom": "Pilar Cabezuelo",
+        "d": [
+          "2026-02-13",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN SENTMENAT 2",
+        "nom": "Enric Grau",
+        "d": [
+          "2026-03-17",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "2026-02-27",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN SENTMENAT 2",
+        "nom": "Marta Fontanet",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "2026-03-05",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN TAMARITA",
+        "nom": "José Luis Baldán",
+        "d": [
+          "2026-02-13",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN TAMARITA",
+        "nom": "Josefa Royo",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN TARRAGONA",
+        "nom": "José Espinosa",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN TARRAGONA",
+        "nom": "Sebastián Botaya",
+        "d": [
+          "2026-02-20",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN TRAVESSERA",
+        "nom": "José Vicente Minguez",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN TRAVESSERA",
+        "nom": "Manuela García",
+        "d": [
+          "2026-04-02",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN TRAVESSERA",
+        "nom": "Vicente Mínguez",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN URGELL",
+        "nom": "Aina Martínez",
+        "d": [
+          "2026-02-16",
+          "",
+          "",
+          "",
+          "",
+          "2026-02-10",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN URGELL",
+        "nom": "Claudia Galeano",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "2026-05-16",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN URGELL",
+        "nom": "Enric Miralles",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN URGELL",
+        "nom": "Gabriel Molina",
+        "d": [
+          "2026-02-19",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN URGELL",
+        "nom": "Raúl Ligero",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN URGELL",
+        "nom": "Varónica Ramírez",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN URGELL 2",
+        "nom": "Álex García",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN URGELL 2",
+        "nom": "Ariadna Frias",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN URGELL 2",
+        "nom": "Dicra El Adlani",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN URGELL 2",
+        "nom": "Esteban garcía",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN URGELL 2",
+        "nom": "Joan Ramón Gómez",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN URGELL 2",
+        "nom": "Pere Arellano",
+        "d": [
+          "2026-04-17",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN VALENCIA",
+        "nom": "Diana Cruz",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA",
+        "nom": "Eva Rodriguez",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA",
+        "nom": "Julia Vergara",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN VALENCIA",
+        "nom": "Nadia Haraga",
+        "d": [
+          "2026-01-15",
+          "2026-02-27",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN VALENCIA 2",
+        "nom": "Cristian Balsam",
+        "d": [
+          "2026-05-26",
+          "2026-05-27",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN VALENCIA 2",
+        "nom": "Jordi Vargas",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA 2",
+        "nom": "Laila Hamzoui",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "2026-01-15",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA 2",
+        "nom": "Marina Torrens",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN VALENCIA 2",
+        "nom": "Raquel Martin",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA 3",
+        "nom": "Aina Palacio",
+        "d": [
+          "2026-02-19",
+          "",
+          "",
+          "",
+          "",
+          "2026-01-02",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN VALENCIA 3",
+        "nom": "Carles Nunell",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "2026-02-27",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA 3",
+        "nom": "Fatima Sy",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA 3",
+        "nom": "Jessica Muñoz",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "2026-01-05",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "NN VALENCIA 3",
+        "nom": "Lydia Godoy",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VALENCIA 3",
+        "nom": "Manuel Bouso",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      },
+      {
+        "centre": "NN VIA AUGUSTA",
+        "nom": "Laura Gómez",
+        "d": [
+          "",
+          "",
+          "",
+          "",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.C."
+      },
+      {
+        "centre": "ZONA FRANCA",
+        "nom": "Claudia Calderón",
+        "d": [
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "NC",
+          "",
+          "",
+          "NC",
+          "NC",
+          "NC"
+        ],
+        "obs": "",
+        "jornada": "T.P."
+      }
+    ],
+    "2027": []
+  },
+  "mestres": {
+    "centres": [
+      "-",
+      "NN ARAGÓ",
+      "NN BONANOVA",
+      "NN BORRELL",
+      "NN BRUC",
+      "NN CONCEPT",
+      "NN CORSEGA",
+      "NN DIAGONAL",
+      "NN EL PALLOL",
+      "NN ESPRONCEDA",
+      "NN ESTEVE TARRADAS",
+      "NN GEIGLE",
+      "NN GRAN VIA",
+      "NN HERCEGOVINA",
+      "NN LA ROTONDA",
+      "NN MASTER",
+      "NN MASTER CATALONIA",
+      "NN PEDRALBES",
+      "NN ROCAFORT",
+      "NN SANT GERVASI",
+      "NN SANTALÓ",
+      "NN SENTMENAT 2",
+      "NN TAMARITA",
+      "NN TARRAGONA",
+      "NN TRAVESSERA",
+      "NN URGELL",
+      "NN URGELL 2",
+      "NN VALENCIA",
+      "NN VALENCIA 2",
+      "NN VALENCIA 3",
+      "NN VIA AUGUSTA",
+      "ZONA FRANCA"
+    ],
+    "noms": [
+      "-",
+      "Adriana Carbajo",
+      "Adriana leyton",
+      "Aida Miravitlles",
+      "Aina Martínez",
+      "Aina Palacio",
+      "Ainara Álvarez",
+      "Ainhoa Díaz",
+      "Alex Benito",
+      "Álex García",
+      "Alexis Raza",
+      "Andrea Donoso",
+      "Andrea Leyton",
+      "Ariadna bergés",
+      "Ariadna Frias",
+      "Ariadna jimenez",
+      "Arnau Rodríguez",
+      "Arnau Tarradas",
+      "Carla Català",
+      "Carla Condeminas",
+      "Carles Nunell",
+      "Carlos Jurado",
+      "Cintia García",
+      "Claudia Calderón",
+      "Claudia Galeano",
+      "Cristian Balsam",
+      "Diana Cruz",
+      "Dicra El Adlani",
+      "Eloi Esteve",
+      "Enric Grau",
+      "Enric Miralles",
+      "Esteban garcía",
+      "Eva fernandez",
+      "Eva palleiro",
+      "Eva Rodriguez",
+      "Eva Serrano",
+      "Fatima Sy",
+      "Fran Díaz",
+      "Fsco. Javier Toro",
+      "Gabriel Molina",
+      "Genís Vargas",
+      "Ignacio Álvarez",
+      "Ilune Díaz",
+      "J.A.L. Lama",
+      "Javier Castro",
+      "jessica muñoz",
+      "Jessica Muñoz",
+      "Joan Ramón Gómez",
+      "Jordi Prió",
+      "Jordi Vargas",
+      "José Espinosa",
+      "José Luis Arceiz",
+      "José Luis Baldán",
+      "José Luis Rey",
+      "José Vicente Minguez",
+      "Josefa Royo",
+      "Julia Vergara",
+      "Laila Hamzoui",
+      "Laura Gómez",
+      "Laura Perales",
+      "Laura Puig",
+      "Luis López",
+      "Lydia Godoy",
+      "Manuel Bouso",
+      "Manuela García",
+      "Marina Torrens",
+      "Marta Cortés",
+      "Marta Díaz",
+      "Marta Fontanet",
+      "Marta Medina",
+      "Maryam Kaichouh",
+      "Miguel Hernández",
+      "Mónica Jornet",
+      "Montse Álvarez",
+      "Mustapha Moukati",
+      "Nadia Haraga",
+      "Natalia Lozano",
+      "Nickole Gonzales",
+      "Noelia Rondón",
+      "Noemí Álvarez",
+      "Núria de La Torre",
+      "Olesia Voronkina",
+      "Oscar Reche",
+      "Pere Arellano",
+      "Pia Fiorella",
+      "Pilar Cabezuelo",
+      "Raquel Martin",
+      "Raúl Castillo",
+      "Raúl Ligero",
+      "Robert Suarez",
+      "Salomé Barba",
+      "Samuel Hidalgo",
+      "Sara Álvarez",
+      "Sebastián Botaya",
+      "Varónica Ramírez",
+      "Vicente Mínguez",
+      "Yaiza Caballero",
+      "Yaiza Jiménez"
+    ]
+  },
+  "configAnys": {
+    "2026": 5,
+    "2027": 6
+  },
+  "METADATA_EXPORT_DATA": "07/04/2026 16:17",
+  "METADATA_EXPORT_AUTOR": "LAURA",
+  "METADATA_EXPORT_RAW": 1775571479767
+}

@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intranet de Coordinadores - Acceso</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="js/i18n.js"></script>
+  <style>
+    .lang-btn {
+      border: 1px solid rgba(255,255,255,0.15) !important;
+      background: rgba(255,255,255,0.05) !important;
+      color: #94a3b8 !important;
+      padding: 6px 12px !important;
+      border-radius: 9999px !important;
+      font-size: 11px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: all 0.2s !important;
+    }
+    .lang-btn.active {
+      background: #ffffff !important;
+      color: #0f2d4a !important;
+      border-color: #ffffff !important;
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15) !important;
+    }
+    .lang-btn:hover:not(.active) {
+      background: rgba(255,255,255,0.1) !important;
+      color: #ffffff !important;
+    }
+    /* Estilos adicionales para la sección del selector de nombre */
+    .user-form {
+      margin-top: 32px;
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .user-form.visible {
+      max-height: 200px;
+      opacity: 1;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+      width: 100%;
+      max-width: 320px;
+    }
+
+    .form-group label {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .form-control {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      color: var(--text-primary);
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      transition: var(--transition-smooth);
+      outline: none;
+    }
+
+    .form-control:focus {
+      border-color: var(--color-coord);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+    }
+
+    .form-control option {
+      background: var(--bg-secondary);
+      color: var(--text-primary);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Selector de Idioma Flotante Premium -->
+  <div class="lang-selector-container" style="position: absolute; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 8px;">
+    <button class="lang-btn" onclick="i18n.setLanguage('ca'); location.reload();">CAT</button>
+    <button class="lang-btn" onclick="i18n.setLanguage('es'); location.reload();">ESP</button>
+  </div>
+
+  <div class="login-container">
+    <h1 data-i18n="loginTitle">Intranet de Coordinadores</h1>
+    <p class="subtitle" data-i18n="loginSubtitle">Selecciona tu perfil de acceso para ingresar al sistema</p>
+
+    <div class="roles-grid">
+      <!-- Jefe de Operaciones -->
+      <div class="role-card admin" onclick="selectRole('jefe operaciones', this)">
+        <div class="icon-wrapper">👑</div>
+        <h3 data-i18n="roleAdminTitle">Jefe de Operaciones</h3>
+        <p data-i18n="roleAdminDesc">Acceso total de administrador. Permite guardar cambios y forzar el desbloqueo de archivos bloqueados.</p>
+      </div>
+
+      <!-- Coordinador -->
+      <div class="role-card coord" onclick="selectRole('coordinador', this)">
+        <div class="icon-wrapper">👥</div>
+        <h3 data-i18n="roleCoordTitle">Coordinador</h3>
+        <p data-i18n="roleCoordDesc">Modo de edición con bloqueo. Permite modificar archivos controlando la concurrencia en tiempo real.</p>
+      </div>
+
+      <!-- Comercial (Visualizador) -->
+      <div class="role-card other" onclick="selectRole('comercial', this)">
+        <div class="icon-wrapper">👁️</div>
+        <h3 data-i18n="roleComercialTitle">Comerciales</h3>
+        <p data-i18n="roleComercialDesc">Acceso de solo lectura para comerciales. Permite consultar la disponibilidad y precios de Comerciales.</p>
+      </div>
+    </div>
+
+    <!-- Formulario para ingresar el nombre de usuario (si requiere edición/bloqueo) -->
+    <div id="userForm" class="user-form">
+      <div class="form-group">
+        <label for="userSelect" data-i18n="selectNameLabel">Selecciona tu nombre:</label>
+        <select id="userSelect" class="form-control" onchange="validateForm()">
+          <option value="" disabled selected data-i18n="loadingCoords">-- Carregant coordinadors... --</option>
+        </select>
+      </div>
+    </div>
+
+    <button id="btnEnter" class="btn-enter" onclick="enterSystem()" style="margin-top: 32px;" data-i18n="enterPortal">Entrar al Portal</button>
+  </div>
+
+  <script>
+    let selectedRole = null;
+
+    // Cargar la lista de coordinadores dinámicamente al iniciar
+    async function loadCoordinadores() {
+      const select = document.getElementById('userSelect');
+      select.innerHTML = `<option value="" disabled selected data-i18n="selectCoordDefault">${i18n.t('selectCoordDefault')}</option>`;
+      
+      try {
+        const api = window.api;
+        if (api && api.getCoordinadores) {
+          const coordinadores = await api.getCoordinadores();
+          coordinadores.forEach(c => {
+            const opt = document.createElement('option');
+            opt.value = c.nombre;
+            opt.textContent = `${c.nombre} ${c.apellido}`;
+            select.appendChild(opt);
+          });
+        }
+      } catch (e) {
+        console.error('Error cargando coordinadores:', e);
+      }
+    }
+
+    // Cargar coordinadores al abrir la página
+    document.addEventListener('DOMContentLoaded', () => {
+      // Activar el botón de idioma activo
+      const activeLang = i18n.getLanguage();
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        if (btn.innerText.toLowerCase() === (activeLang === 'ca' ? 'cat' : 'esp')) {
+          btn.classList.add('active');
+        }
+      });
+      loadCoordinadores();
+    });
+
+    function selectRole(role, element) {
+      selectedRole = role;
+      
+      // Quitar selección previa de todas las tarjetas
+      document.querySelectorAll('.role-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+
+      // Añadir clase de selección a la tarjeta actual
+      element.classList.add('selected');
+
+      const userForm = document.getElementById('userForm');
+      
+      if (role === 'jefe operaciones') {
+        // El admin no necesita seleccionar nombre
+        userForm.classList.remove('visible');
+        enableEnterButton(true);
+      } else if (role === 'coordinador') {
+        // Mostrar formulario para pedir el nombre del usuario
+        userForm.classList.add('visible');
+        validateForm();
+      } else {
+        // Rol "otro" (solo lectura) no necesita nombre
+        userForm.classList.remove('visible');
+        enableEnterButton(true);
+      }
+    }
+
+    document.getElementById('userSelect').addEventListener('change', function() {
+      validateForm();
+    });
+
+    function validateForm() {
+      if (selectedRole === 'comercial' || selectedRole === 'jefe operaciones') {
+        enableEnterButton(true);
+        return;
+      }
+
+      const userSelect = document.getElementById('userSelect');
+      let isValid = false;
+      
+      if (userSelect.value) {
+        isValid = true;
+      }
+
+      enableEnterButton(isValid);
+    }
+
+    function enableEnterButton(enable) {
+      const btnEnter = document.getElementById('btnEnter');
+      if (enable) {
+        btnEnter.classList.add('active');
+      } else {
+        btnEnter.classList.remove('active');
+      }
+    }
+
+    function enterSystem() {
+      if (!selectedRole) return;
+      
+      let userName = 'Invitado';
+      
+      if (selectedRole === 'jefe operaciones') {
+        userName = 'Administrador';
+      } else if (selectedRole === 'coordinador') {
+        const userSelect = document.getElementById('userSelect');
+        userName = userSelect.value;
+      }
+      
+      // Guardar información en sessionStorage
+      sessionStorage.setItem('userRole', selectedRole);
+      sessionStorage.setItem('userName', userName);
+      
+      // Redirigir al portal principal de la intranet
+      window.location.href = 'portal.html';
+    }
+  </script>
+</body>
+</html>

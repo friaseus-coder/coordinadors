@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>NyN Pàrquings | Despeses de Desplaçament</title>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script src="../js/persistence.js"></script>
+    <style>
+        /* [EL TEU CSS ES MANTÉ IGUAL AMB EL RETOC DE FILES BAIXES] */
+        #loginOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #008d36; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10000; }
+        #loginBox { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); text-align: center; }
+        #loginBox h3 { color: #008d36; margin: 0 0 15px 0; }
+        #loginBox input { border: 1px solid #ccc; padding: 10px; border-radius: 4px; width: 150px; text-align: center; font-size: 18px; display: block; margin: 15px auto; }
+        body { font-family: 'Segoe UI', Arial, sans-serif; background: #f4f4f4; margin: 15px; font-size: 13px; }
+        .card { background: white; border: 1px solid #bbb; border-radius: 8px; padding: 20px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); display: none; }
+        .header-flex { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #008d36; padding-bottom: 10px; margin-bottom: 15px; }
+        h2 { color: #008d36; text-transform: uppercase; font-size: 16px; margin: 0; }
+        .info-header { font-size: 11px; color: #666; text-align: right; }
+        .input-empleat { border: none; background: transparent; text-align: right; font-family: inherit; font-size: 11px; width: 200px; color: #000; font-weight: bold; border-bottom: 1px dashed #ccc; }
+        table { width: 100%; border-collapse: collapse; background: white; margin-bottom: 20px; }
+        th { background: #f0f0f0; padding: 6px; border: 1px solid #ccc; text-align: left; font-size: 10px; text-transform: uppercase; }
+        
+        /* RETOC FILES MÉS BAIXES: Hem baixat el padding de 4px a 1px */
+        td { padding: 1px 4px; border: 1px solid #ddd; }
+        
+        input, select { width: 100%; border: none; outline: none; background: transparent; font-family: inherit; font-size: 12px; padding: 2px; box-sizing: border-box; }
+        input[type="number"] { background: #eee; border-radius: 3px; }
+        .total-row { background: #e8f5e9; font-weight: bold; font-size: 14px; color: #008d36; }
+        .btn-nyn { border: none; padding: 6px 12px; cursor: pointer; font-weight: bold; font-size: 10px; text-transform: uppercase; color: white; margin-right: 5px; }
+        .btn-add { background: #008d36; }
+        .btn-export { background: #6a1b9a; }
+        .btn-import { background: #ff9800; }
+        .btn-print { background: #1976d2; }
+        .btn-del { background: #d32f2f; }
+        .btn-config { background: #546e7a; } 
+        
+        .tarifa-config { background: #fffde7; padding: 10px; border: 1px solid #e6db55; margin-bottom: 15px; border-radius: 4px; display: flex; gap: 20px; align-items: center; font-size: 11px; }
+        .tarifa-config input { width: 80px; background: #eee; border: 1px solid #ccc; padding: 2px 5px; border-radius: 3px; font-weight: bold; color: #d32f2f; }
+        .desti-flex { display: flex; align-items: center; gap: 5px; width: 100%; }
+        .in-concepte { flex-grow: 1; border-bottom: 1px solid #eee !important; color: #000; font-weight: normal; }
+        .selector-controls { display: flex; align-items: center; gap: 2px; flex-shrink: 0; }
+        
+        /* RETOC SELECTOR: Baixem l'alçada perquè no forci la fila */
+        .sel-ruta { width: 130px; font-size: 9px; background: #f0f0f0; border: 1px solid #ccc !important; border-radius: 3px; height: 18px; }
+        .btn-plus { background: #008d36; color: white; border: none; border-radius: 3px; width: 18px; height: 18px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; font-size: 12px; }
+        
+        #signatureTable { display: none; width: 100%; margin-top: 30px; border-collapse: collapse; }
+        #signatureTable td { width: 50%; height: 100px; vertical-align: top; border: 1px solid #000; padding: 8px; font-weight: bold; position: relative; }
+        .date-bottom { position: absolute; bottom: 8px; left: 8px; font-weight: normal; font-size: 11px; }
+        .data-error { background-color: #ffcccc !important; }
+
+        @media print {
+            @page { margin-top: 2.5cm; }
+            .no-print, #loginOverlay, .tarifa-config, .btn-nyn, input[type="file"], .selector-controls { display: none !important; }
+            .card { display: block !important; border: none; box-shadow: none; padding: 0; }
+            body { background: white; margin: 0; }
+            #signatureTable { display: table !important; }
+            input, select { border: none !important; }
+            .input-empleat { border: none !important; padding: 0; }
+            .in-concepte { border: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="loginOverlay">
+    <div id="loginBox">
+        <h3>ACCÉS PROTEGIT</h3>
+        <input type="password" id="passInput" onkeypress="if(event.key==='Enter') verificarPass()">
+        <button class="btn-nyn btn-add" style="width: 100%;" onclick="verificarPass()">ENTRAR</button>
+        <p id="errorMsg" style="color:red; font-size:10px; display:none; margin-top:10px;">Password incorrecte</p>
+    </div>
+</div>
+
+<div class="card" id="mainContent">
+    <div class="header-flex">
+        <div>
+            <h2>FULLA RESUM DESPESES / DESPLAÇAMENTS</h2>
+            <div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+                <select id="mesActual" style="font-weight: bold; width: auto; background: #eee; border-radius: 3px;" onchange="carregarMes()"></select>
+                <button class="btn-nyn btn-add no-print" onclick="afegirAny()">+ Any</button>
+                <button class="btn-nyn btn-del no-print" onclick="gestionarAnys()">Esborrar Anys</button>
+                <div id="llegendaExport" style="font-size: 10px; color: #666; margin-top: 5px; font-style: italic;">Darrera actualització: Sense dades</div>
+            </div>
+        </div>
+        <div class="info-header">
+            EMPLEAT: <input type="text" id="nomEmpleat" class="input-empleat" value="ALBERT CAMPINS LLONGUERAS" oninput="guardarInfoEmpleat()"><br>
+            DEP: <input type="text" id="depEmpleat" class="input-empleat" value="OPERACIONES (PARKINGS)" oninput="guardarInfoEmpleat()">
+        </div>
+    </div>
+
+    <div class="tarifa-config">
+        <b>TARIFES (€/KM):</b>
+        <label>MOTO: <input type="number" id="tarifa_1" step="0.01" min="0" onclick="desbloquejarTarifa(this)" oninput="actualitzarTarifaManual('tarifa_1')"></label>
+        <label>COTXE: <input type="number" id="tarifa_2" step="0.01" min="0" onclick="desbloquejarTarifa(this)" oninput="actualitzarTarifaManual('tarifa_2')"></label>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 125px;">FECHA</th>
+                <th>CONCEPTO / DESTINO</th>
+                <th style="width: 60px;">KM</th>
+                <th style="width: 110px;">VEHÍCULO</th>
+                <th style="width: 90px;">IMP. KM</th>
+                <th style="width: 80px;">OTROS</th>
+                <th style="width: 90px;">IMPORTE</th>
+                <th style="width: 30px;" class="no-print"></th>
+            </tr>
+        </thead>
+        <tbody id="listaGastos"></tbody>
+        <tfoot>
+            <tr class="total-row">
+                <td colspan="6" style="text-align: right;">TOTAL:</td>
+                <td id="totalMes" style="text-align: right; padding-right: 10px;">0,00 €</td>
+                <td class="no-print"></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div class="no-print" style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <button class="btn-nyn btn-add" onclick="afegirFila()">+ afegir línia</button>
+            <button class="btn-nyn" onclick="document.getElementById('importRutaFile').click()" style="background: black;">🔄 IMPORTAR RUTA</button>
+            <input type="file" id="importRutaFile" style="display:none" accept=".json" onchange="processarRutaPerADespeses(this)">
+            <button class="btn-nyn btn-print" onclick="prepararImprimir()">🖨️ IMPRIMIR / PDF</button>
+            <button class="btn-nyn btn-print" onclick="exportarExcel()" style="background: #1b5e20;">📊 EXCEL</button>
+            <button class="btn-nyn btn-export" onclick="exportarJSON()">📤 EXPORTAR</button>
+            <button class="btn-nyn btn-import" onclick="document.getElementById('importFile').click()">📥 IMPORTAR DESPESES</button>
+        </div>
+        <button class="btn-nyn btn-config" onclick="cambiarPassword()">🔑 CANVIAR PASSWORD</button>
+    </div>
+
+    <table id="signatureTable">
+        <tr>
+            <td>Firma<div id="dataSignatura" class="date-bottom"></div></td>
+            <td>Firma Dir. Dpto.</td>
+        </tr>
+    </table>
+    <input type="file" id="importFile" style="display:none" onchange="processarImportacio(this)">
+</div>
+
+<script>
+    // Tota la teva lògica es manté intacta
+    function getPassword() { return localStorage.getItem('nyn_password') || "1234"; }
+    function cambiarPassword() {
+        const actual = prompt("Escriu el password ACTUAL:");
+        if (actual === getPassword()) {
+            const nou = prompt("Escriu el NOU password:");
+            if (nou && nou.trim().length > 0) {
+                localStorage.setItem('nyn_password', nou.trim());
+                alert("Password actualitzat correctament.");
+            }
+        } else { alert("Password incorrecte."); }
+    }
+    function verificarPass() {
+        if (document.getElementById('passInput').value === getPassword()) {
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('dataSignatura').innerText = new Date().toLocaleDateString();
+            refrescarLlegendaGlobal(); 
+            carregarTarifes();
+            carregarInfoEmpleat();
+            inicialitzarSelector();
+            carregarMes();
+        } else { document.getElementById('errorMsg').style.display = 'block'; }
+    }
+
+    let tarifes = { "1": 0.20, "2": 0.32 };
+    const MESOS_ID = ["gener", "febrer", "marc", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"];
+    const MESOS_NOM = ["GENER", "FEBRER", "MARÇ", "ABRIL", "MAIG", "JUNY", "JULIOL", "AGOST", "SETEMBRE", "OCTUBRE", "NOVEMBRE", "DESEMBRE"];
+    let LLISTA_CENTRES = ["ARAGÓ 182", "ARIBAU 225", "AV. ROMA 120", "AV. ROMA 210", "AV. ROMA 69", "BEJAR 63", "BISBE LAGUARDA", "BONANOVA 59", "BORRELL 26", "BRUC 103", "CAP DE SETMANA", "COLLBLANC 101", "CONCEPT", "CÒRSEGA 344", "CURSO PRL", "DIA CONVENI", "DIAGONAL 593", "DOS DE MAIG 218", "ESPRONCEDA 254", "ASPY", "ESPRONCEDA 348", "ESTEVE TARRADAS 17", "FESTIU", "GEIGLE", "GRAN VÍA 641", "HERCEGOVINA 19", "LA ROTONDA", "LA TAMARITA", "LEPANTO 199", "LLIURE", "LLORENS BARBA 66", "LLULL 17", "MALLORCA 508", "MALLORCA 51", "MASTER CATALONIA", "MELCIOR PALAU", "MORAGAS 15", "MOSSOS ESQUADRA", "OFICINES", "PAU ALSINA 74", "PAU ALSINA 32", "PEDRALBES", "PONS GALLARZA", "PROVENÇA 111", "REINA AMALIA", "ROCAFORT 64", "SANTA CAROLINA", "SANTALÓ 14", "SENTMENAT 2", "SENTMENAT 54", "SEPÚLVEDA 65", "TARRAGONA 141", "TORRAS BAGES", "TRAV. GRACIA 183", "URGELL 154", "URGELL 234", "VACANCES", "VALENCIA 243", "VALENCIA 375", "VALENCIA 511", "VIA AUGUSTA 349", "ZONA FRANCA 131"];
+    const LLISTA_CONCEPTOS_FIJOS = ["CAP DE SETMANA", "CURSO PRL", "DIA CONVENI", "FESTIU", "ASPY", "LLIURE", "OFICINES", "VACANCES"];
+
+    async function loadCentres() {
+        try {
+            let api = window.api;
+            if (!api && window.parent && window.parent.api) {
+                api = window.parent.api;
+            }
+            if (api && api.getAparcamientos) {
+                const aparcamientos = await api.getAparcamientos();
+                const nombresAparcamientos = aparcamientos.map(ap => ap.nombre);
+                LLISTA_CENTRES = Array.from(new Set([...nombresAparcamientos, ...LLISTA_CONCEPTOS_FIJOS])).sort((a,b) => a.localeCompare(b,'ca'));
+            }
+        } catch (e) {
+            console.error('Error cargando centros de aparcamientos:', e);
+        }
+    }
+
+    function guardarInfoEmpleat() {
+        localStorage.setItem('nyn_nom_empleat', document.getElementById('nomEmpleat').value);
+        localStorage.setItem('nyn_dep_empleat', document.getElementById('depEmpleat').value);
+    }
+    function carregarInfoEmpleat() {
+        const nom = localStorage.getItem('nyn_nom_empleat');
+        const dep = localStorage.getItem('nyn_dep_empleat');
+        if (nom) document.getElementById('nomEmpleat').value = nom;
+        if (dep) document.getElementById('depEmpleat').value = dep;
+    }
+    function inicialitzarSelector() {
+        const select = document.getElementById('mesActual');
+        const dadesAnys = JSON.parse(localStorage.getItem('nyn_anys_llista') || "[2026]");
+        let actual = select.value;
+        select.innerHTML = "";
+        dadesAnys.sort((a,b) => b-a).forEach(any => {
+            MESOS_ID.forEach((id, index) => {
+                let opt = new Option(`${MESOS_NOM[index]} ${any}`, `${id}_${any}`);
+                select.add(opt);
+            });
+        });
+        if (actual) select.value = actual;
+        else {
+            const ara = new Date();
+            select.value = MESOS_ID[ara.getMonth()] + "_" + ara.getFullYear();
+        }
+    }
+    function carregarMes() {
+        const mes = document.getElementById('mesActual').value;
+        const tbody = document.getElementById('listaGastos');
+        tbody.innerHTML = "";
+        const rawData = localStorage.getItem('nyn_despeses_' + mes);
+        const dades = rawData ? JSON.parse(rawData) : [];
+        if (Array.isArray(dades) && dades.length > 0) dades.forEach(f => afegirFila(f));
+        else afegirFila();
+    }
+    function afegirFila(v = ["", "", "0", "2", "0"]) {
+        const tr = document.createElement('tr');
+        let opcions = `<option value="">-- triar centre --</option>`;
+        LLISTA_CENTRES.forEach(c => opcions += `<option value="${c}">${c}</option>`);
+        tr.innerHTML = `
+            <td><input type="date" class="in-data" value="${v[0]}" onchange="validarDataFila(this)"></td>
+            <td>
+                <div class="desti-flex">
+                    <input type="text" class="in-concepte" value="${v[1]}" placeholder="Llistat de destins..." oninput="guardarDades()">
+                    <div class="selector-controls no-print">
+                        <select class="sel-ruta">${opcions}</select>
+                        <button class="btn-plus" onclick="afegirCentreAText(this)">+</button>
+                    </div>
+                </div>
+            </td>
+            <td><input type="number" class="in-km" value="${v[2]}" min="0" oninput="validarPositiu(this); calcularFila(this)"></td>
+            <td><select class="in-veh" onchange="calcularFila(this)">
+                <option value="1" ${v[3]=="1"?'selected':''}>MOTO</option>
+                <option value="2" ${v[3]=="2"?'selected':''}>COCHE</option>
+            </select></td>
+            <td class="out-km" style="text-align:right">0,00 €</td>
+            <td><input type="number" class="in-alt" value="${v[4]}" min="0" oninput="validarPositiu(this); calcularFila(this)"></td>
+            <td class="out-tot" style="text-align:right; font-weight:bold">0,00 €</td>
+            <td class="no-print" style="text-align:center"><button onclick="this.closest('tr').remove(); guardarDades(); recalcularTotalMes();" style="border:none; background:none; cursor:pointer; color:#ccc;">✕</button></td>
+        `;
+        document.getElementById('listaGastos').appendChild(tr);
+        calcularFila(tr.querySelector('.in-km'));
+    }
+    function validarDataFila(input) {
+        const filaActual = input.closest('tr');
+        const totesLesFiles = Array.from(document.querySelectorAll('#listaGastos tr'));
+        const indexActual = totesLesFiles.indexOf(filaActual);
+        let dataAnterior = "";
+        for (let i = indexActual - 1; i >= 0; i--) {
+            const dataVal = totesLesFiles[i].querySelector('.in-data').value;
+            if (dataVal) { dataAnterior = dataVal; break; }
+        }
+        if (dataAnterior && input.value && input.value < dataAnterior) {
+            alert(`⚠️ DATA BLOQUEJADA: No pots posar una data repetida o anterior.`);
+            input.value = ""; input.focus();
+        } else { guardarDades(); }
+    }
+    function afegirCentreAText(btn) {
+        const container = btn.closest('.desti-flex');
+        const select = container.querySelector('.sel-ruta');
+        const input = container.querySelector('.in-concepte');
+        if (select.value !== "") {
+            input.value += (input.value.trim() === "" ? "" : "  ➤  ") + select.value; 
+            select.value = ""; guardarDades();
+        }
+    }
+    function calcularFila(el) {
+        const tr = el.closest('tr'); if (!tr) return;
+        const km = parseFloat(tr.querySelector('.in-km').value) || 0;
+        const veh = tr.querySelector('.in-veh').value;
+        const alt = parseFloat(tr.querySelector('.in-alt').value) || 0;
+        const impKm = km * (tarifes[veh] || 0);
+        tr.querySelector('.out-km').innerText = impKm.toFixed(2).replace('.', ',') + " €";
+        tr.querySelector('.out-tot').innerText = (impKm + alt).toFixed(2).replace('.', ',') + " €";
+        recalcularTotalMes(); guardarDades();
+    }
+    function recalcularTotalMes() {
+        let t = 0;
+        document.querySelectorAll('.out-tot').forEach(el => t += parseFloat(el.innerText.replace(',', '.').replace(' €', '')) || 0);
+        document.getElementById('totalMes').innerText = t.toFixed(2).replace('.', ',') + " €";
+    }
+    function guardarDades() {
+        const mes = document.getElementById('mesActual').value;
+        const files = Array.from(document.querySelectorAll('#listaGastos tr')).map(r => [
+            r.querySelector('.in-data').value, r.querySelector('.in-concepte').value, r.querySelector('.in-km').value, r.querySelector('.in-veh').value, r.querySelector('.in-alt').value
+        ]);
+        localStorage.setItem('nyn_despeses_' + mes, JSON.stringify(files));
+    }
+    function afegirAny() {
+        let nou = prompt("Quin any vols afegir?");
+        if (nou && !isNaN(nou)) {
+            let llista = JSON.parse(localStorage.getItem('nyn_anys_llista') || "[2026]");
+            if (!llista.includes(parseInt(nou))) {
+                llista.push(parseInt(nou));
+                localStorage.setItem('nyn_anys_llista', JSON.stringify(llista));
+                inicialitzarSelector();
+            }
+        }
+    }
+    function gestionarAnys() {
+        let llista = JSON.parse(localStorage.getItem('nyn_anys_llista') || "[2026]");
+        let borrar = prompt("Any a ESBORRAR:\nActuals: " + llista.join(", "));
+        if (borrar && !isNaN(borrar)) {
+            let novaLlista = llista.filter(a => a != parseInt(borrar));
+            localStorage.setItem('nyn_anys_llista', JSON.stringify(novaLlista.length ? novaLlista : [2026]));
+            inicialitzarSelector(); carregarMes();
+        }
+    }
+    function desbloquejarTarifa(el) {
+        if (el.style.background === "white") return;
+        if (prompt("Password tarifes:") === getPassword()) {
+            el.readOnly = false; el.style.background = "white"; el.style.border = "2px solid #008d36"; el.select();
+        }
+    }
+    function actualitzarTarifaManual(idInput) {
+        const el = document.getElementById(idInput);
+        tarifes[(idInput === 'tarifa_1') ? "1" : "2"] = parseFloat(el.value) || 0;
+        localStorage.setItem('nyn_tarifes', JSON.stringify(tarifes));
+        document.querySelectorAll('#listaGastos tr .in-km').forEach(inKm => calcularFila(inKm));
+    }
+    function carregarTarifes() {
+        const t = localStorage.getItem('nyn_tarifes');
+        if (t) tarifes = JSON.parse(t);
+        document.getElementById('tarifa_1').value = parseFloat(tarifes["1"]).toFixed(2);
+        document.getElementById('tarifa_2').value = parseFloat(tarifes["2"]).toFixed(2);
+    }
+    function validarPositiu(el) { if (parseFloat(el.value) < 0) el.value = 0; }
+    function prepararImprimir() { window.print(); }
+
+    function exportarJSON() {
+        const ara = new Date();
+        const dataText = ara.toLocaleString();
+        let exp = { 
+            "nyn_nom_empleat": document.getElementById('nomEmpleat').value, 
+            "nyn_dep_empleat": document.getElementById('depEmpleat').value, 
+            "METADATA_EXPORT_DATA": dataText 
+        };
+        for(let i=0; i<localStorage.length; i++) {
+            let k = localStorage.key(i);
+            if (k.startsWith('nyn_despeses_')) exp[k] = JSON.parse(localStorage.getItem(k));
+        }
+        const a = document.createElement('a');
+        a.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exp));
+        a.download = `despeses_${ara.toISOString().slice(0,10)}.json`; a.click();
+        localStorage.setItem('nyn_ultima_export_data', dataText); refrescarLlegendaGlobal();
+    }
+
+    function processarImportacio(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dades = JSON.parse(e.target.result);
+                    Object.keys(dades).forEach(k => {
+                        localStorage.setItem(k, (typeof dades[k] === 'string') ? dades[k] : JSON.stringify(dades[k]));
+                    });
+                    location.reload();
+                } catch (err) { alert("Error JSON"); }
+            };
+            reader.readAsText(input.files[0]);
+        }
+    }
+
+    window.addEventListener('DOMContentLoaded', async () => {
+        await loadCentres();
+        await persistence.syncLoad('despeses');
+        const role = sessionStorage.getItem('userRole') || (window.parent && window.parent.sessionStorage.getItem('userRole'));
+        if (role) {
+            document.getElementById('passInput').value = getPassword();
+            verificarPass();
+        }
+    });
+
+    function refrescarLlegendaGlobal() {
+        const data = localStorage.getItem('nyn_ultima_export_data');
+        const el = document.getElementById('llegendaExport');
+        if (el && data) el.innerHTML = `Darrera exportació: <b>${data}</b>`;
+    }
+
+    function exportarExcel() {
+        const selectorMes = document.getElementById('mesActual');
+        const mesNom = selectorMes.selectedOptions[0].text;
+        let ws_data = [ ["HOJA RESUMEN GASTOS"], [], ["EMPLEADO:", document.getElementById('nomEmpleat').value], ["PERIODO:", mesNom], [], ["FECHA", "CONCEPTO", "KM", "VEHICULO", "IMP. KM", "OTROS", "IMPORTE"] ];
+        document.querySelectorAll('#listaGastos tr').forEach(r => {
+            ws_data.push([ r.querySelector('.in-data').value, r.querySelector('.in-concepte').value, r.querySelector('.in-km').value, r.querySelector('.in-veh').selectedOptions[0].text, r.querySelector('.out-km').innerText, r.querySelector('.in-alt').value, r.querySelector('.out-tot').innerText ]);
+        });
+        const wb = XLSX.utils.book_new();
+        const ws = XLSX.utils.aoa_to_sheet(ws_data);
+        XLSX.utils.book_append_sheet(wb, ws, "Gastos");
+        XLSX.writeFile(wb, `Gastos_${mesNom}.xlsx`);
+    }
+
+    function processarRutaPerADespeses(input) {
+        if (!input.files || !input.files[0]) return;
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const dadesFile = JSON.parse(e.target.result);
+                const [mesId, anyStr] = document.getElementById('mesActual').value.split('_');
+                const usuari = document.getElementById('nomEmpleat').value.includes("ALBERT") ? "Albert" : "Laura";
+                document.getElementById('listaGastos').innerHTML = "";
+                for (let dia = 1; dia <= 31; dia++) {
+                    let rutes = [];
+                    for (let i = 0; i < 6; i++) {
+                        let v = dadesFile[`${usuari}-${anyStr}-${MESOS_ID.indexOf(mesId)}-${dia}-${i}`];
+                        if (v && v !== "" && !v.includes("--")) rutes.push(v);
+                    }
+                    if (rutes.length) afegirFila([`${anyStr}-${String(MESOS_ID.indexOf(mesId)+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`, rutes.join("  ➤  "), "0", "2", "0"]);
+                }
+                guardarDades();
+            } catch (err) { alert("Error Ruta"); }
+        };
+        reader.readAsText(input.files[0]);
+    }
+</script>
+</body>
+</html>

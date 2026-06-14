@@ -1,0 +1,197 @@
+#graficContainer canvas {
+  max-width: 100%;
+  height: auto;
+}
+
+#tableView tfoot {
+  display: table-row-group;
+}
+
+/* ---------------- RESET BÀSIC ---------------- */
+* { margin:0; padding:0; box-sizing:border-box; font-family: Arial,sans-serif; }
+
+/* ---------------- COS DE LA PÀGINA ---------------- */
+body { background-color:#f7f7f7; color:#333; padding:20px; }
+
+/* ---------------- HEADER ---------------- */
+header { text-align:center; margin-bottom:20px; }
+header h1 { font-size:1.5em; color:#23631f; }
+
+/* ---------------- CONTROLS ---------------- */
+.controls { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:20px; }
+.controls input, .controls select, .controls button { font-size:0.75em; border-radius:4px; border:1px solid #ccc; outline:none; padding:3px 5px; line-height:1.2; box-sizing:border-box; }
+
+/* ---------------- SELECTORS (DROPDOWNS) VERDS TRANSPARENTS 70% ---------------- */
+.centre-select,
+.torn-select,
+.zona-select,
+.societat-select,
+#filterCentre,
+#filterTorn,
+#filterZona,
+#filterSocietat,
+#filterNota {
+  background-color: rgba(60, 160, 60, 0.2);
+  border: 1px solid #3ca03c;
+  color: #000;
+  padding: 3px 6px;
+  font-size: 0.75em;
+  border-radius: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------------- BOTONS MOSTRAR VISTA I AFEGIR ---------------- */
+#addRowBtn, #btnCardView, #btnTableView {
+  padding:6px 12px; font-size:0.75em; margin:3px 3px 3px 0;
+  border:none; border-radius:5px; background-color:#3ca03c; color:white; font-weight:bold;
+  cursor:pointer; transition: background-color 0.2s, transform 0.2s;
+}
+#addRowBtn:hover,#btnCardView:hover,#btnTableView:hover { background-color:#2e7d2e; transform: scale(1.05); }
+
+.save-btn {
+  font-size: 1em;
+  padding: 2px 4px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+.save-btn:hover {
+  transform: scale(1.1);
+}
+
+/* ---------------- TAULA ---------------- */
+#tableView { width:100%; border-collapse:collapse; margin-bottom:20px; font-size:0.75rem; table-layout:auto; }
+#tableView th, #tableView td { padding:4px 6px; line-height:1.2; text-align:left; }
+#tableView th { background-color:#006400; color:#fff; font-weight:bold; font-size:0.8rem; cursor:pointer; }
+.delete-btn { background-color:transparent; border:none; cursor:pointer; font-size:1.3em; color:#900; padding:2px 4px; }
+.delete-btn:hover { color:#f00; }
+
+/* Zebra verd transparent */
+#tableView tbody tr:nth-child(even) td { background-color: rgba(144,238,144,0.05); }
+
+/* Cel·les editables */
+td[contenteditable] { cursor:text; transition: background-color 0.2s; }
+td[contenteditable]:hover { background-color: #e0f2e0; }
+td[contenteditable]:focus { background-color: #d4f0d4; }
+
+/* Columnes numèriques centrades */
+td[data-key="coneixements"], td[data-key="atencio"], td[data-key="disponibilitat"],
+td[data-key="actitud"], td[data-key="valoracio"] { text-align:center; }
+
+/* Gradient només a valoració */
+td[data-key="valoracio"] { font-weight:bold; text-align:center; }
+
+/* ---------------- TARGETES (CARDS) ---------------- */
+#cardsContainer { display:grid; gap:1rem; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); }
+.card { background-color:#f9f9f9; border-radius:8px; padding:15px; box-shadow:0 2px 5px rgba(0,0,0,0.1); transition:background-color 0.3s, transform 0.2s; cursor:default; }
+.card:hover { background-color: rgba(60,160,60,0.1); transform:translateY(-2px);}
+.card h3 { font-size:0.9rem; margin-bottom:4px; color:#006400;}
+.card p { font-size:0.75rem; margin:2px 0; word-break:break-word;}
+.card p[data-key="valoracio"] { color:green; font-weight:bold; }
+
+/* ---------------- GRÀFICA ---------------- */
+.charts { margin:20px auto; text-align:center; }
+.charts h2 { margin-bottom:15px; font-size:1.3em; }
+#centreChart { width:700px; height:400px; display:block; margin:0 auto; } 
+
+.charts-container{
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: stretch;
+  margin: 20px 0;
+}
+
+.charts-container {
+  width: 100%;
+  margin-bottom: 30px;
+}
+
+.chart-box canvas {
+  width: 100% !important;
+  height: 300px !important;  /* mateixa alçada per tots els gràfics */
+}
+
+
+/* ---------------- .chart-box UNIFICAT ---------------- */
+.chart-box{
+  flex: 1;
+  max-width: 700px;          /* limita amplada */
+  background: white;
+  padding: 15px;
+  border-radius: 10px;
+  box-shadow: 0 3px 8px rgba(0,0,0,0.08);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  height: 350px; /* abans 300px */
+  width: 100%;
+  padding-bottom: 30px;
+}
+
+.chart-box h2{
+  font-size: 16px;           /* títol més petit */
+  margin-bottom: 10px;
+  text-align: center;
+}
+
+.chart-box canvas {
+  width: 100%; 
+  height: 100%;
+}
+
+/* ---------grafic 2 heatmap ------------- */
+#scatterChart {
+  width: 100%;
+  height: 350px;
+}
+
+.bubble-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  align-items: center;
+}
+.dot {
+  display:inline-block;
+  width:12px;
+  height:12px;
+  border-radius:50%;
+  margin-right:5px;
+}
+.size-info{
+  margin-left:10px;
+  font-style:italic;
+}
+
+.gold{ background:rgba(218,165,32,0.8); }
+.green{ background:rgba(0,128,0,0.7); }
+.red{ background:rgba(255,0,0,0.6); }
+.black{ background:rgba(0,0,0,0.6); }
+
+.size-info{
+  margin-left:auto;
+  font-style:italic;
+}
+
+/* ---------------- FOOTER ---------------- */
+#tableView tfoot td.footer { font-size:0.9em; text-align:center; color:#006400; }
+
+
+
+/* ---------------- RESPONSIU ---------------- */
+@media (max-width:900px){
+  #centreChart{width:90%; height:300px;} 
+  .controls{flex-direction:column; align-items:center;} 
+  .card{width:45%;} 
+}
+@media (max-width:600px){ .card{width:100%;} }
+
+

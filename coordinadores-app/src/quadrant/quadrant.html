@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>NyN Pàrquings | Control Treballadors</title>
+    <script src="../js/persistence.js"></script>
+    
+<style>
+    :root {
+        --nyn-verd: #008d36;
+        --nyn-verd-centre: #2e7d32; 
+        --nyn-festiu: #ffcccc; 
+        --nyn-substitucio-bg: #ffed00;
+        --nyn-substitucio-text: #ff0000;
+        --border: #ced4da;
+        --nyn-select: #008d36;
+        --nyn-marcador-tel: rgba(255, 235, 59, 0.25); 
+    }
+
+   body { 
+    font-family: 'Segoe UI', Arial, sans-serif; 
+    font-size: 10px; 
+    margin: 0; 
+    background: white; 
+    overflow: visible; /* Molt important que sigui visible */
+    user-select: none; 
+}
+    
+    .sticky-top { position: sticky; top: 0; z-index: 1100; background: white; display: flex; flex-direction: column; }
+    
+  header { 
+    background-color: var(--nyn-verd); 
+    color: white; 
+    padding: 5px 15px; 
+    display: flex;        /* Canviem a flex per centrat directe */
+    justify-content: center; 
+    align-items: center; 
+    height: 40px; 
+}
+
+--nyn-vacances: rgba(186, 104, 200, 0.005); /* Lila suau */
+.is-vacances { background-color: var(--nyn-vacances) !important; }
+.llegenda-vacances { 
+    font-size: 9px; font-weight: bold; color: #7b1fa2; 
+    padding: 2px 6px; border: 1px solid #7b1fa2; border-radius: 3px; margin-left: 10px; 
+}
+
+.header-center { 
+    font-size: 15px; 
+    font-weight: 900; 
+    text-transform: uppercase; 
+    text-align: center; 
+    text-shadow: 1px 1px 0px rgba(255,255,255,0.3), -1px -1px 0px rgba(0,0,0,0.2); 
+    letter-spacing: 1.5px; 
+    display: flex;       /* Perquè el mes i el rellotge estiguin en línia */
+    align-items: center;
+    gap: 10px;           /* Espai entre mes i rellotge */
+}
+
+/* Pots esborrar .header-left i .header-right si ja no els fas servir */
+
+    .admin-panel { padding: 4px 15px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); background: #f8f9fa; }
+    .filter-group { display: flex; align-items: center; gap: 5px; border-left: 1px solid #ccc; padding-left: 8px; }
+    .filter-label { font-weight: bold; color: var(--nyn-verd-centre); font-size: 9px; text-transform: uppercase; }
+
+    select, button { padding: 2px 8px; border: 1px solid var(--nyn-verd); border-radius: 2px; font-size: 9px; cursor: pointer; height: 22px; box-sizing: border-box; font-family: inherit; }
+    .btn-main { background: var(--nyn-verd); color: white; font-weight: bold; border: 1px solid var(--nyn-verd-centre); }
+    .btn-danger-right { background: #d32f2f; color: white; font-weight: bold; border: 1px solid #b71c1c; }
+
+thead th { 
+    background: #454d55 !important; 
+    color: white !important; 
+    height: 25px; 
+    font-size: 10px; 
+    font-weight: bold;
+    position: -webkit-sticky; 
+    position: sticky; 
+    top: 83px; /* Aquest número l'ajustarem ara */
+    z-index: 999; 
+    outline: 1px solid #333; 
+    border: none; 
+    vertical-align: middle;
+}
+
+    thead th.is-weekend-header { color: #ffeb3b !important; }
+    thead th.is-festiu-header { color: #ff1111 !important; } 
+
+    th, td { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); text-align: center; padding: 0; position: relative; }
+    th:first-child, td:first-child { border-left: 1px solid var(--border); }
+    
+
+    .selected-cell {
+    background-color: rgba(0, 141, 54, 0.15) !important;
+    z-index: 10 !important;
+    position: relative;
+}
+.selected-cell .cell-container {
+    outline: 1px solid var(--nyn-verd) !important;
+    outline-offset: -1px;
+    z-index: 10;
+}
+
+.selected-cell .select-worker, 
+.selected-cell .select-hour, 
+.selected-cell .sub-radio { 
+    pointer-events: auto !important; 
+}
+/* 1. L'Estructura general (El contenidor) */
+#mainTable {
+    table-layout: fixed !important;
+    width: 100% !important; /* Ocupa tota la pantalla */
+    min-width: 1200px;      /* Seguretat perquè no s'aafi en pantalles petites */
+    border-collapse: collapse;
+}
+/* 2. La columna de MATÍ/TARDA/NIT (La primera) */
+.col-name { 
+    background-color: #f8f9fa; 
+    width: 60px !important;
+    min-width: 160px !important;
+    max-width: 160px !important;
+    font-weight: 900; 
+    color: var(--nyn-verd-centre); 
+    text-transform: uppercase; 
+    font-size: 9px; 
+    border-right: 2px solid var(--nyn-verd); 
+    overflow: hidden;
+    text-align: center;
+}
+
+/* 3. Les columnes dels dies (Les 31 restants) */
+#mainTable th:not(.col-name), 
+#mainTable td:not(.col-name) {
+    width: 58px !important;
+    min-width: 58px !important;
+    max-width: 58px !important;
+    overflow: hidden;
+}
+
+
+
+
+/* 1. ESTAT NORMAL: Blindat per poder arrossegar sense que s'obrin menús */
+.cell-container { 
+    display: flex; 
+    flex-direction: column; 
+    height: 58px; 
+    width: 100%; /* S'adaptarà al td fix */
+    position: relative; 
+    cursor: default; 
+    z-index: 2; 
+    box-sizing: border-box; 
+    overflow: hidden; /* Evita que res surti del quadrat */
+}
+.select-worker, .select-hour { 
+    width: 100%; border: none; font-weight: 700; background: transparent; outline: none; 
+    text-align-last: center; font-family: inherit; appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23008d36' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 2px center; background-size: 7px;
+    
+    /* BLOQUEIG CRUCIAL: Impedeix que el select s'obri si la cel·la no és verda */
+    pointer-events: none !important; 
+}
+
+
+
+
+
+
+/* 3. ELEMENTS AUXILIARS (Es mantenen) */
+.select-worker { flex: 1; font-size: 9px; line-height: 1.1; padding: 2px 10px 2px 2px; white-space: normal; overflow: hidden; display: block; }
+.select-hour { height: 16px; border-top: 1px solid rgba(0,0,0,0.05); font-size: 8px; color: #444; padding: 0 10px 0 12px; background-color: rgba(255,255,255,0.3); }
+
+.sub-radio { position: absolute; bottom: 3px; left: 2px; width: 9px; height: 9px; cursor: pointer; z-index: 15; opacity: 0.5; margin: 0; pointer-events: auto !important; }
+.has-note::before { 
+    content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 8px 8px 0; 
+    border-color: transparent var(--nyn-verd-centre) transparent transparent; pointer-events: none; z-index: 12;
+}
+
+
+
+
+
+
+    .center-header { background: var(--nyn-verd-centre); height: 20px; font-weight: bold; color: white; display: flex; align-items: center; padding: 0 10px; text-transform: uppercase; border: 1px solid #000; }
+
+
+    .center-label { flex-grow: 1; text-align: center; letter-spacing: 1px; }
+    .check-marcador { width: 14px; height: 14px; cursor: pointer; margin-right: 10px; z-index: 10; }
+
+   
+    .row-mati { background-color: #fffef0; } 
+    .row-tarda { background-color: #f6faf2; } 
+    .row-nit { background-color: #fcfcfc; }
+    
+    .is-festiu { background-color: var(--nyn-festiu) !important; } 
+    .is-weekend { background-color: #ebebeb; }
+
+    #noteModal, #deleteModal, #horesModal { 
+        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+        background: white; border: 2px solid var(--nyn-verd); padding: 15px; z-index: 2000; 
+        border-radius: 5px; width: 280px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); 
+    }
+
+    #horesModal { width: 95%; max-width: 700px; max-height: 85vh; overflow-y: auto; padding: 0 20px 20px 20px; border-radius: 8px; }
+    .hores-modal-header { position: sticky; top: 0; background: white; z-index: 2020; padding-top: 15px; padding-bottom: 5px; }
+    .hores-title-box { margin: 0; background: white; z-index: 2020; border-bottom: 2px solid var(--nyn-verd); padding-bottom: 10px; margin-bottom: 10px; }
+   #horesModal table thead th { 
+    position: sticky; 
+    top: 0; /* Canviat de 92px a 0 per alinear-se amb el seu contenidor */
+    background: #454d55 !important; 
+    color: white !important; 
+    height: 25px !important; 
+    font-size: 9px; 
+    z-index: 2019; 
+    vertical-align: middle; 
+    padding: 4px !important; 
+    border: 1px solid #333; 
+}
+
+#taulaResumHores {
+    overflow-x: auto;
+    max-height: 60vh; /* Limita l'alçada de la taula per forçar l'scroll intern */
+}
+
+    #horesModal .close-btn-top { position: absolute; top: 10px; right: 10px; z-index: 2021; background: none; border: none; font-size: 20px; cursor: pointer; color: #999; }
+    .btn-tancar-resum { display: flex !important; align-items: center; justify-content: center; margin: 20px auto 0 auto; padding: 0 25px; height: 30px; background: var(--nyn-verd); color: white; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; line-height: normal; }
+
+    textarea, .input-edit { width: 100%; font-size: 11px; margin-bottom: 10px; border: 1px solid var(--border); padding: 5px; box-sizing: border-box; font-family: inherit; }
+    textarea { height: 80px; resize: none; }
+    .input-edit { height: 25px; border: 1px solid var(--nyn-verd); }
+
+    @media print {
+        .sticky-top, .btn-main, .btn-danger-right, .admin-panel, #noteModal, #deleteModal, #horesModal, .sub-radio { display: none !important; }
+        body { background: white; margin: 0; padding: 0; }
+        table { 
+        width: 900px !important; /* Aquí sí que vols 900px per a l'A4 */
+        table-layout: fixed !important; 
+        transform: scale(0.8); /* Perquè t'hi cabi tot el mes en un sol full */
+        transform-origin: top left;
+    }
+        .cell-container { height: auto !important; min-height: 40px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; }
+        .select-worker, .select-hour { display: block !important; width: 100% !important; position: static !important; font-size: 7pt !important; line-height: 1.1 !important; pointer-events: auto !important; 
+    cursor: pointer; }
+        th, td { border: 1px solid #000 !important; padding: 1px !important; overflow: hidden !important; }
+        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        @page { size: landscape; margin: 0.3cm; }
+    }
+
+    .month-locked .cell-container { background-color: #f0f0f0 !important; opacity: 0.8; pointer-events: none !important; }
+    .month-locked .col-name, .month-locked .center-header { filter: grayscale(1); }
+    .btn-lock { background: #444; color: white; font-weight: bold; }
+    .btn-unlock { background: #d32f2f; color: white; font-weight: bold; }
+    .parking-section-pendent td::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--nyn-marcador-tel); pointer-events: none; z-index: 5; }
+
+
+/* 1. La cel·la groga amb el marc vermell */
+.is-substitucio { 
+    background-color: var(--nyn-substitucio-bg) !important; 
+    outline:1.5px solid var(--nyn-substitucio-text) !important;
+    outline-offset: -1px; 
+    position: relative;
+    z-index: 5;
+}
+
+/* 2. El contenidor transparent */
+.is-substitucio .cell-container {
+    background-color: transparent !important;
+}
+
+/* 3. ELS SELECTS: Text vermell a la cel·la, però NEGRE al desplegable */
+.is-substitucio .select-worker, 
+.is-substitucio .select-hour { 
+    background-color: transparent !important; 
+    color: var(--nyn-substitucio-text) !important; /* Text vermell a la cel·la */
+    font-weight: bold;
+    border: none !important;
+    pointer-events: auto !important; /* Perquè respongui al filtrar */
+}
+
+/* El truc perquè les opcions del llistat es vegin en negre i no en vermell */
+.is-substitucio .select-worker option, 
+.is-substitucio .select-hour option {
+    color: #333 !important;
+    background-color: white !important;
+    font-weight: normal;
+}
+
+/* 4. El radiobutton en vermell */
+.is-substitucio .sub-radio {
+    accent-color: var(--nyn-substitucio-text) !important;
+}
+
+
+
+
+/* Forcem que res bloquegi el sticky */
+html, body { overflow: visible !important; height: auto !important; }
+
+</style>
+
+</head>
+<body onkeydown="handleGlobalKey(event)" onmouseup="isDragging=false">
+
+<div class="sticky-top">
+    <header>
+    <div class="header-center">
+        <span id="displayMonth"></span> 
+        <span id="rellotge"></span>
+        <span id="llegendaExport" style="
+    font-family: 'Segoe UI', Arial, sans-serif; 
+    font-size: 13px; 
+    color: #333; 
+    text-transform: none; 
+    text-shadow: none; 
+    font-weight: normal; 
+    font-style: normal;
+    margin-left: 10px;
+">
+    |   Darrera exportació: Sense dades
+</span>
+    </div>
+</header>
+    <div class="admin-panel">
+        <select id="selectMonth" onchange="changeMonth()"></select>
+        <select id="selectYear" onchange="changeMonth()"></select>
+        
+        <div class="filter-group">
+            <div class="filter-label">🔍 Filtres:</div>
+            <select id="filterPark" onchange="renderTable()"><option value="ALL">Tots els Centres</option></select>
+            <select id="filterWorker" onchange="renderTable()"><option value="ALL">Tots els Treballadors</option></select>
+            <select id="filterHorari" onchange="renderTable()">
+                <option value="ALL">Tots els Horaris / Torns</option>
+                <optgroup label="Torns Generals">
+                    <option value="T_MATÍ">Només Matí</option>
+                    <option value="T_TARDA">Només Tarda</option>
+                    <option value="T_NIT">Només Nit</option>
+                </optgroup>
+                <optgroup label="Franges Específiques" id="optHorarisList"></optgroup>
+            </select>
+            <button class="btn-main" onclick="resetFilters()">♻️ Reset Filtres</button>
+            <button class="btn-main" onclick="calcularHoresMes()" style="background:#0056b3; border-color:#004494;">📊 Recompte Hores</button>
+        </div>
+
+        <div class="filter-group">
+            <button class="btn-main" onclick="openDeleteModal()">⚙️ Afegir/Eliminar/Editar dades</button>
+            <button id="btnExport" class="btn-main" onclick="exportToNextMonth()">🚚 Exportar a ... </button>
+            <button class="btn-main" onclick="exportarExcel()" style="background:#1d6f42; border-color:#145a32;">📥 Excel</button>
+            <button class="btn-main" onclick="window.print()" style="background:#555; border-color:#333;">🖨️ PDF / Imprimir</button>
+            <button class="btn-main" onclick="exportarBackupJSON()" style="background:#6a1b9a; border-color:#4a148c;">💾 Exportar</button>
+            <button class="btn-main" onclick="document.getElementById('importFile').click()" style="background:#ef6c00; border-color:#e65100;">📂 Importar</button>
+	   <button class="btn-main" onclick="document.getElementById('fileVacances').click()" 
+        	style="background: #e1bee7; border: 1px solid #7b1fa2; color: #333; font-weight: bold;">
+    		🌴 Importar Vacances
+		</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarBackupJSON(this)">
+            <button id="btnLockMonth" class="btn-main btn-lock" onclick="toggleLockMonth()">🔒 Tancar Mes</button>
+            <button class="btn-danger-right" onclick="resetAll()">🗑️ Esborrar dades del mes</button>
+         <input type="file" id="fileVacances" style="display:none" onchange="importarVacances(this)">
+        </div>
+    </div>
+</div>
+
+<div class="table-wrapper">
+    <table id="mainTable">
+        <thead><tr id="headerRow"></tr></thead>
+        <tbody id="tableBody"></tbody>
+    </table>
+</div>
+
+<script>
+    const MESOS = ["Gener","Febrer","Març","Abril","Maig","Juny","Juliol","Agost","Setembre","Octubre","Novembre","Desembre"];
+    let LLISTES = {
+        personal: JSON.parse(localStorage.getItem('nyn_personal')) || ["-"],
+        horaris: JSON.parse(localStorage.getItem('nyn_horaris')) || ["-"],
+        parkings: JSON.parse(localStorage.getItem('nyn_parkings')) || ["-"]
+    };
+
+    let currentMonth, currentYear;
+    let cacheDades = {}, cellCoords = {}, selectedIds = [], isDragging = false, startId = null;
+    let clipboardData = null; 
+    let historyStack = [];
+
+    const COMUNS = ["0-1", "0-6", "3-3", "3-6", "4-1", "5-24", "7-15", "8-11", "9-12", "11-8", "11-25", "11-26"];
+    const BCN_ONLY = ["4-25", "8-24"]; 
+    const REUS_ONLY = ["5-29", "8-25"];
+
+async function init() {
+        const params = new URLSearchParams(window.location.search);
+        const userRole = params.get('role') || sessionStorage.getItem('userRole') || 'coordinador';
+        let userName = params.get('username') || sessionStorage.getItem('userName') || '';
+
+        // Si el rol es jefe de operaciones y no se ha especificado un username de coordinador en la URL (es Administrador)
+        if (userRole === 'jefe operaciones' && (!userName || userName === 'Administrador')) {
+            try {
+                const coordinadores = await window.api.getCoordinadores();
+                if (coordinadores.length > 0) {
+                    // Seleccionar el primer coordinador por defecto
+                    userName = coordinadores[0].nombre;
+                    // Redirigir para inicializar persistence.js y los locks con el coordinador seleccionado
+                    window.location.href = `quadrant.html?role=jefe%20operaciones&username=${userName}`;
+                    return;
+                }
+            } catch (e) {
+                console.error("Error al obtener coordinadores en inicio de administrador:", e);
+            }
+        }
+
+        // Cargar selector de coordinadores para el administrador en el panel superior
+        if (userRole === 'jefe operaciones') {
+            const adminPanel = document.querySelector('.admin-panel');
+            if (adminPanel) {
+                // Crear el select de coordinadores
+                const selectCoord = document.createElement('select');
+                selectCoord.id = 'selectCoordinator';
+                selectCoord.style.marginRight = '8px';
+                selectCoord.style.fontWeight = 'bold';
+                selectCoord.style.color = '#063931';
+                selectCoord.style.borderColor = '#063931';
+                selectCoord.style.height = '22px';
+                selectCoord.onchange = () => {
+                    const selectedCoord = selectCoord.value;
+                    if (selectedCoord) {
+                        window.location.href = `quadrant.html?role=jefe%20operaciones&username=${selectedCoord}`;
+                    }
+                };
+
+                try {
+                    const coordinadores = await window.api.getCoordinadores();
+                    coordinadores.forEach(c => {
+                        const opt = new Option(`${c.nombre} ${c.apellido}`, c.nombre);
+                        if (c.nombre.toLowerCase() === userName.toLowerCase()) {
+                            opt.selected = true;
+                        }
+                        selectCoord.add(opt);
+                    });
+                } catch (e) {
+                    console.error("Error al poblar selector de coordinadores:", e);
+                }
+
+                // Insertarlo al principio del admin-panel
+                adminPanel.insertBefore(selectCoord, adminPanel.firstChild);
+            }
+        }
+
+        // Cargar datos del JSON físico local a localStorage de forma transparente
+        await persistence.syncLoad('quadrant');
+
+        // Sincronizar LLISTES.parkings desde el archivo maestro aparcamientos.json para el coordinador seleccionado
+        let activeParkings = [];
+        if (userName && userName !== 'Administrador') {
+            try {
+                const allParkings = await window.api.getAparcamientos();
+                const userLower = userName.toLowerCase();
+                activeParkings = allParkings
+                    .filter(ap => ap.coordinadorId === userLower)
+                    .map(ap => ap.nombre);
+            } catch (e) {
+                console.error("Error al obtener aparcamientos desde el catálogo maestro:", e);
+                activeParkings = JSON.parse(localStorage.getItem('nyn_parkings')) || [];
+            }
+        }
+
+        LLISTES.parkings = activeParkings.length > 0 ? activeParkings : ["-"];
+        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
+
+        const mS = document.getElementById('selectMonth'), yS = document.getElementById('selectYear');
+        MESOS.forEach((m,i)=> mS.add(new Option(m,i)));
+        [2026,2027].forEach(y=> yS.add(new Option(y,y)));
+        const ara = new Date();
+        currentMonth = (currentMonth !== undefined) ? currentMonth : ara.getMonth();
+        currentYear = (currentYear !== undefined) ? currentYear : ara.getFullYear();
+        mS.value = currentMonth; yS.value = currentYear;
+        
+        updateFilterSelects(); changeMonth();
+        setInterval(() => {
+            const araRellotge = new Date();
+            document.getElementById('rellotge').innerText = `(${araRellotge.toLocaleTimeString('ca-ES')})`;
+        }, 1000);
+
+        const lastTime = localStorage.getItem('nyn_last_export_time');
+        const lastExportEl = document.getElementById('lastExport') || document.getElementById('llegendaExport');
+        if (lastTime && lastExportEl) {
+            lastExportEl.innerText = ` | Última exportació: ${lastTime}`;
+        }
+    }
+
+
+
+    function changeMonth() {
+        currentMonth = parseInt(document.getElementById('selectMonth').value);
+        currentYear = parseInt(document.getElementById('selectYear').value);
+        const nextM = (currentMonth + 1) % 12;
+        document.getElementById('btnExport').innerText = `🚀 Exportar a ${MESOS[nextM]} `;
+        document.getElementById('displayMonth').innerText = `${MESOS[currentMonth].toUpperCase()} ${currentYear}`;
+        cacheDades = {}; 
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith(`nyn_v12_${currentYear}_${currentMonth}_`)) {
+                cacheDades[key] = JSON.parse(localStorage.getItem(key));
+            }
+        });
+        renderHeader(); renderTable(); updateLockVisuals();
+    }
+
+    function renderHeader() {
+        const hr = document.getElementById('headerRow'); if (!hr) return;
+        hr.innerHTML = '<th class="col-name">HORARI</th>';
+        const days = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const NOM_DIES = ["Diu", "Dill", "Dim", "Dix", "Dij", "Div", "Dis"];
+        for (let d = 1; d <= days; d++) {
+            const dateObj = new Date(currentYear, currentMonth, d);
+            const diaSetmana = NOM_DIES[dateObj.getDay()];
+            const th = document.createElement('th');
+            th.innerHTML = `${diaSetmana} ${d}`;
+            if (dateObj.getDay() === 0 || dateObj.getDay() === 6) th.classList.add('is-weekend-header');
+            if (isFestiu(currentMonth, d, "GENERAL")) th.classList.add('is-festiu-header');
+            hr.appendChild(th);
+        }
+    }
+
+    function renderTable() {
+        const body = document.getElementById('tableBody'); body.innerHTML = "";
+        cellCoords = {}; const days = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const fPark = document.getElementById('filterPark').value;
+        const fWorker = document.getElementById('filterWorker').value;
+        const fHorari = document.getElementById('filterHorari').value;
+        let rowCounter = 0; const fragment = document.createDocumentFragment();
+
+        LLISTES.parkings.sort().forEach((park) => {
+            if (park === "-" || (fPark !== "ALL" && fPark !== park)) return;
+            const isPendent = localStorage.getItem(`nyn_pendent_${currentYear}_${currentMonth}_${park}`) === "true";
+            const safeParkName = park.replace(/\s+/g, '_');
+            let centerRows = [];
+            ["MATÍ", "TARDA", "NIT"].forEach(torn => {
+                if (fHorari.startsWith("T_") && fHorari !== `T_${torn}`) return;
+                let rowMatchesFilter = false; let cellsArr = [];
+                for (let d = 1; d <= days; d++) {
+                    const sId = `nyn_v12_${currentYear}_${currentMonth}_${park}_${torn}_${d}`;
+                    cellCoords[sId] = { r: rowCounter, c: d };
+                    const saved = cacheDades[sId] || {w: "-", h: "-", s: false, n: ""};
+                    const matchW = (fWorker === "ALL" || saved.w === fWorker);
+                    const matchH = (fHorari === "ALL" || fHorari.startsWith("T_") || saved.h === fHorari);
+                    const td = document.createElement('td'); td.id = "cell_" + sId;
+                    
+
+		if (matchW && matchH) {
+                        rowMatchesFilter = true;
+                        td.style.pointerEvents = "auto"; 
+
+                        // 1. Decorem la cel·la (Festius, Caps de setmana, Notes)
+                        if (isFestiu(currentMonth, d, park)) td.classList.add('is-festiu');
+                        if (new Date(currentYear, currentMonth, d).getDay() % 6 === 0) td.classList.add('is-weekend');
+                        if (saved.n) td.classList.add('has-note');
+
+                        // 2. COMPROVACIÓ DE VACANCES (Amb forçat de color)
+                        if (comprovarSiTeVacances(saved.w, d, currentMonth, currentYear)) {
+                            td.classList.add('is-vacances');
+                            // Forcem el color lila directament per assegurar-nos que es veu
+                            td.style.backgroundColor = "rgba(186, 104, 200, 0.18)"; 
+                        } else {
+                            // Netegem el color si no hi ha vacances (per si es canvia el treballador)
+                            td.style.backgroundColor = ""; 
+                        }
+
+                        const classSub = saved.s ? 'is-substitucio' : '';
+
+                        // 3. Contingut de la cel·la
+                        td.innerHTML = `<div class="cell-container ${classSub}" style="pointer-events: auto;">
+                            <select class="select-worker" style="pointer-events: auto;" onchange="quickSave('${sId}', this, 'w')">
+                                ${LLISTES.personal.map(p => `<option value="${p}" ${saved.w===p?'selected':''}>${p}</option>`).join('')}
+                            </select>
+                            <select class="select-hour" style="pointer-events: auto;" onchange="quickSave('${sId}', this, 'h')">
+                                ${LLISTES.horaris.map(h => `<option value="${h}" ${saved.h===h?'selected':''}>${h}</option>`).join('')}
+                            </select>
+                            <input type="radio" class="sub-radio" style="pointer-events: auto;" ${saved.s?'checked':''} onclick="event.stopPropagation(); quickSave('${sId}', 			this, 's')">
+                        </div>`;
+                    }
+                    
+                    td.onmousedown = (e) => startSelect(sId, e);
+                    td.onmouseenter = () => updateSelection(sId);
+                    td.oncontextmenu = (e) => { e.preventDefault(); openNote(sId); }; 
+                    cellsArr.push(td);
+                }
+                if (rowMatchesFilter) {
+                    const tr = document.createElement('tr');
+                    tr.className = `row-${torn.toLowerCase()} park-row-${safeParkName} ${isPendent ? "parking-section-pendent" : ""}`;
+                    const nameTd = document.createElement('td'); 
+                    nameTd.className = 'col-name'; 
+                    nameTd.innerText = torn;
+                    tr.appendChild(nameTd); 
+                    cellsArr.forEach(c => tr.appendChild(c));
+                    centerRows.push(tr); 
+                    rowCounter++;
+                }
+            });
+            if (centerRows.length > 0) {
+                const trP = document.createElement('tr');
+                trP.innerHTML = `<td colspan="${days+1}"><div class="center-header">
+                    <input type="checkbox" class="check-marcador" ${isPendent ? 'checked' : ''} onchange="toggleMarcador('${park}', this.checked)">
+                    <div class="center-label">${park}</div>
+                </div></td>`;
+                fragment.appendChild(trP); 
+                centerRows.forEach(r => fragment.appendChild(r));
+            }
+        });
+        body.appendChild(fragment);
+    }
+
+
+
+
+
+   function quickSave(id, el, field) {
+    if (isMonthLocked()) { 
+        alert("Aquest mes està tancat."); 
+        renderTable(); 
+        return; 
+    }
+    
+    // Extraiem dades de l'ID (format: nyn_v12_any_mes_CENTRE_TORN_DIA)
+    const parts = id.split('_');
+    const dia = parts[parts.length - 1];
+    const torn = parts[parts.length - 2];
+    // Agafem el centre (que pot tenir espais com "NN BONANOVA")
+    const centre = parts.slice(4, parts.length - 2).join(" "); 
+    
+    pushHistory([id]);
+    let data = cacheDades[id] || {w: "-", h: "-", s: false, n: ""};
+    
+    if (field === 'w') data.w = el.value;
+    if (field === 'h') data.h = el.value;
+    if (field === 's') { 
+        data.s = !data.s; 
+        el.checked = data.s; 
+        el.parentElement.classList.toggle('is-substitucio', data.s); 
+    }
+    
+    localStorage.setItem(id, JSON.stringify(data)); 
+    cacheDades[id] = data;
+
+    // Aquesta frase és la que veuràs al log.html (Tot en una sola fila)
+    const detallAccio = `[${centre} - ${torn} - Dia ${dia}]: ${data.w} | ${data.h}${data.s ? ' (SUB)' : ''}`;
+    
+    // Cridem a la funció de log
+    registrarLog("SISTEMA", detallAccio);
+}
+
+
+
+
+
+    function handleGlobalKey(e) {
+        if (isMonthLocked()) return;
+        if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
+        if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undo(); }
+        if (e.ctrlKey && (e.key === 'c' || e.key === 'C') && selectedIds.length > 0) {
+            e.preventDefault(); const coords = selectedIds.map(id => cellCoords[id]);
+            const minR = Math.min(...coords.map(c => c.r)), minC = Math.min(...coords.map(c => c.c));
+            const maxR = Math.max(...coords.map(c => c.r)), maxC = Math.max(...coords.map(c => c.c));
+            clipboardData = { rows: maxR - minR + 1, cols: maxC - minC + 1, items: [] };
+            selectedIds.forEach(id => {
+                const pos = cellCoords[id], data = cacheDades[id] || {w: "-", h: "-", s: false};
+                clipboardData.items.push({ relR: pos.r - minR, relC: pos.c - minC, val: {w: data.w, h: data.h, s: data.s} });
+            });
+        }
+        if (e.ctrlKey && (e.key === 'v' || e.key === 'V') && clipboardData && selectedIds.length > 0) {
+            e.preventDefault(); const destCoords = selectedIds.map(id => cellCoords[id]);
+            const minDestR = Math.min(...destCoords.map(c => c.r)), minDestC = Math.min(...destCoords.map(c => c.c));
+            pushHistory(selectedIds);
+            selectedIds.forEach(tId => {
+                const tPos = cellCoords[tId], relR = (tPos.r - minDestR) % clipboardData.rows, relC = (tPos.c - minDestC) % clipboardData.cols;
+                const sourceItem = clipboardData.items.find(i => i.relR === relR && i.relC === relC);
+                if (sourceItem) {
+                    const current = cacheDades[tId] || {n: ""};
+                    const newData = {w: sourceItem.val.w, h: sourceItem.val.h, s: sourceItem.val.s, n: current.n};
+                    localStorage.setItem(tId, JSON.stringify(newData)); cacheDades[tId] = newData;
+                    updateCellVisuals(tId, newData);
+                }
+            });
+        }
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            if (selectedIds.length === 0) return;
+            pushHistory(selectedIds);
+            selectedIds.forEach(id => {
+                const current = cacheDades[id] || {n: ""};
+                const empty = {w: "-", h: "-", s: false, n: current.n};
+                localStorage.setItem(id, JSON.stringify(empty)); cacheDades[id] = empty;
+                updateCellVisuals(id, empty);
+            });
+        }
+    }
+
+    function pushHistory(ids) {
+        let snapshot = {};
+        ids.forEach(id => { snapshot[id] = JSON.parse(localStorage.getItem(id)) || {w: "-", h: "-", s: false, n: ""}; });
+        historyStack.push(snapshot); if (historyStack.length > 50) historyStack.shift();
+    }
+
+    function undo() {
+        if (historyStack.length === 0) return;
+        const last = historyStack.pop();
+        Object.keys(last).forEach(id => {
+            localStorage.setItem(id, JSON.stringify(last[id])); cacheDades[id] = last[id];
+            updateCellVisuals(id, last[id]);
+        });
+    }
+
+    function updateCellVisuals(id, data) {
+        const td = document.getElementById("cell_" + id); if (!td) return;
+        const sw = td.querySelector('.select-worker'), sh = td.querySelector('.select-hour'), rad = td.querySelector('.sub-radio'), cont = td.querySelector('.cell-container');
+        if(sw) sw.value = data.w || "-"; if(sh) sh.value = data.h || "-";
+        if(rad) rad.checked = data.s || false; if(cont) cont.classList.toggle('is-substitucio', data.s || false);
+        td.classList.toggle('has-note', !!data.n);
+    }
+
+    function startSelect(id, e) {
+     if (e.target.type === "radio") return;
+    isDragging = true; 
+    startId = id; 
+    const cell = document.getElementById("cell_" + id);
+    if (!e.shiftKey) clearSelection(); 
+    updateSelection(id);
+    }
+
+    function updateSelection(currentId) {
+        if (!isDragging) return; clearSelection();
+        const start = cellCoords[startId], end = cellCoords[currentId]; if(!start || !end) return;
+        const minR = Math.min(start.r, end.r), maxR = Math.max(start.r, end.r), minC = Math.min(start.c, end.c), maxC = Math.max(start.c, end.c);
+        for (let r = minR; r <= maxR; r++) {
+            for (let c = minC; c <= maxC; c++) {
+                const id = Object.keys(cellCoords).find(k => cellCoords[k].r === r && cellCoords[k].c === c);
+                if (id) { selectedIds.push(id); document.getElementById("cell_" + id)?.classList.add('selected-cell'); }
+            }
+        }
+    }
+
+    function clearSelection() {
+        selectedIds.forEach(id => document.getElementById("cell_" + id)?.classList.remove('selected-cell'));
+        selectedIds = [];
+    }
+
+    function toggleMarcador(park, checked) {
+        localStorage.setItem(`nyn_pendent_${currentYear}_${currentMonth}_${park}`, checked);
+        const safeName = park.replace(/\s+/g, '_');
+        document.querySelectorAll(`.park-row-${safeName}`).forEach(r => {
+            if (checked) r.classList.add('parking-section-pendent'); else r.classList.remove('parking-section-pendent');
+        });
+    }
+
+    function updateFilterSelects() {
+        const fp = document.getElementById('filterPark'), fw = document.getElementById('filterWorker'), oh = document.getElementById('optHorarisList');
+        fp.innerHTML = '<option value="ALL">Tots els Centres</option>';
+        LLISTES.parkings.sort().forEach(p => { if(p !== "-") fp.add(new Option(p,p)) });
+        fw.innerHTML = '<option value="ALL">Tots els Treballadors</option>';
+        LLISTES.personal.sort().forEach(p => { if(p !== "-") fw.add(new Option(p,p)) });
+        oh.innerHTML = ""; LLISTES.horaris.sort().forEach(h => { if(h !== "-") oh.appendChild(new Option(h,h)) });
+    }
+
+    function resetFilters() {
+        document.getElementById('filterPark').value = "ALL";
+        document.getElementById('filterWorker').value = "ALL";
+        document.getElementById('filterHorari').value = "ALL";
+        renderTable();
+    }
+
+    function isFestiu(m, d, parkName) {
+        const check = `${m}-${d}`; if (COMUNS.includes(check)) return true;
+        const esReus = (parkName || "").toUpperCase().includes("PALLOL") || (parkName || "").toUpperCase().includes("REUS");
+        if (esReus && REUS_ONLY.includes(check)) return true;
+        return !esReus && BCN_ONLY.includes(check);
+    }
+
+    function calcularHoresMes() {
+        const resum = {}; const diesMes = new Date(currentYear, currentMonth + 1, 0).getDate();
+        let horesConveniMes = 0;
+        for (let d = 1; d <= diesMes; d++) {
+            const data = new Date(currentYear, currentMonth, d);
+            if (data.getDay() >= 1 && data.getDay() <= 5 && !isFestiu(currentMonth, d, "GENERAL")) horesConveniMes += 8;
+        }
+        LLISTES.personal.forEach(p => { if (p !== "-") resum[p] = { diurnes: 0, nocturnes: 0, festives: 0, total: 0 }; });
+        
+        Object.keys(cacheDades).forEach(key => {
+            if (!key.startsWith(`nyn_v12_${currentYear}_${currentMonth}_`)) return;
+            const parts = key.split('_'); 
+            const parkNameInKey = parts[4]; 
+            
+            // SOLUCIÓ: Només sumem si el centre existeix a la llista activa
+            if (!LLISTES.parkings.includes(parkNameInKey)) return;
+
+            const cell = cacheDades[key];
+            if (!cell.w || cell.w === "-" || !LLISTES.personal.includes(cell.w)) return;
+            const partsH = cell.h.split('-'); if (partsH.length !== 2) return;
+            let inici = parseInt(partsH[0]), fi = parseInt(partsH[1]);
+            if (fi <= inici) fi += 24; 
+            const diaInt = parseInt(parts.pop());
+            for (let h = inici; h < fi; h++) {
+                let horaReal = h % 24, diaActualCalcul = h >= 24 ? diaInt + 1 : diaInt;
+                let esFestiuRang = (horaReal >= 22) ? isFestiu(currentMonth, diaActualCalcul + 1, parkNameInKey) : isFestiu(currentMonth, diaActualCalcul, parkNameInKey);
+                if (esFestiuRang) resum[cell.w].festives++; else if (horaReal >= 6 && horaReal < 22) resum[cell.w].diurnes++; else resum[cell.w].nocturnes++;
+                resum[cell.w].total++;
+            }
+        });
+        renderitzarResum(resum, horesConveniMes);
+    }
+
+    function renderitzarResum(resum, horesMax) {
+        document.getElementById('titreResum').innerText = `${MESOS[currentMonth].toUpperCase()} ${currentYear}`;
+        document.getElementById('jornadaInfo').innerHTML = `
+            <div><span style="color:#666; font-size:10px;">Jornada laborable:</span> <strong style="color:#2e7d32; font-size:12px; margin-left:5px;">${horesMax}h</strong></div>
+            <div style="display:flex; gap:10px; font-size:8px; font-weight:bold;"><span style="color:#4caf50;">■ DIÜRNES</span><span style="color:#9c27b0;">■ NOCTURNES</span><span style="color:#f44336;">■ FESTIVES</span></div>
+        `;
+        const valorsTotals = Object.values(resum).map(r => r.total);
+        const maxVisual = Math.max(horesMax + 20, (valorsTotals.length > 0 ? Math.max(...valorsTotals) : 0) + 10);
+        const pConveni = (horesMax / maxVisual) * 100;
+        let html = `<table style="width:100%; font-size:9px; border-collapse:collapse; table-layout:fixed;"><thead style="background:#eee;"><tr><th style="border:1px solid #ddd; padding:8px; text-align:left; width:130px;">TREBALLADOR</th><th style="border:1px solid #ddd; padding:8px; text-align:center;">DISTRIBUCIÓ D'HORES</th><th style="border:1px solid #ddd; padding:8px; background:#e8f5e9; width:60px;">TOTAL</th></tr></thead><tbody>`;
+        Object.keys(resum).sort().forEach((p) => {
+            const r = resum[p]; if (r.total === 0) return;
+            const pD = (r.diurnes/maxVisual)*100, pN = (r.nocturnes/maxVisual)*100, pF = (r.festives/maxVisual)*100;
+            html += `<tr><td style="border:1px solid #ddd; padding:4px 8px; font-weight:bold;">${p}</td><td style="border:1px solid #ddd; padding:0 15px; position:relative; background:#fff; height:20px;">
+                <div style="position:absolute; left:${pConveni}%; top:-1px; bottom:-1px; width:2px; background:red; z-index:20;"></div>
+                <div style="width:100%; background:#f5f5f5; height:14px; display:flex; overflow:hidden; border:1px solid #eee;">
+                    <div style="width:${pD}%; background:#4caf50; height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;">${r.diurnes||''}</div>
+                    <div style="width:${pN}%; background:#9c27b0; height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;">${r.nocturnes||''}</div>
+                    <div style="width:${pF}%; background:#f44336; height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;">${r.festives||''}</div>
+                </div></td><td style="border:1px solid #ddd; padding:4px; text-align:center; font-weight:900; color:${r.total>horesMax?'#d32f2f':'#000'}; font-size:12px;">${r.total}h</td></tr>`;
+        });
+        document.getElementById('taulaResumHores').innerHTML = html + `</tbody></table>`;
+        document.getElementById('horesModal').style.display = 'block';
+    }
+
+   
+function exportToNextMonth() {
+    const nMI = (currentMonth + 1) % 12;
+    const nY = (currentMonth === 11) ? currentYear + 1 : currentYear;
+
+    if (confirm(`⚠️ Vols exportar la rotació a ${MESOS[nMI]}?\r\nEs respectaran els torns de cap de setmana i no s'ompliran buits.`)) {
+        
+        // 1. NETEJA ABSOLUTA DEL MES DE DESTÍ
+        // Primer esborrem tot el febrer per assegurar que no quedi brossa de proves anteriors
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith(`nyn_v12_${nY}_${nMI}_`)) {
+                localStorage.removeItem(key);
+            }
+        });
+
+        // 2. RECORREM CADA DIA DEL MES DE DESTÍ (FEBRER)
+        const diesMesSeguent = new Date(nY, nMI + 1, 0).getDate();
+
+        for (let d = 1; d <= diesMesSeguent; d++) {
+            const dObj = new Date(nY, nMI, d);
+            const dS = dObj.getDay(); // 0=Dg, 1=Dl, 2=Dm, 3=Dx, 4=Dj, 5=Dv, 6=Ds
+            
+            LLISTES.parkings.forEach(parkName => {
+                if (parkName === "-") return;
+
+                // Mirem si el dia que volem omplir és vermell o no
+                const esVermellAvui = (dS === 0 || dS === 6 || isFestiu(nMI, d, parkName));
+
+                ["MATÍ", "TARDA", "NIT"].forEach(torn => {
+                    let dadesCopiades = null;
+
+                    // BUSQUEM AL MES ANTERIOR (GENER)
+                    // Busquem un dia que sigui EXACTAMENT el mateix dia de la setmana (ex: Dilluns)
+                    // I que tingui el MATEIX color (laborable o festiu)
+                    for (let diaO = 1; diaO <= 31; diaO++) {
+                        const dObjO = new Date(currentYear, currentMonth, diaO);
+                        if (dObjO.getMonth() !== currentMonth) break;
+
+                        const dSO = dObjO.getDay();
+                        const esVermellO = (dSO === 0 || dSO === 6 || isFestiu(currentMonth, diaO, parkName));
+
+                        // COINCIDÈNCIA ESTRICTA:
+                        // Mateix dia de la setmana (ex: Dilluns a Dilluns) 
+                        // I mateix tipus de dia (Laborable a Laborable / Festiu a Festiu)
+                        if (dS === dSO && esVermellAvui === esVermellO) {
+                            const keyO = `nyn_v12_${currentYear}_${currentMonth}_${parkName}_${torn}_${diaO}`;
+                            const dadesO = localStorage.getItem(keyO);
+                            
+                            if (dadesO) {
+                                const parseO = JSON.parse(dadesO);
+                                // No copiem si és una substitució (groc) o si està buit
+                                if (parseO && parseO.w && parseO.w !== "-" && parseO.s !== true) {
+                                    dadesCopiades = parseO;
+                                    break; // Ja tenim el titular, sortim del bucle de dies
+                                }
+                            }
+                        }
+                    }
+
+                    // 3. SI HEM TROBAT UN TITULAR QUE COMPLEIX EL PERFIL, EL GUARDEM
+                    if (dadesCopiades) {
+                        const idDesti = `nyn_v12_${nY}_${nMI}_${parkName}_${torn}_${d}`;
+                        localStorage.setItem(idDesti, JSON.stringify({
+                            w: dadesCopiades.w,
+                            h: dadesCopiades.h,
+                            s: false,
+                            n: "" // Les notes mai es copien
+                        }));
+                    }
+                    // SI NO HEM TROBAT NINGÚ (Cas Borrell entre setmana), NO FEM RES.
+                    // Com que hem esborrat el mes al principi, la cel·la es queda BUIDA.
+                });
+            });
+        }
+
+        // Forçar actualització de la vista al mes de destí
+        document.getElementById('selectMonth').value = nMI;
+        document.getElementById('selectYear').value = nY;
+        changeMonth();
+        
+        alert("✅ Exportació realitzada");
+    }
+}
+
+
+
+
+
+    function isMonthLocked() { return localStorage.getItem(`nyn_locked_${currentYear}_${currentMonth}`) === "true"; }
+  function toggleLockMonth() {
+    const locked = isMonthLocked();
+    
+    if (!locked) { 
+        // Missatge en tancar
+        if (confirm("Si tanques el Mes no podràs editar-ne les dades fins que el tornis a obrir i requereix PASSWORD. Vols continuar?")) { 
+            localStorage.setItem(`nyn_locked_${currentYear}_${currentMonth}`, "true"); 
+            updateLockVisuals(); 
+        } 
+    } 
+    else { 
+        // NOU MISSATGE EN OBRIR:
+        if (confirm("Vols tornar a obrir el mes i fer-lo editable? requereix PASSWORD. Vols continuar?")) {
+            if (prompt("Codi:") === "1234") { 
+                localStorage.setItem(`nyn_locked_${currentYear}_${currentMonth}`, "false"); 
+                updateLockVisuals(); 
+            } else {
+                alert("Codi incorrecte");
+            }
+        }
+    }
+}
+    function updateLockVisuals() {
+        const locked = isMonthLocked(), table = document.getElementById('mainTable'), btn = document.getElementById('btnLockMonth');
+        if (locked) { table.classList.add('month-locked'); btn.innerText = "🔓 Obrir Mes"; btn.className = "btn-main btn-unlock"; }
+        else { table.classList.remove('month-locked'); btn.innerText = "🔒 Tancar Mes"; btn.className = "btn-main btn-lock"; }
+    }
+
+
+// 1. FUNCIÓ RESET (Amb seguretat i LOG)
+    function resetAll() { 
+        if (isMonthLocked()) return; 
+
+        const mesNom = MESOS[currentMonth].toUpperCase();
+        
+        if(confirm("⚠️ PERILL: S'esborraran totes les dades del mes i per tant perdràs tota la feina feta. N'estàs segur?")) { 
+            
+            const usuari = prompt("Per seguretat i registre, introdueix el teu nom (ALBERT / LAURA):");
+            
+            if (usuari && (usuari.toUpperCase() === "ALBERT" || usuari.toUpperCase() === "LAURA")) {
+                const prefix = `nyn_v12_${currentYear}_${currentMonth}`;
+                
+                Object.keys(localStorage).forEach(k => { 
+                    if(k.startsWith(prefix)) localStorage.removeItem(k);
+                });
+
+                // REGISTREM L'ACCIÓ
+                registrarLog(usuari, `⚠️ HA ESBORRAT TOT EL QUADRANT de ${mesNom} ${currentYear}.`);
+
+                alert("Dades esborrades correctament.");
+                changeMonth(); 
+            } else {
+                alert("Acció cancel·lada: Nom d'usuari no vàlid.");
+            }
+        } 
+    }
+
+    // 2. FUNCIÓ NOTES (Normal)
+    function openNote(id) { 
+        document.getElementById('currentNoteId').value = id; 
+        document.getElementById('noteText').value = (cacheDades[id] || {}).n || ""; 
+        document.getElementById('noteModal').style.display = 'block'; 
+    }
+
+    // 3. FUNCIÓ GUARDAR NOTA (Opcional: també registra qui posa la nota)
+
+function saveNote() {
+    const id = document.getElementById('currentNoteId').value; 
+    
+    // 1. EXTRAIEM LA INFO DE LA CEL·LA PER AL LOG
+    const parts = id.split('_');
+    const dia = parts[parts.length - 1];
+    const torn = parts[parts.length - 2];
+    const centre = parts[4];
+
+    let data = cacheDades[id] || {w: "-", h: "-", s: false, n: ""};
+    const textNota = document.getElementById('noteText').value;
+    
+    // 2. GUARDEM LA NOTA
+    data.n = textNota; 
+    localStorage.setItem(id, JSON.stringify(data)); 
+    cacheDades[id] = data; 
+    updateCellVisuals(id, data); 
+    
+    // 3. ENVIEM AL LOG EL DETALL
+    // Indiquem el dia, el torn i el centre perquè el log sigui precís
+    const accioNota = `Nota editada [Dia ${dia}, ${torn}, ${centre}]: "${textNota}"`;
+    
+    // Cridem a registrarLog (com que ja tens el fitxer "quadrant.html" dins la funció, sortirà perfecte)
+    registrarLog("SISTEMA-QUADRANT", accioNota);
+    
+    document.getElementById('noteModal').style.display = 'none';
+}
+
+
+    function openDeleteModal() { document.getElementById('deleteModal').style.display = 'block'; updateDeleteOptions(); }
+    function updateDeleteOptions() {
+        const type = document.getElementById('deleteType').value, select = document.getElementById('deleteItem'); select.innerHTML = "";
+        LLISTES[type].forEach(item => { if(item !== "-") select.add(new Option(item, item)) }); document.getElementById('editInput').value = select.value || "";
+    }
+    function addNewItem() {
+        const type = document.getElementById('deleteType').value, nou = prompt(`Nou element:`);
+        if (nou?.trim()) { LLISTES[type].push(nou.trim()); LLISTES[type].sort(); localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type])); updateDeleteOptions(); updateFilterSelects(); renderTable(); }
+    }
+    function saveEditItem() {
+        const type = document.getElementById('deleteType').value, vell = document.getElementById('deleteItem').value, nou = document.getElementById('editInput').value.trim();
+        if (nou && vell && vell !== "-" && vell !== nou) {
+            LLISTES[type] = LLISTES[type].map(i => i === vell ? nou : i); localStorage.setItem('nyn_' + type, JSON.stringify(LLISTES[type]));
+            if (type === 'personal') {
+                Object.keys(localStorage).forEach(key => { if (key.startsWith('nyn_v12_')) { let d = JSON.parse(localStorage.getItem(key)); if (d && d.w === vell) { d.w = nou; localStorage.setItem(key, JSON.stringify(d)); cacheDades[key] = d; } } });
+            }
+            updateDeleteOptions(); updateFilterSelects(); renderTable();
+        }
+    }
+    function confirmDelete() {
+        const type = document.getElementById('deleteType').value, val = document.getElementById('deleteItem').value;
+        if(val && val !== "-" && confirm(`Eliminar "${val}"?`)) { 
+            LLISTES[type] = LLISTES[type].filter(i => i !== val); localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type])); 
+            updateDeleteOptions(); updateFilterSelects(); renderTable(); 
+        }
+    }
+ 
+
+
+function exportarExcel() {
+    registrarLog("QUADRANT: Generat fitxer Excel");
+    const taulaOriginal = document.getElementById("mainTable");
+    const clonTaula = taulaOriginal.cloneNode(true);
+    
+    clonTaula.querySelectorAll('tr').forEach(tr => {
+        // 1. Files de Centre (Verdes)
+        const headerCentre = tr.querySelector('.center-header');
+        if (headerCentre) {
+            tr.innerHTML = `<td colspan="32" style="background-color:#2e7d32; color:white; font-weight:bold; text-align:center; height:20px; font-size:9pt; border:1px solid #000;">${headerCentre.innerText.trim()}</td>`;
+            return;
+        }
+
+        tr.querySelectorAll('td').forEach(td => {
+            // Columna de torn (MATÍ/TARDA/NIT)
+            if (td.classList.contains('col-name')) {
+                td.style.width = "45px";
+                td.style.fontSize = "7pt";
+                return;
+            }
+            
+            const worker = td.querySelector('.select-worker')?.value || "-";
+            const hour = td.querySelector('.select-hour')?.value || "-";
+            
+            // 2. Estructura Vertical Equilibrada (45px d'ample)
+            td.style.width = "45px"; 
+            td.innerHTML = `
+                <div style="font-weight:bold; font-size:7.5pt; line-height:1; white-space:normal; width:28px; word-wrap:break-word;">${worker}</div>
+                <div style="font-size:6.5pt; margin-top:2px; color:#444; border-top:1px solid #eee;">${hour}</div>
+            `;
+            td.querySelectorAll('input, button, select').forEach(el => el.remove());
+        });
+    });
+
+    const css = `
+        <style>
+
+ table { 
+    width: 100% !important; 
+    table-layout: fixed !important; /* Això obliga a que totes les columnes mesurin el mateix */
+    border-collapse: collapse !important; 
+    min-width: 1400px; /* <--- Augmentem el valor per assegurar espai per als 31 dies */
+    font-family: Arial, sans-serif;
+}
+            th, td { border: 1px solid #ced4da; text-align: center; padding: 2px; overflow: hidden; }
+            
+            /* DIES DEL MES: 28px permet veure els 31 dies en Landscape sense tallar */
+            th { 
+    background-color: #454d55; 
+    color: white; 
+    font-size: 7.5pt; 
+    width: 28px; 
+    height: 18px; 
+    /* AFEGEIX AIXÒ */
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+            
+           
+
+            /* Colors idèntics a la teva web */
+            .is-festiu { background-color: #ffcccc !important; }
+            .is-weekend { background-color: #ebebeb !important; }
+           
+            
+            .row-mati { background-color: #fffef0; } 
+            .row-tarda { background-color: #f6faf2; } 
+            .row-nit { background-color: #fcfcfc; }
+        </style>
+    `;
+
+    const contingut = `
+        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+        <head>
+            <meta charset="UTF-8">
+            ${css}
+            </head>
+        <body>
+            <h2 style="text-align:center; color:#008d36; font-family:Arial; font-size:11pt; margin-bottom:10px;">QUADRANT ${MESOS[currentMonth].toUpperCase()} ${currentYear}</h2>
+            <table>${clonTaula.innerHTML}</table>
+        </body>
+        </html>
+    `;
+
+    const blob = new Blob([contingut], { type: "application/vnd.ms-excel" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `QUADRANT_${MESOS[currentMonth].toUpperCase()}_${currentYear}.xls`;
+    a.click();
+}
+
+
+function exportarBackupJSON() {
+    // 1. IDENTIFIQUEM L'AUTOR AUTOMÀTICAMENT
+    const userSession = sessionStorage.getItem('userName') || "";
+    let usuari = userSession.toUpperCase() || "SISTEMA";
+
+    let dadesExportar = {};
+    
+    // 2. Recollim les dades del localStorage
+    for (let i = 0; i < localStorage.length; i++) {
+        let clau = localStorage.key(i);
+        if (clau.startsWith('nyn_')) {
+           dadesExportar[clau] = localStorage.getItem(clau);
+        }
+    }
+
+    // 3. GENEREM LA DATA I HORA
+    const ara = new Date();
+    const dataFormatada = ara.toLocaleString('ca-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit' 
+    });
+    
+    // 4. AFEGIM LES METADADES AL FITXER
+    dadesExportar["METADATA_EXPORT_DATA"] = dataFormatada;
+    dadesExportar["METADATA_EXPORT_AUTOR"] = usuari;
+
+    // 5. GENEREM EL FITXER
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadesExportar));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", `quadrant_${usuari}.json`);
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+
+    // 6. REGISTREM I ACTUALITZEM LLEGENDA USANT LA TEVA FUNCIÓ
+    // --- CANVI NOMÉS DE LES CLAUS PER A QUADRANT ---
+localStorage.setItem('nyn_quadrant_export_data', dataFormatada);
+localStorage.setItem('nyn_quadrant_export_autor', usuari);
+localStorage.setItem('nyn_quadrant_last_time', dataFormatada);
+
+    if (typeof registrarLog === 'function') {
+        registrarLog(usuari, "Ha generat una EXPORTACIÓ GENERAL (Backup JSON)");
+    }
+
+    // CRIDEM LA TEVA FUNCIÓ PERQUÈ PINTI EL NOM I LA DATA
+    if (typeof refrescarLlegendaGlobal === 'function') {
+        refrescarLlegendaGlobal();
+    }
+    
+    alert(`✅ Backup de ${usuari} generat correctament.\nData: ${dataFormatada}`);
+}
+
+
+
+
+function importarBackupJSON(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const dades = JSON.parse(e.target.result);
+            
+            // 1. GESTIÓ DE LA DATA I L'AUTOR (Llegenda)
+            // Si el fitxer ve "signat", guardem la info per a la llegenda
+            if (dades.METADATA_EXPORT_DATA) {
+                localStorage.setItem('nyn_ultima_export_data', dades.METADATA_EXPORT_DATA);
+                localStorage.setItem('nyn_ultima_export_autor', dades.METADATA_EXPORT_AUTOR);
+                // També actualitzem la data de l'exportació que surt al costat del botó
+                localStorage.setItem('nyn_last_export_time', dades.METADATA_EXPORT_DATA);
+            }
+
+            // 2. IMPORTACIÓ DE LES DADES REALS
+            Object.keys(dades).forEach(clau => {
+                // Només importem les claus que comencen per "nyn_" 
+                // i evitem sobreescriure les metadades com si fossin configuració pura
+                if (clau.startsWith('nyn_')) {
+                    localStorage.setItem(clau, dades[clau]);
+                }
+            });
+
+            // 3. AVIS D'ÈXIT PERSONALITZAT
+            const info = dades.METADATA_EXPORT_DATA 
+                ? `\n(Fitxer creat el: ${dades.METADATA_EXPORT_DATA} per ${dades.METADATA_EXPORT_AUTOR})` 
+                : "";
+            
+            alert("✅ Backup restaurat correctament!" + info);
+            
+            // 4. RECARREGAR
+            location.reload(); 
+
+        } catch (err) {
+            console.error("Error al carregar:", err);
+            alert("❌ El fitxer no és un backup vàlid.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+
+
+function registrarLog(usuari, accio) {
+    const ara = new Date();
+    const dataFormatada = ara.toLocaleString('ca-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    });
+
+    const nouLog = {
+        data: dataFormatada,
+        usuari: usuari.toUpperCase(),
+        fitxer: "quadrant.html", 
+        accio: accio
+    };
+
+    let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+    logs.unshift(nouLog);
+    if (logs.length > 500) logs.pop(); // Aquesta és millor perquè guarda fins a 500
+    localStorage.setItem('nyn_logs', JSON.stringify(logs));
+}
+
+function comprovarSiTeVacances(nomTreballador, dia, mes, any) {
+    if (!nomTreballador || nomTreballador === "-" || nomTreballador === "") return false;
+
+    // IMPORTANT: Mira que la clau del localStorage sigui la mateixa que uses per importar
+    // Si la importació de vacances la guardes a 'nyn_vacances', deixa-ho així:
+    const dadesRaw = localStorage.getItem('nyn_vacances'); 
+    if (!dadesRaw) return false;
+
+    let llistaVacances = [];
+    try {
+        llistaVacances = JSON.parse(dadesRaw);
+    } catch(e) { return false; }
+    
+    // Creem la data de la cel·la que estem avaluant
+    const dataCel = new Date(any, mes, dia);
+    dataCel.setHours(0, 0, 0, 0);
+
+    const netejar = (t) => t ? t.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
+    const nomNetQuadrant = netejar(nomTreballador);
+
+    // Busquem el treballador a la llista
+    return llistaVacances.some(v => {
+        if (netejar(v.n) !== nomNetQuadrant) return false;
+        
+        // REVISAR LES DUES POSSIBLES COLUMNES (p i p2)
+        const periodes = [];
+        if (v.p && v.p !== "" && v.p !== "PENDENTS") periodes.push(v.p);
+        if (v.p2 && v.p2 !== "" && v.p2 !== "PENDENTS") periodes.push(v.p2);
+
+        // Per a cada període (columna), comprovem si la data hi cau dins
+        return periodes.some(textPeriode => {
+            // Si el text conté " to ", és un rang. Si no, és un dia solt.
+            let dInici, dFi;
+            
+            if (textPeriode.includes(" to ")) {
+                const parts = textPeriode.split(" to ");
+                dInici = parsearDataCustom(parts[0]);
+                dFi = parsearDataCustom(parts[1]);
+            } else {
+                dInici = parsearDataCustom(textPeriode);
+                dFi = new Date(dInici);
+            }
+
+            // Verificació final: la data de la cel·la està entre l'inici i el fi d'AQUEST període?
+            return (dataCel >= dInici && dataCel <= dFi);
+        });
+    });
+}
+
+
+
+
+// Funció auxiliar imprescindible
+function parsearDataCustom(str) {
+    const p = str.trim().split('/'); // "17/03/2026"
+    const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+
+
+
+
+// Funció vital per transformar "17/03/2026" en objecte Date
+function crearData(textData) {
+    const p = textData.trim().split('/'); // Divideix per la barra /
+    // p[0]=dia, p[1]=mes, p[2]=any. Restem 1 al mes perquè Gener és 0.
+    const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+    d.setHours(0, 0, 0, 0);
+    return d;
+}
+
+
+
+
+// Funció auxiliar per convertir "17/03/2026" en una Data real de JS
+function parsearData(str) {
+    const parts = str.split('/');
+    // Atenció: mes - 1 perquè a JS els mesos van de 0 a 11
+    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 0, 0, 0);
+}
+
+function importarVacances(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const jsonComplet = JSON.parse(e.target.result);
+            
+            // Segons el teu JSON, la llista de treballadors està a jsonComplet.dades
+            const llistaAEmmagatzemar = jsonComplet.dades || [];
+
+            if (llistaAEmmagatzemar.length === 0) {
+                alert("⚠️ Atenció: No s'han trobat dades a la clau 'dades' del fitxer.");
+                return;
+            }
+
+            // Guardem la llista de treballadors (amb els seus camps n, p, p2...)
+            localStorage.setItem('nyn_vacances', JSON.stringify(llistaAEmmagatzemar));
+            
+            alert("✅ Vacances actualitzades correctament! Ara es pintaran les caselles liles.");
+            
+            // Recarreguem o cridem a la funció de dibuixar
+            if (typeof renderTable === "function") {
+                renderTable();
+            } else {
+                location.reload();
+            }
+
+        } catch (err) {
+            console.error("Error en la importació:", err);
+            alert("❌ El fitxer seleccionat no és un JSON de vacances vàlid.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+
+
+
+
+
+function generarDatesEntre(inici, fi) {
+    const dates = [];
+    let [d1, m1, y1] = inici.trim().split('/');
+    let [d2, m2, y2] = fi.trim().split('/');
+    
+    let curr = new Date(y1, m1 - 1, d1);
+    let end = new Date(y2, m2 - 1, d2);
+    
+    while (curr <= end) {
+        // Formatem la data com a "DD/MM/YYYY" per poder fer el split('/') després
+        let dia = String(curr.getDate()).padStart(2, '0');
+        let mes = String(curr.getMonth() + 1).padStart(2, '0');
+        let any = curr.getFullYear();
+        
+        dates.push(`${dia}/${mes}/${any}`);
+        curr.setDate(curr.getDate() + 1);
+    }
+    return dates;
+}
+
+
+
+
+init();
+
+
+function refrescarLlegendaGlobal() {
+    // Anem a buscar les claus específiques del quadrant
+    const data = localStorage.getItem('nyn_quadrant_export_data');
+    const autor = localStorage.getItem('nyn_quadrant_export_autor');
+    const el = document.getElementById('llegendaExport');
+    
+    if (el) {
+        if (data && autor) {
+            el.innerHTML = ` | Darrera exportació quadrant: ${data} (per ${autor})`;
+        } else {
+            el.innerHTML = " | Darrera exportació quadrant: Cap dada encara";
+        }
+    }
+}
+
+
+</script>
+
+<div id="noteModal">
+    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);">OBSERVACIÓ</div>
+    <input type="hidden" id="currentNoteId"><textarea id="noteText"></textarea>
+    <div style="display:flex; justify-content:flex-end; gap:5px;"><button onclick="saveNote()" class="btn-main">Guardar</button><button onclick="document.getElementById('noteModal').style.display='none'">Tancar</button></div>
+</div>
+
+<div id="deleteModal">
+    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);">GESTIONAR DADES</div>
+    <select id="deleteType" onchange="updateDeleteOptions()" style="width:100%; margin-bottom:8px;"><option value="parkings">Centres</option><option value="personal">Treballadors</option><option value="horaris">Franges Horàries</option></select>
+    <select id="deleteItem" onchange="document.getElementById('editInput').value = this.value" style="width:100%; margin-bottom:8px;"></select>
+    <input type="text" id="editInput" class="input-edit">
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;"><button onclick="addNewItem()" class="btn-main">Afegir Nou</button><button onclick="saveEditItem()" style="background:#ff9800; color:white; border:none;">Guardar</button><button onclick="confirmDelete()" style="background:#f44336; color:white; border:none;">Eliminar</button><button onclick="document.getElementById('deleteModal').style.display='none'">Tancar</button></div>
+</div>
+
+<div id="horesModal">
+    <div class="hores-modal-header">
+        <button onclick="document.getElementById('horesModal').style.display='none'" class="close-btn-top">&times;</button>
+        <div class="hores-title-box"><span style="font-weight:900; font-size:12px; color:var(--nyn-verd-centre);">📊 RECOMPTE D'HORES - <span id="titreResum"></span></span></div>
+        <div id="jornadaInfo" style="background:#f8f9fa; padding:10px; border-radius:4px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;"></div>
+    </div>
+    <div id="taulaResumHores"></div>
+    <div style="margin-top:20px; text-align:right;"><button onclick="document.getElementById('horesModal').style.display='none'" class="btn-tancar-resum">Tancar Resum</button></div>
+</div>
+
+</body>
+</html>

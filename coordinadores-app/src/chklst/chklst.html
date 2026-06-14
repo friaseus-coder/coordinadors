@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; background: #f4f4f4; }
+        .chklst-layout { display: flex; height: 100vh; width: 100%; }
+        
+        /* MENÚ LATERAL MÉS ESTRET I POLÍT */
+        .chklst-menu {
+            width: 180px; 
+            background: #f0f2f0; border-right: 1px solid #ccc;
+            padding: 10px; display: flex; flex-direction: column; gap: 8px;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05); z-index: 10;
+        }
+        
+        /* Visor dreta amb fons corporatiu suau */
+        .chklst-viewer { 
+            flex-grow: 1; 
+            background: #e8f5e9; 
+            position: relative; 
+            overflow: hidden;
+        }
+
+        /* Capa superior per amagar la ruta lletja del navegador */
+        .viewer-overlay {
+            position: absolute; top: 0; left: 0; right: 0; height: 40px;
+            background: #008d36; color: white;
+            display: flex; align-items: center; padding-left: 15px;
+            font-size: 10px; font-weight: bold; text-transform: uppercase;
+            z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            letter-spacing: 1px;
+        }
+
+        iframe#visor-contingut { 
+            width: 100%; height: calc(100% - 40px); 
+            border: none; margin-top: 40px;
+            background: white;
+        }
+
+        /* Targetes i botons petits i VERDS */
+        .card-coordinador {
+            background: white; padding: 6px; border: 1px solid #ddd;
+            border-left: 3px solid #008d36; border-radius: 0;
+        }
+        
+        h3 { margin: 0 0 4px 0; font-size: 9px; color: #444; text-transform: uppercase; font-weight: 800; }
+
+        .btn-explorar {
+            display: flex; align-items: center; justify-content: center;
+            padding: 5px; 
+            background: #008d36; 
+            color: white; border: none;
+            font-weight: bold; font-size: 9px; cursor: pointer; text-transform: uppercase;
+            width: 100%; text-decoration: none; transition: 0.2s;
+            box-sizing: border-box;
+        }
+        
+        .btn-explorar:hover { background: #006b29; }
+        .btn-explorar span { margin-right: 4px; font-size: 11px; }
+
+        .footer-logo { margin-top: auto; text-align: center; opacity: 0.2; padding-bottom: 5px; }
+    </style>
+</head>
+<body>
+    <div class="chklst-layout">
+        <div class="chklst-menu">
+            <div class="card-coordinador">
+                <h3>Albert Campins</h3>
+                <a href="file:///P:/Parkings/COMERCIAL/OPERACIONES/Informes PKS-Checklist/Albert Campins/" target="visor-contingut" class="btn-explorar">
+                    <span>📂</span> Explorar
+                </a>
+            </div>
+            
+            <div class="card-coordinador">
+                <h3>Laura Navarro</h3>
+                <a href="file:///P:/Parkings/COMERCIAL/OPERACIONES/Informes PKS-Checklist/Laura Navarro/" target="visor-contingut" class="btn-explorar">
+                    <span>📂</span> Explorar
+                </a>
+            </div>
+            
+            <div class="card-coordinador">
+                <h3>Miguel Arroyo</h3>
+                <a href="file:///P:/Parkings/COMERCIAL/OPERACIONES/Informes PKS-Checklist/Miguel Arroyo/" target="visor-contingut" class="btn-explorar">
+                    <span>📂</span> Explorar
+                </a>
+            </div>
+
+            <div class="footer-logo">
+                <img src="https://www.nyn.es/images/logo-nyn.png" alt="NyN" width="30" style="filter: grayscale(1);">
+            </div>
+        </div>
+        
+        <div class="chklst-viewer">
+            <div class="viewer-overlay">Explorador de Checklists | Unitat P:</div>
+            
+            <iframe id="visor-contingut" name="visor-contingut" src="about:blank"></iframe>
+        </div>
+    </div>
+
+    <script>
+        // Aquesta funció s'executa quan la pàgina es fa visible
+        function resetVisor() {
+            document.getElementById('visor-contingut').src = "about:blank";
+        }
+
+        // Escolta quan canvies entre pestanyes del navegador o quan el contenidor es carrega
+        window.addEventListener('pageshow', resetVisor);
+        
+        // Si el teu projecte principal carrega aquest HTML dins d'un altre iframe/pestanya, 
+        // aquest reset s'assegurarà que el visor estigui net en entrar.
+        window.onload = resetVisor;
+    </script>
+
+<script>
+  // 1. PRIMER DEFINIM LA FUNCIÓ (Sempre a dalt)
+  function registrarLog(usuari, accio) {
+    const ara = new Date();
+    const dataFormatada = ara.toLocaleString('ca-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    });
+    const nouLog = {
+        data: dataFormatada,
+        usuari: usuari.toUpperCase(),
+        fitxer: "checklist.html",
+        accio: accio.trim()
+    };
+    let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+    logs.unshift(nouLog);
+    if (logs.length > 500) logs.pop();
+    localStorage.setItem('nyn_logs', JSON.stringify(logs));
+  }
+
+  // 2. AVISAR EN ENTRAR
+  window.addEventListener('load', function() {
+    registrarLog("SISTEMA", "CHECKLIST: Obert l'explorador de Checklists");
+  });
+
+  // 3. REGISTRAR QUIN COORDINADOR ES CONSULTA
+  document.addEventListener('click', function(e) {
+    // Busquem si el que s'ha clicat és el botó d'explorar
+    const btn = e.target.closest('.btn-explorar');
+    if (btn) {
+        // Agafem el nom del coordinador que hi ha a l'H3 de la seva targeta
+        const nomCoordinador = btn.closest('.card-coordinador').querySelector('h3').innerText;
+        registrarLog("SISTEMA", `CHECKLIST: Consultant carpetes de -> ${nomCoordinador}`);
+    }
+  });
+
+  // 4. LÒGICA VISOR (La que ja tenies)
+  function resetVisor() {
+    const visor = document.getElementById('visor-contingut');
+    if(visor) visor.src = "about:blank";
+  }
+  window.addEventListener('pageshow', resetVisor);
+</script>
+
+
+</body>
+</html>

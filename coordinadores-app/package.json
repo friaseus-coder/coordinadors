@@ -1,0 +1,17 @@
+{
+  "name": "coordinadores-app",
+  "version": "1.0.0",
+  "description": "Intranet de Coordinadores con Electron",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package-win": "electron-packager . coordinadores --platform=win32 --arch=x64 --out=dist --overwrite && xcopy /E /I /Y dades dist\\coordinadores-win32-x64\\dades"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-packager": "^17.1.2"
+  }
+}

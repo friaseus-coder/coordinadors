@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Valoració Agents (RANKING)</title>
+  <script src="../js/persistence.js"></script>
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* --- ESTILS BOTONS IMPORT/EXPORT (COLORS QUADRANT) --- */
+    .btn-nyn {
+        border: none; padding: 5px 10px; cursor: pointer; border-radius: 0;
+        font-weight: bold; font-size: 10px; text-transform: uppercase;
+        transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 5px;
+        color: white; height: 24px; box-sizing: border-box;
+        vertical-align: middle;
+    }
+    .btn-nyn:hover { opacity: 0.8; }
+    
+    .btn-export { background: #6a1b9a !important; } /* LILA */
+    .btn-import { background: #ef6c00 !important; } /* TARONJA */
+
+    /* Ajust de la barra de botons de vista per encabir els nous botons */
+    .botons-vista {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        gap: 8px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Valoració Agents (RANKING)</h1>
+  </header>
+
+<div class="charts-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+  
+  <div class="chart-box">
+    <h2>Mitjana per centre</h2>
+    <canvas id="centreChart"></canvas>
+  </div>
+
+  <div class="chart-box">
+    <h2>Volum aptituds</h2>
+    <canvas id="scatterChart"></canvas>
+  </div>
+
+  <div class="chart-box">
+  <h2>Comparativa rendiment</h2>
+  <div id="sunburstChart" style="width:100%; height:500px;"></div>
+</div>
+
+</div>
+
+
+  <div class="controls">
+    <select id="filterZona">
+      <option value="">Totes les zones</option>
+      <option value="Zona 1">Zona 1</option>
+      <option value="Zona 2">Zona 2</option>
+      <option value="Zona 3">Zona 3</option>
+    </select>
+
+    <select id="filterCentre">
+      <option value="">Tots els centres</option>
+    </select>
+
+    <select id="filterTorn">
+      <option value="">Tots els torns</option>
+    </select>
+
+    <select id="filterNota">
+      <option value="">Totes les notes</option>
+    </select>
+
+    <input type="text" id="search" placeholder="Cerca per agent...">
+  </div>
+
+<div class="botons-vista">
+
+  <button id="btnTableView" class="boton-accio">Mostrar Taula</button>
+  <button id="btnCardView" class="boton-accio">Mostrar Targetes</button>
+
+  <span style="border-left: 1px solid #ccc; height: 20px; margin: 0 5px;"></span>
+
+  <button class="btn-nyn btn-export" onclick="exportarDadesRanking()">💾 Exportar</button>
+  <button class="btn-nyn btn-import" onclick="document.getElementById('importFileRanking').click()">📂 Importar</button>
+  <input type="file" id="importFileRanking" style="display:none" accept=".json" onchange="importarDadesRanking(this)">
+
+  <div style="display: flex; gap: 4px; margin-left: 10px; font-size: 10px; font-weight: bold;">
+    <span style="background: rgba(255, 215, 0, 0.3); color: #856404; padding: 2px 6px; border: 1px solid rgba(255, 215, 0, 0.5);">9-10</span>
+    <span style="background: rgba(200, 230, 201, 0.5); color: #2e7d32; padding: 2px 6px; border: 1px solid #a5d6a7;">7-8</span>
+    <span style="background: rgba(255, 205, 210, 0.5); color: #c62828; padding: 2px 6px; border: 1px solid #ef9a9a;">5-6</span>
+    <span style="background: rgba(0, 0, 0, 0.1); color: #333; padding: 2px 6px; border: 1px solid rgba(0, 0, 0, 0.2);"> < 5</span>
+  </div>
+
+  <span id="workerCount" style="margin-left:15px; font-weight:bold; font-size:0.9em; color:#23631f;">
+    Nº Treballadors: 0
+  </span>
+
+<span id="llegendaExport" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #111; text-transform: none; text-shadow: none; font-weight: normal; margin-left: 15px;">
+    | Darrera exportació: Cap dada encara
+</span>
+  <img src="logo.png" alt="Logo Empresa" id="logoVista" 
+       style="height:50px; margin-left:auto; position: relative; top: -10px;">
+  
+</div>
+
+
+
+  <div id="tableContainer">
+    <table id="tableView">
+
+      <thead>
+        <tr>
+          <th></th>
+          <th>Agent</th>
+          <th>Centre</th>
+          <th>Societat</th>
+          <th>Torn</th>
+          <th>Zona</th>
+          <th>Coneixements</th>
+          <th>Atenció</th>
+          <th>Disponibilitat</th>
+          <th>Actitud</th>
+          <th>Valoració</th>
+          <th>Observacions</th>
+        </tr>
+      </thead>
+
+      <tbody id="tableBody">
+      </tbody>
+
+      <tfoot>
+      <tr>
+        <td colspan="13" style="text-align:left; padding:10px 0;">
+          <button id="addRowBtn">+ Afegir fila</button>
+        </td>
+      </tr>
+      <tr>
+        <td colspan="13" class="footer">
+          nn parkings 2026 v1.0 beta
+        </td>
+      </tr>
+    </tfoot>
+
+    </table>
+  </div>
+
+  <div id="cardsContainer" style="display:none;"></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+  
+  <script>
+
+
+    /* LOGICA EXPORT/IMPORT PER AL RANKING */
+
+function refrescarLlegendaGlobal() {
+    // Clau específica per al Rànquing
+    const data = localStorage.getItem('nyn_ranking_export_data');
+    const autor = localStorage.getItem('nyn_ranking_export_autor');
+    const el = document.getElementById('llegendaExport');
+    
+    if (el) {
+        if (data && autor) {
+            el.innerHTML = ` | Darrera exportació rànquing: ${data} (per ${autor})`;
+        } else {
+            el.innerHTML = " | Darrera exportació rànquing: Cap dada encara";
+        }
+    }
+}
+
+
+
+// --- FUNCIÓ DE LOG ---
+function registrarLog(usuari, accio) {
+    const ara = new Date();
+    const dataFormatada = ara.toLocaleString('ca-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit', second: '2-digit' 
+    });
+
+    const nouLog = {
+        data: dataFormatada,
+        usuari: usuari.toUpperCase(),
+        fitxer: "ranking.html",
+        accio: accio.trim()
+    };
+
+    let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+    logs.unshift(nouLog);
+    if (logs.length > 500) logs.pop();
+    localStorage.setItem('nyn_logs', JSON.stringify(logs));
+}
+
+function exportarDadesRanking() {
+    let dades = {};
+    let trobat = false;
+
+    // 1. Busquem dades de rànquing
+    for (let i = 0; i < localStorage.length; i++) {
+        let clau = localStorage.key(i);
+        if (clau === 'rankingData') { 
+            dades[clau] = localStorage.getItem(clau);
+            trobat = true;
+        }
+    }
+
+    if (!trobat) {
+        for (let i = 0; i < localStorage.length; i++) {
+            let clau = localStorage.key(i);
+            if (!clau.startsWith('nyn_') && 
+                !clau.startsWith('nn_') && 
+                !clau.startsWith('Albert') && 
+                !clau.startsWith('Laura') && 
+                clau !== 'customCenters') {
+                dades[clau] = localStorage.getItem(clau);
+                trobat = true;
+            }
+        }
+    }
+
+    if (!trobat) {
+        alert("Atenció: No s'han trobat dades de rànquing per exportar.");
+        return;
+    }
+
+    // AFEGIM METADADES (SIGNATURA)
+    const ara = new Date();
+    const dataFormatada = ara.toLocaleString('ca-ES', { 
+        day: '2-digit', month: '2-digit', year: 'numeric', 
+        hour: '2-digit', minute: '2-digit' 
+    });
+    
+    const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
+    let usuari = "SISTEMA"; 
+    if (nomSencer.toUpperCase().includes("ALBERT")) usuari = "ALBERT";
+    else if (nomSencer.toUpperCase().includes("LAURA")) usuari = "LAURA";
+
+    dades["METADATA_EXPORT_DATA"] = dataFormatada;
+    dades["METADATA_EXPORT_AUTOR"] = usuari;
+
+    const blob = new Blob([JSON.stringify(dades, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "ranking.json"; 
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // Actualitzem llegenda i log
+    localStorage.setItem('nyn_ranking_export_data', dataFormatada);
+localStorage.setItem('nyn_ranking_export_autor', usuari);
+refrescarLlegendaGlobal();
+    registrarLog(usuari, "Ha exportat les dades de RANKING");
+}
+
+function importarDadesRanking(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const dades = JSON.parse(e.target.result);
+            
+            // Si el fitxer porta signatura, l'apliquem a la llegenda
+            if (dades.METADATA_EXPORT_DATA) {
+                localStorage.setItem('nyn_ultima_export_data', dades.METADATA_EXPORT_DATA);
+                localStorage.setItem('nyn_ultima_export_autor', dades.METADATA_EXPORT_AUTOR);
+            }
+
+            Object.keys(dades).forEach(clau => {
+                if (clau !== "METADATA_EXPORT_DATA" && clau !== "METADATA_EXPORT_AUTOR") {
+                    localStorage.setItem(clau, dades[clau]);
+                }
+            });
+            
+            alert("✅ Rànquing importat correctament.");
+            location.reload();
+        } catch (err) { 
+            console.error("Error en importar dades"); 
+            alert("❌ Fitxer de rànquing no vàlid.");
+        }
+    };
+    reader.readAsText(file);
+}
+
+// --- VIGILANT DEFINITIU PER POSICIÓ DE COLUMNA ---
+document.addEventListener('change', function(e) {
+    const target = e.target;
+    const fila = target.closest('#tableBody tr');
+    if (fila) registrarCanviManual(target, fila);
+}, true);
+
+document.addEventListener('focusout', function(e) {
+    const target = e.target;
+    if (target.tagName === 'SELECT') return; 
+    const fila = target.closest('#tableBody tr');
+    if (fila) registrarCanviManual(target, fila);
+}, true);
+
+function registrarCanviManual(target, fila) {
+    let nomAgent = fila.cells[1] ? fila.cells[1].innerText.replace('💾', '').trim() : "Agent";
+    const indexColumna = target.closest('td').cellIndex;
+    const caps = ["Acció", "AGENT", "CENTRE", "SOCIETAT", "TORN", "ZONA", "CONEIXEMENTS", "ATENCIÓ", "DISPO", "ACTITUD", "VALORACIÓ", "OBS"];
+    let nomColumna = caps[indexColumna] || "DADA";
+
+    let valor = "";
+    if (target.tagName === 'SELECT') {
+        valor = target.options[target.selectedIndex].text;
+    } else {
+        valor = target.innerText || target.value || "";
+    }
+
+    valor = valor.toString().replace(/\n/g, " ").trim();
+    if (nomColumna === "AGENT") return;
+
+    if (valor !== "") {
+        registrarLog("SISTEMA", `RANKING [${nomAgent}]: ${nomColumna} ➡️ ${valor}`);
+    }
+}
+
+// Botó afegir fila
+document.addEventListener('click', function(e) {
+    if (e.target && e.target.id === 'addRowBtn') {
+        registrarLog("SISTEMA", "RANKING: S'ha clicat 'Afegir fila'");
+    }
+});
+
+  </script>
+
+  <script src="js/data.js"></script>
+  <script src="js/charts.js"></script> 
+  <script src="js/app.js"></script>
+
+
+<script>
+  // 1. NETEJAR I ORDENAR EL SELECTOR GENERAL
+  function netejarIOrdenarCentresDalt() {
+    const selector = document.getElementById('filterCentre');
+    if (!selector) return;
+    let opcions = Array.from(selector.options);
+    opcions = opcions.filter(opt => opt.value !== "NN CORSEGA");
+    const primera = opcions.shift();
+    opcions.sort((a, b) => a.text.localeCompare(b.text, 'ca'));
+    opcions.unshift(primera);
+    selector.innerHTML = "";
+    opcions.forEach(opt => selector.add(opt));
+  }
+
+  // 2. NETEJAR ELS SELECTORS QUE HI HA DINS DE LES FILES
+  function netejarSelectorsTaula() {
+    const selectorsTaula = document.querySelectorAll('#tableBody select');
+    selectorsTaula.forEach(sel => {
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === "NN CORSEGA") {
+          sel.remove(i);
+          break; 
+        }
+      }
+    });
+  }
+
+  // 3. LA TEVA FUNCIÓ DE COMPTADOR
+  function actualitzarComptadorTreballadors() {
+    const tableBody = document.getElementById('tableBody');
+    const workerCountSpan = document.getElementById('workerCount');
+    if (tableBody && workerCountSpan) {
+      const visibles = Array.from(tableBody.querySelectorAll('tr')).filter(tr => tr.style.display !== 'none').length;
+      workerCountSpan.textContent = `Nº Treballadors: ${visibles}`;
+    }
+    netejarSelectorsTaula();
+  }
+
+  // 4. EXECUTAR EN CARREGAR I VIGILAR CANVIS
+  window.addEventListener('load', async () => {
+    await persistence.syncLoad('ranking');
+    setTimeout(() => {
+        refrescarLlegendaGlobal(); // <--- ARRENCADA LLEGENDA
+        netejarIOrdenarCentresDalt();
+        actualitzarComptadorTreballadors();
+    }, 300);
+  });
+
+  document.querySelectorAll('.controls select, #search').forEach(el => {
+    el.addEventListener('input', () => setTimeout(actualitzarComptadorTreballadors, 50));
+  });
+
+  const btnAdd = document.getElementById('addRowBtn');
+  if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+      setTimeout(() => {
+        netejarSelectorsTaula();
+        actualitzarComptadorTreballadors();
+      }, 100);
+    });
+  }
+</script>
+
+</body>
+</html>

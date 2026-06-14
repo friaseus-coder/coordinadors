@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>NN Pàrkings 2026 v1.0 beta</title>
+    <script src="../js/i18n.js"></script>
+    <script src="../js/persistence.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { 
+            font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+            background-color: #ffffff; 
+            margin: 0; 
+            color: #334155; 
+            overflow-x: hidden; 
+        }
+        
+        .header-top { 
+            background: #ffffff; 
+            color: #0f2d4a; 
+            padding: 12px 24px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .header-top h1 { 
+            font-size: 16px; 
+            font-weight: 700; 
+            margin: 0; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+            color: #0f2d4a;
+        }
+        
+        .controls-wrapper { 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+        }
+        
+        .month-selector { 
+            background: #f1f5f9; 
+            color: #334155; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 9999px; 
+            font-size: 12px; 
+            font-weight: 600; 
+            padding: 6px 16px; 
+            cursor: pointer; 
+            outline: none; 
+            font-family: inherit;
+            transition: all 0.2s;
+        }
+        
+        .month-selector:focus {
+            border-color: #063931;
+            background: #ffffff;
+            box-shadow: 0 0 0 2px rgba(6, 57, 49, 0.1);
+        }
+        
+        .month-selector option { 
+            color: #334155; 
+            background: #ffffff;
+        }
+        
+        .btn-nyn { 
+            border: none; 
+            padding: 6px 16px; 
+            cursor: pointer; 
+            border-radius: 9999px; 
+            font-weight: 600; 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            transition: all 0.2s; 
+            display: inline-flex; 
+            align-items: center; 
+            gap: 6px; 
+            background: #ffffff; 
+            color: #063931; 
+            height: 28px; 
+            box-sizing: border-box; 
+        }
+        
+        .btn-nyn:hover { 
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+        
+        .btn-copy { 
+            background: #eff6ff !important; 
+            color: #1e40af !important; 
+            border: 1px solid #bfdbfe !important; 
+        }
+        
+        .btn-copy:hover {
+            background: #dbeafe !important;
+        }
+        
+        .obs-header-container { 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            width: 100%; 
+            padding-right: 10px; 
+        }
+        
+        .llegenda-inline { 
+            display: inline-flex; 
+            gap: 16px; 
+            align-items: center; 
+            font-size: 11px; 
+            color: #64748b; 
+            text-transform: none; 
+            margin-left: 24px; 
+            font-weight: 500;
+        }
+        
+        .llegenda-item { 
+            display: flex; 
+            align-items: center; 
+            gap: 6px; 
+            line-height: 1; 
+        }
+        
+        .dreceres-teclat { 
+            color: #94a3b8; 
+            font-size: 9px; 
+            display: flex; 
+            gap: 12px; 
+            text-transform: none; 
+            font-weight: 500; 
+        }
+        
+        .quadrat { 
+            width: 10px; 
+            height: 10px; 
+            border-radius: 3px; 
+            flex-shrink: 0;
+        }
+        
+        .table-wrapper { 
+            width: 100%; 
+            overflow-x: auto; 
+            padding: 24px; 
+            box-sizing: border-box; 
+            background: #ffffff; 
+        }
+        
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            min-width: 1100px; 
+            table-layout: fixed; 
+            border: none; 
+        }
+        
+        th { 
+            background-color: #f8fafc; 
+            color: #475569; 
+            padding: 14px 16px; 
+            text-align: center; 
+            font-size: 12px; 
+            text-transform: uppercase; 
+            border-bottom: 1px solid #e2e8f0; 
+            font-weight: 700; 
+            letter-spacing: 0.5px;
+        }
+        
+        th.col-left { 
+            text-align: left; 
+            padding-left: 16px; 
+        }
+        
+        td { 
+            padding: 16px 16px; 
+            border-bottom: 1px solid #f1f5f9; 
+            font-size: 13px; 
+            line-height: 1.5; 
+            outline: none; 
+            text-align: center; 
+            vertical-align: middle; 
+            color: #334155;
+        }
+        
+        tr:nth-child(even) { 
+            background-color: #fcfdfe; 
+        }
+        
+        tr:hover { 
+            background-color: #f8fafc !important; 
+        }
+        
+        .sep-row { 
+            background-color: #f8fafc !important; 
+            border-bottom: 1px solid #e2e8f0; 
+            border-top: 1px solid #e2e8f0; 
+        }
+        
+        .sep-content { 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            padding: 8px 16px; 
+            font-weight: 700; 
+            font-size: 13px; 
+            color: #0f2d4a; 
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .btn-add-centre { 
+            border: 1px solid #a7f3d0; 
+            border-radius: 9999px; 
+            cursor: pointer; 
+            font-weight: 600; 
+            background: #ecfdf5; 
+            color: #065f46; 
+            padding: 4px 14px; 
+            font-size: 10px; 
+            margin-right: 8px; 
+            text-transform: uppercase; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px; 
+            height: 24px;
+            line-height: 1; 
+            vertical-align: middle;  
+            transition: all 0.2s;
+        }
+        
+        .btn-add-centre:hover { 
+            background: #d1fae5; 
+            color: #047857;
+            transform: translateY(-1px);
+        }
+        
+        .btn-del { 
+            width: 20px; 
+            height: 20px; 
+            font-size: 14px; 
+            margin-right: 8px; 
+            border: none; 
+            background: transparent; 
+            color: #94a3b8; 
+            cursor: pointer; 
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+        
+        .btn-del:hover { 
+            color: #ef4444; 
+            background: #fee2e2;
+        }
+        
+        .col-centre { 
+            width: 160px; 
+            font-weight: 600; 
+            text-align: left; 
+            padding-left: 16px;
+            color: #0f2d4a;
+        }
+        
+        .col-adreça { 
+            width: 140px; 
+            text-align: left; 
+            color: #64748b; 
+            font-size: 12px; 
+        }
+        
+        .col-dispo { 
+            width: 35px; 
+            font-weight: 700; 
+        }
+        
+        .col-preu { 
+            width: 80px; 
+            font-weight: 700; 
+            color: #d97706; 
+        } 
+        
+        .col-obs { 
+            text-align: left; 
+            font-size: 12px; 
+            color: #475569; 
+            white-space: normal; 
+            word-wrap: break-word; 
+        }
+        
+        td:focus { 
+            background-color: #fffbeb !important; 
+            outline: 1px solid #fde68a; 
+        }
+
+        /* Buscador superior de aparcamientos */
+        .search-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .search-input {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #e2e8f0;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 6px 16px 6px 32px;
+            width: 240px;
+            outline: none;
+            font-family: inherit;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 28px;
+            box-sizing: border-box;
+        }
+        
+        .search-input:focus {
+            border-color: #063931;
+            background: #ffffff;
+            width: 320px;
+            box-shadow: 0 0 0 2px rgba(6, 57, 49, 0.1);
+        }
+        
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            color: #64748b;
+            font-size: 11px;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header-top">
+        <div class="controls-wrapper">
+            <h1 data-i18n="comercialsTitle">Disponibilitat i Preus</h1>
+            <select id="mesActual" class="month-selector" onchange="canviarMes()">
+                <option value="gener" data-i18n="optGener">GENER</option>
+                <option value="febrer" data-i18n="optFebrer">FEBRER</option>
+                <option value="marc" data-i18n="optMarc">MARÇ</option>
+                <option value="abril" data-i18n="optAbril">ABRIL</option>
+                <option value="maig" data-i18n="optMaig">MAIG</option>
+                <option value="juny" data-i18n="optJuny" selected>JUNY</option>
+                <option value="juliol" data-i18n="optJuliol">JULIOL</option>
+                <option value="agost" data-i18n="optAgost">AGOST</option>
+                <option value="setembre" data-i18n="optSetembre">SETEMBRE</option>
+                <option value="octubre" data-i18n="optOctubre">OCTUBRE</option>
+                <option value="novembre" data-i18n="optNovembre">NOVEMBRE</option>
+                <option value="desembre" data-i18n="optDesembre">DESEMBRE</option>
+            </select>
+            <select id="anyActual" class="month-selector" onchange="canviarMes()">
+                <option value="2026" selected>2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+                <option value="2029">2029</option>
+                <option value="2030">2030</option>
+            </select>
+        </div>
+        <!-- Buscador premium de aparcamientos -->
+        <div class="search-wrapper">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="searchAparcament" class="search-input" placeholder="🔍 Cercar aparcament..." data-i18n="placeholderSearch" oninput="filtrarTaula()">
+        </div>
+    </div>
+
+    <div class="table-wrapper">
+        <table id="comercialsTable">
+            <thead>
+                <tr>
+                    <th class="col-left" style="width: 18%;" data-i18n="colCentre">CENTRE</th>
+                    <th class="col-left" style="width: 18%;" data-i18n="colAdreça">ADREÇA</th>
+                    <th style="width: 8%;" data-i18n="colFixes">FIXES</th>
+                    <th style="width: 8%;" data-i18n="colVariables">VARIABLES</th>
+                    <th style="width: 8%;" data-i18n="colVacants">VACANTS</th>
+                    <th style="width: 12%;" data-i18n="colTarifa">TARIFA (promig)</th>
+                    <th class="col-left" style="width: 28%;">
+                        <div class="obs-header-container">
+                            <div style="display: flex; align-items: center;">
+                                <span data-i18n="colObs">OBSERVACIONS</span>
+                                <div class="llegenda-inline">
+                                    <div class="llegenda-item"><div class="quadrat" style="background:#065f46;"></div> <span data-i18n="legendApte">&lt;10 apte</span></div>
+                                    <div class="llegenda-item"><div class="quadrat" style="background:#1e3a8a;"></div> <span data-i18n="legendRisc">10-25 risc</span></div>
+                                    <div class="llegenda-item"><div class="quadrat" style="background:#991b1b;"></div> <span data-i18n="legendNoApte">&gt;25 no apte (urgent abonar)</span></div>
+                                </div>
+                            </div>
+                            <div class="dreceres-teclat">
+                                <span data-i18n="shortcuts">Dreceres de teclat</span>
+                                <span>CTRL+B (<b>N</b>)</span>
+                                <span>CTRL+I (<i>I</i>)</span>
+                                <span>CTRL+U (<u>U</u>)</span>
+                            </div>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+
+    <script>
+    // Variable global con la lista de coordinadores cargados
+    let coordList = [];
+
+    // Obtener la API de Electron
+    // Obtener la API de Electron de forma segura
+    let electronApi = window.api;
+    if (!electronApi) {
+        try {
+            if (window.parent && window.parent.api) {
+                electronApi = window.parent.api;
+            }
+        } catch (e) {
+            console.warn('[COMERCIALS] No se puede acceder a window.parent.api:', e);
+        }
+    }
+
+    // Obtener valores de la sesión de forma segura (con fallback al padre)
+    function getSessionItem(key) {
+        let val = sessionStorage.getItem(key);
+        if (!val) {
+            try {
+                if (window.parent && window.parent.sessionStorage) {
+                    val = window.parent.sessionStorage.getItem(key);
+                }
+            } catch (e) {
+                console.warn(`[COMERCIALS] No se puede acceder a parent.sessionStorage para la clave ${key}:`, e);
+            }
+        }
+        return val;
+    }
+
+    async function loadCoordinadores() {
+        try {
+            if (electronApi && electronApi.getCoordinadores) {
+                coordList = await electronApi.getCoordinadores();
+            }
+        } catch (e) {
+            console.error('[COMERCIALS] Error carregant coordinadors:', e);
+        }
+        // Fallback si no se pueden cargar
+        if (!coordList || coordList.length === 0) {
+            coordList = [
+                { id: 'albert', nombre: 'Albert', apellido: 'Campins' },
+                { id: 'laura', nombre: 'Laura', apellido: 'Navarro' }
+            ];
+        }
+    }
+
+    function buildCoordSections() {
+        const table = document.getElementById('comercialsTable');
+        if (!table) return;
+
+        // Eliminar tbodies antiguos para evitar acumulaciones al cambiar de mes
+        const existingTbodys = table.querySelectorAll('tbody');
+        existingTbodys.forEach(tb => tb.remove());
+
+        const userRole = getSessionItem('userRole');
+        const userName = getSessionItem('userName');
+
+        coordList.forEach(coord => {
+            // Tbody para las filas de datos y la fila separadora de este coordinador
+            const tbody = document.createElement('tbody');
+            tbody.id = `lista-${coord.id}`;
+
+            // Fila separadora con botones
+            const sepTr = document.createElement('tr');
+            sepTr.className = 'sep-row';
+
+            let canEditBlock = false;
+            if (userRole === 'jefe operaciones') {
+                canEditBlock = true;
+            } else if (userRole === 'coordinador' && userName === coord.nombre) {
+                canEditBlock = true;
+            }
+
+            const disabledAttr = canEditBlock ? '' : 'disabled style="opacity:0.4;pointer-events:none;"';
+
+            sepTr.innerHTML = `
+                <td colspan="7">
+                    <div class="sep-content">
+                        <button class="btn-nyn btn-copy" ${disabledAttr} onclick="copiarMes('${coord.id}')" data-i18n="btnCopyMonth">${i18n.t('btnCopyMonth')}</button>
+                        <span style="margin-left: 50px; font-weight: 700; color: #0f2d4a;">${coord.nombre.toUpperCase()} ${coord.apellido.toUpperCase()}</span>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(sepTr);
+            table.appendChild(tbody);
+        });
+    }
+
+    // Obtener el prefijo de clave localStorage para un coordinador
+    function getKeyPrefix(coordId) {
+        // Usar la primera letra del nombre en mayúsculas como prefijo
+        const coord = coordList.find(c => c.id === coordId);
+        if (!coord) return `nn_${coordId}_`;
+        return `nn_${coord.nombre.charAt(0).toUpperCase()}_`;
+    }
+
+    function canviarMes() {
+        // Limpiar todas las listas de coordinadores
+        coordList.forEach(coord => {
+            const el = document.getElementById(`lista-${coord.id}`);
+            if (el) el.innerHTML = '';
+        });
+        load();
+    }
+
+    function getColorDP(valor) {
+        const n = parseInt(valor);
+        if (isNaN(n)) return "";
+        if (n <= 10) return "#065f46"; 
+        if (n <= 25) return "#1e3a8a"; 
+        return "#991b1b"; 
+    }
+
+    function crearFila(coordId, valors = ["", "", "", "", "", "", ""]) {
+        const userRole = getSessionItem('userRole');
+        const userName = getSessionItem('userName');
+        
+        const coord = coordList.find(c => c.id === coordId);
+        let canEditBlock = false;
+        if (userRole === 'jefe operaciones') {
+            canEditBlock = true;
+        } else if (userRole === 'coordinador' && coord && userName === coord.nombre) {
+            canEditBlock = true;
+        }
+        
+        const tbody = document.getElementById('lista-' + coordId);
+        if (!tbody) return;
+        const tr = document.createElement('tr');
+        const colorInicial = getColorDP(valors[4]);
+        
+        const editAttr = canEditBlock ? 'contenteditable="true"' : 'contenteditable="false" style="pointer-events: none; opacity: 0.9;"';
+        const deleteBtn = canEditBlock ? '<button class="btn-del" onclick="eliminarFila(this)">–</button>' : '';
+        
+        tr.innerHTML = `
+            <td class="col-centre"><div style="display:flex; align-items:center;">${deleteBtn}<span ${editAttr} style="flex:1;">${valors[0]}</span></div></td>
+            <td class="col-adreça" ${editAttr}>${valors[1]}</td>
+            <td ${editAttr}>${valors[2]}</td>
+            <td ${editAttr}>${valors[3]}</td>
+            <td class="col-dispo" ${editAttr} style="color:${colorInicial}" oninput="this.style.color = getColorDP(this.innerText)">${valors[4]}</td>
+            <td class="col-preu" ${editAttr}>${valors[5]}</td>
+            <td class="col-obs" ${editAttr}>${valors[6]}</td>
+        `;
+        if (canEditBlock) {
+            tr.addEventListener('input', save);
+        }
+        tbody.appendChild(tr);
+    }
+
+    function afegirFila(coordId) { crearFila(coordId); save(); }
+    function eliminarFila(btn) { if (confirm(i18n.t('confirmDeleteCentre'))) { btn.closest('tr').remove(); save(); } }
+
+    function save() {
+        const mes = document.getElementById('mesActual').value;
+        const any = document.getElementById('anyActual').value;
+        const extraure = (selector) => Array.from(document.querySelectorAll(selector)).map(tr => {
+            const cells = tr.querySelectorAll('td');
+            return [cells[0].querySelector('span').innerText, cells[1].innerText, cells[2].innerText, cells[3].innerText, cells[4].innerText, cells[5].innerText, cells[6].innerHTML];
+        });
+        
+        coordList.forEach(coord => {
+            const prefix = getKeyPrefix(coord.id);
+            const key = prefix + mes + '_' + any;
+            const data = extraure(`#lista-${coord.id} tr:not(.sep-row)`);
+            localStorage.setItem(key, JSON.stringify(data));
+        });
+    }
+
+    async function load() {
+        await loadCoordinadores();
+        buildCoordSections();
+        
+        // Cargar lista de aparcamientos desde la base de datos centralizada
+        let aparcamientosList = [];
+        try {
+            if (electronApi && electronApi.getAparcamientos) {
+                aparcamientosList = await electronApi.getAparcamientos();
+            }
+        } catch (e) {
+            console.error('Error al cargar aparcamientos desde la base de datos:', e);
+        }
+        
+        await persistence.syncLoad('comercials');
+        
+        const mes = document.getElementById('mesActual').value;
+        const any = document.getElementById('anyActual').value;
+        
+        coordList.forEach(coord => {
+            const prefix = getKeyPrefix(coord.id);
+            const key = prefix + mes + '_' + any;
+            
+            // Datos locales guardados del mes
+            const dataStr = localStorage.getItem(key);
+            let savedRows = [];
+            if (dataStr) {
+                try {
+                    savedRows = JSON.parse(dataStr);
+                } catch(e) {
+                    console.error('Error al parsear datos de comerciales:', e);
+                }
+            }
+            
+            // Filtrar aparcamientos asignados a este coordinador
+            const assigned = aparcamientosList.filter(ap => ap.coordinadorId === coord.id);
+            
+            assigned.forEach(ap => {
+                // Buscar si tiene datos ya guardados para este aparcamiento en este mes
+                const saved = savedRows.find(row => {
+                    const rowCentre = row[0]?.replace('–', '').trim() || '';
+                    return rowCentre.toLowerCase() === ap.nombre.toLowerCase();
+                });
+                
+                if (saved) {
+                    crearFila(coord.id, saved);
+                } else {
+                    // Si no tiene datos, crear fila vacía con el nombre del aparcamiento
+                    crearFila(coord.id, [ap.nombre, "", "", "", "", "", ""]);
+                }
+            });
+        });
+
+        // Aplicar el filtro de búsqueda por si estuviera activo
+        filtrarTaula();
+    }
+
+    // Filtrar aparcamientos por buscador
+    function filtrarTaula() {
+        const query = (document.getElementById('searchAparcament')?.value || '').toLowerCase().trim();
+        
+        coordList.forEach(coord => {
+            const tbody = document.getElementById(`lista-${coord.id}`);
+            if (!tbody) return;
+            
+            const rows = Array.from(tbody.querySelectorAll('tr:not(.sep-row)'));
+            let visibleCount = 0;
+            
+            rows.forEach(tr => {
+                const cells = tr.querySelectorAll('td');
+                if (cells.length < 2) return;
+                
+                // Limpiar caracteres extra como el botón "-" o espacios
+                const centreText = cells[0].innerText.replace('–', '').trim().toLowerCase();
+                const adresaText = cells[1].innerText.toLowerCase();
+                
+                if (centreText.includes(query) || adresaText.includes(query)) {
+                    tr.style.display = '';
+                    visibleCount++;
+                } else {
+                    tr.style.display = 'none';
+                }
+            });
+            
+            // Ocultar sep-row si no hay ningún registro coincidente para este coordinador
+            const sepRow = tbody.querySelector('.sep-row');
+            if (sepRow) {
+                if (query !== '' && visibleCount === 0) {
+                    sepRow.style.display = 'none';
+                } else {
+                    sepRow.style.display = '';
+                }
+            }
+        });
+    }
+
+    function resetTaula(coordId) {
+        const coord = coordList.find(c => c.id === coordId);
+        const nomComercial = coord ? `${coord.nombre.toUpperCase()} ${coord.apellido.toUpperCase()}` : coordId.toUpperCase();
+        const missatge = i18n.t('confirmResetComercials', { name: nomComercial });
+        if (confirm(missatge)) {
+            const mes = document.getElementById('mesActual').value;
+            const any = document.getElementById('anyActual').value;
+            const prefix = getKeyPrefix(coordId);
+            localStorage.setItem(prefix + mes + '_' + any, JSON.stringify([]));
+            canviarMes();
+        }
+    }
+
+    async function copiarMes(coordId) {
+        const userRole = getSessionItem('userRole');
+        const userName = getSessionItem('userName');
+        const coord = coordList.find(c => c.id === coordId);
+        
+        let canEdit = false;
+        if (userRole === 'jefe operaciones') {
+            canEdit = true;
+        } else if (userRole === 'coordinador' && coord && userName === coord.nombre) {
+            canEdit = true;
+        }
+        
+        if (!canEdit) {
+            alert(i18n.t('errorNoPermission'));
+            return;
+        }
+
+        const mesActual = document.getElementById('mesActual').value;
+        const anyActual = document.getElementById('anyActual').value;
+        const prefix = getKeyPrefix(coordId);
+        const clauActual = prefix + mesActual + '_' + anyActual;
+        const dadesActual = localStorage.getItem(clauActual);
+
+        if (!dadesActual || dadesActual === '[]' || JSON.parse(dadesActual).length === 0) {
+            alert(i18n.t('errorNoDataToCopy'));
+            return;
+        }
+
+        const mesosValids = ['gener', 'febrer', 'marc', 'abril', 'maig', 'juny', 'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre'];
+        const mapeigMesosCastella = {
+            'enero': 'gener',
+            'febrero': 'febrer',
+            'marzo': 'marc',
+            'abril': 'abril',
+            'mayo': 'maig',
+            'junio': 'juny',
+            'julio': 'juliol',
+            'agosto': 'agost',
+            'septiembre': 'setembre',
+            'octubre': 'octubre',
+            'noviembre': 'novembre',
+            'diciembre': 'desembre'
+        };
+        const mesDestiInput = prompt(i18n.t('promptDestMonth'));
+        if (!mesDestiInput) return;
+        let mesDesti = mesDestiInput.trim().toLowerCase();
+        if (mapeigMesosCastella[mesDesti]) {
+            mesDesti = mapeigMesosCastella[mesDesti];
+        }
+        if (!mesosValids.includes(mesDesti)) {
+            alert(i18n.t('errorInvalidMonth'));
+            return;
+        }
+
+        const anyDestiInput = prompt(i18n.t('promptDestYear'), anyActual);
+        if (!anyDestiInput) return;
+        const anyDesti = anyDestiInput.trim();
+        if (isNaN(parseInt(anyDesti))) {
+            alert(i18n.t('errorInvalidYear'));
+            return;
+        }
+
+        if (mesDesti === mesActual && anyDesti === anyActual) {
+            alert(i18n.t('errorSameSourceDest'));
+            return;
+        }
+
+        const clauDesti = prefix + mesDesti + '_' + anyDesti;
+        
+        // Comprobar si existen datos en el destino leyendo el archivo físico
+        const coordNombre = coord ? coord.nombre : coordId;
+        const pathDesti = `dades ${coordNombre}/comercials_${coordId}_${mesDesti}_${anyDesti}.json`;
+        
+        if (!electronApi) {
+            alert(i18n.t('errorApiNotAvailable'));
+            return;
+        }
+        
+        const checkRes = await electronApi.readFile(pathDesti);
+        if (checkRes.success && checkRes.data) {
+            const dadesDestiFisiques = checkRes.data[clauDesti];
+            if (dadesDestiFisiques && dadesDestiFisiques !== '[]' && JSON.parse(dadesDestiFisiques).length > 0) {
+                const toLabel = i18n.t('opt' + mesDesti.charAt(0).toUpperCase() + mesDesti.slice(1)) + " " + anyDesti;
+                alert(i18n.t('errorDestExists', { to: toLabel.toUpperCase() }));
+                return;
+            }
+        }
+
+        const fromLabel = i18n.t('opt' + mesActual.charAt(0).toUpperCase() + mesActual.slice(1)) + " " + anyActual;
+        const toLabel = i18n.t('opt' + mesDesti.charAt(0).toUpperCase() + mesDesti.slice(1)) + " " + anyDesti;
+
+        if (confirm(i18n.t('confirmCopyComercials', { from: fromLabel.toUpperCase(), to: toLabel.toUpperCase() }))) {
+            localStorage.setItem(clauDesti, dadesActual);
+            
+            const payload = {};
+            payload[clauDesti] = dadesActual;
+            const ara = new Date().toLocaleString('ca-ES', { 
+                day: '2-digit', month: '2-digit', year: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+            });
+            payload["nn_last_export_time_shared"] = ara;
+            payload["nn_last_export_author_shared"] = coordNombre.toUpperCase();
+
+            const writeRes = await electronApi.writeFile(pathDesti, payload, userName);
+            
+            if (writeRes.success) {
+                alert(i18n.t('successCopyComercials', { to: toLabel.toUpperCase() }));
+                document.getElementById('mesActual').value = mesDesti;
+                document.getElementById('anyActual').value = anyDesti;
+                canviarMes();
+            } else {
+                alert(i18n.t('errorWriteDest') + writeRes.error);
+            }
+        }
+    }
+
+    window.onload = load;
+    </script>
+
+    <script>
+    // --- SISTEMA DE LOG PER A COMERCIALS ---
+    function registrarLog(usuari, accio) {
+        const ara = new Date();
+        const dataFormatada = ara.toLocaleString('ca-ES', { 
+            day: '2-digit', month: '2-digit', year: 'numeric', 
+            hour: '2-digit', minute: '2-digit', second: '2-digit' 
+        });
+        const nouLog = {
+            data: dataFormatada,
+            usuari: usuari.toUpperCase(),
+            fitxer: "comercials.html",
+            accio: accio.trim()
+        };
+        let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+        logs.unshift(nouLog);
+        if (logs.length > 500) logs.pop();
+        localStorage.setItem('nyn_logs', JSON.stringify(logs));
+    }
+
+    document.addEventListener('focusout', function(e) {
+        const target = e.target;
+        const fila = target.closest('tr');
+        const llista = target.closest('tbody');
+        if (!fila || !llista) return;
+        
+        // Determinar el coordinador a partir del id del tbody
+        const llistaId = llista.id; // e.g. "lista-albert"
+        const coordId = llistaId.replace('lista-', '');
+        const coord = coordList.find(c => c.id === coordId);
+        const comercial = coord ? `${coord.nombre.toUpperCase()} ${coord.apellido.toUpperCase()}` : coordId.toUpperCase();
+        
+        const centre = fila.cells[0]?.innerText.replace('–', '').trim() || "Centre nou";
+        const indexCol = target.cellIndex;
+        const columnes = ["CENTRE", "ADREÇA", "FIXES", "VARIABLES", "DISPO", "TARIFA", "OBSERVACIONS"];
+        const nomCol = columnes[indexCol] || "DADA";
+        const valor = target.innerText.trim();
+        if (valor !== "" && nomCol !== "CENTRE") {
+            const mes = document.getElementById('mesActual').value.toUpperCase();
+            const any = document.getElementById('anyActual').value;
+            registrarLog("SISTEMA", `COMERCIALS [${comercial}][${mes} ${any}]: ${centre} -> Canvi en ${nomCol} ➡️ ${valor}`);
+        }
+    }, true);
+
+    document.addEventListener('click', function(e) {
+        const target = e.target;
+        if (target.classList.contains('btn-add-centre')) {
+            const text = target.innerText.toLowerCase();
+            if (text.includes("afegir")) {
+                registrarLog("SISTEMA", "COMERCIALS: S'ha premut 'Afegir centre'");
+            }
+        }
+    }, true);
+
+    window.addEventListener('load', function() {
+        const mes = document.getElementById('mesActual').value.toUpperCase();
+        const any = document.getElementById('anyActual').value;
+        registrarLog("SISTEMA", `COMERCIALS: Visualització mes ${mes} ${any}`);
+    });
+    </script>
+
+</body>
+</html>

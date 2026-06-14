@@ -1,0 +1,6 @@
+{
+  "coordinadores": [
+    { "id": "albert", "nombre": "Albert", "apellido": "Campins" },
+    { "id": "laura", "nombre": "Laura", "apellido": "Navarro" }
+  ]
+}
