@@ -14,5 +14,7 @@ contextBridge.exposeInMainWorld('api', {
   // Gestión dinámica de aparcamientos
   getAparcamientos: () => ipcRenderer.invoke('get-aparcamientos'),
   saveAparcamientos: (aparcamientos) => ipcRenderer.invoke('save-aparcamientos'),
-  renameAparcamiento: (oldName, newName) => ipcRenderer.invoke('rename-aparcamiento', oldName, newName)
+  renameAparcamiento: (oldName, newName) => ipcRenderer.invoke('rename-aparcamiento', oldName, newName),
+  // Importación manual de JSONs
+  importJsonData: (coordFolder, fileName, jsonContent) => ipcRenderer.invoke('import-json-data', coordFolder, fileName, jsonContent)
 });

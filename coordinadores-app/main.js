@@ -1,8 +1,66 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 const fs = require('fs');
+const sqlite3 = require('sqlite3');
 
 let mainWindow;
+
+const dbConnections = {};
+
+// Funciones helpers para promisificar consultas de sqlite3
+function dbGet(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.get(sql, params, (err, row) => {
+      if (err) reject(err);
+      else resolve(row);
+    });
+  });
+}
+
+function dbRun(db, sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function(err) {
+      if (err) reject(err);
+      else resolve({ lastID: this.lastID, changes: this.changes });
+    });
+  });
+}
+
+function getDatabaseForCoordinator(coordFolder) {
+  if (dbConnections[coordFolder]) {
+    return dbConnections[coordFolder];
+  }
+  const dbPath = path.join(dadesDir, coordFolder, 'dades.db');
+  console.log(`[SQLITE] Abriendo base de datos para coordinador en: ${dbPath}`);
+  
+  // Asegurar que el directorio del coordinador existe
+  const parentDir = path.dirname(dbPath);
+  if (!fs.existsSync(parentDir)) {
+    fs.mkdirSync(parentDir, { recursive: true });
+  }
+
+  const db = new sqlite3.Database(dbPath);
+  
+  // Crear la tabla kv_store de inmediato
+  db.serialize(() => {
+    db.run(`
+      CREATE TABLE IF NOT EXISTS kv_store (
+        key TEXT PRIMARY KEY,
+        value TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `, (err) => {
+      if (err) {
+        console.error(`[SQLITE] Error al crear tabla kv_store en ${dbPath}:`, err);
+      } else {
+        console.log(`[SQLITE] Tabla kv_store verificada/creada en ${dbPath}`);
+      }
+    });
+  });
+
+  dbConnections[coordFolder] = db;
+  return db;
+}
 
 // Ruta base para los datos y copias de seguridad (dinámica mediante archivo config.json)
 const rootDir = app.isPackaged 
@@ -289,22 +347,59 @@ async function readAndValidateLock(lockPath) {
   }
 }
 
-// 1. Leer un archivo JSON
+// 1. Leer un archivo JSON (con soporte e importación en caliente de SQLite)
 ipcMain.handle('read-file', async (event, relativePath) => {
   try {
-    const safePath = getSafePath(relativePath);
-    if (!await fileExists(safePath)) {
+    const parts = relativePath.split('/');
+    const firstSegment = parts[0];
+    
+    if (firstSegment.toLowerCase().startsWith('dades ')) {
+      // Es una ruta de coordinador -> Usar SQLite
+      const db = getDatabaseForCoordinator(firstSegment);
+      try {
+        const row = await dbGet(db, 'SELECT value FROM kv_store WHERE key = ?', [relativePath]);
+        if (row && row.value) {
+          return { success: true, data: JSON.parse(row.value) };
+        }
+      } catch (dbErr) {
+        console.error(`[SQLITE] Error al leer clave ${relativePath} de SQLite:`, dbErr);
+      }
+      
+      // Fallback: Si no está en SQLite, intentar leer del archivo JSON físico heredado
+      const safePath = getSafePath(relativePath);
+      if (await fileExists(safePath)) {
+        console.log(`[SQLITE-FALLBACK] Clave ${relativePath} no encontrada en DB. Cargando desde JSON legado.`);
+        const content = await fs.promises.readFile(safePath, 'utf8');
+        const data = JSON.parse(content);
+        
+        // Opcional: Insertarlo en SQLite para las próximas lecturas
+        try {
+          await dbRun(db, 'INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)', [relativePath, content]);
+          console.log(`[SQLITE-FALLBACK] Importado archivo JSON a SQLite automáticamente para futuras lecturas: ${relativePath}`);
+        } catch (saveErr) {
+          console.error(`[SQLITE-FALLBACK] No se pudo guardar fallback JSON en SQLite:`, saveErr);
+        }
+        
+        return { success: true, data };
+      }
+      
       return { success: false, error: 'El archivo no existe' };
+    } else {
+      // Rutas globales (ej. coordinadores.json, aparcamientos.json) -> Archivo JSON plano tradicional
+      const safePath = getSafePath(relativePath);
+      if (!await fileExists(safePath)) {
+        return { success: false, error: 'El archivo no existe' };
+      }
+      const content = await fs.promises.readFile(safePath, 'utf8');
+      return { success: true, data: JSON.parse(content) };
     }
-    const content = await fs.promises.readFile(safePath, 'utf8');
-    return { success: true, data: JSON.parse(content) };
   } catch (error) {
     console.error(`Error al leer archivo ${relativePath}:`, error);
     return { success: false, error: error.message };
   }
 });
 
-// 2. Guardar/Escribir un archivo JSON con validación de bloqueo activa
+// 2. Guardar/Escribir un archivo JSON con validación de bloqueo activa y persistencia en SQLite
 ipcMain.handle('write-file', async (event, relativePath, data, userName) => {
   try {
     const safePath = getSafePath(relativePath);
@@ -329,13 +424,24 @@ ipcMain.handle('write-file', async (event, relativePath, data, userName) => {
       }
     }
     
-    // Crear el directorio padre si no existe
-    const parentDir = path.dirname(safePath);
-    if (!await fileExists(parentDir)) {
-      await fs.promises.mkdir(parentDir, { recursive: true });
+    const parts = relativePath.split('/');
+    const firstSegment = parts[0];
+    
+    if (firstSegment.toLowerCase().startsWith('dades ')) {
+      // Guardar en la base de datos SQLite del coordinador
+      const db = getDatabaseForCoordinator(firstSegment);
+      await dbRun(db, 'INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)', [
+        relativePath, 
+        JSON.stringify(data)
+      ]);
+    } else {
+      // Guardar en archivo JSON plano tradicional (rutas globales)
+      const parentDir = path.dirname(safePath);
+      if (!await fileExists(parentDir)) {
+        await fs.promises.mkdir(parentDir, { recursive: true });
+      }
+      await fs.promises.writeFile(safePath, JSON.stringify(data, null, 2), 'utf8');
     }
-
-    await fs.promises.writeFile(safePath, JSON.stringify(data, null, 2), 'utf8');
 
     // Registrar el cambio en el log temporal (.jsonl) asíncronamente (append-only)
     if (safePath !== tempLogFile) {
@@ -703,10 +809,80 @@ ipcMain.handle('rename-aparcamiento', async (event, oldName, newName) => {
       }
     }
 
-    console.log(`[APARCAMIENTOS] Renombrado exitoso de "${oldNameUpper}" a "${newNameUpper}". Se actualizaron ${updatedFilesCount} archivos JSON.`);
-    return { success: true, updatedFilesCount };
+    // C. Escanear y actualizar las bases de datos SQLite de cada coordinador
+    let updatedDbRowsCount = 0;
+    try {
+      const coordinadores = await readCoordinadoresAsync();
+      for (const coord of coordinadores) {
+        const coordFolder = `dades ${coord.nombre}`;
+        const db = getDatabaseForCoordinator(coordFolder);
+        
+        // Obtener todas las filas de kv_store
+        const rows = await new Promise((resolve, reject) => {
+          db.all('SELECT key, value FROM kv_store', [], (err, result) => {
+            if (err) reject(err);
+            else resolve(result || []);
+          });
+        });
+        
+        for (const row of rows) {
+          try {
+            const data = JSON.parse(row.value);
+            const updatedData = replaceValueRecursively(data, oldNameUpper, newNameUpper);
+            if (JSON.stringify(data) !== JSON.stringify(updatedData)) {
+              await dbRun(db, 'UPDATE kv_store SET value = ? WHERE key = ?', [
+                JSON.stringify(updatedData),
+                row.key
+              ]);
+              updatedDbRowsCount++;
+            }
+          } catch (e) {
+            console.error(`[RENOMBRADO-SQLITE] Error al procesar clave ${row.key}:`, e);
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.error('[RENOMBRADO-SQLITE] Error al actualizar bases de datos SQLite:', dbErr);
+    }
+
+    console.log(`[APARCAMIENTOS] Renombrado exitoso de "${oldNameUpper}" a "${newNameUpper}". Se actualizaron ${updatedFilesCount} archivos JSON y ${updatedDbRowsCount} registros SQLite.`);
+    return { success: true, updatedFilesCount, updatedDbRowsCount };
   } catch (error) {
     console.error('[APARCAMIENTOS] Error en rename-aparcamiento handler:', error);
     return { success: false, error: error.message };
+  }
+});
+
+// 13. Nuevo handler IPC para la importación manual de JSONs legados
+ipcMain.handle('import-json-data', async (event, coordFolder, fileName, jsonContent) => {
+  try {
+    const relativePath = `${coordFolder}/${fileName}`;
+    const db = getDatabaseForCoordinator(coordFolder);
+    
+    // Validar que el jsonContent es válido parseándolo
+    const data = typeof jsonContent === 'string' ? JSON.parse(jsonContent) : jsonContent;
+    
+    await dbRun(db, 'INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)', [
+      relativePath,
+      JSON.stringify(data)
+    ]);
+    
+    console.log(`[SQLITE-IMPORT] Importación manual completada con éxito para: ${relativePath}`);
+    return { success: true };
+  } catch (error) {
+    console.error(`[SQLITE-IMPORT] Error al importar JSON legado:`, error);
+    return { success: false, error: error.message };
+  }
+});
+
+// Cerrar de forma limpia todas las conexiones SQLite al salir
+app.on('will-quit', () => {
+  for (const coordFolder in dbConnections) {
+    try {
+      dbConnections[coordFolder].close();
+      console.log(`[SQLITE] Conexión cerrada para coordinador: ${coordFolder}`);
+    } catch (e) {
+      console.error(`[SQLITE] Error al cerrar conexión para ${coordFolder}:`, e);
+    }
   }
 });

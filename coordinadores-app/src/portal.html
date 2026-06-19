@@ -424,6 +424,13 @@
                 
                 <div id="birthday-msg"><span>🎂</span> <span id="bday-text"></span> <span>🥳🎉🎈</span></div>
                 <div id="celebration-msg">🙁</div>
+
+                <!-- Sección de Importación Manual de JSONs legados -->
+                <div id="importJsonSection" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                    <span style="font-size: 10px; color: #64748b; font-weight: 700; letter-spacing: 0.5px;" data-i18n="importSectionTitle">MIGRACIÓ E IMPORTACIÓ DE DADES</span>
+                    <button class="btn-manage-coord" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;" onclick="document.getElementById('importFileSelector').click();" data-i18n="btnImportJson">📥 Importar JSON històric</button>
+                    <input type="file" id="importFileSelector" accept=".json" style="display: none;" onchange="handleImportJsonFile(event)">
+                </div>
                 
                 <div class="footer-nyn">Núñez i Navarro Pàrkings © 2026</div>
             </div>
@@ -527,6 +534,12 @@
                 badge.classList.add('coord');
             } else {
                 badge.classList.add('other');
+            }
+
+            // Ocultar sección de importación de datos si el rol no tiene permisos (comercial o visualizador)
+            if (role === 'otro' || role === 'comercial') {
+                const importSec = document.getElementById('importJsonSection');
+                if (importSec) importSec.style.display = 'none';
             }
 
             // Restricción de navegación para el perfil Comercial
@@ -1024,6 +1037,91 @@
             }
         }
         autoNetejaLogs();
+
+        async function handleImportJsonFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            // Validar que el archivo sea JSON
+            if (!file.name.endsWith('.json')) {
+                alert('⚠️ Només s\'admeten fitxers .json');
+                return;
+            }
+            
+            const role = sessionStorage.getItem('userRole');
+            const userName = sessionStorage.getItem('userName');
+            
+            if (role === 'otro' || role === 'comercial') {
+                alert('⚠️ El teu perfil no té permisos per importar dades.');
+                return;
+            }
+            
+            if (!userName) {
+                alert('⚠️ Sessió no identificada. Torna a entrar.');
+                return;
+            }
+            
+            // Confirmación antes de sobreescribir
+            if (!confirm(i18n.t('confirmImport'))) {
+                event.target.value = ''; // Limpiar selector
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const content = e.target.result;
+                    
+                    // Validar formato JSON
+                    const parsed = JSON.parse(content);
+                    
+                    const coordFolder = `dades ${userName}`;
+                    const fileName = file.name;
+                    
+                    // Llamar a IPC de Electron
+                    const result = await window.api.importJsonData(coordFolder, fileName, parsed);
+                    
+                    if (result.success) {
+                        alert(i18n.t('successImport'));
+                        
+                        // Limpiar localStorage local del módulo correspondiente para forzar recarga de SQLite al entrar
+                        let filterKey = '';
+                        const nameLower = fileName.toLowerCase();
+                        if (nameLower.includes('quadrant')) filterKey = 'quadrant';
+                        else if (nameLower.includes('vacances')) filterKey = 'vacances';
+                        else if (nameLower.includes('comercials')) filterKey = 'comercials';
+                        else if (nameLower.includes('despeses')) filterKey = 'despeses';
+                        else if (nameLower.includes('deutes')) filterKey = 'deutes';
+                        else if (nameLower.includes('inventari')) filterKey = 'inventari';
+                        else if (nameLower.includes('ruta')) filterKey = 'ruta';
+                        else if (nameLower.includes('ranking')) filterKey = 'ranking';
+                        
+                        if (filterKey) {
+                            // Limpiar localStorage local
+                            const keysToRemove = [];
+                            for (let i = 0; i < localStorage.length; i++) {
+                                const key = localStorage.key(i);
+                                if (key.startsWith('nyn_') || key.startsWith('Vacances_') || key.startsWith('comercials_') || key.startsWith('despeses') || key.startsWith('deutes') || key.startsWith('ruta_') || key.startsWith('ranking')) {
+                                    keysToRemove.push(key);
+                                }
+                            }
+                            // Limpiar localstorage
+                            keysToRemove.forEach(k => localStorage.removeItem(k));
+                        }
+                        
+                        // Forzar refresco
+                        window.location.reload();
+                    } else {
+                        alert('❌ Error al importar: ' + result.error);
+                    }
+                } catch (err) {
+                    alert('❌ Error al processar el fitxer JSON: ' + err.message);
+                } finally {
+                    event.target.value = ''; // Limpiar selector
+                }
+            };
+            reader.readAsText(file);
+        }
     </script>
 </body>
 </html>

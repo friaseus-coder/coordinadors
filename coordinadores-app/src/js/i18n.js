@@ -80,6 +80,10 @@ const i18n = (() => {
       inputAparcamentPlaceholder: "Nom de l'aparcament (ex: BEJAR 63)",
       selectCoordPlaceholder: "-- Coordinador --",
       confirmRemoveAparcament: "⚠️ Estàs segur que vols eliminar l'aparcament {name}?\n\n(Això no esborrarà els historials ja guardats)",
+      importSectionTitle: "MIGRACIÓ E IMPORTACIÓ DE DADES",
+      btnImportJson: "📥 Importar JSON històric",
+      confirmImport: "⚠️ Estàs segur que vols importar aquest fitxer JSON?\n\nAixò sobreescriurà les dades actuals en SQLite d'aquest mòdul per a tu.",
+      successImport: "✅ Dades importades correctament a la base de dades SQLite del coordinador.",
       
       // Comercials (comercials.html)
       comercialsTitle: "Disponibilitat i Preus",
@@ -179,6 +183,10 @@ const i18n = (() => {
       inputAparcamentPlaceholder: "Nombre del aparcamiento (ej: BEJAR 63)",
       selectCoordPlaceholder: "-- Coordinador --",
       confirmRemoveAparcament: "⚠️ ¿Estás seguro de que deseas eliminar el aparcamiento {name}?\n\n(Esto no borrará los historiales ya guardados)",
+      importSectionTitle: "MIGRACIÓN E IMPORTACIÓN DE DATOS",
+      btnImportJson: "📥 Importar JSON histórico",
+      confirmImport: "⚠️ ¿Estás seguro de que deseas importar este archivo JSON?\n\nEsto sobrescribirá los datos actuales en SQLite de este módulo para ti.",
+      successImport: "✅ Datos importados correctamente en la base de datos SQLite del coordinador.",
       
       // Comercials (comercials.html)
       comercialsTitle: "Disponibilidad y Precios",
