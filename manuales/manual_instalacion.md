@@ -6,9 +6,12 @@ Este manual describe el proceso para instalar, configurar y desplegar la aplicac
 ---
 
 ## 1. Arquitectura de Despliegue
-La aplicación funciona sin una base de datos SQL dedicada ni servidores web intermedios. Su arquitectura se basa en un sistema de archivos y concurrencia compartido:
+La aplicación funciona sin servidores de base de datos dedicados en red (como PostgreSQL o MySQL). La arquitectura se basa en bases de datos integradas SQLite local-first y archivos de configuración compartidos en red:
 *   **El Ejecutable (Cliente):** Se instala/copia localmente en el ordenador de cada coordinador.
-*   **La Base de Datos (Servidor de Archivos):** Los archivos de datos `.json` y los archivos temporales de bloqueo `.lock` se ubican en una carpeta de un disco de red compartido de la oficina.
+*   **La Persistencia de Datos (Servidor de Archivos de Red):** 
+    *   La base de datos SQLite integrada **`dades.db`** en la carpeta de cada coordinador (ej. `dades Albert/dades.db`) que gestiona el cuadrante de forma transaccional de clave-valor.
+    *   Los archivos de datos y configuraciones globales `.json` (como `coordinadores.json`, `aparcamientos.json` maestros).
+    *   Los archivos temporales de bloqueo `.lock` en la red.
 
 ```
 +--------------------+            +------------------------------------+
@@ -18,7 +21,7 @@ La aplicación funciona sin una base de datos SQL dedicada ni servidores web int
                                   |                                    |
 +--------------------+            |  - coordinadores.json (registro)   |
 |  PC Coordinador 2  | ---------> |  - aparcamientos.json (catálogo)   |
-| (coordinadores.exe)|            |  - dades Albert/ (JSON comerciales)|
+| (coordinadores.exe)|            |  - dades Albert/dades.db (SQLite)  |
 +--------------------+            |  - ~comercials_albert.lock         |
                                   +------------------------------------+
 ```
@@ -30,10 +33,11 @@ La aplicación funciona sin una base de datos SQL dedicada ni servidores web int
 ### PASO 1: Configurar la Carpeta de Datos Común (Servidor de Red)
 1.  Identifica o crea una carpeta compartida en la red local de la oficina (por ejemplo, en la unidad virtual de red `Z:\` o mediante una ruta de red UNC).
     *   *Ejemplo de ruta:* `Z:\Coordinadores\dades`
-2.  Copia la carpeta de datos de muestra **`coordinadores-app\dades`** del proyecto y pégala en esa ubicación compartida. Este directorio incluye ahora el fichero maestro **`aparcamientos.json`**, que contiene el catálogo central de aparcamientos y sus coordinadores asignados. Si no existe en el primer arranque, la aplicación inicializará uno automáticamente con los 28 aparcamientos predefinidos.
+2.  Copia la carpeta de datos de muestra **`coordinadores-app\dades`** del proyecto y pégala en esa ubicación compartida. Este directorio incluye el fichero maestro **`aparcamientos.json`** y las subcarpetas del coordinador con su correspondiente base de datos SQLite **`dades.db`** (que contiene los cuadrantes históricos y actuales).
 3.  **[CRÍTICO] Permisos de Red:** Asegúrate de que todos los usuarios que vayan a usar la aplicación tengan permisos de Windows de **Lectura, Escritura y Eliminación** sobre esta carpeta compartida.
     > [!IMPORTANT]
     > Los permisos de eliminación son imprescindibles, ya que el sistema crea archivos de bloqueo temporales (`~archivo.lock`) durante la edición y los elimina físicamente al salir para liberar el acceso.
+
 
 ### PASO 2: Compilación y Despliegue del Ejecutable en los PCs de los Usuarios
 La aplicación cuenta con un **cargador híbrido dinámico**. El ejecutable `.exe` lleva la interfaz integrada internamente en un paquete comprimido (`app.asar`), pero prioriza la carga desde una carpeta externa llamada `src/` colocada a su lado si existe. Esto te permite realizar cambios rápidos de formato o corregir pantallas modificando los archivos locales del usuario sin tener que volver a distribuir un instalador de 180MB.

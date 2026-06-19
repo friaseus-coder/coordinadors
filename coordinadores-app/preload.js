@@ -13,7 +13,7 @@ contextBridge.exposeInMainWorld('api', {
   removeCoordinador: (id) => ipcRenderer.invoke('remove-coordinador', id),
   // Gestión dinámica de aparcamientos
   getAparcamientos: () => ipcRenderer.invoke('get-aparcamientos'),
-  saveAparcamientos: (aparcamientos) => ipcRenderer.invoke('save-aparcamientos'),
+  saveAparcamientos: (aparcamientos) => ipcRenderer.invoke('save-aparcamientos', aparcamientos),
   renameAparcamiento: (oldName, newName) => ipcRenderer.invoke('rename-aparcamiento', oldName, newName),
   // Importación manual de JSONs
   importJsonData: (coordFolder, fileName, jsonContent) => ipcRenderer.invoke('import-json-data', coordFolder, fileName, jsonContent)

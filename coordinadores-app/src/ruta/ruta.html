@@ -277,7 +277,7 @@ function importarDadesUsuari(event, nomUsuari) {
     const file = event.target.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             const dades = JSON.parse(e.target.result);
             
@@ -294,6 +294,8 @@ function importarDadesUsuari(event, nomUsuari) {
                     comptador++;
                 }
             });
+
+            await persistence.syncSave();
 
             alert(`✅ S'han importat ${comptador} entrades de rutes.\nAutor: ${dades.METADATA_EXPORT_AUTOR || 'Desconegut'}`);
             

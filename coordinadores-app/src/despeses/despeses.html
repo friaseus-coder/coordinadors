@@ -359,12 +359,13 @@
     function processarImportacio(input) {
         if (input.files && input.files[0]) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = async function(e) {
                 try {
                     const dades = JSON.parse(e.target.result);
                     Object.keys(dades).forEach(k => {
                         localStorage.setItem(k, (typeof dades[k] === 'string') ? dades[k] : JSON.stringify(dades[k]));
                     });
+                    await persistence.syncSave();
                     location.reload();
                 } catch (err) { alert("Error JSON"); }
             };

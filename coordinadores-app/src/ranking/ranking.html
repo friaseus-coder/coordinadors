@@ -264,7 +264,7 @@ function importarDadesRanking(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             const dades = JSON.parse(e.target.result);
             
@@ -280,6 +280,7 @@ function importarDadesRanking(input) {
                 }
             });
             
+            await persistence.syncSave();
             alert("✅ Rànquing importat correctament.");
             location.reload();
         } catch (err) { 

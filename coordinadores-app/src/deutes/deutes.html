@@ -437,7 +437,7 @@
 
     function importarJSON(event) {
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const json = JSON.parse(e.target.result);
                 const dataLocal = parseInt(localStorage.getItem('nyn_deutes_export_raw')) || 0;
@@ -457,6 +457,7 @@
                 }
                 reassignarColors(); 
                 guardarAlLocal(); 
+                await persistence.syncSave();
                 actualitzarSelectorsAny(); 
                 renderCapcalera(); 
                 renderTable();

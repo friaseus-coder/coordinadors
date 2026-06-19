@@ -538,12 +538,13 @@ function calcularDiesPassats(rang) {
 
     function importarJSON(e) { 
         const reader = new FileReader(); 
-        reader.onload = f => { 
+        reader.onload = async f => { 
             try {
                 const contingut = JSON.parse(f.target.result);
                 const anyActual = document.getElementById('selectAny').value;
                 let dadesFinals = contingut.dades || contingut;
                 localStorage.setItem('nyn_vacances_' + anyActual, JSON.stringify(dadesFinals)); 
+                await persistence.syncSave();
                 location.reload(); 
             } catch (err) { alert("⚠️ Error al importar."); }
         }; 

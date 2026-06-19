@@ -3,299 +3,601 @@
 <head>
     <meta charset="UTF-8">
     <title>NyN Pàrquings | Control Treballadors</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="../js/persistence.js"></script>
     
 <style>
     :root {
-        --nyn-verd: #008d36;
-        --nyn-verd-centre: #2e7d32; 
-        --nyn-festiu: #ffcccc; 
-        --nyn-substitucio-bg: #ffed00;
-        --nyn-substitucio-text: #ff0000;
-        --border: #ced4da;
-        --nyn-select: #008d36;
+        --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+        --nyn-verd-accent: #008d36; /* Verde acento */
+        --nyn-verd-light: #e6f4ea;
+        --nyn-festiu: #ffe4e6;     /* Rosa/rojo pastel */
+        --nyn-substitucio-bg: #fef9c3; /* Amarillo pastel */
+        --nyn-substitucio-border: #facc15;
+        --nyn-substitucio-text: #b45309;
+        --border: #e2e8f0;         /* Gris suave para bordes */
+        --text-main: #0f2d4a;      /* Azul oscuro para títulos */
+        --text-muted: #64748b;     /* Gris para subtítulos/labels */
+        --bg-weekend: #f1f5f9;     /* Gris suave para findes */
+        --bg-vacances: rgba(186, 104, 200, 0.18); /* Lila suave */
+        --danger-coral: #ef4444;   /* Rojo coral premium */
+        --danger-bg: #fef2f2;
+        --danger-border: #fee2e2;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
         --nyn-marcador-tel: rgba(255, 235, 59, 0.25); 
     }
 
-   body { 
-    font-family: 'Segoe UI', Arial, sans-serif; 
-    font-size: 10px; 
-    margin: 0; 
-    background: white; 
-    overflow: visible; /* Molt important que sigui visible */
-    user-select: none; 
-}
+    body { 
+        font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+        font-size: 11px; 
+        margin: 0; 
+        background: #f8fafc; 
+        color: #1e293b;
+        overflow: visible;
+        user-select: none; 
+    }
     
-    .sticky-top { position: sticky; top: 0; z-index: 1100; background: white; display: flex; flex-direction: column; }
+    .sticky-top { 
+        position: sticky; 
+        top: 0; 
+        z-index: 1100; 
+        background: white; 
+        display: flex; 
+        flex-direction: column; 
+        box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+    }
     
-  header { 
-    background-color: var(--nyn-verd); 
-    color: white; 
-    padding: 5px 15px; 
-    display: flex;        /* Canviem a flex per centrat directe */
-    justify-content: center; 
-    align-items: center; 
-    height: 40px; 
-}
-
---nyn-vacances: rgba(186, 104, 200, 0.005); /* Lila suau */
-.is-vacances { background-color: var(--nyn-vacances) !important; }
-.llegenda-vacances { 
-    font-size: 9px; font-weight: bold; color: #7b1fa2; 
-    padding: 2px 6px; border: 1px solid #7b1fa2; border-radius: 3px; margin-left: 10px; 
-}
-
-.header-center { 
-    font-size: 15px; 
-    font-weight: 900; 
-    text-transform: uppercase; 
-    text-align: center; 
-    text-shadow: 1px 1px 0px rgba(255,255,255,0.3), -1px -1px 0px rgba(0,0,0,0.2); 
-    letter-spacing: 1.5px; 
-    display: flex;       /* Perquè el mes i el rellotge estiguin en línia */
-    align-items: center;
-    gap: 10px;           /* Espai entre mes i rellotge */
-}
-
-/* Pots esborrar .header-left i .header-right si ja no els fas servir */
-
-    .admin-panel { padding: 4px 15px; display: flex; gap: 8px; align-items: center; border-bottom: 1px solid var(--border); background: #f8f9fa; }
-    .filter-group { display: flex; align-items: center; gap: 5px; border-left: 1px solid #ccc; padding-left: 8px; }
-    .filter-label { font-weight: bold; color: var(--nyn-verd-centre); font-size: 9px; text-transform: uppercase; }
-
-    select, button { padding: 2px 8px; border: 1px solid var(--nyn-verd); border-radius: 2px; font-size: 9px; cursor: pointer; height: 22px; box-sizing: border-box; font-family: inherit; }
-    .btn-main { background: var(--nyn-verd); color: white; font-weight: bold; border: 1px solid var(--nyn-verd-centre); }
-    .btn-danger-right { background: #d32f2f; color: white; font-weight: bold; border: 1px solid #b71c1c; }
-
-thead th { 
-    background: #454d55 !important; 
-    color: white !important; 
-    height: 25px; 
-    font-size: 10px; 
-    font-weight: bold;
-    position: -webkit-sticky; 
-    position: sticky; 
-    top: 83px; /* Aquest número l'ajustarem ara */
-    z-index: 999; 
-    outline: 1px solid #333; 
-    border: none; 
-    vertical-align: middle;
-}
-
-    thead th.is-weekend-header { color: #ffeb3b !important; }
-    thead th.is-festiu-header { color: #ff1111 !important; } 
-
-    th, td { border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); text-align: center; padding: 0; position: relative; }
-    th:first-child, td:first-child { border-left: 1px solid var(--border); }
-    
-
-    .selected-cell {
-    background-color: rgba(0, 141, 54, 0.15) !important;
-    z-index: 10 !important;
-    position: relative;
-}
-.selected-cell .cell-container {
-    outline: 1px solid var(--nyn-verd) !important;
-    outline-offset: -1px;
-    z-index: 10;
-}
-
-.selected-cell .select-worker, 
-.selected-cell .select-hour, 
-.selected-cell .sub-radio { 
-    pointer-events: auto !important; 
-}
-/* 1. L'Estructura general (El contenidor) */
-#mainTable {
-    table-layout: fixed !important;
-    width: 100% !important; /* Ocupa tota la pantalla */
-    min-width: 1200px;      /* Seguretat perquè no s'aafi en pantalles petites */
-    border-collapse: collapse;
-}
-/* 2. La columna de MATÍ/TARDA/NIT (La primera) */
-.col-name { 
-    background-color: #f8f9fa; 
-    width: 60px !important;
-    min-width: 160px !important;
-    max-width: 160px !important;
-    font-weight: 900; 
-    color: var(--nyn-verd-centre); 
-    text-transform: uppercase; 
-    font-size: 9px; 
-    border-right: 2px solid var(--nyn-verd); 
-    overflow: hidden;
-    text-align: center;
-}
-
-/* 3. Les columnes dels dies (Les 31 restants) */
-#mainTable th:not(.col-name), 
-#mainTable td:not(.col-name) {
-    width: 58px !important;
-    min-width: 58px !important;
-    max-width: 58px !important;
-    overflow: hidden;
-}
-
-
-
-
-/* 1. ESTAT NORMAL: Blindat per poder arrossegar sense que s'obrin menús */
-.cell-container { 
-    display: flex; 
-    flex-direction: column; 
-    height: 58px; 
-    width: 100%; /* S'adaptarà al td fix */
-    position: relative; 
-    cursor: default; 
-    z-index: 2; 
-    box-sizing: border-box; 
-    overflow: hidden; /* Evita que res surti del quadrat */
-}
-.select-worker, .select-hour { 
-    width: 100%; border: none; font-weight: 700; background: transparent; outline: none; 
-    text-align-last: center; font-family: inherit; appearance: none; -webkit-appearance: none;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23008d36' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-    background-repeat: no-repeat; background-position: right 2px center; background-size: 7px;
-    
-    /* BLOQUEIG CRUCIAL: Impedeix que el select s'obri si la cel·la no és verda */
-    pointer-events: none !important; 
-}
-
-
-
-
-
-
-/* 3. ELEMENTS AUXILIARS (Es mantenen) */
-.select-worker { flex: 1; font-size: 9px; line-height: 1.1; padding: 2px 10px 2px 2px; white-space: normal; overflow: hidden; display: block; }
-.select-hour { height: 16px; border-top: 1px solid rgba(0,0,0,0.05); font-size: 8px; color: #444; padding: 0 10px 0 12px; background-color: rgba(255,255,255,0.3); }
-
-.sub-radio { position: absolute; bottom: 3px; left: 2px; width: 9px; height: 9px; cursor: pointer; z-index: 15; opacity: 0.5; margin: 0; pointer-events: auto !important; }
-.has-note::before { 
-    content: ""; position: absolute; top: 0; right: 0; border-style: solid; border-width: 0 8px 8px 0; 
-    border-color: transparent var(--nyn-verd-centre) transparent transparent; pointer-events: none; z-index: 12;
-}
-
-
-
-
-
-
-    .center-header { background: var(--nyn-verd-centre); height: 20px; font-weight: bold; color: white; display: flex; align-items: center; padding: 0 10px; text-transform: uppercase; border: 1px solid #000; }
-
-
-    .center-label { flex-grow: 1; text-align: center; letter-spacing: 1px; }
-    .check-marcador { width: 14px; height: 14px; cursor: pointer; margin-right: 10px; z-index: 10; }
-
-   
-    .row-mati { background-color: #fffef0; } 
-    .row-tarda { background-color: #f6faf2; } 
-    .row-nit { background-color: #fcfcfc; }
-    
-    .is-festiu { background-color: var(--nyn-festiu) !important; } 
-    .is-weekend { background-color: #ebebeb; }
-
-    #noteModal, #deleteModal, #horesModal { 
-        display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-        background: white; border: 2px solid var(--nyn-verd); padding: 15px; z-index: 2000; 
-        border-radius: 5px; width: 280px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); 
+    header { 
+        background-color: var(--nyn-verd); 
+        color: white; 
+        padding: 8px 24px; 
+        display: flex;        
+        justify-content: center; 
+        align-items: center; 
+        height: 48px; 
+        border-bottom: 2px solid var(--nyn-verd-accent);
+        box-sizing: border-box;
     }
 
-    #horesModal { width: 95%; max-width: 700px; max-height: 85vh; overflow-y: auto; padding: 0 20px 20px 20px; border-radius: 8px; }
-    .hores-modal-header { position: sticky; top: 0; background: white; z-index: 2020; padding-top: 15px; padding-bottom: 5px; }
-    .hores-title-box { margin: 0; background: white; z-index: 2020; border-bottom: 2px solid var(--nyn-verd); padding-bottom: 10px; margin-bottom: 10px; }
-   #horesModal table thead th { 
-    position: sticky; 
-    top: 0; /* Canviat de 92px a 0 per alinear-se amb el seu contenidor */
-    background: #454d55 !important; 
-    color: white !important; 
-    height: 25px !important; 
-    font-size: 9px; 
-    z-index: 2019; 
-    vertical-align: middle; 
-    padding: 4px !important; 
-    border: 1px solid #333; 
-}
+    .llegenda-vacances { 
+        font-size: 10px; 
+        font-weight: 600; 
+        color: #7b1fa2; 
+        padding: 3px 8px; 
+        border: 1px solid #7b1fa2; 
+        border-radius: 9999px; 
+        margin-left: 12px; 
+        background: #f3e8ff;
+    }
 
-#taulaResumHores {
-    overflow-x: auto;
-    max-height: 60vh; /* Limita l'alçada de la taula per forçar l'scroll intern */
-}
+    .header-center { 
+        font-size: 16px; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        text-align: center; 
+        letter-spacing: 1px; 
+        display: flex;       
+        align-items: center;
+        gap: 12px;           
+    }
 
-    #horesModal .close-btn-top { position: absolute; top: 10px; right: 10px; z-index: 2021; background: none; border: none; font-size: 20px; cursor: pointer; color: #999; }
-    .btn-tancar-resum { display: flex !important; align-items: center; justify-content: center; margin: 20px auto 0 auto; padding: 0 25px; height: 30px; background: var(--nyn-verd); color: white; font-weight: bold; border: none; border-radius: 4px; cursor: pointer; line-height: normal; }
+    /* BARRA DE HERRAMIENTAS MODERNA Y GRUPOS */
+    .admin-panel { 
+        padding: 10px 24px; 
+        display: flex; 
+        flex-wrap: wrap;
+        gap: 12px; 
+        align-items: center; 
+        border-bottom: 1px solid var(--border); 
+        background: #ffffff; 
+    }
+    
+    .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #f8fafc;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid #f1f5f9;
+    }
 
-    textarea, .input-edit { width: 100%; font-size: 11px; margin-bottom: 10px; border: 1px solid var(--border); padding: 5px; box-sizing: border-box; font-family: inherit; }
-    textarea { height: 80px; resize: none; }
-    .input-edit { height: 25px; border: 1px solid var(--nyn-verd); }
+    .toolbar-group.danger-group {
+        background: var(--danger-bg);
+        border: 1px solid var(--danger-border);
+        margin-left: auto; /* Empuja el botón de borrar al extremo derecho */
+    }
+
+    .filter-label { 
+        font-weight: 700; 
+        color: var(--nyn-verd); 
+        font-size: 10px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+    }
+
+    select, button { 
+        padding: 4px 10px; 
+        border: 1px solid #cbd5e1; 
+        border-radius: 6px; 
+        font-size: 11px; 
+        font-weight: 500;
+        cursor: pointer; 
+        height: 28px; 
+        box-sizing: border-box; 
+        font-family: inherit; 
+        transition: all 0.2s ease;
+        background: #ffffff;
+        color: #334155;
+        box-shadow: var(--shadow-sm);
+    }
+    
+    select:hover, select:focus {
+        border-color: var(--nyn-verd-accent);
+        outline: none;
+    }
+
+    /* BOTONES */
+    .btn-main { 
+        background: #ffffff; 
+        color: #334155; 
+        font-weight: 600; 
+        border: 1px solid #cbd5e1; 
+    }
+    
+    .btn-main:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+    }
+
+    .btn-action {
+        background: var(--nyn-verd);
+        color: #ffffff;
+        border: 1px solid var(--nyn-verd);
+        font-weight: 600;
+    }
+
+    .btn-action:hover {
+        background: #0b4e43;
+        border-color: #0b4e43;
+    }
+
+    .btn-action-sec {
+        background: #3b82f6;
+        color: white;
+        border: 1px solid #3b82f6;
+        font-weight: 600;
+    }
+
+    .btn-action-sec:hover {
+        background: #2563eb;
+        border-color: #2563eb;
+    }
+
+    .btn-archive {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+
+    .btn-archive:hover {
+        background: #e2e8f0;
+    }
+
+    .btn-danger-right { 
+        background: var(--danger-coral); 
+        color: white; 
+        font-weight: 600; 
+        border: 1px solid var(--danger-coral); 
+    }
+
+    .btn-danger-right:hover {
+        background: #dc2626;
+        border-color: #dc2626;
+    }
+
+    /* ESTILOS DE LA TABLA */
+    .table-wrapper {
+        padding: 16px 24px;
+        background: #f8fafc;
+    }
+
+    #mainTable {
+        table-layout: fixed !important;
+        width: 100% !important; 
+        min-width: 1200px;      
+        border-collapse: collapse;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+    }
+
+    thead th { 
+        background: #1e293b !important; 
+        color: #ffffff !important; 
+        height: 36px; 
+        font-size: 11px; 
+        font-weight: 600;
+        position: -webkit-sticky; 
+        position: sticky; 
+        top: 110px; /* Ajustado para la altura real de la barra superior */
+        z-index: 999; 
+        border: none;
+        border-bottom: 2px solid #0f172a;
+        border-right: 1px solid #334155;
+        vertical-align: middle;
+    }
+
+    thead th:last-child {
+        border-right: none;
+    }
+
+    thead th.is-weekend-header { color: #fef08a !important; }
+    thead th.is-festiu-header { color: #fca5a5 !important; } 
+
+    th, td { 
+        border-right: 1px solid var(--border); 
+        border-bottom: 1px solid var(--border); 
+        text-align: center; 
+        padding: 0; 
+        position: relative; 
+    }
+    
+    tr:last-child td {
+        border-bottom: none;
+    }
+
+    td:last-child {
+        border-right: none;
+    }
+
+    /* FILAS HOVER EFFECT */
+    tbody tr:hover {
+        background-color: #f8fafc;
+    }
+
+    .selected-cell {
+        background-color: rgba(0, 141, 54, 0.08) !important;
+        z-index: 10 !important;
+        position: relative;
+    }
+
+    .selected-cell .cell-container {
+        outline: 2px solid var(--nyn-verd-accent) !important;
+        outline-offset: -2px;
+        border-radius: 4px;
+        z-index: 10;
+    }
+
+    .selected-cell .select-worker, 
+    .selected-cell .select-hour, 
+    .selected-cell .sub-radio { 
+        pointer-events: auto !important; 
+    }
+
+    /* Columna de MATÍ/TARDA/NIT (La primera) */
+    .col-name { 
+        background-color: #f8fafc; 
+        width: 140px !important;
+        min-width: 140px !important;
+        max-width: 140px !important;
+        font-weight: 700; 
+        color: var(--nyn-verd); 
+        text-transform: uppercase; 
+        font-size: 10px; 
+        border-right: 2px solid var(--nyn-verd-accent); 
+        overflow: hidden;
+        text-align: center;
+        letter-spacing: 0.5px;
+    }
+
+    /* Las columnas de los días (Las 31 restantes) */
+    #mainTable th:not(.col-name), 
+    #mainTable td:not(.col-name) {
+        width: 58px !important;
+        min-width: 58px !important;
+        max-width: 58px !important;
+        overflow: hidden;
+    }
+
+    /* ESTRUCTURA CELDA */
+    .cell-container { 
+        display: flex; 
+        flex-direction: column; 
+        height: 56px; 
+        width: 100%; 
+        position: relative; 
+        cursor: default; 
+        z-index: 2; 
+        box-sizing: border-box; 
+        overflow: hidden; 
+    }
+    
+    .select-worker, .select-hour { 
+        width: 100%; 
+        border: none; 
+        font-weight: 600; 
+        background: transparent; 
+        outline: none; 
+        text-align-last: center; 
+        font-family: inherit; 
+        appearance: none; 
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23008d36' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat; 
+        background-position: right 4px center; 
+        background-size: 7px;
+        box-shadow: none;
+        height: auto;
+        border-radius: 0;
+        pointer-events: none !important; 
+    }
+
+    .select-worker { 
+        flex: 1; 
+        font-size: 10px; 
+        line-height: 1.2; 
+        padding: 4px 12px 4px 4px; 
+        white-space: normal; 
+        overflow: hidden; 
+        display: block; 
+        color: #1e293b;
+    }
+    
+    .select-hour { 
+        height: 18px; 
+        border-top: 1px solid rgba(0,0,0,0.05); 
+        font-size: 9px; 
+        color: #64748b; 
+        padding: 0 12px 0 4px; 
+        background-color: rgba(255,255,255,0.4); 
+    }
+
+    .sub-radio { 
+        position: absolute; 
+        bottom: 4px; 
+        left: 4px; 
+        width: 10px; 
+        height: 10px; 
+        cursor: pointer; 
+        z-index: 15; 
+        opacity: 0.6; 
+        margin: 0; 
+        pointer-events: auto !important; 
+    }
+    
+    .has-note::before { 
+        content: ""; 
+        position: absolute; 
+        top: 0; 
+        right: 0; 
+        border-style: solid; 
+        border-width: 0 8px 8px 0; 
+        border-color: transparent var(--nyn-verd) transparent transparent; 
+        pointer-events: none; 
+        z-index: 12;
+    }
+
+    .center-header { 
+        background: #f1f5f9; 
+        height: 28px; 
+        font-weight: 700; 
+        color: var(--nyn-verd); 
+        display: flex; 
+        align-items: center; 
+        padding: 0 16px; 
+        text-transform: uppercase; 
+        border-bottom: 1px solid var(--border); 
+        letter-spacing: 0.5px;
+    }
+
+    .center-label { 
+        flex-grow: 1; 
+        text-align: left; 
+        font-size: 11px;
+    }
+    
+    .check-marcador { 
+        width: 14px; 
+        height: 14px; 
+        cursor: pointer; 
+        margin-right: 10px; 
+        z-index: 10; 
+        accent-color: var(--nyn-verd-accent);
+    }
+
+    /* FILAS POR TURNO */
+    .row-mati { background-color: #fffbeb; } /* Crema muy suave */
+    .row-tarda { background-color: #f0fdf4; } /* Verde muy suave */
+    .row-nit { background-color: #f8fafc; } /* Blanco azulado */
+    
+    .is-festiu { background-color: var(--nyn-festiu) !important; } 
+    .is-weekend { background-color: var(--bg-weekend); }
+    .is-vacances { background-color: var(--bg-vacances) !important; }
+
+    /* MODALES REDISEÑADOS */
+    #noteModal, #deleteModal, #horesModal { 
+        display: none; 
+        position: fixed; 
+        top: 50%; 
+        left: 50%; 
+        transform: translate(-50%, -50%); 
+        background: #ffffff; 
+        border: 1px solid var(--border); 
+        padding: 24px; 
+        z-index: 2000; 
+        border-radius: 12px; 
+        width: 320px; 
+        box-shadow: var(--shadow-lg); 
+    }
+
+    #horesModal { 
+        width: 90%; 
+        max-width: 800px; 
+        max-height: 85vh; 
+        overflow-y: auto; 
+        padding: 24px; 
+        border-radius: 12px; 
+    }
+    
+    .hores-modal-header { 
+        position: sticky; 
+        top: 0; 
+        background: white; 
+        z-index: 2020; 
+        padding-bottom: 12px; 
+        border-bottom: 2px solid var(--nyn-verd-accent);
+        margin-bottom: 16px;
+    }
+    
+    .hores-title-box { 
+        margin: 0; 
+        font-weight: 800; 
+        font-size: 15px; 
+        color: var(--text-main); 
+    }
+    
+    #horesModal table thead th { 
+        position: sticky; 
+        top: 0; 
+        background: #1e293b !important; 
+        color: white !important; 
+        height: 32px !important; 
+        font-size: 10px; 
+        z-index: 2019; 
+        vertical-align: middle; 
+        padding: 6px !important; 
+        border: 1px solid #334155; 
+    }
+
+    #taulaResumHores {
+        overflow-x: auto;
+        max-height: 55vh; 
+        border-radius: 8px;
+        border: 1px solid var(--border);
+    }
+
+    #horesModal .close-btn-top { 
+        position: absolute; 
+        top: -4px; 
+        right: -4px; 
+        z-index: 2021; 
+        background: #f1f5f9; 
+        border: none; 
+        font-size: 20px; 
+        cursor: pointer; 
+        color: #64748b; 
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    }
+    
+    #horesModal .close-btn-top:hover {
+        background: #e2e8f0;
+        color: #1e293b;
+    }
+    
+    .btn-tancar-resum { 
+        display: inline-flex !important; 
+        align-items: center; 
+        justify-content: center; 
+        padding: 0 20px; 
+        height: 32px; 
+        background: var(--nyn-verd); 
+        color: white; 
+        font-weight: bold; 
+        border: none; 
+        border-radius: 6px; 
+        cursor: pointer; 
+    }
+
+    textarea, .input-edit { 
+        width: 100%; 
+        font-size: 12px; 
+        margin-bottom: 12px; 
+        border: 1px solid #cbd5e1; 
+        border-radius: 6px;
+        padding: 8px; 
+        box-sizing: border-box; 
+        font-family: inherit; 
+        background: #ffffff;
+    }
+    
+    textarea:focus, .input-edit:focus {
+        border-color: var(--nyn-verd-accent);
+        outline: none;
+    }
+    
+    textarea { height: 90px; resize: none; }
+    .input-edit { height: 32px; }
 
     @media print {
         .sticky-top, .btn-main, .btn-danger-right, .admin-panel, #noteModal, #deleteModal, #horesModal, .sub-radio { display: none !important; }
         body { background: white; margin: 0; padding: 0; }
         table { 
-        width: 900px !important; /* Aquí sí que vols 900px per a l'A4 */
-        table-layout: fixed !important; 
-        transform: scale(0.8); /* Perquè t'hi cabi tot el mes en un sol full */
-        transform-origin: top left;
-    }
+            width: 900px !important; 
+            table-layout: fixed !important; 
+            transform: scale(0.8); 
+            transform-origin: top left;
+        }
         .cell-container { height: auto !important; min-height: 40px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; }
         .select-worker, .select-hour { display: block !important; width: 100% !important; position: static !important; font-size: 7pt !important; line-height: 1.1 !important; pointer-events: auto !important; 
-    cursor: pointer; }
+        cursor: pointer; }
         th, td { border: 1px solid #000 !important; padding: 1px !important; overflow: hidden !important; }
         * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         @page { size: landscape; margin: 0.3cm; }
     }
 
-    .month-locked .cell-container { background-color: #f0f0f0 !important; opacity: 0.8; pointer-events: none !important; }
-    .month-locked .col-name, .month-locked .center-header { filter: grayscale(1); }
-    .btn-lock { background: #444; color: white; font-weight: bold; }
-    .btn-unlock { background: #d32f2f; color: white; font-weight: bold; }
+    .month-locked .cell-container { background-color: #f1f5f9 !important; opacity: 0.75; pointer-events: none !important; }
+    .month-locked .col-name, .month-locked .center-header { filter: grayscale(0.8); }
+    .btn-lock { background: #334155; color: white; border-color: #334155; }
+    .btn-lock:hover { background: #1e293b; border-color: #1e293b; }
+    .btn-unlock { background: var(--danger-coral); color: white; border-color: var(--danger-coral); }
+    .btn-unlock:hover { background: #dc2626; border-color: #dc2626; }
     .parking-section-pendent td::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--nyn-marcador-tel); pointer-events: none; z-index: 5; }
 
+    /* ESTILO DE SUSTITUCIONES */
+    .is-substitucio { 
+        background-color: var(--nyn-substitucio-bg) !important; 
+        outline: 2px solid var(--nyn-substitucio-border) !important;
+        outline-offset: -2px; 
+        position: relative;
+        z-index: 5;
+        border-radius: 4px;
+    }
 
-/* 1. La cel·la groga amb el marc vermell */
-.is-substitucio { 
-    background-color: var(--nyn-substitucio-bg) !important; 
-    outline:1.5px solid var(--nyn-substitucio-text) !important;
-    outline-offset: -1px; 
-    position: relative;
-    z-index: 5;
-}
+    .is-substitucio .cell-container {
+        background-color: transparent !important;
+    }
 
-/* 2. El contenidor transparent */
-.is-substitucio .cell-container {
-    background-color: transparent !important;
-}
+    .is-substitucio .select-worker, 
+    .is-substitucio .select-hour { 
+        background-color: transparent !important; 
+        color: var(--nyn-substitucio-text) !important; 
+        font-weight: 700;
+        border: none !important;
+        pointer-events: auto !important; 
+    }
 
-/* 3. ELS SELECTS: Text vermell a la cel·la, però NEGRE al desplegable */
-.is-substitucio .select-worker, 
-.is-substitucio .select-hour { 
-    background-color: transparent !important; 
-    color: var(--nyn-substitucio-text) !important; /* Text vermell a la cel·la */
-    font-weight: bold;
-    border: none !important;
-    pointer-events: auto !important; /* Perquè respongui al filtrar */
-}
+    .is-substitucio .select-worker option, 
+    .is-substitucio .select-hour option {
+        color: #333 !important;
+        background-color: white !important;
+        font-weight: normal;
+    }
 
-/* El truc perquè les opcions del llistat es vegin en negre i no en vermell */
-.is-substitucio .select-worker option, 
-.is-substitucio .select-hour option {
-    color: #333 !important;
-    background-color: white !important;
-    font-weight: normal;
-}
+    .is-substitucio .sub-radio {
+        accent-color: var(--nyn-substitucio-text) !important;
+    }
 
-/* 4. El radiobutton en vermell */
-.is-substitucio .sub-radio {
-    accent-color: var(--nyn-substitucio-text) !important;
-}
-
-
-
-
-/* Forcem que res bloquegi el sticky */
-html, body { overflow: visible !important; height: auto !important; }
-
+    html, body { overflow: visible !important; height: auto !important; }
 </style>
 
 </head>
@@ -303,29 +605,22 @@ html, body { overflow: visible !important; height: auto !important; }
 
 <div class="sticky-top">
     <header>
-    <div class="header-center">
-        <span id="displayMonth"></span> 
-        <span id="rellotge"></span>
-        <span id="llegendaExport" style="
-    font-family: 'Segoe UI', Arial, sans-serif; 
-    font-size: 13px; 
-    color: #333; 
-    text-transform: none; 
-    text-shadow: none; 
-    font-weight: normal; 
-    font-style: normal;
-    margin-left: 10px;
-">
-    |   Darrera exportació: Sense dades
-</span>
-    </div>
-</header>
+        <div class="header-center">
+            <span id="displayMonth"></span> 
+            <span id="rellotge"></span>
+            <span id="llegendaExport" style="font-family: inherit; font-size: 13px; color: #ffffff; opacity: 0.9; text-transform: none; text-shadow: none; font-weight: normal; font-style: normal; margin-left: 10px;">
+                | Darrera exportació: Sense dades
+            </span>
+        </div>
+    </header>
     <div class="admin-panel">
-        <select id="selectMonth" onchange="changeMonth()"></select>
-        <select id="selectYear" onchange="changeMonth()"></select>
-        
-        <div class="filter-group">
-            <div class="filter-label">🔍 Filtres:</div>
+        <!-- Grupo 1: Filtres de Visualització -->
+        <div class="toolbar-group">
+            <div class="filter-label">📅 Període:</div>
+            <select id="selectMonth" onchange="changeMonth()"></select>
+            <select id="selectYear" onchange="changeMonth()"></select>
+            
+            <div class="filter-label" style="margin-left: 8px;">🔍 Filtres:</div>
             <select id="filterPark" onchange="renderTable()"><option value="ALL">Tots els Centres</option></select>
             <select id="filterWorker" onchange="renderTable()"><option value="ALL">Tots els Treballadors</option></select>
             <select id="filterHorari" onchange="renderTable()">
@@ -338,24 +633,32 @@ html, body { overflow: visible !important; height: auto !important; }
                 <optgroup label="Franges Específiques" id="optHorarisList"></optgroup>
             </select>
             <button class="btn-main" onclick="resetFilters()">♻️ Reset Filtres</button>
-            <button class="btn-main" onclick="calcularHoresMes()" style="background:#0056b3; border-color:#004494;">📊 Recompte Hores</button>
         </div>
 
-        <div class="filter-group">
-            <button class="btn-main" onclick="openDeleteModal()">⚙️ Afegir/Eliminar/Editar dades</button>
-            <button id="btnExport" class="btn-main" onclick="exportToNextMonth()">🚚 Exportar a ... </button>
-            <button class="btn-main" onclick="exportarExcel()" style="background:#1d6f42; border-color:#145a32;">📥 Excel</button>
-            <button class="btn-main" onclick="window.print()" style="background:#555; border-color:#333;">🖨️ PDF / Imprimir</button>
-            <button class="btn-main" onclick="exportarBackupJSON()" style="background:#6a1b9a; border-color:#4a148c;">💾 Exportar</button>
-            <button class="btn-main" onclick="document.getElementById('importFile').click()" style="background:#ef6c00; border-color:#e65100;">📂 Importar</button>
-	   <button class="btn-main" onclick="document.getElementById('fileVacances').click()" 
-        	style="background: #e1bee7; border: 1px solid #7b1fa2; color: #333; font-weight: bold;">
-    		🌴 Importar Vacances
-		</button>
-            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarBackupJSON(this)">
+        <!-- Grupo 2: Accions del Cuadrante -->
+        <div class="toolbar-group">
+            <div class="filter-label">⚡ Accions:</div>
+            <button class="btn-main btn-action-sec" onclick="calcularHoresMes()">📊 Recompte Hores</button>
+            <button class="btn-main" onclick="openDeleteModal()">⚙️ Gestionar Dades</button>
+            <button id="btnExport" class="btn-main btn-action" onclick="exportToNextMonth()">🚚 Exportar a ...</button>
             <button id="btnLockMonth" class="btn-main btn-lock" onclick="toggleLockMonth()">🔒 Tancar Mes</button>
+        </div>
+
+        <!-- Grupo 3: Arxiu i Importacions -->
+        <div class="toolbar-group">
+            <div class="filter-label">💾 Fitxers:</div>
+            <button class="btn-main btn-archive" onclick="exportarExcel()" style="color: #15803d; font-weight: 600;">📥 Excel</button>
+            <button class="btn-main btn-archive" onclick="window.print()">🖨️ Imprimir</button>
+            <button class="btn-main btn-archive" onclick="exportarBackupJSON()">💾 Exportar Backup</button>
+            <button class="btn-main btn-archive" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
+            <button class="btn-main btn-archive" onclick="document.getElementById('fileVacances').click()" style="color: #7e22ce; font-weight: 600;">🌴 Importar Vacances</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarBackupJSON(this)">
+            <input type="file" id="fileVacances" style="display:none" onchange="importarVacances(this)">
+        </div>
+
+        <!-- Grupo 4: Zona de Perill -->
+        <div class="toolbar-group danger-group">
             <button class="btn-danger-right" onclick="resetAll()">🗑️ Esborrar dades del mes</button>
-         <input type="file" id="fileVacances" style="display:none" onchange="importarVacances(this)">
         </div>
     </div>
 </div>
@@ -376,6 +679,7 @@ html, body { overflow: visible !important; height: auto !important; }
     };
 
     let currentMonth, currentYear;
+    let currentCoordinator = "";
     let cacheDades = {}, cellCoords = {}, selectedIds = [], isDragging = false, startId = null;
     let clipboardData = null; 
     let historyStack = [];
@@ -388,6 +692,7 @@ async function init() {
         const params = new URLSearchParams(window.location.search);
         const userRole = params.get('role') || sessionStorage.getItem('userRole') || 'coordinador';
         let userName = params.get('username') || sessionStorage.getItem('userName') || '';
+        currentCoordinator = userName;
 
         // Si el rol es jefe de operaciones y no se ha especificado un username de coordinador en la URL (es Administrador)
         if (userRole === 'jefe operaciones' && (!userName || userName === 'Administrador')) {
@@ -444,6 +749,9 @@ async function init() {
 
         // Cargar datos del JSON físico local a localStorage de forma transparente
         await persistence.syncLoad('quadrant');
+
+        LLISTES.personal = JSON.parse(localStorage.getItem('nyn_personal')) || ["-"];
+        LLISTES.horaris = JSON.parse(localStorage.getItem('nyn_horaris')) || ["-"];
 
         // Sincronizar LLISTES.parkings desde el archivo maestro aparcamientos.json para el coordinador seleccionado
         let activeParkings = [];
@@ -952,23 +1260,24 @@ function exportToNextMonth() {
         const mesNom = MESOS[currentMonth].toUpperCase();
         
         if(confirm("⚠️ PERILL: S'esborraran totes les dades del mes i per tant perdràs tota la feina feta. N'estàs segur?")) { 
-            
-            const usuari = prompt("Per seguretat i registre, introdueix el teu nom (ALBERT / LAURA):");
-            
-            if (usuari && (usuari.toUpperCase() === "ALBERT" || usuari.toUpperCase() === "LAURA")) {
-                const prefix = `nyn_v12_${currentYear}_${currentMonth}`;
+            if(confirm("⚠️ Estàs totalment convençut de voler esborrar totes les dades d'aquest mes? Aquesta acció no es pot desfer.")) {
+                const usuari = prompt("Per seguretat i registre, introdueix el teu nom (ALBERT / LAURA):");
                 
-                Object.keys(localStorage).forEach(k => { 
-                    if(k.startsWith(prefix)) localStorage.removeItem(k);
-                });
+                if (usuari && (usuari.toUpperCase() === "ALBERT" || usuari.toUpperCase() === "LAURA")) {
+                    const prefix = `nyn_v12_${currentYear}_${currentMonth}`;
+                    
+                    Object.keys(localStorage).forEach(k => { 
+                        if(k.startsWith(prefix)) localStorage.removeItem(k);
+                    });
 
-                // REGISTREM L'ACCIÓ
-                registrarLog(usuari, `⚠️ HA ESBORRAT TOT EL QUADRANT de ${mesNom} ${currentYear}.`);
+                    // REGISTREM L'ACCIÓ
+                    registrarLog(usuari, `⚠️ HA ESBORRAT TOT EL QUADRANT de ${mesNom} ${currentYear}.`);
 
-                alert("Dades esborrades correctament.");
-                changeMonth(); 
-            } else {
-                alert("Acció cancel·lada: Nom d'usuari no vàlid.");
+                    alert("Dades esborrades correctament.");
+                    changeMonth(); 
+                } else {
+                    alert("Acció cancel·lada: Nom d'usuari no vàlid.");
+                }
             }
         } 
     }
@@ -1016,25 +1325,170 @@ function saveNote() {
         const type = document.getElementById('deleteType').value, select = document.getElementById('deleteItem'); select.innerHTML = "";
         LLISTES[type].forEach(item => { if(item !== "-") select.add(new Option(item, item)) }); document.getElementById('editInput').value = select.value || "";
     }
-    function addNewItem() {
-        const type = document.getElementById('deleteType').value, nou = prompt(`Nou element:`);
-        if (nou?.trim()) { LLISTES[type].push(nou.trim()); LLISTES[type].sort(); localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type])); updateDeleteOptions(); updateFilterSelects(); renderTable(); }
-    }
-    function saveEditItem() {
-        const type = document.getElementById('deleteType').value, vell = document.getElementById('deleteItem').value, nou = document.getElementById('editInput').value.trim();
-        if (nou && vell && vell !== "-" && vell !== nou) {
-            LLISTES[type] = LLISTES[type].map(i => i === vell ? nou : i); localStorage.setItem('nyn_' + type, JSON.stringify(LLISTES[type]));
-            if (type === 'personal') {
-                Object.keys(localStorage).forEach(key => { if (key.startsWith('nyn_v12_')) { let d = JSON.parse(localStorage.getItem(key)); if (d && d.w === vell) { d.w = nou; localStorage.setItem(key, JSON.stringify(d)); cacheDades[key] = d; } } });
+    async function addNewItem() {
+        const type = document.getElementById('deleteType').value;
+        if (type === 'parkings') {
+            const nou = prompt(`Nou centre:`);
+            if (nou && nou.trim()) {
+                const nouTrim = nou.trim().toUpperCase();
+                if (LLISTES.parkings.includes(nouTrim)) {
+                    alert("Aquest centre ja existeix en el teu llistat.");
+                    return;
+                }
+                try {
+                    const allParkings = await window.api.getAparcamientos();
+                    const existing = allParkings.find(ap => ap.nombre.toUpperCase() === nouTrim);
+                    if (existing) {
+                        existing.coordinadorId = currentCoordinator.toLowerCase();
+                    } else {
+                        allParkings.push({
+                            nombre: nouTrim,
+                            coordinadorId: currentCoordinator.toLowerCase()
+                        });
+                    }
+                    const res = await window.api.saveAparcamientos(allParkings);
+                    if (res && res.success) {
+                        LLISTES.parkings.push(nouTrim);
+                        LLISTES.parkings.sort();
+                        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
+                        updateDeleteOptions();
+                        updateFilterSelects();
+                        renderTable();
+                        alert("✅ Centre afegit correctament.");
+                    } else {
+                        alert("Error al desar el centre en el catàleg mestre: " + (res?.error || "desconegut"));
+                    }
+                } catch (e) {
+                    console.error("Error al afegir aparcament:", e);
+                    alert("Error al desar el centre en el catàleg mestre.");
+                }
             }
-            updateDeleteOptions(); updateFilterSelects(); renderTable();
+        } else {
+            const nou = prompt(`Nou element:`);
+            if (nou?.trim()) {
+                LLISTES[type].push(nou.trim());
+                LLISTES[type].sort();
+                localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type]));
+                updateDeleteOptions();
+                updateFilterSelects();
+                renderTable();
+            }
         }
     }
-    function confirmDelete() {
-        const type = document.getElementById('deleteType').value, val = document.getElementById('deleteItem').value;
-        if(val && val !== "-" && confirm(`Eliminar "${val}"?`)) { 
-            LLISTES[type] = LLISTES[type].filter(i => i !== val); localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type])); 
-            updateDeleteOptions(); updateFilterSelects(); renderTable(); 
+    async function saveEditItem() {
+        const type = document.getElementById('deleteType').value;
+        const vell = document.getElementById('deleteItem').value;
+        const nou = document.getElementById('editInput').value.trim();
+        if (nou && vell && vell !== "-" && vell !== nou) {
+            if (type === 'parkings') {
+                const nouUpper = nou.toUpperCase();
+                const vellUpper = vell.toUpperCase();
+                try {
+                    const res = await window.api.renameAparcamiento(vell, nouUpper);
+                    if (res && res.success) {
+                        LLISTES.parkings = LLISTES.parkings.map(i => i.toUpperCase() === vellUpper ? nouUpper : i);
+                        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
+
+                        // Migrar totes les claus de cel·les i configuració en localStorage per a aquest parking
+                        const keysToMigrate = [];
+                        for (let i = 0; i < localStorage.length; i++) {
+                            const key = localStorage.key(i);
+                            if (key.startsWith('nyn_v12_')) {
+                                const parts = key.split('_');
+                                if (parts.length >= 6) {
+                                    const dia = parts[parts.length - 1];
+                                    const torn = parts[parts.length - 2];
+                                    const park = parts.slice(4, parts.length - 2).join('_');
+                                    if (park.toUpperCase() === vellUpper) {
+                                        keysToMigrate.push({
+                                            oldKey: key,
+                                            newKey: `nyn_v12_${parts[2]}_${parts[3]}_${nouUpper}_${torn}_${dia}`
+                                        });
+                                    }
+                                }
+                            }
+                            if (key.startsWith('nyn_pendent_')) {
+                                const parts = key.split('_');
+                                if (parts.length >= 5) {
+                                    const park = parts.slice(4).join('_');
+                                    if (park.toUpperCase() === vellUpper) {
+                                        keysToMigrate.push({
+                                            oldKey: key,
+                                            newKey: `nyn_pendent_${parts[2]}_${parts[3]}_${nouUpper}`
+                                        });
+                                    }
+                                }
+                            }
+                        }
+
+                        keysToMigrate.forEach(({ oldKey, newKey }) => {
+                            const val = localStorage.getItem(oldKey);
+                            localStorage.setItem(newKey, val);
+                            localStorage.removeItem(oldKey);
+                        });
+
+                        updateDeleteOptions();
+                        updateFilterSelects();
+                        changeMonth();
+                        alert("✅ Centre modificat correctament en tota la base de dades.");
+                    } else {
+                        alert("Error al renombrar el centre en la base de dades: " + (res?.error || "desconegut"));
+                    }
+                } catch (e) {
+                    console.error("Error al renombrar aparcament:", e);
+                    alert("Error al modificar el centre.");
+                }
+            } else {
+                LLISTES[type] = LLISTES[type].map(i => i === vell ? nou : i);
+                localStorage.setItem('nyn_' + type, JSON.stringify(LLISTES[type]));
+                if (type === 'personal') {
+                    Object.keys(localStorage).forEach(key => {
+                        if (key.startsWith('nyn_v12_')) {
+                            let d = JSON.parse(localStorage.getItem(key));
+                            if (d && d.w === vell) {
+                                d.w = nou;
+                                localStorage.setItem(key, JSON.stringify(d));
+                                cacheDades[key] = d;
+                            }
+                        }
+                    });
+                }
+                updateDeleteOptions();
+                updateFilterSelects();
+                renderTable();
+            }
+        }
+    }
+    async function confirmDelete() {
+        const type = document.getElementById('deleteType').value;
+        const val = document.getElementById('deleteItem').value;
+        if (val && val !== "-" && confirm(`Eliminar "${val}"?`)) {
+            if (type === 'parkings') {
+                try {
+                    const allParkings = await window.api.getAparcamientos();
+                    const updated = allParkings.filter(ap => ap.nombre.toUpperCase() !== val.toUpperCase());
+                    const res = await window.api.saveAparcamientos(updated);
+                    if (res && res.success) {
+                        LLISTES.parkings = LLISTES.parkings.filter(i => i.toUpperCase() !== val.toUpperCase());
+                        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
+                        updateDeleteOptions();
+                        updateFilterSelects();
+                        renderTable();
+                        alert("✅ Centre eliminat del catàleg mestre.");
+                    } else {
+                        alert("Error al eliminar el centre del catàleg mestre: " + (res?.error || "desconegut"));
+                    }
+                } catch (e) {
+                    console.error("Error al eliminar aparcament:", e);
+                    alert("Error al eliminar el centre.");
+                }
+            } else {
+                LLISTES[type] = LLISTES[type].filter(i => i !== val);
+                localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type]));
+                updateDeleteOptions();
+                updateFilterSelects();
+                renderTable();
+            }
         }
     }
  
@@ -1190,48 +1644,325 @@ localStorage.setItem('nyn_quadrant_last_time', dataFormatada);
 
 
 
+let dadesPendentImportacio = null;
+let metadataPendentImportacio = null;
+
+function trobarCoincidenciaAproximada(nomInput, llista) {
+    if (!nomInput) return "";
+    const cleanStr = (s) => s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
+    const cleanInput = cleanStr(nomInput);
+    
+    let millorCoincidencia = "";
+    let maxSimilarity = 0;
+    
+    llista.forEach(item => {
+        const cleanItem = cleanStr(item);
+        if (cleanItem === cleanInput) {
+            millorCoincidencia = item;
+            maxSimilarity = 1.0;
+            return;
+        }
+        if (cleanItem.includes(cleanInput) || cleanInput.includes(cleanItem)) {
+            const sim = Math.min(cleanItem.length, cleanInput.length) / Math.max(cleanItem.length, cleanInput.length);
+            if (sim > maxSimilarity) {
+                maxSimilarity = sim;
+                millorCoincidencia = item;
+            }
+        }
+    });
+    
+    return maxSimilarity > 0.4 ? millorCoincidencia : "";
+}
+
 function importarBackupJSON(input) {
     const file = input.files[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             const dades = JSON.parse(e.target.result);
             
-            // 1. GESTIÓ DE LA DATA I L'AUTOR (Llegenda)
-            // Si el fitxer ve "signat", guardem la info per a la llegenda
-            if (dades.METADATA_EXPORT_DATA) {
-                localStorage.setItem('nyn_ultima_export_data', dades.METADATA_EXPORT_DATA);
-                localStorage.setItem('nyn_ultima_export_autor', dades.METADATA_EXPORT_AUTOR);
-                // També actualitzem la data de l'exportació que surt al costat del botó
-                localStorage.setItem('nyn_last_export_time', dades.METADATA_EXPORT_DATA);
-            }
-
-            // 2. IMPORTACIÓ DE LES DADES REALS
-            Object.keys(dades).forEach(clau => {
-                // Només importem les claus que comencen per "nyn_" 
-                // i evitem sobreescriure les metadades com si fossin configuració pura
-                if (clau.startsWith('nyn_')) {
-                    localStorage.setItem(clau, dades[clau]);
+            // Analizar discrepancias de centros y trabajadores
+            const centresImportats = new Set();
+            const treballadorsImportats = new Set();
+            
+            Object.keys(dades).forEach(key => {
+                if (key.startsWith('nyn_v12_') || key.startsWith('nyn_v9_')) {
+                    const parts = key.split('_');
+                    if (parts.length >= 6) {
+                        const park = parts.slice(4, parts.length - 2).join(' ');
+                        if (park && park !== "-") {
+                            centresImportats.add(park);
+                        }
+                    }
+                    let cellVal;
+                    try {
+                        cellVal = typeof dades[key] === 'string' ? JSON.parse(dades[key]) : dades[key];
+                    } catch(e) {
+                        cellVal = null;
+                    }
+                    if (cellVal && cellVal.w && cellVal.w !== "-") {
+                        treballadorsImportats.add(cellVal.w);
+                    }
                 }
             });
-
-            // 3. AVIS D'ÈXIT PERSONALITZAT
-            const info = dades.METADATA_EXPORT_DATA 
-                ? `\n(Fitxer creat el: ${dades.METADATA_EXPORT_DATA} per ${dades.METADATA_EXPORT_AUTOR})` 
-                : "";
             
-            alert("✅ Backup restaurat correctament!" + info);
+            // Comparar con el catálogo local actual
+            const discrepanciesCentres = [];
+            centresImportats.forEach(c => {
+                if (!LLISTES.parkings.includes(c)) {
+                    discrepanciesCentres.push(c);
+                }
+            });
             
-            // 4. RECARREGAR
-            location.reload(); 
-
+            const discrepanciesTreballadors = [];
+            treballadorsImportats.forEach(t => {
+                if (!LLISTES.personal.includes(t)) {
+                    discrepanciesTreballadors.push(t);
+                }
+            });
+            
+            // Si hay discrepancias, abrir modal de mapeo
+            if (discrepanciesCentres.length > 0 || discrepanciesTreballadors.length > 0) {
+                dadesPendentImportacio = dades;
+                metadataPendentImportacio = {
+                    data: dades.METADATA_EXPORT_DATA || "",
+                    autor: dades.METADATA_EXPORT_AUTOR || ""
+                };
+                
+                mostrarModalMapeig(discrepanciesCentres, discrepanciesTreballadors);
+            } else {
+                // Importación directa clásica
+                await aplicarImportacioDades(dades);
+            }
         } catch (err) {
             console.error("Error al carregar:", err);
-            alert("❌ El fitxer no és un backup vàlid.");
+            alert("❌ El fitxer no és un backup vàlid o no s'ha pogut parsejar.");
         }
     };
     reader.readAsText(file);
+}
+
+function mostrarModalMapeig(discrepanciesCentres, discrepanciesTreballadors) {
+    const listCentres = document.getElementById('mappingParkingsList');
+    const listWorkers = document.getElementById('mappingWorkersList');
+    
+    // Centros
+    if (discrepanciesCentres.length > 0) {
+        document.getElementById('mappingParkingsSection').style.display = 'block';
+        listCentres.innerHTML = discrepanciesCentres.map((c, idx) => {
+            const coincidencia = trobarCoincidenciaAproximada(c, LLISTES.parkings);
+            return `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; padding: 6px; background: #fafafa; border-radius: 4px; border: 1px solid #eee; margin-bottom: 4px;">
+                    <span style="font-weight: 600; color: #334155; word-break: break-all;">${c}</span>
+                    <select class="map-centre-select" data-original="${c}" style="width: 250px; font-size: 11px; height: 26px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <option value="_CREATE_NEW_">➕ [Crear nou centre: "${c}"]</option>
+                        <option value="_IGNORE_">❌ [Ignorar dades d'aquest centre]</option>
+                        ${LLISTES.parkings.filter(p => p !== "-").map(p => `
+                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>Asociar a: ${p}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            `;
+        }).join('');
+    } else {
+        document.getElementById('mappingParkingsSection').style.display = 'none';
+        listCentres.innerHTML = '';
+    }
+    
+    // Trabajadores
+    if (discrepanciesTreballadors.length > 0) {
+        document.getElementById('mappingWorkersSection').style.display = 'block';
+        listWorkers.innerHTML = discrepanciesTreballadors.map((t, idx) => {
+            const coincidencia = trobarCoincidenciaAproximada(t, LLISTES.personal);
+            return `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; padding: 6px; background: #fafafa; border-radius: 4px; border: 1px solid #eee; margin-bottom: 4px;">
+                    <span style="font-weight: 600; color: #334155; word-break: break-all;">${t}</span>
+                    <select class="map-treballador-select" data-original="${t}" style="width: 250px; font-size: 11px; height: 26px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <option value="_CREATE_NEW_">➕ [Crear nou treballador: "${t}"]</option>
+                        <option value="_IGNORE_">❌ [Ignorar dades d'aquest treballador]</option>
+                        ${LLISTES.personal.filter(p => p !== "-").map(p => `
+                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>Asociar a: ${p}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            `;
+        }).join('');
+    } else {
+        document.getElementById('mappingWorkersSection').style.display = 'none';
+        listWorkers.innerHTML = '';
+    }
+    
+    document.getElementById('importMappingModal').style.display = 'block';
+}
+
+function cancelarImportacioMapejada() {
+    document.getElementById('importMappingModal').style.display = 'none';
+    dadesPendentImportacio = null;
+    metadataPendentImportacio = null;
+    document.getElementById('importFile').value = '';
+}
+
+async function confirmarImportacioMapejada() {
+    if (!dadesPendentImportacio) return;
+    
+    const btn = document.getElementById('btnConfirmarImport');
+    btn.disabled = true;
+    btn.innerText = 'Processant...';
+    
+    try {
+        const mapaCentres = {};
+        const mapaTreballadors = {};
+        
+        // 1. Processar Mapeig de Centres
+        const selectsCentres = document.querySelectorAll('.map-centre-select');
+        let allParkings = [];
+        try {
+            allParkings = await window.api.getAparcamientos();
+        } catch(e) {
+            allParkings = [];
+        }
+        
+        let catalogChanged = false;
+        
+        for (const sel of selectsCentres) {
+            const original = sel.getAttribute('data-original');
+            const desti = sel.value;
+            
+            if (desti === '_CREATE_NEW_') {
+                const nouUpper = original.toUpperCase().trim();
+                if (!allParkings.some(ap => ap.nombre.toUpperCase() === nouUpper)) {
+                    allParkings.push({
+                        nombre: nouUpper,
+                        coordinadorId: currentCoordinator.toLowerCase()
+                    });
+                    catalogChanged = true;
+                }
+                if (!LLISTES.parkings.includes(nouUpper)) {
+                    LLISTES.parkings.push(nouUpper);
+                }
+                mapaCentres[original] = nouUpper;
+            } else {
+                mapaCentres[original] = desti;
+            }
+        }
+        
+        if (catalogChanged) {
+            await window.api.saveAparcamientos(allParkings);
+            LLISTES.parkings.sort();
+            localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
+        }
+        
+        // 2. Processar Mapeig de Treballadors
+        const selectsTreballadors = document.querySelectorAll('.map-treballador-select');
+        let personalChanged = false;
+        
+        for (const sel of selectsTreballadors) {
+            const original = sel.getAttribute('data-original');
+            const desti = sel.value;
+            
+            if (desti === '_CREATE_NEW_') {
+                const nouTrim = original.trim();
+                if (!LLISTES.personal.includes(nouTrim)) {
+                    LLISTES.personal.push(nouTrim);
+                    personalChanged = true;
+                }
+                mapaTreballadors[original] = nouTrim;
+            } else {
+                mapaTreballadors[original] = desti;
+            }
+        }
+        
+        if (personalChanged) {
+            LLISTES.personal.sort();
+            localStorage.setItem('nyn_personal', JSON.stringify(LLISTES.personal));
+        }
+        
+        // 3. Transformar i guardar les dades
+        const dadesTransformades = {};
+        
+        Object.keys(dadesPendentImportacio).forEach(clau => {
+            if (clau.startsWith('nyn_v12_') || clau.startsWith('nyn_v9_')) {
+                const parts = clau.split('_');
+                if (parts.length >= 6) {
+                    const any = parts[2];
+                    const mes = parts[3];
+                    const torn = parts[parts.length - 2];
+                    const dia = parts[parts.length - 1];
+                    const centreOriginal = parts.slice(4, parts.length - 2).join(' ');
+                    
+                    const centreMapejat = mapaCentres[centreOriginal] !== undefined ? mapaCentres[centreOriginal] : centreOriginal;
+                    
+                    if (centreMapejat !== '_IGNORE_') {
+                        let cellVal;
+                        try {
+                            cellVal = typeof dadesPendentImportacio[clau] === 'string' 
+                                ? JSON.parse(dadesPendentImportacio[clau]) 
+                                : dadesPendentImportacio[clau];
+                        } catch(e) {
+                            cellVal = null;
+                        }
+                        
+                        if (cellVal) {
+                            const workerOriginal = cellVal.w;
+                            const workerMapejat = mapaTreballadors[workerOriginal] !== undefined ? mapaTreballadors[workerOriginal] : workerOriginal;
+                            
+                            if (workerMapejat === '_IGNORE_') {
+                                cellVal.w = "-";
+                            } else {
+                                cellVal.w = workerMapejat;
+                            }
+                            
+                            const novaClau = `nyn_v12_${any}_${mes}_${centreMapejat}_${torn}_${dia}`;
+                            dadesTransformades[novaClau] = JSON.stringify(cellVal);
+                        }
+                    }
+                }
+            } else if (clau.startsWith('nyn_') && clau !== 'nyn_personal' && clau !== 'nyn_parkings') {
+                dadesTransformades[clau] = dadesPendentImportacio[clau];
+            }
+        });
+        
+        if (metadataPendentImportacio.data) {
+            localStorage.setItem('nyn_ultima_export_data', metadataPendentImportacio.data);
+            localStorage.setItem('nyn_ultima_export_autor', metadataPendentImportacio.autor);
+            localStorage.setItem('nyn_last_export_time', metadataPendentImportacio.data);
+        }
+        
+        Object.keys(dadesTransformades).forEach(clau => {
+            localStorage.setItem(clau, dadesTransformades[clau]);
+        });
+        
+        await persistence.syncSave();
+        
+        alert("✅ Backup importat i mapejat correctament!");
+        location.reload();
+        
+    } catch(err) {
+        console.error("Error en la importació mapejada:", err);
+        alert("❌ S'ha produït un error al processar l'importació mapejada.");
+    } finally {
+        btn.disabled = false;
+        btn.innerText = 'Confirmar Importació';
+    }
+}
+
+async function aplicarImportacioDades(dades) {
+    if (dades.METADATA_EXPORT_DATA) {
+        localStorage.setItem('nyn_ultima_export_data', dades.METADATA_EXPORT_DATA);
+        localStorage.setItem('nyn_ultima_export_autor', dades.METADATA_EXPORT_AUTOR);
+        localStorage.setItem('nyn_last_export_time', dades.METADATA_EXPORT_DATA);
+    }
+
+    Object.keys(dades).forEach(clau => {
+        if (clau.startsWith('nyn_')) {
+            localStorage.setItem(clau, dades[clau]);
+        }
+    });
+
+    await persistence.syncSave();
+    alert("✅ Backup restaurat correctament!");
+    location.reload();
 }
 
 
@@ -1344,7 +2075,7 @@ function importarVacances(input) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(e) {
+    reader.onload = async function(e) {
         try {
             const jsonComplet = JSON.parse(e.target.result);
             
@@ -1359,6 +2090,9 @@ function importarVacances(input) {
             // Guardem la llista de treballadors (amb els seus camps n, p, p2...)
             localStorage.setItem('nyn_vacances', JSON.stringify(llistaAEmmagatzemar));
             
+            // Guardar inmediatamente de forma asíncrona en SQLite/Disco
+            await persistence.syncSave();
+
             alert("✅ Vacances actualitzades correctament! Ara es pintaran les caselles liles.");
             
             // Recarreguem o cridem a la funció de dibuixar
@@ -1447,6 +2181,41 @@ function refrescarLlegendaGlobal() {
     </div>
     <div id="taulaResumHores"></div>
     <div style="margin-top:20px; text-align:right;"><button onclick="document.getElementById('horesModal').style.display='none'" class="btn-tancar-resum">Tancar Resum</button></div>
+</div>
+
+<div id="importMappingModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; border: 1px solid var(--border); padding: 24px; z-index: 2050; border-radius: 12px; width: 90%; max-width: 580px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); font-family: inherit;">
+    <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px; color: var(--nyn-verd); border-bottom: 2px solid var(--nyn-verd-accent); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+        📂 MAPEIG DE DADES D'IMPORTACIÓ
+    </div>
+    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">
+        S'han detectat discrepàncies entre els centres/treballadors del fitxer seleccionat i el teu catàleg local. Si us plau, indica com s'han d'associar aquests elements:
+    </p>
+
+    <!-- Discrepàncies de Centres -->
+    <div id="mappingParkingsSection" style="margin-bottom: 18px;">
+        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #e6f4ea; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+            🏢 centres no coincidents
+        </div>
+        <div id="mappingParkingsList" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+            <!-- Elementos generados dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Discrepàncies de Treballadors -->
+    <div id="mappingWorkersSection" style="margin-bottom: 20px;">
+        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #fef9c3; color: var(--nyn-substitucio-text); padding: 4px 8px; border-radius: 4px; display: inline-block;">
+            👤 treballadors no coincidents
+        </div>
+        <div id="mappingWorkersList" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+            <!-- Elementos generados dinámicamente -->
+        </div>
+    </div>
+
+    <!-- Botones de Acción -->
+    <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px;">
+        <button class="btn-main" onclick="cancelarImportacioMapejada()">Cancel·lar</button>
+        <button class="btn-main btn-action" id="btnConfirmarImport" onclick="confirmarImportacioMapejada()">Confirmar Importació</button>
+    </div>
 </div>
 
 </body>

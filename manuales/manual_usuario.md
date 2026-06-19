@@ -64,7 +64,30 @@ El apartado de **Comercials** (Disponibilidad y Tarifas) ha sido mejorado para o
 
 ---
 
-## 7. Sistema de Bloqueo de Archivos en Red
+## 7. Control de Turnos y Cuadrante Modernizado
+La pantalla del **Quadrant** (Control de Turnos) se ha unificado bajo una estética de diseño premium con la tipografía **Outfit** y colores pastel refinados:
+*   **Barra de Herramientas Organizada**: Las utilidades del cuadrante están distribuidas en 4 grupos claros para evitar confusiones:
+    1.  **Periodo y Filtros:** Para seleccionar el mes/año y filtrar las filas visibles por Centro, Trabajador o Turno, con el botón `Reset Filtres` integrado.
+    2.  **Acciones del Cuadrante:** Incluye `Recompte Hores` (calcula horas diurnas/nocturnas/festivas contra el convenio y dibuja barras comparativas en un modal), `Gestionar Dades` (abre el editor de catálogos solicitando la contraseña `"1234"` para evitar modificaciones accidentales), `Exportar a [Mes]` (rotación inteligente al mes siguiente) y `Tancar Mes` (bloquea la edición del mes mediante contraseña).
+    3.  **Archivos e Importación:** Botones para descargar el cuadrante en **Excel**, enviar a **Imprimir/PDF**, exportar backups en JSON o restaurar copias de seguridad de cuadrantes y vacaciones.
+    4.  **Zona de Peligro:** Situado en el extremo derecho, el botón rojo coral `Esborrar dades del mes` realiza un borrado total. Requiere escribir tu nombre y confirmar dos veces por escrito para evitar ejecuciones accidentales.
+*   **Persistencia SQLite (dades.db)**: El cuadrante ya no se guarda en JSON plano propenso a corrupciones de escritura. El sistema escribe y lee en caliente los turnos sobre una base de datos integrada y rápida (`dades.db`) en la carpeta del coordinador, de forma transaccional y totalmente segura.
+
+---
+
+## 8. Asistente de Importación con Mapeo de Discrepancias
+Cuando importes un archivo de copia de seguridad JSON al cuadrante:
+1.  **Análisis Automático:** El asistente escaneará el archivo y extraerá todos los centros y empleados que contiene.
+2.  **Pantalla de Discrepancias (Modal):** Si detecta centros o trabajadores que no existen en tu base de datos o catálogo actual, abrirá un asistente interactivo en lugar de importar datos corruptos o celdas vacías.
+3.  **Mapeo Fácil:** Por cada elemento discrepante, podrás seleccionar qué hacer:
+    *   **Asociar:** Selecciona en un menú desplegable a qué centro o trabajador local actual corresponde. El asistente utiliza un algoritmo de coincidencia de texto para preseleccionar la opción correcta de forma inteligente (ej. asocia `"NN BONANOVA"` aunque en el archivo viniera como `"N.N. BONANOVA"`).
+    *   **Crear Nuevo:** Da de alta el nuevo elemento de forma automática en tu catálogo maestro sobre la marcha.
+    *   **Ignorar:** Importa el resto del archivo omitiendo los turnos asociados a esa discrepancia.
+4.  **Procesamiento:** Al confirmar, el sistema adapta el JSON original a tus catálogos, migra las claves a la versión de cuadrante actual y guarda la actualización de forma segura.
+
+---
+
+## 9. Sistema de Bloqueo de Archivos en Red
 Para evitar que dos coordinadores editen y pisen el trabajo del otro en el disco compartido de la oficina:
 *   Al entrar a editar un apartado (ej. el cuadrante de Albert), el sistema crea un bloqueo temporal con tu nombre.
 *   Si otro coordinador intenta entrar al mismo apartado a la vez, el programa abrirá su pantalla en **Modo Solo Lectura** y le mostrará un banner rojo que indica quién está editando el archivo actualmente. Los botones de edición y guardado quedarán desactivados para ese segundo usuario.

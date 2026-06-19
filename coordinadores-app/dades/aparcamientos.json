@@ -1,116 +1,35 @@
 {
   "aparcamientos": [
-    {
-      "nombre": "N.N. CONCEPT",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. LA TAMARITA",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. BONANOVA",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. ARAGO",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N. URGELL-2",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. VALENCIA",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. VALENCIA-2",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. VALENCIA 3",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "NUÑEZ BRUC",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. ST. GERVASI",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "LA ROTONDA",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "MASTER CATAL.",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "TORRE N.N.",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N.N. ESPRONCEDA",
-      "coordinadorId": "albert"
-    },
-    {
-      "nombre": "N. DIAGONAL",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N. HERCEGOVINA",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N.N. GRAN VIA",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N.N. GEIGLE",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N.N. SENMENAT-2",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N. ROCAFORT",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N.N. SANTALÓ",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N. BORRELL",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N.N. Z. FRANCA",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "ESTEVE TERRAD.",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N. VIA AUGUSTA",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N. TRAVESSERA",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N.N. PEDRALBES",
-      "coordinadorId": "laura"
-    },
-    {
-      "nombre": "N.N. CÓRCEGA",
-      "coordinadorId": "laura"
-    }
+    { "nombre": "NN CONCEPT", "coordinadorId": "albert" },
+    { "nombre": "NN LA TAMARITA", "coordinadorId": "albert" },
+    { "nombre": "NN BONANOVA", "coordinadorId": "albert" },
+    { "nombre": "NN ARAGÓ", "coordinadorId": "albert" },
+    { "nombre": "NN URGELL 2", "coordinadorId": "albert" },
+    { "nombre": "NN VALENCIA", "coordinadorId": "albert" },
+    { "nombre": "NN VALENCIA 2", "coordinadorId": "albert" },
+    { "nombre": "NN VALENCIA 3", "coordinadorId": "albert" },
+    { "nombre": "NN BRUC", "coordinadorId": "albert" },
+    { "nombre": "NN SANT GERVASI", "coordinadorId": "albert" },
+    { "nombre": "NN LA ROTONDA", "coordinadorId": "albert" },
+    { "nombre": "NN MASTER CATALONIA", "coordinadorId": "albert" },
+    { "nombre": "NN TORRE NIN", "coordinadorId": "albert" },
+    { "nombre": "NN ESPRONCEDA", "coordinadorId": "albert" },
+    { "nombre": "NN URGELL", "coordinadorId": "albert" },
+    { "nombre": "NN EL PALLOL", "coordinadorId": "albert" },
+    { "nombre": "NN ILLA AUGUSTA", "coordinadorId": "albert" },
+    { "nombre": "NN DIAGONAL", "coordinadorId": "laura" },
+    { "nombre": "NN HERCEGOVINA", "coordinadorId": "laura" },
+    { "nombre": "NN GRAN VIA", "coordinadorId": "laura" },
+    { "nombre": "NN GEIGLE", "coordinadorId": "laura" },
+    { "nombre": "NN SENTMENAT 2", "coordinadorId": "laura" },
+    { "nombre": "NN ROCAFORT", "coordinadorId": "laura" },
+    { "nombre": "NN SANTALÓ", "coordinadorId": "laura" },
+    { "nombre": "NN BORRELL", "coordinadorId": "laura" },
+    { "nombre": "NN ZONA FRANCA", "coordinadorId": "laura" },
+    { "nombre": "NN ESTEVE TARRADAS", "coordinadorId": "laura" },
+    { "nombre": "NN VÍA AUGUSTA", "coordinadorId": "laura" },
+    { "nombre": "NN TRAVESSERA", "coordinadorId": "laura" },
+    { "nombre": "NN PEDRALBES", "coordinadorId": "laura" },
+    { "nombre": "NN CÓRSEGA", "coordinadorId": "laura" }
   ]
 }

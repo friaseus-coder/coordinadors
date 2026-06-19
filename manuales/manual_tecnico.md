@@ -11,8 +11,9 @@ La aplicación se ha diseñado para funcionar sin base de datos SQL relacional n
 *   **Runtime:** [Electron.js (v31)](https://www.electronjs.org/), que unifica el motor de renderizado Chromium de Google con el entorno de ejecución Node.js de escritorio.
 *   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS) y JavaScript nativo ES6.
 *   **Fuentes de Texto:** Carga de la tipografía premium **Outfit** desde Google Fonts.
-*   **Persistencia:** Almacenamiento local mediante el `localStorage` de Chromium, sincronizado de forma totalmente asíncrona y no bloqueante con archivos planos estructurados en formato **JSON** a nivel de disco de red compartido.
+*   **Persistencia:** Base de datos integrada **SQLite (v3)** a nivel local/red para la persistencia transaccional y ágil de los datos históricos y turnos del coordinador (`dades.db` en la subcarpeta del coordinador), combinada con el `localStorage` de Chromium en la capa cliente y archivos estructurados en formato **JSON** para las configuraciones y catálogos maestros compartidos.
 *   **Concurrencia (Multi-usuario):** Sistema de exclusión mutua mediante archivos físicos de bloqueo de Windows (`.lock`) estructurados en formato JSON con expiración temporal activa (TTL de 3 horas) y detección periódica de pérdida en caliente.
+
 
 ---
 
@@ -57,8 +58,11 @@ La aplicación aprovecha la separación de procesos de Electron para ofrecer seg
 *   Crea y gestiona la ventana de visualización (`BrowserWindow`).
 *   Configura las rutas dinámicas leyendo `config.json` al iniciar, creando las carpetas `dades/` y `Backups/` automáticamente si no existieran.
 *   Expone servicios a través de la comunicación entre procesos (IPC) de forma 100% asíncrona (liberando el hilo principal de Electron) para la lectura y escritura de archivos locales/red, gestión de bloqueos con TTL, y administración de aparcamientos:
-    *   `get-aparcamientos`: Lee asíncronamente el catálogo de `aparcamientos.json` o inicializa la base de datos por defecto si no existe.
-    *   `save-aparcamientos`: Recibe la lista modificada y la guarda asíncronamente en el disco físico.
+    *   `read-file`: Handler unificado. Si la ruta pertenece a un coordinador (`dades [Nombre]/...`), consulta SQLite (`dades.db`). Si la clave no está en la base de datos, activa un **fallback automático**: comprueba si existe el archivo `.json` legado correspondiente en disco, lo lee, lo importa a SQLite transaccionalmente y lo devuelve al cliente. Para rutas globales (catálogos), lee el JSON plano directamente del servidor.
+    *   `write-file`: Si es ruta de coordinador, realiza una inserción transaccional `INSERT OR REPLACE INTO kv_store` en SQLite tras verificar que el usuario posee el bloqueo activo. Si es ruta global, escribe el JSON directamente en el servidor físico de archivos de red.
+    *   `get-aparcamientos` y `save-aparcamientos`: Administran el catálogo maestro de centros del fichero unificado `aparcamientos.json`.
+    *   `import-json-data`: Importa manualmente y de forma segura volcados JSON legados dentro de la base de datos SQLite del coordinador.
+
 
 ### B. Proceso de Renderizado (Renderer Process - Carpeta `src/`)
 *   Muestra la interfaz gráfica dentro del contenedor Chromium de forma aislada.
@@ -79,9 +83,6 @@ if (fs.existsSync(externalIndexPath)) {
   // Carga el código fuente empaquetado dentro del .exe (app.asar)
   mainWindow.loadFile(internalIndexPath);
 }
-```
-*   `__dirname` apunta al interior del paquete compilado inmutable `app.asar`.
-*   `rootDir` apunta a la carpeta donde reside físicamente el ejecutable `coordinadores.exe`. 
 *   **Efecto:** Si copias tu carpeta de desarrollo `src/` al lado de `coordinadores.exe`, la aplicación la prioriza, permitiéndote actualizar pantallas modificando archivos de texto en caliente.
 
 ---
@@ -104,22 +105,22 @@ El archivo `src/js/persistence.js` es el núcleo lógico que coordina la carga, 
                                                     |
                                       +---------------------------+
                                       |   Disco de Red Compartido  |
-                                      |    - datos.json           |
-                                      |    - ~datos.json.lock     |
+                                      |    - dades.db (SQLite)    |
+                                      |    - ~quadrant.json.lock  |
                                       +---------------------------+
 ```
 
 ### A. Ciclo de Vida de Lectura/Escritura y Control de Concurrencia
 Cuando un coordinador abre un módulo (por ejemplo, el Cuadrante de Albert):
-1.  **Bloqueo de Red y Registro de Tiempo (TTL de 3 horas):** `persistence.js` llama a `acquire-lock` sobre la ruta de red `dades Albert/quadrant.json`.
-    *   El proceso principal de Electron (`main.js`) comprueba si el archivo `dades Albert/~quadrant.json.lock` ya existe y lee su contenido (JSON stringificado).
+1.  **Bloqueo de Red y Registro de Tiempo (TTL de 3 horas):** `persistence.js` llama a `acquire-lock` sobre la ruta de red `dades Albert/quadrant_ALBERT.json`.
+    *   El proceso principal de Electron (`main.js`) comprueba si el archivo de bloqueo `dades Albert/~quadrant_ALBERT.json.lock` ya existe y lee su contenido (JSON stringificado).
     *   **Si el bloqueo ha expirado (más de 3 horas transcurridas desde su marca de tiempo):** `main.js` lo elimina de forma automática y asíncrona, otorgando el nuevo bloqueo al usuario solicitante.
     *   **Si el bloqueo pertenece al usuario activo:** Se renueva la marca de tiempo (timestamp) del archivo de bloqueo concediéndole 3 horas más.
     *   **Si está activo por otro usuario:** Devuelve el estado de ocupado. La interfaz gráfica deshabilita todos los controles de edición de forma inmediata y muestra un banner rojo informativo.
 2.  **Verificación en Caliente (Heartbeat de 30 segundos):** Durante la sesión de edición, el frontend (`persistence.js`) realiza una comprobación en segundo plano cada 30 segundos (`check-lock`) para validar si el bloqueo sigue perteneciendo al usuario activo. Si un Jefe de Operaciones forzó la liberación o el tiempo del bloqueo expira, la interfaz gráfica lanza un aviso emergente en pantalla y deshabilita de forma irreversible los controles de edición para evitar la pérdida de cambios.
-3.  **Carga de Datos:** Si se adquirió el bloqueo, `persistence.js` realiza de forma asíncrona la lectura física (`read-file`), carga los datos en el `localStorage` local y renderiza la interfaz.
+3.  **Carga de Datos:** Si se adquirió el bloqueo, `persistence.js` realiza de forma asíncrona la lectura física (`read-file`) que consulta directamente la base de datos SQLite integrada (`dades.db`) cargando el valor en el `localStorage` local y renderizando la interfaz.
 4.  **Guardado Optimizado (Debounce a 400 ms y Validación):** Cada edición del usuario escribe en `localStorage` y desencadena un guardado diferido (`debouncedSave` configurado a 400 ms) para reducir la sobrecarga de I/O en la red.
-    *   Al ejecutar la escritura en el backend (`write-file`), Electron valida primero que el usuario activo siga siendo el poseedor legítimo del bloqueo. Si el bloqueo se perdió o expiró, la escritura física es rechazada devolviendo el error `LOCK_LOST`, bloqueando la UI del usuario y notificándole inmediatamente.
+    *   Al ejecutar la escritura en el backend (`write-file`), Electron valida primero que el usuario activo siga siendo el poseedor legítimo del bloqueo. Si el bloqueo se perdió o expiró, la escritura física en SQLite es rechazada devolviendo el error `LOCK_LOST`, bloqueando la UI del usuario y notificándole inmediatamente.
 5.  **Liberación de Bloqueo:** Al volver al menú principal o al cerrar la ventana, el proceso de renderizado llama a `release-lock` para eliminar el archivo `.lock` en red de forma asíncrona.
 
 ### B. Gestión Dinámica de Coordinadores
@@ -130,12 +131,22 @@ Cuando el Administrador crea un nuevo coordinador (por ejemplo, "Marc López"):
 
 ### C. Gestión Dinámica y Centralizada de Aparcamientos (`aparcamientos.json`)
 Para evitar discrepancias y permitir una asignación flexible de centros, se ha implementado un catálogo relacional maestro:
-1.  **Estructura del Archivo:** En `aparcamientos.json` se almacena un array de objetos con las propiedades `id`, `nombre` y `coordinador` (por ejemplo, `{ "id": 1, "nombre": "ARAGÓ 182", "coordinador": "Albert" }`).
+1.  **Estructura del Archivo:** En `aparcamientos.json` se almacena un array de objetos con las propiedades `nombre` y `coordinadorId` (por ejemplo, `{ "nombre": "NN BONANOVA", "coordinadorId": "albert" }`).
 2.  **Carga Dinámica en Módulos:**
     *   **Comerciales (`comercials.html`):** Agrupa dinámicamente las vacantes cargando el catálogo de aparcamientos y cruzándolo con el `localStorage` de cada coordinador. Ya no existen opciones para añadir o eliminar centros locales individuales dentro de la pestaña de Comerciales, unificando la lógica.
     *   **Gastos (`despeses.html`):** La función `loadCentres()` invoca a `window.api.getAparcamientos()` y combina los nombres de los aparcamientos activos de la base de datos con los conceptos fijos auxiliares (ej. `VACANCES`, `FESTIU`), ordenando el selector de forma alfabética.
     *   **Rutas (`ruta.html`):** La función `loadAddresses()` inyecta los aparcamientos activos y conceptos auxiliares directamente en el array global `addresses`, el cual nutre las celdas del calendario. Se oculta el botón de edición local de centros para perfiles de `coordinador` y `comercial` para asegurar que el catálogo dependa enteramente de la base de datos central.
 3.  **Gestión Reactiva en el Portal:** El modal de gestión de aparcamientos de `portal.html` se comunica directamente con los canales IPC, de forma que cualquier cambio (añadir, reasignar o eliminar) se guarda de inmediato en la red, reflejándose reactivamente en el resto de pantallas al recargar o al navegar entre ellas.
+
+### D. Asistente de Importación y Algoritmo de Mapeo de Discrepancias
+Cuando el usuario sube un backup JSON, la aplicación realiza un análisis previo en memoria (`importarBackupJSON`):
+1.  **Detección de Discrepancias:** Extrae los aparcamientos de las claves y los trabajadores del campo `w`, y los compara contra los catálogos locales. Si hay discrepancias, despliega el modal `#importMappingModal`.
+2.  **Algoritmo de Similitud de Cadenas:** Para cada discrepancia, el sistema busca la opción local más adecuada en `LLISTES` calculando una similitud en base a distancia de caracteres sobre cadenas normalizadas (sin acentos, mayúsculas ni caracteres especiales):
+    ```javascript
+    const cleanStr = (s) => s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
+    ```
+    Si la similitud supera el umbral del `40%`, se preselecciona la opción local en el desplegable de mapeo.
+3.  **Procesamiento y Guardado Adaptado:** Al confirmar, el sistema procesa las altas correspondientes (si se seleccionó `[Crear nou...]`), remapea las celdas y claves adaptándolas a la base de datos local y migra los turnos de cualquier versión obsoleta a la versión actual `v12` de cuadrante. Por último, se ejecuta `persistence.syncSave()` para escribir la actualización definitiva en SQLite y se recarga la interfaz.
 
 ---
 
