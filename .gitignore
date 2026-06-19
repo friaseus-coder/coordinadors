@@ -6,3 +6,9 @@ node_modules/
 **/node_modules/
 **/dist/
 **/distr/
+
+# Ignorar todas las bases de datos SQLite locales de producción
+**/*.db
+
+# Permitir explícitamente la base de datos de plantilla
+!coordinadores-app/plantilla.db

@@ -17,5 +17,12 @@
   },
   "dependencies": {
     "sqlite3": "^6.0.1"
+  },
+  "build": {
+    "files": [
+      "coordinadores-app/**/*",
+      "!datos a reciclar/**/*"
+    ]
   }
 }
+

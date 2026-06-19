@@ -6,6 +6,8 @@ const sqlite3 = require('sqlite3');
 let mainWindow;
 
 const dbConnections = {};
+const dbInitializationPromises = {};
+
 
 // Funciones helpers para promisificar consultas de sqlite3
 function dbGet(db, sql, params = []) {
@@ -26,8 +28,67 @@ function dbRun(db, sql, params = []) {
   });
 }
 
-function getDatabaseForCoordinator(coordFolder) {
+async function runMigrations(db, dbPath) {
+  console.log(`[SQLITE-MIGRATIONS] Verificando esquema para base de datos en: ${dbPath}`);
+  
+  // Crear la tabla de versiones de esquema si no existe
+  await dbRun(db, `
+    CREATE TABLE IF NOT EXISTS schema_version (
+      version INTEGER PRIMARY KEY,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+
+  // Obtener la versión actual del esquema de la base de datos
+  let currentVersion = 0;
+  try {
+    const row = await dbGet(db, 'SELECT version FROM schema_version ORDER BY version DESC LIMIT 1');
+    if (row) {
+      currentVersion = row.version;
+    }
+  } catch (err) {
+    console.error(`[SQLITE-MIGRATIONS] Error al leer la versión del esquema en ${dbPath}:`, err);
+  }
+
+  console.log(`[SQLITE-MIGRATIONS] Versión de esquema actual en ${path.basename(dbPath)}: ${currentVersion}`);
+
+  // Definir las migraciones de base de datos
+  const migrations = [
+    {
+      version: 1,
+      description: 'Crear tabla kv_store inicial',
+      run: async (db) => {
+        await dbRun(db, `
+          CREATE TABLE IF NOT EXISTS kv_store (
+            key TEXT PRIMARY KEY,
+            value TEXT,
+            updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          )
+        `);
+      }
+    }
+  ];
+
+  // Aplicar las migraciones secuencialmente
+  for (const migration of migrations) {
+    if (migration.version > currentVersion) {
+      console.log(`[SQLITE-MIGRATIONS] Aplicando migración v${migration.version}: ${migration.description}`);
+      try {
+        await migration.run(db);
+        await dbRun(db, 'INSERT OR REPLACE INTO schema_version (version, updated_at) VALUES (?, CURRENT_TIMESTAMP)', [migration.version]);
+        currentVersion = migration.version;
+        console.log(`[SQLITE-MIGRATIONS] Migración v${migration.version} aplicada con éxito.`);
+      } catch (err) {
+        console.error(`[SQLITE-MIGRATIONS] Error al aplicar migración v${migration.version}:`, err);
+        throw err;
+      }
+    }
+  }
+}
+
+async function getDatabaseForCoordinator(coordFolder) {
   if (dbConnections[coordFolder]) {
+    await dbInitializationPromises[coordFolder];
     return dbConnections[coordFolder];
   }
   const dbPath = path.join(dadesDir, coordFolder, 'dades.db');
@@ -39,28 +100,31 @@ function getDatabaseForCoordinator(coordFolder) {
     fs.mkdirSync(parentDir, { recursive: true });
   }
 
-  const db = new sqlite3.Database(dbPath);
-  
-  // Crear la tabla kv_store de inmediato
-  db.serialize(() => {
-    db.run(`
-      CREATE TABLE IF NOT EXISTS kv_store (
-        key TEXT PRIMARY KEY,
-        value TEXT,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `, (err) => {
-      if (err) {
-        console.error(`[SQLITE] Error al crear tabla kv_store en ${dbPath}:`, err);
-      } else {
-        console.log(`[SQLITE] Tabla kv_store verificada/creada en ${dbPath}`);
+  // Copiar plantilla si el archivo dades.db no existe
+  if (!fs.existsSync(dbPath)) {
+    const plantillaPath = path.join(__dirname, 'plantilla.db');
+    if (fs.existsSync(plantillaPath)) {
+      try {
+        fs.copyFileSync(plantillaPath, dbPath);
+        console.log(`[SQLITE] Copiada base de datos plantilla desde ${plantillaPath} a ${dbPath}`);
+      } catch (err) {
+        console.error(`[SQLITE] Error al copiar plantilla.db a ${dbPath}:`, err);
       }
-    });
-  });
+    } else {
+      console.warn(`[SQLITE] No se encontró plantilla.db en ${plantillaPath}. Se inicializará vacía.`);
+    }
+  }
 
+  const db = new sqlite3.Database(dbPath);
   dbConnections[coordFolder] = db;
+  
+  // Iniciar migraciones asíncronas y guardar la promesa
+  dbInitializationPromises[coordFolder] = runMigrations(db, dbPath);
+  
+  await dbInitializationPromises[coordFolder];
   return db;
 }
+
 
 // Ruta base para los datos y copias de seguridad (dinámica mediante archivo config.json)
 const rootDir = app.isPackaged 
@@ -358,7 +422,7 @@ ipcMain.handle('read-file', async (event, relativePath) => {
     
     if (firstSegment.toLowerCase().startsWith('dades ')) {
       // Es una ruta de coordinador -> Usar SQLite
-      const db = getDatabaseForCoordinator(firstSegment);
+      const db = await getDatabaseForCoordinator(firstSegment);
       try {
         const row = await dbGet(db, 'SELECT value FROM kv_store WHERE key = ?', [relativePath]);
         if (row && row.value) {
@@ -432,7 +496,7 @@ ipcMain.handle('write-file', async (event, relativePath, data, userName) => {
     
     if (firstSegment.toLowerCase().startsWith('dades ')) {
       // Guardar en la base de datos SQLite del coordinador
-      const db = getDatabaseForCoordinator(firstSegment);
+      const db = await getDatabaseForCoordinator(firstSegment);
       await dbRun(db, 'INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)', [
         relativePath, 
         JSON.stringify(data)
@@ -818,7 +882,7 @@ ipcMain.handle('rename-aparcamiento', async (event, oldName, newName) => {
       const coordinadores = await readCoordinadoresAsync();
       for (const coord of coordinadores) {
         const coordFolder = `dades ${coord.nombre}`;
-        const db = getDatabaseForCoordinator(coordFolder);
+        const db = await getDatabaseForCoordinator(coordFolder);
         
         // Obtener todas las filas de kv_store
         const rows = await new Promise((resolve, reject) => {
@@ -860,7 +924,7 @@ ipcMain.handle('rename-aparcamiento', async (event, oldName, newName) => {
 ipcMain.handle('import-json-data', async (event, coordFolder, fileName, jsonContent) => {
   try {
     const relativePath = `${coordFolder}/${fileName}`;
-    const db = getDatabaseForCoordinator(coordFolder);
+    const db = await getDatabaseForCoordinator(coordFolder);
     
     // Validar que el jsonContent es válido parseándolo
     const data = typeof jsonContent === 'string' ? JSON.parse(jsonContent) : jsonContent;
