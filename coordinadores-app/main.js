@@ -48,7 +48,6 @@ function conectarBaseDatosUnica(rutaCompartida) {
   if (!fs.existsSync(dbPath)) {
     const plantillaPath = path.join(__dirname, 'plantilla.db');
     if (fs.existsSync(plantillaPath)) {
-      // Nos aseguramos de que el directorio destino existe
       fs.mkdirSync(path.dirname(dbPath), { recursive: true });
       try {
         fs.copyFileSync(plantillaPath, dbPath);
@@ -67,197 +66,140 @@ function conectarBaseDatosUnica(rutaCompartida) {
       console.error(`[DB Error] Error al abrir la base de datos: ${err.message}`);
     } else {
       console.log(`[DB] Conectado exitosamente a la base de datos única en: ${dbPath}`);
-      // Habilitamos las claves foráneas en SQLite
       db.run("PRAGMA foreign_keys = ON;");
-      inicializarEsquemaRelacional(db);
+      // Aplicar schema.sql canónico (CREATE IF NOT EXISTS = idempotente)
+      aplicarSchemaCanonicoYMigrar(db);
     }
   });
 
   return db;
 }
 
-function inicializarEsquemaRelacional(dbConnection) {
+// ============================================================
+// SISTEMA DE MIGRACIONES VERSIONADO
+// ============================================================
+
+function aplicarSchemaCanonicoYMigrar(dbConnection) {
+  // 1. Aplicar el schema.sql canónico (todas las sentencias son CREATE IF NOT EXISTS, seguro en cualquier estado)
+  const schemaPath = path.join(__dirname, 'schema.sql');
+  if (fs.existsSync(schemaPath)) {
+    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+    dbConnection.exec(schemaSql, (errSchema) => {
+      if (errSchema) {
+        console.error('[DB] Error al aplicar schema.sql canónico:', errSchema.message);
+      } else {
+        console.log('[DB] Schema canónico aplicado correctamente (CREATE IF NOT EXISTS).');
+      }
+      // 2. Comprobar versión actual y ejecutar migraciones
+      comprobarVersionYMigrar(dbConnection);
+    });
+  } else {
+    console.warn('[DB] schema.sql no encontrado. Ejecutando migración sin schema canónico.');
+    comprobarVersionYMigrar(dbConnection);
+  }
+}
+
+function comprobarVersionYMigrar(dbConnection) {
+  // Asegurar que la tabla schema_version existe
+  dbConnection.run(`
+    CREATE TABLE IF NOT EXISTS schema_version (
+      version INTEGER PRIMARY KEY,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `, () => {
+    dbConnection.get('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1', [], (err, row) => {
+      const versionActual = (row && row.version) || 0;
+      console.log(`[DB] Versión del esquema actual: ${versionActual}`);
+
+      if (versionActual < 2) {
+        console.log('[DB] Iniciando migración v1 → v2 (Modelo Multisociedad)...');
+        migrarV1aV2(dbConnection);
+      } else {
+        console.log('[DB] Esquema actualizado. No se necesitan migraciones.');
+        // Asegurar reglas de negocio completas
+        inicializarReglasDeNegocio(dbConnection);
+      }
+    });
+  });
+}
+
+function migrarV1aV2(dbConnection) {
   dbConnection.serialize(() => {
-    // 1. Tabla de Sociedades
+    dbConnection.run('BEGIN TRANSACTION;');
+
+    // A. Asegurar sociedad por defecto
     dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS sociedades (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre_fiscal TEXT NOT NULL,
-        codigo_corto TEXT NOT NULL UNIQUE,
-        activo INTEGER DEFAULT 1
-      )
+      INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo)
+      VALUES (1, 'Sociedad General', 'SG', 1)
     `);
 
-    // 2. Tabla de Aparcamientos
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS aparcamientos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        numero_obra TEXT UNIQUE,
-        nombre TEXT NOT NULL,
-        zona TEXT,
-        es_remotizado INTEGER DEFAULT 0,
-        tipo_gestion TEXT CHECK(tipo_gestion IN ('propio', 'socios')),
-        permitir_vacio_laborables INTEGER DEFAULT 0,
-        sociedad_id INTEGER,
-        coordinador_responsable TEXT CHECK(coordinador_responsable IN ('Albert', 'Laura', 'Ambos')),
-        activo INTEGER DEFAULT 1,
-        FOREIGN KEY(sociedad_id) REFERENCES sociedades(id)
-      )
+    // B. Migrar los 31 parkings del aparcamientos.json a la tabla relacional
+    const jsonPath = path.join(dadesDir, 'aparcamientos.json');
+    if (fs.existsSync(jsonPath)) {
+      try {
+        const raw = fs.readFileSync(jsonPath, 'utf8');
+        const data = JSON.parse(raw);
+        const parkings = data.aparcamientos || [];
+
+        const stmt = dbConnection.prepare(`
+          INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+          ON CONFLICT(numero_obra) DO UPDATE SET
+            nombre = excluded.nombre,
+            coordinador_responsable = excluded.coordinador_responsable
+        `);
+
+        parkings.forEach((p, idx) => {
+          const numObra = p.numero_obra || `OB-${1000 + idx}`;
+          const nombreUpper = p.nombre.toUpperCase();
+          const esRemoto = p.es_remotizado ? 1 : 0;
+          const gestion = p.tipo_gestion || 'propio';
+          const vacioLab = p.permitir_vacio_laborables ? 1 : 0;
+          const sociedad = p.sociedad_id || 1;
+
+          let responsable = 'Ambos';
+          if (p.coordinadorId === 'albert') responsable = 'Albert';
+          else if (p.coordinadorId === 'laura') responsable = 'Laura';
+
+          stmt.run(numObra, nombreUpper, p.zona || '', esRemoto, gestion, vacioLab, sociedad, responsable);
+        });
+
+        stmt.finalize();
+        console.log(`[Migración v2] ${parkings.length} aparcamientos migrados desde JSON a SQLite.`);
+      } catch (jsonErr) {
+        console.error('[Migración v2] Error al leer/parsear aparcamientos.json:', jsonErr.message);
+      }
+    }
+
+    // C. Insertar las 5 reglas de negocio completas
+    const stmtRegla = dbConnection.prepare(`
+      INSERT OR IGNORE INTO reglas_config (clave, value, tipo, categoria, descripcion)
+      VALUES (?, ?, ?, ?, ?)
     `);
+    stmtRegla.run('max_horas_semanales', '40', 'numero', 'agentes',
+      'Límite máximo de horas que un agente propio puede trabajar a la semana.');
+    stmtRegla.run('max_dias_mensuales', '22', 'numero', 'agentes',
+      'Tope de días de trabajo que un agente estándar puede tener asignados en el mes.');
+    stmtRegla.run('permitir_vacio_laborables', '0', 'booleano', 'aparcamientos',
+      'Permitir dejar un aparcamiento presencial obligatorio vacío durante 24h de lunes a viernes (0 = Alerta, 1 = Permitido).');
+    stmtRegla.run('bloquear_cruce_sociedades', '0', 'booleano', 'aparcamientos',
+      'Controlar traslados de agentes a parkings que pertenezcan a sociedades ajenas a su contrato (0 = Aviso, 1 = Bloquear).');
+    stmtRegla.run('min_horas_descanso_entre_turnos', '12', 'numero', 'agentes',
+      'Horas de descanso mínimo obligatorio requeridas entre la hora de fin de un turno y la hora de inicio del siguiente.');
+    stmtRegla.finalize();
 
-    // 3. Tabla de Coberturas Obligatorias
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS coberturas_requeridas (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        aparcamiento_id INTEGER NOT NULL,
-        dia_semana INTEGER,
-        fecha TEXT,
-        turno TEXT NOT NULL,
-        hora_inicio TEXT NOT NULL,
-        hora_fin TEXT NOT NULL,
-        activo INTEGER DEFAULT 1,
-        FOREIGN KEY(aparcamiento_id) REFERENCES aparcamientos(id) ON DELETE CASCADE,
-        CHECK (dia_semana IS NOT NULL OR fecha IS NOT NULL)
-      )
-    `);
+    // D. Actualizar la versión del esquema a 2
+    dbConnection.run(`INSERT OR REPLACE INTO schema_version (version, updated_at) VALUES (2, datetime('now', 'localtime'))`);
 
-    // 4. Tabla de Agentes
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS agentes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        nombre TEXT NOT NULL,
-        zona_habitual TEXT,
-        ranking_score INTEGER DEFAULT 50,
-        es_empresa_externa INTEGER DEFAULT 0,
-        activo INTEGER DEFAULT 1
-      )
-    `);
-
-    // 5. Tabla de Histórico de Contratos de Agentes
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS contratos_agentes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        agente_id INTEGER NOT NULL,
-        sociedad_id INTEGER NOT NULL,
-        fecha_inicio TEXT NOT NULL,
-        fecha_fin TEXT,
-        FOREIGN KEY(agente_id) REFERENCES agentes(id) ON DELETE CASCADE,
-        FOREIGN KEY(sociedad_id) REFERENCES sociedades(id)
-      )
-    `);
-
-    // 6. Tabla de Registro del Cuadrante Diario
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS quadrant (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        fecha TEXT NOT NULL,
-        aparcamiento_id INTEGER NOT NULL,
-        agente_id INTEGER NOT NULL,
-        sociedad_contrato_snapshot_id INTEGER,
-        turno TEXT NOT NULL DEFAULT 'MATÍ',
-        hora_inicio TEXT NOT NULL DEFAULT '06:00',
-        hora_fin TEXT NOT NULL DEFAULT '14:00',
-        horas_trabajadas INTEGER DEFAULT 8,
-        es_substitucio INTEGER DEFAULT 0,
-        nota TEXT,
-        FOREIGN KEY(aparcamiento_id) REFERENCES aparcamientos(id),
-        FOREIGN KEY(agente_id) REFERENCES agentes(id),
-        FOREIGN KEY(sociedad_contrato_snapshot_id) REFERENCES sociedades(id)
-      )
-    `);
-
-    // 7. Tabla de Vacaciones / Bajas
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS vacances (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        agente_id INTEGER NOT NULL,
-        fecha_inicio TEXT NOT NULL,
-        fecha_fin TEXT NOT NULL,
-        FOREIGN KEY(agente_id) REFERENCES agentes(id) ON DELETE CASCADE
-      )
-    `);
-
-    // 8. Tabla de Reglas de Negocio Dinámicas
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS reglas_config (
-        clave TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        tipo TEXT NOT NULL DEFAULT 'numero',
-        categoria TEXT NOT NULL DEFAULT 'general',
-        descripcion TEXT NOT NULL
-      )
-    `);
-
-    // 9. Tabla de Histórico de Cambios en Aparcamientos (Auditoría)
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS historico_aparcamientos (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        aparcamiento_id INTEGER NOT NULL,
-        campo_modificado TEXT NOT NULL,
-        valor_anterior TEXT,
-        valor_nuevo TEXT,
-        fecha_cambio TEXT DEFAULT (datetime('now', 'localtime')),
-        FOREIGN KEY(aparcamiento_id) REFERENCES aparcamientos(id) ON DELETE CASCADE
-      )
-    `);
-
-    // 10. Tabla de Almacenamiento KV para compatibilidad legacy
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS kv_store (
-        key TEXT PRIMARY KEY,
-        value TEXT,
-        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
-
-    // 11. Trigger de auditoría de cambios
-    dbConnection.run(`
-      CREATE TRIGGER IF NOT EXISTS log_cambios_aparcamientos
-      AFTER UPDATE ON aparcamientos
-      FOR EACH ROW
-      BEGIN
-        INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
-        SELECT OLD.id, 'nombre', OLD.nombre, NEW.nombre 
-        WHERE OLD.nombre <> NEW.nombre;
-
-        INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
-        SELECT OLD.id, 'numero_obra', OLD.numero_obra, NEW.numero_obra 
-        WHERE COALESCE(OLD.numero_obra, '') <> COALESCE(NEW.numero_obra, '');
-
-        INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
-        SELECT OLD.id, 'es_remotizado', 
-               CASE OLD.es_remotizado WHEN 1 THEN 'Sí' ELSE 'No' END,
-               CASE NEW.es_remotizado WHEN 1 THEN 'Sí' ELSE 'No' END
-        WHERE OLD.es_remotizado <> NEW.es_remotizado;
-
-        INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
-        SELECT OLD.id, 'permitir_vacio_laborables',
-               CASE OLD.permitir_vacio_laborables WHEN 1 THEN 'Permitido' ELSE 'Prohibido' END,
-               CASE NEW.permitir_vacio_laborables WHEN 1 THEN 'Permitido' ELSE 'Prohibido' END
-        WHERE OLD.permitir_vacio_laborables <> NEW.permitir_vacio_laborables;
-
-        INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
-        SELECT OLD.id, 'coordinador_responsable', OLD.coordinador_responsable, NEW.coordinador_responsable 
-        WHERE OLD.coordinador_responsable <> NEW.coordinador_responsable;
-
-        INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
-        SELECT OLD.id, 'sociedad_id', CAST(OLD.sociedad_id AS TEXT), CAST(NEW.sociedad_id AS TEXT) 
-        WHERE COALESCE(OLD.sociedad_id, 0) <> COALESCE(NEW.sociedad_id, 0);
-      END;
-    `);
-    // 12. Tabla de Deudas
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS deutes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        comercial TEXT NOT NULL,
-        cliente TEXT NOT NULL,
-        import REAL NOT NULL,
-        fecha TEXT NOT NULL,
-        activo INTEGER DEFAULT 1
-      )
-    `);
-
-    console.log("[DB] Inicialización de esquema y triggers de auditoría completada.");
+    dbConnection.run('COMMIT;', (err) => {
+      if (err) {
+        console.error('[Migración v2] ERROR en COMMIT:', err.message);
+        dbConnection.run('ROLLBACK;');
+      } else {
+        console.log('[Migración v2] ✅ Migración v1 → v2 completada exitosamente.');
+        console.log('[Migración v2] Esquema multisociedad activo. Trigger de auditoría instalado.');
+      }
+    });
   });
 }
 
@@ -480,61 +422,8 @@ function createWindow() {
   });
 }
 
-function sincronizarCatalogosIniciales(dbConnection) {
-  const jsonPath = path.join(dadesDir, 'aparcamientos.json');
-  if (!fs.existsSync(jsonPath)) return;
-
-  try {
-    const raw = fs.readFileSync(jsonPath, 'utf8');
-    const data = JSON.parse(raw);
-    const parkings = data.aparcamientos || [];
-
-    dbConnection.serialize(() => {
-      dbConnection.run("BEGIN TRANSACTION;");
-      
-      // Asegurar que existe al menos una sociedad por defecto
-      dbConnection.run(`
-        INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo)
-        VALUES (1, 'Sociedad General', 'SG', 1)
-      `);
-
-      const stmt = dbConnection.prepare(`
-        INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-        ON CONFLICT(numero_obra) DO UPDATE SET
-          nombre = excluded.nombre,
-          coordinador_responsable = excluded.coordinador_responsable
-      `);
-
-      parkings.forEach((p, idx) => {
-        const numObra = p.numero_obra || `OB-${1000 + idx}`;
-        const nombreUpper = p.nombre.toUpperCase();
-        const esRemoto = p.es_remotizado ? 1 : 0;
-        const gestion = p.tipo_gestion || 'propio';
-        const vacioLab = p.permitir_vacio_laborables ? 1 : 0;
-        const sociedad = p.sociedad_id || 1;
-        
-        let responsable = 'Ambos';
-        if (p.coordinadorId === 'albert') responsable = 'Albert';
-        else if (p.coordinadorId === 'laura') responsable = 'Laura';
-
-        stmt.run(numObra, nombreUpper, p.zona || '', esRemoto, gestion, vacioLab, sociedad, responsable);
-      });
-
-      stmt.finalize();
-      dbConnection.run("COMMIT;", (err) => {
-        if (err) {
-          console.error("[Sincronización] Error al commitear transacción:", err);
-        } else {
-          console.log(`[Sincronización] Catálogo inicial de ${parkings.length} aparcamientos sincronizado con éxito.`);
-        }
-      });
-    });
-  } catch (error) {
-    console.error("[Sincronización] Error cargando JSON inicial a SQLite:", error);
-    dbConnection.run("ROLLBACK;");
-  }
-}
+// [ELIMINADO] sincronizarCatalogosIniciales() — Su lógica se ha integrado en migrarV1aV2()
+// La migración de JSON a SQLite ahora ocurre una sola vez al detectar schema_version < 2
 
 // Handler de exportación de aparcamientos a CSV (compatible con Excel España)
 ipcMain.handle('exportar-aparcamientos-csv', async () => {
@@ -652,81 +541,23 @@ ipcMain.handle('importar-aparcamientos-csv', async () => {
 });
 
 function inicializarReglasDeNegocio(dbConnection) {
-  dbConnection.serialize(() => {
-    dbConnection.run(`
-      CREATE TABLE IF NOT EXISTS reglas_config (
-        clave TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        tipo TEXT NOT NULL DEFAULT 'numero',
-        categoria TEXT NOT NULL DEFAULT 'general',
-        descripcion TEXT NOT NULL
-      )
-    `, (err) => {
-      if (err) {
-        console.error("[Reglas] Error al crear/verificar tabla reglas_config:", err.message);
-        return;
-      }
-      
-      const querySembrarReglas = `
-        INSERT OR IGNORE INTO reglas_config (clave, value, tipo, categoria, descripcion)
-        VALUES (?, ?, ?, ?, ?)
-      `;
-
-      const stmt = dbConnection.prepare(querySembrarReglas);
-
-      // Regla A: Horas máximas semanales para agentes propios
-      stmt.run(
-        'max_horas_semanales', 
-        '40', 
-        'numero', 
-        'agentes', 
-        'Límite máximo de horas que un agente propio puede trabajar a la semana.'
-      );
-
-      // Regla B: Límite de jornadas mensuales para el cuadrante
-      stmt.run(
-        'max_dias_mensuales', 
-        '22', 
-        'numero', 
-        'agentes', 
-        'Tope de días de trabajo que un agente estándar puede tener asignados en el mes.'
-      );
-
-      // Regla C: Vaciado de parkings presenciales obligatorios de Lunes a Viernes
-      stmt.run(
-        'permitir_vacio_laborables', 
-        '0', // '0' representa Falso
-        'booleano', 
-        'aparcamientos', 
-        'Permitir dejar un aparcamiento presencial obligatorio vacío durante 24h de lunes a viernes (0 = Alerta, 1 = Permitido).'
-      );
-
-      // Regla D: Control de cruce de sociedades contractuales en traslados
-      stmt.run(
-        'bloquear_cruce_sociedades', 
-        '0', // '0' significa que solo avisa en el panel
-        'booleano', 
-        'aparcamientos', 
-        'Controlar traslados de agentes a parkings que pertenezcan a sociedades ajenas a su contrato (0 = Aviso, 1 = Bloquear).'
-      );
-
-      // Regla E: Descanso mínimo entre jornadas (12 horas obligatorias)
-      stmt.run(
-        'min_horas_descanso_entre_turnos',
-        '12',
-        'numero',
-        'agentes',
-        'Horas de descanso mínimo obligatorio requeridas entre la hora de fin de un turno y la hora de inicio del siguiente.'
-      );
-
-      stmt.finalize((finalizeErr) => {
-        if (finalizeErr) {
-          console.error("[Reglas] Error al finalizar la inicialización:", finalizeErr.message);
-        } else {
-          console.log("[Reglas] Parámetros de negocio inicializados con éxito.");
-        }
-      });
-    });
+  // Insertar reglas faltantes de forma idempotente (INSERT OR IGNORE)
+  const stmtRegla = dbConnection.prepare(`
+    INSERT OR IGNORE INTO reglas_config (clave, value, tipo, categoria, descripcion)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  stmtRegla.run('max_horas_semanales', '40', 'numero', 'agentes',
+    'Límite máximo de horas que un agente propio puede trabajar a la semana.');
+  stmtRegla.run('max_dias_mensuales', '22', 'numero', 'agentes',
+    'Tope de días de trabajo que un agente estándar puede tener asignados en el mes.');
+  stmtRegla.run('permitir_vacio_laborables', '0', 'booleano', 'aparcamientos',
+    'Permitir dejar un aparcamiento presencial obligatorio vacío durante 24h de lunes a viernes (0 = Alerta, 1 = Permitido).');
+  stmtRegla.run('bloquear_cruce_sociedades', '0', 'booleano', 'aparcamientos',
+    'Controlar traslados de agentes a parkings que pertenezcan a sociedades ajenas a su contrato (0 = Aviso, 1 = Bloquear).');
+  stmtRegla.run('min_horas_descanso_entre_turnos', '12', 'numero', 'agentes',
+    'Horas de descanso mínimo obligatorio requeridas entre la hora de fin de un turno y la hora de inicio del siguiente.');
+  stmtRegla.finalize(() => {
+    console.log('[Reglas] 5 reglas de negocio verificadas/inicializadas.');
   });
 }
 
@@ -754,9 +585,8 @@ function obtenerReglasConfiguradas(dbConnection) {
 // Inicialización de la aplicación
 app.on('ready', () => {
   try {
+    // conectarBaseDatosUnica ahora gestiona schema + migraciones internamente
     conectarBaseDatosUnica(dadesDir);
-    sincronizarCatalogosIniciales(db);
-    inicializarReglasDeNegocio(db);
   } catch (err) {
     console.error("Error crítico al inicializar base de datos única:", err);
   }
@@ -1259,28 +1089,254 @@ ipcMain.handle('remove-coordinador', async (event, id) => {
 // GESTIÓN DINÁMICA DE APARCAMIENTOS
 // ==========================================
 
-// 10. Obtener la lista de aparcamientos registrados
+// 10. Obtener la lista de aparcamientos (fuente: SQLite relacional con JOIN a sociedades)
 ipcMain.handle('get-aparcamientos', async () => {
   try {
-    if (await fileExists(aparcamientosFile)) {
-      const content = await fs.promises.readFile(aparcamientosFile, 'utf8');
-      return JSON.parse(content).aparcamientos || [];
-    }
+    const rows = await dbAll(`
+      SELECT a.*, s.nombre_fiscal as sociedad_nombre, s.codigo_corto as sociedad_codigo
+      FROM aparcamientos a
+      LEFT JOIN sociedades s ON a.sociedad_id = s.id
+      WHERE a.activo = 1
+      ORDER BY a.coordinador_responsable, a.nombre
+    `);
+    // Transformar al formato que espera el frontend existente (compatibilidad)
+    return rows.map(r => ({
+      nombre: r.nombre,
+      coordinadorId: r.coordinador_responsable === 'Albert' ? 'albert' :
+                     r.coordinador_responsable === 'Laura' ? 'laura' : '',
+      // Campos extendidos del modelo relacional
+      id: r.id,
+      numero_obra: r.numero_obra,
+      zona: r.zona,
+      es_remotizado: r.es_remotizado,
+      tipo_gestion: r.tipo_gestion,
+      permitir_vacio_laborables: r.permitir_vacio_laborables,
+      sociedad_id: r.sociedad_id,
+      sociedad_nombre: r.sociedad_nombre,
+      sociedad_codigo: r.sociedad_codigo,
+      coordinador_responsable: r.coordinador_responsable
+    }));
   } catch (error) {
-    console.error('[APARCAMIENTOS] Error al leer aparcamientos.json:', error);
+    console.error('[APARCAMIENTOS] Error al leer aparcamientos de SQLite:', error);
+    return [];
   }
-  return [];
 });
 
-// 11. Guardar la lista de aparcamientos registrados
+// 11. Guardar la lista de aparcamientos (fuente: SQLite relacional)
 ipcMain.handle('save-aparcamientos', async (event, aparcamientos) => {
   try {
-    const data = { aparcamientos };
-    await fs.promises.writeFile(aparcamientosFile, JSON.stringify(data, null, 2), 'utf8');
-    console.log(`[APARCAMIENTOS] Catálogo de aparcamientos actualizado. ${aparcamientos.length} registros guardados.`);
+    // Sincronizar el array recibido con la tabla relacional
+    for (const ap of aparcamientos) {
+      let responsable = 'Ambos';
+      if (ap.coordinadorId === 'albert') responsable = 'Albert';
+      else if (ap.coordinadorId === 'laura') responsable = 'Laura';
+      else if (ap.coordinador_responsable) responsable = ap.coordinador_responsable;
+
+      if (ap.id) {
+        // Actualizar existente
+        await dbRun(`
+          UPDATE aparcamientos SET
+            nombre = ?, zona = ?, coordinador_responsable = ?,
+            numero_obra = ?, sociedad_id = ?, es_remotizado = ?,
+            tipo_gestion = ?, permitir_vacio_laborables = ?
+          WHERE id = ?
+        `, [
+          ap.nombre.toUpperCase(), ap.zona || '', responsable,
+          ap.numero_obra || null, ap.sociedad_id || 1, ap.es_remotizado || 0,
+          ap.tipo_gestion || 'propio', ap.permitir_vacio_laborables || 0,
+          ap.id
+        ]);
+      } else {
+        // Insertar nuevo
+        const numObra = ap.numero_obra || `OB-${Date.now()}`;
+        await dbRun(`
+          INSERT INTO aparcamientos (numero_obra, nombre, zona, coordinador_responsable, sociedad_id, es_remotizado, tipo_gestion, permitir_vacio_laborables, activo)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        `, [
+          numObra, ap.nombre.toUpperCase(), ap.zona || '', responsable,
+          ap.sociedad_id || 1, ap.es_remotizado || 0,
+          ap.tipo_gestion || 'propio', ap.permitir_vacio_laborables || 0
+        ]);
+      }
+    }
+
+    // Mantener el JSON sincronizado como respaldo
+    try {
+      const data = { aparcamientos };
+      await fs.promises.writeFile(aparcamientosFile, JSON.stringify(data, null, 2), 'utf8');
+    } catch (jsonErr) {
+      console.warn('[APARCAMIENTOS] No se pudo sincronizar el JSON de respaldo:', jsonErr.message);
+    }
+
+    console.log(`[APARCAMIENTOS] Catálogo actualizado en SQLite. ${aparcamientos.length} registros procesados.`);
     return { success: true };
   } catch (error) {
-    console.error('[APARCAMIENTOS] Error al guardar aparcamientos.json:', error);
+    console.error('[APARCAMIENTOS] Error al guardar aparcamientos en SQLite:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ==========================================
+// GESTIÓN CRUD MULTISOCIEDAD
+// ==========================================
+
+// --- SOCIEDADES ---
+
+ipcMain.handle('get-sociedades', async () => {
+  try {
+    return await dbAll('SELECT * FROM sociedades WHERE activo = 1 ORDER BY nombre_fiscal');
+  } catch (error) {
+    console.error('[SOCIEDADES] Error al listar:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('add-sociedad', async (event, datos) => {
+  try {
+    const result = await dbRun(`
+      INSERT INTO sociedades (nombre_fiscal, codigo_corto, activo)
+      VALUES (?, ?, 1)
+    `, [datos.nombre_fiscal, datos.codigo_corto.toUpperCase()]);
+    console.log(`[SOCIEDADES] Nueva sociedad creada: ${datos.nombre_fiscal} (${datos.codigo_corto})`);
+    return { success: true, id: result.lastID };
+  } catch (error) {
+    console.error('[SOCIEDADES] Error al crear:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('update-sociedad', async (event, id, datos) => {
+  try {
+    await dbRun(`
+      UPDATE sociedades SET nombre_fiscal = ?, codigo_corto = ?
+      WHERE id = ?
+    `, [datos.nombre_fiscal, datos.codigo_corto.toUpperCase(), id]);
+    console.log(`[SOCIEDADES] Sociedad id=${id} actualizada.`);
+    return { success: true };
+  } catch (error) {
+    console.error('[SOCIEDADES] Error al actualizar:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('deactivate-sociedad', async (event, id) => {
+  try {
+    // Verificar que no hay aparcamientos activos vinculados
+    const vinculados = await dbGet('SELECT COUNT(*) as cnt FROM aparcamientos WHERE sociedad_id = ? AND activo = 1', [id]);
+    if (vinculados && vinculados.cnt > 0) {
+      return { success: false, error: `No se puede desactivar: tiene ${vinculados.cnt} aparcamiento(s) activo(s) vinculado(s).` };
+    }
+    await dbRun('UPDATE sociedades SET activo = 0 WHERE id = ?', [id]);
+    console.log(`[SOCIEDADES] Sociedad id=${id} desactivada.`);
+    return { success: true };
+  } catch (error) {
+    console.error('[SOCIEDADES] Error al desactivar:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// --- APARCAMIENTOS RELACIONALES ---
+
+ipcMain.handle('get-aparcamientos-relacional', async () => {
+  try {
+    return await dbAll(`
+      SELECT a.*, s.nombre_fiscal as sociedad_nombre, s.codigo_corto as sociedad_codigo
+      FROM aparcamientos a
+      LEFT JOIN sociedades s ON a.sociedad_id = s.id
+      WHERE a.activo = 1
+      ORDER BY a.coordinador_responsable, a.nombre
+    `);
+  } catch (error) {
+    console.error('[APARCAMIENTOS] Error al listar relacional:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('update-aparcamiento-relacional', async (event, id, datos) => {
+  try {
+    await dbRun(`
+      UPDATE aparcamientos SET
+        nombre = COALESCE(?, nombre),
+        numero_obra = COALESCE(?, numero_obra),
+        zona = COALESCE(?, zona),
+        sociedad_id = COALESCE(?, sociedad_id),
+        es_remotizado = COALESCE(?, es_remotizado),
+        tipo_gestion = COALESCE(?, tipo_gestion),
+        permitir_vacio_laborables = COALESCE(?, permitir_vacio_laborables),
+        coordinador_responsable = COALESCE(?, coordinador_responsable)
+      WHERE id = ?
+    `, [
+      datos.nombre || null, datos.numero_obra || null, datos.zona || null,
+      datos.sociedad_id || null, datos.es_remotizado, datos.tipo_gestion || null,
+      datos.permitir_vacio_laborables, datos.coordinador_responsable || null, id
+    ]);
+    console.log(`[APARCAMIENTOS] Parking id=${id} actualizado relacionalmente.`);
+    return { success: true };
+  } catch (error) {
+    console.error('[APARCAMIENTOS] Error al actualizar relacional:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('get-historico-aparcamiento', async (event, aparcamientoId) => {
+  try {
+    return await dbAll(`
+      SELECT * FROM historico_aparcamientos
+      WHERE aparcamiento_id = ?
+      ORDER BY fecha_cambio DESC
+      LIMIT 100
+    `, [aparcamientoId]);
+  } catch (error) {
+    console.error('[HISTORICO] Error al consultar:', error);
+    return [];
+  }
+});
+
+// --- CONTRATOS DE AGENTES ---
+
+ipcMain.handle('get-contratos-agente', async (event, agenteId) => {
+  try {
+    return await dbAll(`
+      SELECT ca.*, s.nombre_fiscal as sociedad_nombre, s.codigo_corto as sociedad_codigo
+      FROM contratos_agentes ca
+      JOIN sociedades s ON ca.sociedad_id = s.id
+      WHERE ca.agente_id = ?
+      ORDER BY ca.fecha_inicio DESC
+    `, [agenteId]);
+  } catch (error) {
+    console.error('[CONTRATOS] Error al listar:', error);
+    return [];
+  }
+});
+
+ipcMain.handle('add-contrato-agente', async (event, datos) => {
+  try {
+    // Cerrar contrato vigente previo del mismo agente (si existe)
+    await dbRun(`
+      UPDATE contratos_agentes SET fecha_fin = ?
+      WHERE agente_id = ? AND fecha_fin IS NULL
+    `, [datos.fecha_inicio, datos.agente_id]);
+
+    const result = await dbRun(`
+      INSERT INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio, fecha_fin)
+      VALUES (?, ?, ?, ?)
+    `, [datos.agente_id, datos.sociedad_id, datos.fecha_inicio, datos.fecha_fin || null]);
+    console.log(`[CONTRATOS] Nuevo contrato para agente id=${datos.agente_id} con sociedad id=${datos.sociedad_id}`);
+    return { success: true, id: result.lastID };
+  } catch (error) {
+    console.error('[CONTRATOS] Error al crear:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('cerrar-contrato-agente', async (event, contratoId) => {
+  try {
+    const hoy = new Date().toISOString().split('T')[0];
+    await dbRun('UPDATE contratos_agentes SET fecha_fin = ? WHERE id = ?', [hoy, contratoId]);
+    console.log(`[CONTRATOS] Contrato id=${contratoId} cerrado con fecha ${hoy}.`);
+    return { success: true };
+  } catch (error) {
+    console.error('[CONTRATOS] Error al cerrar:', error);
     return { success: false, error: error.message };
   }
 });

@@ -32,5 +32,21 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   migrarJsonDeutes: (filePath) => ipcRenderer.invoke('migrar-json-deutes', { filePath }),
   migrarJsonCuadrante: (dataJSON) => ipcRenderer.invoke('migrar-json-cuadrante', { dataJSON }),
   obtenerPropuestasAsistente: (fecha, aparcamientoId) => ipcRenderer.invoke('obtener-propuestas-asistente', { fecha, aparcamientoId }),
-  calcularAlertasCuadrante: (fechaInicio, fechaFin) => ipcRenderer.invoke('calcular-alertas-cuadrante', { fechaInicio, fechaFin })
+  calcularAlertasCuadrante: (fechaInicio, fechaFin) => ipcRenderer.invoke('calcular-alertas-cuadrante', { fechaInicio, fechaFin }),
+
+  // --- Sociedades ---
+  getSociedades: () => ipcRenderer.invoke('get-sociedades'),
+  addSociedad: (datos) => ipcRenderer.invoke('add-sociedad', datos),
+  updateSociedad: (id, datos) => ipcRenderer.invoke('update-sociedad', id, datos),
+  deactivateSociedad: (id) => ipcRenderer.invoke('deactivate-sociedad', id),
+
+  // --- Aparcamientos Relacionales ---
+  getAparcamientosRelacional: () => ipcRenderer.invoke('get-aparcamientos-relacional'),
+  updateAparcamientoRelacional: (id, datos) => ipcRenderer.invoke('update-aparcamiento-relacional', id, datos),
+  getHistoricoAparcamiento: (aparcamientoId) => ipcRenderer.invoke('get-historico-aparcamiento', aparcamientoId),
+
+  // --- Contratos de Agentes ---
+  getContratosAgente: (agenteId) => ipcRenderer.invoke('get-contratos-agente', agenteId),
+  addContratoAgente: (datos) => ipcRenderer.invoke('add-contrato-agente', datos),
+  cerrarContratoAgente: (contratoId) => ipcRenderer.invoke('cerrar-contrato-agente', contratoId)
 });
