@@ -211,6 +211,8 @@ function esDiaFestiu(data, centre) {
 
     async function inicialitzar() {
         await persistence.syncLoad('vacances');
+        CENTRES = JSON.parse(localStorage.getItem('nyn_centres')) || [];
+        PLANTILLA = JSON.parse(localStorage.getItem('nyn_plantilla')) || [];
         generarColors();
         const selAny = document.getElementById('selectAny');
         const valorActual = selAny.value;

@@ -14,6 +14,20 @@ const persistence = (() => {
       console.warn('[PERSISTENCE] No se puede acceder a window.parent.api:', e);
     }
   }
+
+  let databaseAPI = window.databaseAPI;
+  if (!databaseAPI) {
+    try {
+      if (window.parent && window.parent.databaseAPI) {
+        databaseAPI = window.parent.databaseAPI;
+      }
+    } catch (e) {
+      console.warn('[PERSISTENCE] No se puede acceder a window.parent.databaseAPI:', e);
+    }
+  }
+  if (databaseAPI && !window.databaseAPI) {
+    window.databaseAPI = databaseAPI;
+  }
   
   // Obtener rol y nombre desde los parámetros de la URL, sesión del iframe o sesión del padre de forma segura
   let userRole = '';
@@ -42,6 +56,7 @@ const persistence = (() => {
   }
   
   let currentFilePath = '';
+  let activeModuleName = '';
   let isReadOnlyMode = false;
   let isSyncing = false; // Evita bucles infinitos y escrituras durante la carga inicial
   let saveTimeout = null;
@@ -165,7 +180,30 @@ const persistence = (() => {
       
       unlockBtn.onclick = async () => {
         if (confirm(`Estàs segur que vols forçar el desbloqueig de l'arxiu? Això pot causar pèrdua de dades si l'altre usuari està guardant.`)) {
-          await api.forceReleaseLock(currentFilePath);
+          const isRelational = (activeModuleName === 'quadrant' || activeModuleName === 'vacances');
+          if (isRelational && window.databaseAPI) {
+            await window.databaseAPI.controlConcurrencia.forzarLiberacion('jefe_operaciones', userName);
+          } else if (activeModuleName === 'comercials') {
+            const mesSelect = document.getElementById('mesActual');
+            const anySelect = document.getElementById('anyActual');
+            const mes = mesSelect ? mesSelect.value : 'marc';
+            const any = anySelect ? anySelect.value : '2026';
+            let coordinadores = [];
+            try {
+              coordinadores = await api.getCoordinadores();
+            } catch (e) {
+              coordinadores = [
+                { id: 'albert', nombre: 'Albert' },
+                { id: 'laura', nombre: 'Laura' }
+              ];
+            }
+            for (const coord of coordinadores) {
+              const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}.json`;
+              await api.forceReleaseLock(filePath);
+            }
+          } else {
+            await api.forceReleaseLock(currentFilePath);
+          }
           window.location.reload();
         }
       };
@@ -226,6 +264,7 @@ const persistence = (() => {
 
   function startHeartbeat(moduleName) {
     if (heartbeatInterval) clearInterval(heartbeatInterval);
+    const isRelational = (moduleName === 'quadrant' || moduleName === 'vacances');
     
     heartbeatInterval = setInterval(async () => {
       if (isReadOnlyMode) {
@@ -234,9 +273,17 @@ const persistence = (() => {
       }
       
       try {
-        const checkResult = await api.checkLock(currentFilePath);
-        if (!checkResult.locked || checkResult.lockedBy !== userName) {
-          handleLockLoss();
+        if (isRelational) {
+          const dbRole = (userRole === 'jefe operaciones') ? 'jefe_operaciones' : 'coordinador';
+          const lockResult = await window.databaseAPI.controlConcurrencia.adquirirLock(userName, dbRole);
+          if (!lockResult.adquirido && !lockResult.success) {
+            handleLockLoss();
+          }
+        } else {
+          const checkResult = await api.checkLock(currentFilePath);
+          if (!checkResult.locked || checkResult.lockedBy !== userName) {
+            handleLockLoss();
+          }
         }
       } catch (e) {
         console.warn('[PERSISTENCE] Error en verificación periódica de bloqueo:', e);
@@ -255,15 +302,22 @@ const persistence = (() => {
       return false;
     }
 
+    activeModuleName = moduleName;
     const newFilePath = getModuleFilePath(moduleName, userName);
+    const isRelational = (moduleName === 'quadrant' || moduleName === 'vacances');
+
     if (currentFilePath && currentFilePath !== newFilePath) {
       console.log(`[PERSISTENCE] Canviant de fitxer. Alliberant bloqueig anterior: ${currentFilePath}`);
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
         heartbeatInterval = null;
       }
-      const isJefeOps = (userRole === 'jefe operaciones');
-      await api.releaseLock(currentFilePath, userName, isJefeOps);
+      if (isRelational) {
+        await window.databaseAPI.controlConcurrencia.liberarLock(userName);
+      } else {
+        const isJefeOps = (userRole === 'jefe operaciones');
+        await api.releaseLock(currentFilePath, userName, isJefeOps);
+      }
     }
     currentFilePath = newFilePath;
     console.log(`[PERSISTENCE] Inicialitzant mòdul: ${moduleName} -> RUTA: ${currentFilePath}`);
@@ -274,9 +328,15 @@ const persistence = (() => {
       return false;
     }
 
-    const lockResult = await api.acquireLock(currentFilePath, userName);
+    let lockResult;
+    if (isRelational) {
+      const dbRole = (userRole === 'jefe operaciones') ? 'jefe_operaciones' : 'coordinador';
+      lockResult = await window.databaseAPI.controlConcurrencia.adquirirLock(userName, dbRole);
+    } else {
+      lockResult = await api.acquireLock(currentFilePath, userName);
+    }
     
-    if (lockResult.success) {
+    if (lockResult.success || lockResult.adquirido) {
       injectStatusBanner('edit', `📝 Mode Edició Actiu | Usuari: ${userName}`);
       
       // Iniciar el chequeo de latido periódico del lock
@@ -284,13 +344,18 @@ const persistence = (() => {
 
       window.addEventListener('beforeunload', () => {
         if (heartbeatInterval) clearInterval(heartbeatInterval);
-        const isJefeOps = (userRole === 'jefe operaciones');
-        api.releaseLock(currentFilePath, userName, isJefeOps);
+        if (isRelational) {
+          window.databaseAPI.controlConcurrencia.liberarLock(userName);
+        } else {
+          const isJefeOps = (userRole === 'jefe operaciones');
+          api.releaseLock(currentFilePath, userName, isJefeOps);
+        }
       });
       return true;
     } else {
       disableEditingControls();
-      injectStatusBanner('locked', `🔒 Només Lectura: Aquest mòdul està sent editat per ${lockResult.lockedBy}.`);
+      const ocupadoPor = lockResult.usuarioActivo || lockResult.lockedBy || 'otro usuario';
+      injectStatusBanner('locked', `🔒 Només Lectura: Aquest mòdul està sent editat per ${ocupadoPor}.`, ocupadoPor);
       return false;
     }
   }
@@ -324,59 +389,345 @@ const persistence = (() => {
     return remapped;
   }
 
-  async function readData() {
-    if (!api) return null;
+  function parsearRangoFecha(rangStr, año) {
+    if (!rangStr || rangStr === "-") return null;
+    const separador = rangStr.includes(" a ") ? " a " : " to ";
+    const parts = rangStr.split(separador);
+    
+    try {
+      if (parts.length === 1) {
+        const dateParts = parts[0].split('/');
+        if (dateParts.length < 3) return null;
+        const fecha = `${dateParts[2]}-${dateParts[1].padStart(2, '0')}-${dateParts[0].padStart(2, '0')}`;
+        return { inicio: fecha, fin: fecha };
+      } else if (parts.length >= 2) {
+        const d1Parts = parts[0].split('/');
+        const d2Parts = parts[1].split('/');
+        if (d1Parts.length < 3 || d2Parts.length < 3) return null;
+        const inicio = `${d1Parts[2]}-${d1Parts[1].padStart(2, '0')}-${d1Parts[0].padStart(2, '0')}`;
+        const fin = `${d2Parts[2]}-${d2Parts[1].padStart(2, '0')}-${d2Parts[0].padStart(2, '0')}`;
+        return { inicio, fin };
+      }
+    } catch (e) {
+      console.warn('[PERSISTENCE] Error al parsear rango de fecha:', rangStr, e);
+    }
+    return null;
+  }
 
-    // Si es Comerciales, fusionamos las bases de datos de TODOS los coordinadores registrados
-    if (currentFilePath && currentFilePath.toLowerCase().includes('comercials')) {
-      const mesSelect = document.getElementById('mesActual');
-      const anySelect = document.getElementById('anyActual');
-      const mes = mesSelect ? mesSelect.value : 'marc';
-      const any = anySelect ? anySelect.value : '2026';
+  async function readData() {
+    if (!window.databaseAPI) return null;
+
+    if (activeModuleName === 'quadrant') {
+      const mesSelect = document.getElementById('selectMonth');
+      const anySelect = document.getElementById('selectYear');
+      const mes = mesSelect ? parseInt(mesSelect.value) : new Date().getMonth();
+      const any = anySelect ? parseInt(anySelect.value) : new Date().getFullYear();
       
+      const mesNum = (mes + 1).toString().padStart(2, '0');
+      const mesBusqueda = `${any}-${mesNum}-%`;
+
       let combinedData = {};
-      
-      // Leer la lista de coordinadores dinámicamente
+
+      try {
+        // 1. Cargar agentes activos para LLISTES.personal
+        const agentes = await window.databaseAPI.consultar("SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+        const personal = agentes.map(a => a.nombre);
+        originalSetItem.call(localStorage, 'nyn_personal', JSON.stringify(["-", ...personal]));
+
+        // 2. Cargar aparcamientos asignados para LLISTES.parkings
+        const userLower = userName.toLowerCase();
+        const queryParkings = "SELECT nombre FROM aparcamientos WHERE activo = 1 AND (LOWER(coordinador_responsable) = ? OR coordinador_responsable = 'Ambos') ORDER BY nombre ASC";
+        const parkings = await window.databaseAPI.consultar(queryParkings, [userLower]);
+        const parkingsNames = parkings.map(p => p.nombre);
+        originalSetItem.call(localStorage, 'nyn_parkings', JSON.stringify(["-", ...parkingsNames]));
+
+        // 3. Cargar asignaciones del cuadrante relacional del mes
+        const queryTurnos = `
+          SELECT q.*, ag.nombre as agente_nombre, ap.nombre as parking_nombre 
+          FROM quadrant q 
+          JOIN agentes ag ON q.agente_id = ag.id 
+          JOIN aparcamientos ap ON q.aparcamiento_id = ap.id 
+          WHERE q.fecha LIKE ?
+        `;
+        const turnos = await window.databaseAPI.consultar(queryTurnos, [mesBusqueda]);
+
+        turnos.forEach(row => {
+          const dia = parseInt(row.fecha.split('-')[2]);
+          const cellKey = `nyn_v12_${any}_${mes}_${row.parking_nombre}_${row.turno}_${dia}`;
+          combinedData[cellKey] = {
+            w: row.agente_nombre,
+            h: `${row.hora_inicio}-${row.hora_fin}`,
+            s: row.es_substitucio === 1,
+            n: row.nota || ""
+          };
+        });
+
+        // 4. Cargar marcadores de pendientes del mes desde kv_store
+        const keyPendientesPattern = `nyn_pendent_${any}_${mes}_%`;
+        const pendientes = await window.databaseAPI.consultar("SELECT key, value FROM kv_store WHERE key LIKE ?", [keyPendientesPattern]);
+        pendientes.forEach(row => {
+          combinedData[row.key] = JSON.parse(row.value);
+        });
+
+      } catch (err) {
+        console.error('[PERSISTENCE] Error cargando datos relacionales del cuadrante:', err);
+      }
+
+      return combinedData;
+    }
+
+    if (activeModuleName === 'vacances') {
+      const anySelect = document.getElementById('selectAny');
+      const any = anySelect ? anySelect.value : '2026';
+      const key = `nyn_vacances_${any}`;
+
+      let combinedData = {};
+
+      try {
+        // Cargar agentes y aparcamientos para LLISTES.centres y LLISTES.plantilla
+        const agentes = await window.databaseAPI.consultar("SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+        const plantilla = agentes.map(a => a.nombre);
+        originalSetItem.call(localStorage, 'nyn_plantilla', JSON.stringify(plantilla));
+
+        const parkings = await window.databaseAPI.consultar("SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+        const centres = parkings.map(p => p.nombre);
+        originalSetItem.call(localStorage, 'nyn_centres', JSON.stringify(centres));
+
+        // Cargar vacaciones JSON estructuradas de kv_store
+        const rows = await window.databaseAPI.consultar("SELECT value FROM kv_store WHERE key = ?", [key]);
+        if (rows && rows.length > 0 && rows[0].value) {
+          combinedData[key] = JSON.parse(rows[0].value);
+        } else {
+          combinedData[key] = [];
+        }
+      } catch (err) {
+        console.error('[PERSISTENCE] Error al cargar vacaciones de la base de datos única:', err);
+      }
+
+      return combinedData;
+    }
+
+    if (activeModuleName === 'comercials') {
       let coordinadores = [];
       try {
         coordinadores = await api.getCoordinadores();
       } catch (e) {
-        // Fallback a los coordinadores clásicos
         coordinadores = [
           { id: 'albert', nombre: 'Albert' },
           { id: 'laura', nombre: 'Laura' }
         ];
       }
+
+      const mesSelect = document.getElementById('mesActual');
+      const anySelect = document.getElementById('anyActual');
+      const mes = mesSelect ? mesSelect.value : 'marc';
+      const any = anySelect ? anySelect.value : '2026';
       
+      const combinedData = {};
+
       for (const coord of coordinadores) {
         const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}.json`;
-        const res = await api.readFile(filePath);
-        if (res.success && res.data) {
-          const remapped = remapComercialKeys(res.data, mes, any);
-          combinedData = { ...combinedData, ...remapped };
+        let coordData = null;
+
+        // Intentar leer de SQLite kv_store
+        try {
+          const rows = await window.databaseAPI.consultar("SELECT value FROM kv_store WHERE key = ?", [filePath]);
+          if (rows && rows.length > 0 && rows[0].value) {
+            coordData = JSON.parse(rows[0].value);
+          }
+        } catch (dbErr) {
+          console.warn(`[PERSISTENCE] Clave ${filePath} no encontrada en kv_store para leer.`, dbErr);
+        }
+
+        // Fallback a archivo JSON físico
+        if (!coordData) {
+          const result = await api.readFile(filePath);
+          if (result.success) {
+            coordData = result.data;
+          }
+        }
+
+        // Fusionar claves
+        if (coordData) {
+          for (const key in coordData) {
+            combinedData[key] = coordData[key];
+          }
         }
       }
-      
-      console.log(`[PERSISTENCE] Comercials carregats (${coordinadores.length} coordinadors): ${Object.keys(combinedData).filter(k => k.startsWith('nn_')).join(', ')}`);
+
       return combinedData;
     }
 
+    // Fallback para otros módulos (Gastos, etc.) usando la tabla kv_store en dades.db única
+    try {
+      const rows = await window.databaseAPI.consultar("SELECT value FROM kv_store WHERE key = ?", [currentFilePath]);
+      if (rows && rows.length > 0 && rows[0].value) {
+        return JSON.parse(rows[0].value);
+      }
+    } catch (dbErr) {
+      console.warn(`[PERSISTENCE] Clave ${currentFilePath} no encontrada en kv_store. Intentando fallback legacy...`);
+    }
+
+    // Fallback legacy a archivos JSON físicos
     const result = await api.readFile(currentFilePath);
     if (result.success) {
       return result.data;
-    } else {
-      console.error('[PERSISTENCE] Error al llegir fitxer:', result.error);
-      return null;
     }
+    return null;
   }
 
   async function writeData(data) {
     if (isReadOnlyMode) return false;
-    if (!api) return false;
-    if (!currentFilePath) {
-      console.warn('[PERSISTENCE] Intent d\'escriptura ignorat: cap fitxer actiu definit.');
-      return false;
+    if (!window.databaseAPI) return false;
+
+    if (activeModuleName === 'quadrant') {
+      try {
+        for (const [key, value] of Object.entries(data)) {
+          if (key.startsWith('nyn_v12_')) {
+            // Clave: nyn_v12_{año}_{mes}_{nombre_parking}_{turno}_{dia}
+            const parts = key.split('_');
+            if (parts.length < 7) continue;
+
+            const año = parts[2];
+            const mes = parts[3];
+            const dia = parts[parts.length - 1];
+            const turno = parts[parts.length - 2];
+            const nombreParking = parts.slice(4, parts.length - 2).join(' ').toUpperCase();
+
+            const cellData = typeof value === 'string' ? JSON.parse(value) : value;
+            const trabajador = (cellData.w || "-").trim();
+            const horario = (cellData.h || "-").trim();
+            const esSub = cellData.s ? 1 : 0;
+            const notaText = cellData.n || "";
+
+            const mesNum = (Number(mes) + 1).toString().padStart(2, '0');
+            const diaNum = Number(dia).toString().padStart(2, '0');
+            const fechaStr = `${año}-${mesNum}-${diaNum}`;
+
+            if (trabajador === "-" || trabajador === "") {
+              // Eliminar turno si está vacío
+              const deleteQuery = `
+                DELETE FROM quadrant 
+                WHERE fecha = ? 
+                  AND aparcamiento_id = (SELECT id FROM aparcamientos WHERE nombre = ?) 
+                  AND turno = ?
+              `;
+              await window.databaseAPI.ejecutar(deleteQuery, [fechaStr, nombreParking, turno]);
+            } else {
+              // Buscar IDs
+              const pRow = await window.databaseAPI.consultar("SELECT id, sociedad_id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
+              const aRow = await window.databaseAPI.consultar("SELECT id FROM agentes WHERE nombre = ?", [trabajador]);
+
+              if (pRow && pRow.length > 0 && aRow && aRow.length > 0) {
+                const parkingId = pRow[0].id;
+                const agenteId = aRow[0].id;
+                let sociedadId = pRow[0].sociedad_id;
+
+                // Buscar sociedad del contrato del agente para registrar el snapshot
+                const cRow = await window.databaseAPI.consultar(`
+                  SELECT sociedad_id 
+                  FROM contratos_agentes 
+                  WHERE agente_id = ? AND ? >= fecha_inicio AND (fecha_fin IS NULL OR ? <= fecha_fin)
+                `, [agenteId, fechaStr, fechaStr]);
+                if (cRow && cRow.length > 0) {
+                  sociedadId = cRow[0].sociedad_id;
+                }
+
+                // Parsear horas
+                const hoursParts = horario.split('-');
+                const horaInicio = hoursParts[0] || '06:00';
+                const horaFin = hoursParts[1] || '14:00';
+
+                const insertQuery = `
+                  INSERT OR REPLACE INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, es_substitucio, nota, sociedad_contrato_snapshot_id)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                `;
+                await window.databaseAPI.ejecutar(insertQuery, [
+                  fechaStr, parkingId, agenteId, turno, horaInicio, horaFin, esSub, notaText, sociedadId
+                ]);
+              }
+            }
+          } else if (key.startsWith('nyn_pendent_')) {
+            // Guardar marcador de pendientes del mes en kv_store
+            await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+              key, JSON.stringify(value)
+            ]);
+          }
+        }
+        return true;
+      } catch (err) {
+        console.error('[PERSISTENCE] Error guardando cuadrante relacional:', err);
+        return false;
+      }
     }
+
+    if (activeModuleName === 'vacances') {
+      const anySelect = document.getElementById('selectAny');
+      const any = anySelect ? anySelect.value : '2026';
+      const key = `nyn_vacances_${any}`;
+
+      try {
+        // 1. Guardar JSON completo en kv_store para vacaciones.html
+        let rawVacances = data[key] || [];
+        if (typeof rawVacances === 'string') {
+          try {
+            rawVacances = JSON.parse(rawVacances);
+          } catch (e) {
+            rawVacances = [];
+          }
+        }
+        await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+          key, JSON.stringify(rawVacances)
+        ]);
+
+        // 2. Volcar de manera atómica a la tabla relacional vacances para el cuadrante inteligente
+        for (const fila of rawVacances) {
+          const nombreAgente = (fila.n || "-").trim();
+          if (nombreAgente === "-" || nombreAgente === "") continue;
+
+          // Buscar ID de agente
+          const aRow = await window.databaseAPI.consultar("SELECT id FROM agentes WHERE nombre = ?", [nombreAgente]);
+          if (aRow && aRow.length > 0) {
+            const agenteId = aRow[0].id;
+
+            // Eliminar vacaciones previas del agente para este año
+            const queryBorrar = "DELETE FROM vacances WHERE agente_id = ? AND (fecha_inicio LIKE ? OR fecha_fin LIKE ?)";
+            await window.databaseAPI.ejecutar(queryBorrar, [agenteId, `${any}-%`, `${any}-%`]);
+
+            // Parsear e insertar los rangos de vacaciones válidos
+            const rango1 = parsearRangoFecha(fila.p, any);
+            const rango2 = parsearRangoFecha(fila.p2, any);
+
+            if (rango1) {
+              await window.databaseAPI.ejecutar("INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)", [
+                agenteId, rango1.inicio, rango1.fin
+              ]);
+            }
+            if (rango2) {
+              await window.databaseAPI.ejecutar("INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)", [
+                agenteId, rango2.inicio, rango2.fin
+              ]);
+            }
+          }
+        }
+        return true;
+      } catch (err) {
+        console.error('[PERSISTENCE] Error guardando vacaciones relacionales:', err);
+        return false;
+      }
+    }
+
+    // Caso general para otros módulos, guardando en la tabla kv_store
+    try {
+      await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+        currentFilePath, JSON.stringify(data)
+      ]);
+      return true;
+    } catch (err) {
+      console.error(`[PERSISTENCE] Error escribiendo clave ${currentFilePath} en la base de datos única:`, err);
+    }
+
+    // Fallback legacy a archivos físicos
     const result = await api.writeFile(currentFilePath, data, userName);
     if (!result.success && result.error === 'LOCK_LOST') {
       handleLockLoss();
@@ -404,6 +755,7 @@ const persistence = (() => {
     originalSetItem.apply(this, arguments);
     if (!isSyncing && !isReadOnlyMode) {
       debouncedSave();
+      window.dispatchEvent(new CustomEvent('localStorage-changed', { detail: { action: 'set', key, val } }));
     }
   };
 
@@ -411,6 +763,7 @@ const persistence = (() => {
     originalRemoveItem.apply(this, arguments);
     if (!isSyncing && !isReadOnlyMode) {
       debouncedSave();
+      window.dispatchEvent(new CustomEvent('localStorage-changed', { detail: { action: 'remove', key } }));
     }
   };
 
@@ -418,6 +771,7 @@ const persistence = (() => {
     originalClear.apply(this, arguments);
     if (!isSyncing && !isReadOnlyMode) {
       debouncedSave();
+      window.dispatchEvent(new CustomEvent('localStorage-changed', { detail: { action: 'clear' } }));
     }
   };
 
@@ -514,6 +868,11 @@ const persistence = (() => {
 
       let success = true;
       for (const coord of coordinadores) {
+        // Un coordinador solo puede guardar sus propios datos de comerciales
+        if (userRole === 'coordinador' && userName.toLowerCase() !== coord.nombre.toLowerCase()) {
+          continue;
+        }
+
         // Obtener el prefijo del coordinador (ej: nn_A_ para Albert)
         const prefix = `nn_${coord.nombre.charAt(0).toUpperCase()}_`;
         

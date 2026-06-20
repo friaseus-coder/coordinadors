@@ -105,7 +105,7 @@
             border-radius: 9999px;
             gap: 2px;
             overflow-x: auto;
-            max-width: 60%;
+            max-width: 72%;
             scrollbar-width: none; /* Firefox */
         }
         
@@ -114,7 +114,7 @@
         }
 
         .tab-button {
-            padding: 6px 16px; 
+            padding: 6px 12px; 
             height: 28px; 
             border: none;
             border-radius: 9999px;
@@ -314,6 +314,145 @@
         }
         .btn-close-modal:hover { background: #e2e8f0; }
         .modal-footer { display: flex; justify-content: flex-end; }
+        
+        /* Dropdown de Administración Premium */
+        .dropdown-admin {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-admin-content {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 36px;
+            background-color: #ffffff;
+            min-width: 195px;
+            box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            z-index: 10000;
+            padding: 6px 0;
+            animation: dropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .dropdown-admin-content.active {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .dropdown-admin-item {
+            border: none;
+            background: transparent;
+            text-align: left;
+            padding: 10px 16px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            color: #334155;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .dropdown-admin-item:hover {
+            background-color: #f1f5f9;
+            color: #0f2d4a;
+        }
+        .dropdown-admin-item.danger {
+            color: #dc2626;
+            font-weight: 600;
+        }
+        .dropdown-admin-item.danger:hover {
+            background-color: #fee2e2;
+            color: #b91c1c;
+        }
+        .dropdown-divider {
+            border-top: 1px solid #f1f5f9;
+            margin: 4px 0;
+        }
+        @keyframes dropdownIn {
+            from { transform: translateY(-8px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Dropdown de Más Pestañas */
+        .dropdown-more {
+            position: relative;
+            display: inline-block;
+        }
+        .dropdown-more-content {
+            display: none;
+            position: absolute;
+            left: 0;
+            top: 32px;
+            background-color: #ffffff;
+            min-width: 170px;
+            box-shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.08), 0 4px 6px -4px rgba(15, 23, 42, 0.08);
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            z-index: 10000;
+            padding: 6px 0;
+            animation: dropdownIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .dropdown-more-content.active {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .dropdown-more-item {
+            border: none;
+            background: transparent;
+            text-align: left;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-family: inherit;
+            cursor: pointer;
+            color: #475569;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+            width: 100%;
+            box-sizing: border-box;
+            white-space: nowrap;
+        }
+        .dropdown-more-item:hover {
+            background-color: #f1f5f9;
+            color: #0f2d4a;
+        }
+        .dropdown-more-item.active {
+            background-color: #e2e8f0;
+            color: #0f2d4a;
+            font-weight: 600;
+        }
+        #moreTabBtn {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            padding: 6px 12px;
+            height: 28px;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            box-sizing: border-box;
+            color: #475569;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        #moreTabBtn.active {
+            background: #ffffff;
+            color: #0f2d4a;
+            border-color: transparent;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+            font-weight: 600;
+        }
+        #moreTabBtn:hover {
+            background: rgba(255,255,255,0.4);
+            color: #0f2d4a;
+        }
     </style>
 </head>
 <body>
@@ -338,21 +477,34 @@
             <div class="logo-brand">_parkings</div>
         </div>
 
-        <!-- Contenedor central de pestañas -->
-        <div class="tabs-container">
-            <button class="tab-button active" onclick="openTab('home', this)" data-i18n="tabHome">🏠 Inici</button>
-            <button class="tab-button" onclick="openTab('quadrant', this)" data-i18n="tabQuadrant">📋 Quadrant</button>
-            <button class="tab-button" onclick="openTab('rutes', this)" data-i18n="tabRoutes">📍 Rutes</button>
-            <button class="tab-button" onclick="openTab('ranking', this)" data-i18n="tabRanking">⭐ Ranking</button>
-            <button class="tab-button" onclick="openTab('comercials', this)" data-i18n="tabComercials">💰 Comercials</button>
-            <button class="tab-button" onclick="openTab('vacances', this)" data-i18n="tabVacances">🏖️ Vacances</button>
-            <button class="tab-button" onclick="openTab('deutes', this)" data-i18n="tabDeutes">⏳ Deutes</button>
-            <button class="tab-button" onclick="openTab('checklist', this)" data-i18n="tabChecklist">✅ Chklst</button>
-            <button class="tab-button" onclick="openTab('gastos', this)" data-i18n="tabGastos">💸 Despeses</button>
-            <button class="tab-button" onclick="openTab('inventari', this)" data-i18n="tabInventari">📦 Inventari</button>
-            <button class="tab-button" onclick="openTab('sac_incidencies', this)" data-i18n="tabSac">🛠️ SAC</button>
-            <button class="tab-button" onclick="openTab('notificador', this)" data-i18n="tabNotificador">📩 Notificador</button>
-            <button class="tab-button" onclick="openTab('log', this)" data-i18n="tabLog">📜 Log</button>
+        <!-- Contenedor central de navegación -->
+        <div style="display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; max-width: 72%; min-width: 0;">
+            <!-- Contenedor central de pestañas -->
+            <div class="tabs-container" style="max-width: 100%; overflow-x: visible;">
+                <button class="tab-button active" onclick="openTab('home', this)" data-i18n="tabHome">🏠 Inici</button>
+                <button class="tab-button" onclick="openTab('quadrant', this)" data-i18n="tabQuadrant">📋 Quadrant</button>
+                <button class="tab-button" onclick="openTab('rutes', this)" data-i18n="tabRoutes">📍 Rutes</button>
+                <button class="tab-button" onclick="openTab('vacances', this)" data-i18n="tabVacances">🏖️ Vacances</button>
+                <button class="tab-button" onclick="openTab('comercials', this)" data-i18n="tabComercials">💰 Comercials</button>
+            </div>
+            
+            <!-- Desplegable para pestañas secundarias (fuera del contenedor overflow) -->
+            <div class="dropdown-more" id="moreDropdown" style="flex-shrink: 0;">
+                <button class="tab-button" id="moreTabBtn" onclick="toggleMoreDropdown(event)">
+                    <span id="moreTabLabel" data-i18n="tabMore">➕ Més</span> ▾
+                </button>
+                <div class="dropdown-more-content" id="moreDropdownContent">
+                    <button class="dropdown-more-item" onclick="selectMoreTab('ranking', this)" data-i18n="tabRanking">⭐ Ranking</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('deutes', this)" data-i18n="tabDeutes">⏳ Deutes</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('checklist', this)" data-i18n="tabChecklist">✅ Chklst</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('gastos', this)" data-i18n="tabGastos">💸 Despeses</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('inventari', this)" data-i18n="tabInventari">📦 Inventari</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('sac_incidencies', this)" data-i18n="tabSac">🛠️ SAC</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('notificador', this)" data-i18n="tabNotificador">📩 Notificador</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('log', this)" data-i18n="tabLog">📜 Log</button>
+                    <button class="dropdown-more-item" onclick="selectMoreTab('regles', this)" data-i18n="tabRegles">📋 Normes</button>
+                </div>
+            </div>
         </div>
         
         <!-- Identificador de Usuario, Rol e Info a la derecha -->
@@ -363,9 +515,21 @@
                 <button class="lang-nav-btn" onclick="i18n.setLanguage('es');">ESP</button>
             </div>
             <div id="userDisplayBadge" class="user-badge"></div>
-            <button id="btnManageCoord" class="btn-manage-coord" style="display: none;" onclick="openCoordModal()" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
-            <button id="btnManageAparcaments" class="btn-manage-coord" style="display: none; background: #e2e8f0; color: #0f2d4a; border-color: #cbd5e1; margin-right: 4px;" onclick="openAparcamentModal()" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
-            <button id="btnForceUnlockGlobal" class="btn-unlock-global" style="display: none;" onclick="triggerGlobalForceUnlock()" data-i18n="btnUnlockFiles">Desbloquejar Fitxers</button>
+            
+            <!-- Menú Desplegable de Administración -->
+            <div class="dropdown-admin" id="adminDropdown" style="display: none;">
+                <button class="btn-manage-coord" onclick="toggleAdminDropdown(event)" data-i18n="btnAdministration">⚙️ Administració</button>
+                <div class="dropdown-admin-content" id="adminDropdownContent">
+                    <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
+                    <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
+                    <div class="dropdown-divider"></div>
+                    <button class="dropdown-admin-item danger" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
+                </div>
+            </div>
+            
+            <!-- Botón de Cerrar Aplicación con Desbloqueo Seguro -->
+            <button class="btn-unlock-global" style="background: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; display: flex; align-items: center; gap: 4px;" onclick="cerrarAplicacionConDesbloqueo()" data-i18n="btnExitApp">🚪 Sortir</button>
+            
             <div class="version-tag">v1.0 beta</div>
         </div>
     </nav>
@@ -425,11 +589,17 @@
                 <div id="birthday-msg"><span>🎂</span> <span id="bday-text"></span> <span>🥳🎉🎈</span></div>
                 <div id="celebration-msg">🙁</div>
 
-                <!-- Sección de Importación Manual de JSONs legados -->
+                <!-- Sección de Importación Manual de JSONs legados y Migración Relacional -->
                 <div id="importJsonSection" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
                     <span style="font-size: 10px; color: #64748b; font-weight: 700; letter-spacing: 0.5px;" data-i18n="importSectionTitle">MIGRACIÓ E IMPORTACIÓ DE DADES</span>
-                    <button class="btn-manage-coord" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;" onclick="document.getElementById('importFileSelector').click();" data-i18n="btnImportJson">📥 Importar JSON històric</button>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="btn-manage-coord" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;" onclick="document.getElementById('importFileSelector').click();" data-i18n="btnImportJson">📥 Importar JSON a KV</button>
+                        <button class="btn-manage-coord" style="background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7;" onclick="document.getElementById('migrarCuadranteSelector').click();">📊 Migrar Quadrant Relacional</button>
+                        <button class="btn-manage-coord" style="background: #fff8e1; color: #f57f17; border-color: #ffe082;" onclick="document.getElementById('migrarDeudasSelector').click();">⏳ Migrar Deutes Relacional</button>
+                    </div>
                     <input type="file" id="importFileSelector" accept=".json" style="display: none;" onchange="handleImportJsonFile(event)">
+                    <input type="file" id="migrarCuadranteSelector" accept=".json" style="display: none;" onchange="handleMigrarCuadrante(event)">
+                    <input type="file" id="migrarDeudasSelector" accept=".json" style="display: none;" onchange="handleMigrarDeudas(event)">
                 </div>
                 
                 <div class="footer-nyn">Núñez i Navarro Pàrkings © 2026</div>
@@ -451,6 +621,7 @@
     <div id="sac_incidencies" class="tab-content"><iframe data-src="sac/sac.html"></iframe></div>
     <div id="notificador" class="tab-content"><iframe data-src="notificador/notificador.html"></iframe></div>
     <div id="log" class="tab-content"><iframe data-src="log/log.html"></iframe></div>
+    <div id="regles" class="tab-content"><iframe data-src="regles/regles.html"></iframe></div>
 
     <script>
         // Configurar los badges del usuario y bienvenida
@@ -527,9 +698,8 @@
             
             if (role === 'jefe operaciones') {
                 badge.classList.add('admin');
-                document.getElementById('btnForceUnlockGlobal').style.display = 'block';
-                document.getElementById('btnManageCoord').style.display = 'block';
-                document.getElementById('btnManageAparcaments').style.display = 'block';
+                const drop = document.getElementById('adminDropdown');
+                if (drop) drop.style.display = 'inline-block';
             } else if (role === 'coordinador') {
                 badge.classList.add('coord');
             } else {
@@ -583,6 +753,15 @@
                         const anyActual = new Date().getFullYear().toString();
                         await window.api.forceReleaseLock(`${folder}/comercials_${coord.id}_${mesActual}_${anyActual}.json`);
                     }
+                    
+                    // Además de los archivos legacy, liberamos el bloqueo relacional en SQLite
+                    if (window.databaseAPI && window.databaseAPI.controlConcurrencia) {
+                        const role = sessionStorage.getItem('userRole') || 'jefe operaciones';
+                        const dbRole = (role === 'jefe operaciones') ? 'jefe_operaciones' : role;
+                        const user = sessionStorage.getItem('userName') || 'Administrador';
+                        await window.databaseAPI.controlConcurrencia.forzarLiberacion(dbRole, user);
+                    }
+
                     alert(i18n.t('successUnlockAll'));
                     const activeContent = document.querySelector('.tab-content.active');
                     if (activeContent) {
@@ -591,6 +770,50 @@
                     }
                 } catch (error) {
                     alert(i18n.t('errorUnlockAll') + error.message);
+                }
+            }
+        }
+
+        // Función para cerrar la aplicación y desbloquear todos los ficheros del usuario
+        async function cerrarAplicacionConDesbloqueo() {
+            if (confirm(i18n.t('confirmExitApp') || '¿Estás seguro de que deseas salir y desbloquear tus archivos?')) {
+                const role = sessionStorage.getItem('userRole');
+                const userName = sessionStorage.getItem('userName');
+                
+                if (role === 'coordinador' && userName) {
+                    try {
+                        const folder = `dades ${userName}`;
+                        const modules = ['quadrant', 'Vacances_2026_07-04-2026', 'despeses', 'deutes', 'inventari', 'ranking', 'ruta'];
+                        
+                        for (const mod of modules) {
+                            await window.api.forceReleaseLock(`${folder}/${mod}.json`);
+                        }
+                        
+                        // Comercials dinámicos del mes actual
+                        const mesActual = new Date().toLocaleString('ca-ES', { month: 'long' }).toLowerCase();
+                        const anyActual = new Date().getFullYear().toString();
+                        await window.api.forceReleaseLock(`${folder}/comercials_${userName.toLowerCase()}_${mesActual}_${anyActual}.json`);
+                    } catch (e) {
+                        console.error("Error al liberar candados legacy:", e);
+                    }
+                }
+
+                // Para todos los perfiles (liberar candado relacional en SQLite)
+                if (window.databaseAPI && window.databaseAPI.controlConcurrencia && userName) {
+                    try {
+                        await window.databaseAPI.controlConcurrencia.liberarLock(userName);
+                    } catch (e) {
+                        console.error("Error al liberar candado relacional:", e);
+                    }
+                }
+
+                // Cerrar la aplicación mediante Electron
+                if (window.api && window.api.closeApp) {
+                    await window.api.closeApp();
+                } else {
+                    // Fallback
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
                 }
             }
         }
@@ -1005,6 +1228,17 @@
         function openTab(tabId, btnElement) {
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+            
+            // Si el botón activado no es el botón desplegable "Més", limpiamos la selección secundaria
+            const moreTabBtn = document.getElementById('moreTabBtn');
+            if (btnElement !== moreTabBtn) {
+                document.querySelectorAll('.dropdown-more-item').forEach(item => item.classList.remove('active'));
+                const label = document.getElementById('moreTabLabel');
+                if (label) {
+                    label.innerHTML = i18n.t('tabMore');
+                }
+            }
+
             const selectedTab = document.getElementById(tabId);
             if(selectedTab) {
                 selectedTab.classList.add('active');
@@ -1122,6 +1356,132 @@
             };
             reader.readAsText(file);
         }
+
+        async function handleMigrarCuadrante(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!confirm("Vols migrar les dades d'aquest quadrant a la base de dades relacional SQLite?")) {
+                event.target.value = '';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const content = e.target.result;
+                    const result = await window.databaseAPI.migrarJsonCuadrante(content);
+                    if (result.success) {
+                        alert(`✅ Migració completada amb èxit! S'han migrat ${result.total} turnos.`);
+                        window.location.reload();
+                    } else {
+                        alert('❌ Error al migrar: ' + result.error);
+                    }
+                } catch (err) {
+                    alert('❌ Error al processar el fitxer: ' + err.message);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function handleMigrarDeudas(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!confirm("Vols migrar les dades de deutes a la base de dades relacional SQLite?")) {
+                event.target.value = '';
+                return;
+            }
+
+            try {
+                const filePath = file.path;
+                if (!filePath) {
+                    alert('❌ No s\'ha pogut obtenir la ruta absoluta del fitxer.');
+                    return;
+                }
+
+                const result = await window.databaseAPI.migrarJsonDeutes(filePath);
+                if (result.success) {
+                    alert(`✅ Migració de deutes completada amb èxit! S'han importat ${result.total} deutes.`);
+                    window.location.reload();
+                } else {
+                    alert('❌ Error al migrar deutes: ' + result.error);
+                }
+            } catch (err) {
+                alert('❌ Error al migrar deutes: ' + err.message);
+            } finally {
+                event.target.value = '';
+            }
+        }
+
+        // Funciones del Dropdown de Administración
+        function toggleAdminDropdown(event) {
+            event.stopPropagation();
+            closeMoreDropdown(); // Cerrar el de Más Pestañas
+            const content = document.getElementById('adminDropdownContent');
+            if (content) {
+                content.classList.toggle('active');
+            }
+        }
+
+        function closeAdminDropdown() {
+            const content = document.getElementById('adminDropdownContent');
+            if (content) {
+                content.classList.remove('active');
+            }
+        }
+
+        // Funciones del Dropdown de Más Pestañas (Més)
+        function toggleMoreDropdown(event) {
+            event.stopPropagation();
+            closeAdminDropdown(); // Cerrar el de Administración
+            const content = document.getElementById('moreDropdownContent');
+            if (content) {
+                content.classList.toggle('active');
+            }
+        }
+
+        function closeMoreDropdown() {
+            const content = document.getElementById('moreDropdownContent');
+            if (content) {
+                content.classList.remove('active');
+            }
+        }
+
+        // Selección de pestaña secundaria
+        function selectMoreTab(tabId, itemElement) {
+            // Desmarcar todos los ítems secundarios
+            document.querySelectorAll('.dropdown-more-item').forEach(item => item.classList.remove('active'));
+            
+            // Marcar el ítem actual
+            itemElement.classList.add('active');
+            
+            // Abrir la pestaña usando el botón Més
+            const moreTabBtn = document.getElementById('moreTabBtn');
+            openTab(tabId, moreTabBtn);
+            
+            // Actualizar la etiqueta del botón
+            const label = document.getElementById('moreTabLabel');
+            if (label) {
+                label.innerHTML = itemElement.innerHTML;
+            }
+            
+            closeMoreDropdown();
+        }
+
+        // Cerrar dropdowns si se hace click fuera
+        document.addEventListener('click', (event) => {
+            const dropdownAdmin = document.getElementById('adminDropdown');
+            if (dropdownAdmin && !dropdownAdmin.contains(event.target)) {
+                closeAdminDropdown();
+            }
+            const dropdownMore = document.getElementById('moreDropdown');
+            if (dropdownMore && !dropdownMore.contains(event.target)) {
+                closeMoreDropdown();
+            }
+        });
     </script>
 </body>
 </html>

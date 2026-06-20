@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Normes del Cuadrant | Intranet</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="../js/i18n.js"></script>
+    <style>
+        :root {
+            --nyn-pino: #063931;
+            --nyn-pino-light: #0a4f44;
+            --nyn-azul: #0f2d4a;
+            --nyn-azul-light: #1e3a5f;
+            --nyn-bg: #f8fafc;
+            --nyn-card: #ffffff;
+            --nyn-text: #334155;
+            --nyn-text-light: #64748b;
+            --nyn-border: #e2e8f0;
+            --nyn-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            --nyn-success: #10b981;
+            --nyn-error: #ef4444;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--nyn-bg);
+            color: var(--nyn-text);
+            height: 100%;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 32px 24px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        /* HEADER */
+        header {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--nyn-azul);
+            margin: 0;
+            letter-spacing: -0.5px;
+        }
+
+        header p {
+            font-size: 14px;
+            color: var(--nyn-text-light);
+            margin: 0;
+        }
+
+        /* CARDS */
+        .card {
+            background-color: var(--nyn-card);
+            border-radius: 16px;
+            border: 1px solid var(--nyn-border);
+            box-shadow: var(--nyn-shadow);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--nyn-azul);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* TABLA DE NORMAS */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: 12px;
+            border: 1px solid var(--nyn-border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+            font-size: 13px;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: var(--nyn-azul);
+            font-weight: 600;
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--nyn-border);
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.5px;
+        }
+
+        td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--nyn-border);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge-category {
+            background-color: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 8px;
+            border-radius: 9999px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.2px;
+            display: inline-block;
+        }
+
+        /* INPUTS EN TABLA */
+        .input-val {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--nyn-border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            box-sizing: border-box;
+            outline: none;
+            transition: all 0.2s;
+            background-color: #ffffff;
+            color: var(--nyn-text);
+        }
+
+        .input-val:focus {
+            border-color: var(--nyn-pino);
+            box-shadow: 0 0 0 3px rgba(6, 57, 49, 0.08);
+        }
+
+        .input-val:disabled {
+            background-color: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+            border-color: var(--nyn-border);
+        }
+
+        select.input-val {
+            cursor: pointer;
+            appearance: none;
+            background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+
+        /* BOTONES */
+        .btn {
+            padding: 10px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+
+        .btn-primary {
+            background-color: var(--nyn-pino);
+            color: #ffffff;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--nyn-pino-light);
+            transform: translateY(-1px);
+        }
+
+        .btn-primary:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background-color: #cbd5e1;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        .btn-action-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        /* FORMULARIO DE AÑADIR */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--nyn-text-light);
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 10px 12px;
+            border: 1px solid var(--nyn-border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 13px;
+            outline: none;
+            box-sizing: border-box;
+            background-color: #ffffff;
+            color: var(--nyn-text);
+            transition: all 0.2s;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            border-color: var(--nyn-pino);
+            box-shadow: 0 0 0 3px rgba(6, 57, 49, 0.08);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* NOTIFICACIONES */
+        .toast {
+            display: none;
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+            animation: slideIn 0.3s ease;
+        }
+
+        .toast.success {
+            background-color: var(--nyn-success);
+        }
+
+        .toast.error {
+            background-color: var(--nyn-error);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <!-- Cabecera -->
+        <header>
+            <h1 id="viewTitle" data-i18n="reglesTitle">📋 Normes del Quadrant</h1>
+            <p id="viewSubtitle" data-i18n="reglesSubtitle">Configuració dels paràmetres operatius i regles de negoci.</p>
+        </header>
+
+        <!-- Listado de Normas -->
+        <div class="card">
+            <h2 class="card-title">⚙️ <span data-i18n="tabRegles">Normes</span></h2>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th data-i18n="colRuleClave" style="width: 25%;">Clau</th>
+                            <th data-i18n="colRuleCategoria" style="width: 15%;">Categoria</th>
+                            <th data-i18n="colRuleDesc" style="width: 40%;">Descripció</th>
+                            <th data-i18n="colRuleValor" style="width: 20%;">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="rulesTableBody">
+                        <!-- Renderizado dinámico -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="btn-action-container" id="saveContainer" style="display: none;">
+                <button class="btn btn-primary" id="btnSave" onclick="saveChanges()" data-i18n="btnSaveRules" disabled>
+                    💾 Desar Canvis
+                </button>
+            </div>
+        </div>
+
+        <!-- Listado de Coberturas Requeridas Temporales -->
+        <div class="card">
+            <h2 class="card-title">📅 <span>Cobertures Obligatòries (Días Específicos)</span></h2>
+            <p style="font-size: 12px; color: var(--nyn-text-light); margin: -10px 0 10px 0;">Turnos presenciales requeridos para un día concreto del año. Se eliminarán automáticamente al Cerrar el Mes correspondiente.</p>
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 30%;">Aparcament</th>
+                            <th style="width: 20%;">Fecha</th>
+                            <th style="width: 15%;">Torn</th>
+                            <th style="width: 25%;">Horari</th>
+                            <th class="admin-only" style="width: 10%; text-align: center; display: none;">Accions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coberturasTableBody">
+                        <!-- Renderizado dinámico -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Formulario de Añadir Cobertura (Solo Jefe Operaciones) -->
+        <div class="card" id="addCoberturaCard" style="display: none;">
+            <h2 class="card-title">➕ Afegir Cobertura Obligatòria Temporal</h2>
+            <form id="addCoberturaForm" onsubmit="addCobertura(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="cobAparcamiento">Aparcament</label>
+                        <select id="cobAparcamiento" required>
+                            <option value="" disabled selected>-- Selecciona Aparcament --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cobFecha">Fecha del Calendario</label>
+                        <input type="date" id="cobFecha" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cobTurno">Torn</label>
+                        <select id="cobTurno" onchange="adjustCoberturaHorario()" required>
+                            <option value="MATÍ" selected>MATÍ</option>
+                            <option value="TARDA">TARDA</option>
+                            <option value="NIT">NIT</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cobHoraInicio">Hora Inici</label>
+                        <input type="time" id="cobHoraInicio" value="06:00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cobHoraFin">Hora Fi</label>
+                        <input type="time" id="cobHoraFin" value="14:00" required>
+                    </div>
+                </div>
+                <div class="btn-action-container" style="margin-top: 16px;">
+                    <button class="btn btn-primary" type="submit">
+                        Afegir Cobertura
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Formulario de Añadir (Solo Jefe Operaciones) -->
+        <div class="card" id="addRuleCard" style="display: none;">
+            <h2 class="card-title" data-i18n="btnAddRuleTitle">➕ Afegir Nova Norma</h2>
+            <form id="addRuleForm" onsubmit="addRule(event)">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="newKey" data-i18n="lblRuleClave">Clau de la norma</label>
+                        <input type="text" id="newKey" placeholder="ej: max_horas_semana" required pattern="[a-zA-Z0-9_]+" title="Només lletres, números i guions baixos (snake_case)">
+                    </div>
+                    <div class="form-group">
+                        <label for="newCategoria" data-i18n="lblRuleCat">Categoria</label>
+                        <select id="newCategoria" required>
+                            <option value="general">general</option>
+                            <option value="agentes">agentes</option>
+                            <option value="aparcamientos">aparcamientos</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="newTipo" data-i18n="lblRuleTipo">Tipus de dada</label>
+                        <select id="newTipo" onchange="adjustValueInput()" required>
+                            <option value="numero" data-i18n="ruleTypeNumber">Número</option>
+                            <option value="booleano" data-i18n="ruleTypeBoolean">Booleà</option>
+                            <option value="texto" data-i18n="ruleTypeString">Text</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="newValue" data-i18n="lblRuleValor">Valor inicial</label>
+                        <div id="valueInputContainer">
+                            <input type="number" id="newValue" required>
+                        </div>
+                    </div>
+                    <div class="form-group full-width">
+                        <label for="newDescripcion" data-i18n="lblRuleDesc">Descripció funcional</label>
+                        <textarea id="newDescripcion" placeholder="Descripció funcional de la norma..." required></textarea>
+                    </div>
+                </div>
+                <div class="btn-action-container" style="margin-top: 16px;">
+                    <button class="btn btn-primary" type="submit" data-i18n="btnAddRule">
+                        Afegir Norma
+                    </button>
+                </div>
+            </form>
+        </div>
+
+    </div>
+
+    <!-- Notificación Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Parámetros de la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const userRole = urlParams.get('role') || 'coordinador';
+        const userName = urlParams.get('username') || '';
+        
+        let loadedRules = [];
+        let editedRules = {};
+
+        // Inicialización
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Verificar rol y ajustar interfaz
+            if (userRole === 'jefe operaciones') {
+                document.getElementById('saveContainer').style.display = 'flex';
+                document.getElementById('addRuleCard').style.display = 'block';
+                document.getElementById('addCoberturaCard').style.display = 'block';
+                document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+            }
+
+            await loadRules();
+            await loadAparcamientosSelector();
+            await loadCoberturas();
+
+            // Escuchar el evento de cambio de idioma global
+            window.addEventListener('languageChanged', () => {
+                // Forzar recarga de textos i18n
+                i18n.translatePage();
+                renderTable();
+                loadCoberturas();
+            });
+        });
+
+        // Cargar reglas desde la BD relacional
+        async function loadRules() {
+            try {
+                if (!window.parent.databaseAPI) {
+                    console.error("databaseAPI no disponible.");
+                    return;
+                }
+                const sql = "SELECT clave, value, tipo, categoria, descripcion FROM reglas_config ORDER BY clave ASC";
+                loadedRules = await window.parent.databaseAPI.consultar(sql);
+                editedRules = {};
+                
+                // Deshabilitar botón de guardar
+                const btnSave = document.getElementById('btnSave');
+                if (btnSave) btnSave.disabled = true;
+
+                renderTable();
+            } catch (err) {
+                showToast("Error al cargar reglas: " + err.message, "error");
+            }
+        }
+
+        // Renderizar la tabla de reglas
+        function renderTable() {
+            const tbody = document.getElementById('rulesTableBody');
+            tbody.innerHTML = '';
+
+            const isEditable = (userRole === 'jefe operaciones');
+
+            loadedRules.forEach(rule => {
+                const tr = document.createElement('tr');
+                tr.id = `row-${rule.clave}`;
+
+                // Columna Clave
+                const tdClave = document.createElement('td');
+                tdClave.style.fontWeight = '600';
+                tdClave.style.fontFamily = 'monospace';
+                tdClave.textContent = rule.clave;
+
+                // Columna Categoría
+                const tdCat = document.createElement('td');
+                const badge = document.createElement('span');
+                badge.className = 'badge-category';
+                badge.textContent = rule.categoria;
+                tdCat.appendChild(badge);
+
+                // Columna Descripción
+                const tdDesc = document.createElement('td');
+                tdDesc.style.color = 'var(--nyn-text-light)';
+                tdDesc.textContent = rule.descripcion;
+
+                // Columna Valor (Input)
+                const tdValor = document.createElement('td');
+                
+                let inputElement;
+                if (rule.tipo === 'booleano') {
+                    inputElement = document.createElement('select');
+                    inputElement.className = 'input-val';
+                    
+                    const optNo = document.createElement('option');
+                    optNo.value = '0';
+                    optNo.textContent = (i18n.getLanguage() === 'ca' ? 'No (0)' : 'No (0)');
+                    
+                    const optSi = document.createElement('option');
+                    optSi.value = '1';
+                    optSi.textContent = (i18n.getLanguage() === 'ca' ? 'Sí (1)' : 'Sí (1)');
+
+                    inputElement.appendChild(optNo);
+                    inputElement.appendChild(optSi);
+
+                    inputElement.value = (rule.value === '1' || rule.value === 'true' || rule.value === 1) ? '1' : '0';
+                } else if (rule.tipo === 'numero') {
+                    inputElement = document.createElement('input');
+                    inputElement.type = 'number';
+                    inputElement.className = 'input-val';
+                    inputElement.value = rule.value;
+                } else {
+                    inputElement = document.createElement('input');
+                    inputElement.type = 'text';
+                    inputElement.className = 'input-val';
+                    inputElement.value = rule.value;
+                }
+
+                if (!isEditable) {
+                    inputElement.disabled = true;
+                } else {
+                    // Escuchar cambios
+                    inputElement.addEventListener('input', () => handleInputChange(rule.clave, inputElement.value, rule.value));
+                    inputElement.addEventListener('change', () => handleInputChange(rule.clave, inputElement.value, rule.value));
+                }
+
+                tdValor.appendChild(inputElement);
+
+                tr.appendChild(tdClave);
+                tr.appendChild(tdCat);
+                tr.appendChild(tdDesc);
+                tr.appendChild(tdValor);
+
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Manejar los cambios en caliente
+        function handleInputChange(clave, value, originalValue) {
+            if (value === originalValue) {
+                delete editedRules[clave];
+            } else {
+                editedRules[clave] = value;
+            }
+
+            const btnSave = document.getElementById('btnSave');
+            if (btnSave) {
+                btnSave.disabled = Object.keys(editedRules).length === 0;
+            }
+        }
+
+        // Guardar las normas modificadas
+        async function saveChanges() {
+            const keys = Object.keys(editedRules);
+            if (keys.length === 0) return;
+
+            const btnSave = document.getElementById('btnSave');
+            btnSave.disabled = true;
+
+            try {
+                for (const clave of keys) {
+                    const value = editedRules[clave];
+                    const sql = "UPDATE reglas_config SET value = ? WHERE clave = ?";
+                    await window.parent.databaseAPI.ejecutar(sql, [value, clave]);
+                }
+
+                showToast(i18n.t('successSaveRules'), "success");
+                await loadRules();
+            } catch (err) {
+                showToast("Error al desar les regles: " + err.message, "error");
+                btnSave.disabled = false;
+            }
+        }
+
+        // Ajustar el tipo de input del formulario de añadir según el tipo seleccionado
+        function adjustValueInput() {
+            const type = document.getElementById('newTipo').value;
+            const container = document.getElementById('valueInputContainer');
+            container.innerHTML = '';
+
+            if (type === 'booleano') {
+                const select = document.createElement('select');
+                select.id = 'newValue';
+                select.required = true;
+                
+                const optNo = document.createElement('option');
+                optNo.value = '0';
+                optNo.textContent = 'No (0)';
+                
+                const optSi = document.createElement('option');
+                optSi.value = '1';
+                optSi.textContent = 'Sí (1)';
+
+                select.appendChild(optNo);
+                select.appendChild(optSi);
+                container.appendChild(select);
+            } else if (type === 'numero') {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.id = 'newValue';
+                input.required = true;
+                container.appendChild(input);
+            } else {
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.id = 'newValue';
+                input.required = true;
+                container.appendChild(input);
+            }
+        }
+
+        // Añadir una nueva regla
+        async function addRule(e) {
+            e.preventDefault();
+
+            const clave = document.getElementById('newKey').value.trim().toLowerCase();
+            const categoria = document.getElementById('newCategoria').value;
+            const tipo = document.getElementById('newTipo').value;
+            const value = document.getElementById('newValue').value;
+            const descripcion = document.getElementById('newDescripcion').value.trim();
+
+            // Validar que no exista
+            if (loadedRules.some(r => r.clave === clave)) {
+                showToast(i18n.t('errorAddRuleExists'), "error");
+                return;
+            }
+
+            try {
+                const sql = "INSERT INTO reglas_config (clave, value, tipo, categoria, descripcion) VALUES (?, ?, ?, ?, ?)";
+                await window.parent.databaseAPI.ejecutar(sql, [clave, value, tipo, categoria, descripcion]);
+                
+                showToast(i18n.t('successAddRule'), "success");
+                
+                // Limpiar formulario
+                document.getElementById('addRuleForm').reset();
+                adjustValueInput();
+                
+                await loadRules();
+            } catch (err) {
+                showToast("Error al afegir regla: " + err.message, "error");
+            }
+        }
+
+        // Cargar selector de aparcamientos
+        async function loadAparcamientosSelector() {
+            if (userRole !== 'jefe operaciones') return;
+            const select = document.getElementById('cobAparcamiento');
+            if (!select) return;
+            
+            try {
+                const api = window.parent.api || window.api;
+                if (!api) return;
+                
+                const aparcamientos = await api.getAparcamientos();
+                aparcamientos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'ca'));
+                
+                aparcamientos.forEach(ap => {
+                    const opt = document.createElement('option');
+                    opt.value = ap.id;
+                    opt.textContent = ap.nombre;
+                    select.appendChild(opt);
+                });
+            } catch (e) {
+                console.error("Error al cargar selector de aparcamientos:", e);
+            }
+        }
+
+        // Ajustar horario por defecto según el turno seleccionado
+        function adjustCoberturaHorario() {
+            const turno = document.getElementById('cobTurno').value;
+            const inicioInput = document.getElementById('cobHoraInicio');
+            const finInput = document.getElementById('cobHoraFin');
+            
+            if (turno === 'MATÍ') {
+                inicioInput.value = '06:00';
+                finInput.value = '14:00';
+            } else if (turno === 'TARDA') {
+                inicioInput.value = '14:00';
+                finInput.value = '22:00';
+            } else if (turno === 'NIT') {
+                inicioInput.value = '22:00';
+                finInput.value = '06:00';
+            }
+        }
+
+        // Cargar la lista de coberturas obligatorias específicas por fecha
+        async function loadCoberturas() {
+            const tbody = document.getElementById('coberturasTableBody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Carregant...</td></tr>';
+            
+            try {
+                const apiDB = window.parent.databaseAPI || window.databaseAPI;
+                if (!apiDB) return;
+                
+                const sql = `
+                    SELECT c.*, a.nombre AS aparcamiento_nombre 
+                    FROM coberturas_requeridas c 
+                    JOIN aparcamientos a ON c.aparcamiento_id = a.id 
+                    WHERE c.activo = 1 AND c.dia_semana IS NULL AND c.fecha IS NOT NULL
+                    ORDER BY c.fecha ASC, c.hora_inicio ASC
+                `;
+                const coberturas = await apiDB.consultar(sql);
+                tbody.innerHTML = '';
+                
+                if (coberturas.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No hi ha cobertures programades per a dies específics.</td></tr>';
+                    return;
+                }
+                
+                const isEditable = (userRole === 'jefe operaciones');
+                
+                coberturas.forEach(cob => {
+                    const tr = document.createElement('tr');
+                    
+                    let fechaFormateada = cob.fecha;
+                    try {
+                        const parts = cob.fecha.split('-');
+                        if (parts.length === 3) {
+                            fechaFormateada = `${parts[2]}/${parts[1]}/${parts[0]}`;
+                        }
+                    } catch (e) {}
+                    
+                    const actionsHtml = isEditable 
+                        ? `<td style="text-align:center;"><button class="btn-remove-coord" onclick="deleteCobertura(${cob.id})">✕</button></td>`
+                        : '';
+                        
+                    tr.innerHTML = `
+                        <td style="font-weight:600;color:var(--nyn-azul);">${cob.aparcamiento_nombre}</td>
+                        <td style="font-family:monospace;">${fechaFormateada}</td>
+                        <td><span class="badge-category" style="background-color:#fef3c7;color:#d97706;">${cob.turno}</span></td>
+                        <td>${cob.hora_inicio} - ${cob.hora_fin}</td>
+                        ${actionsHtml}
+                    `;
+                    tbody.appendChild(tr);
+                });
+                
+                if (isEditable) {
+                    document.querySelectorAll('.admin-only').forEach(el => el.style.display = '');
+                }
+            } catch (err) {
+                console.error("Error al cargar coberturas:", err);
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--nyn-error);">Error al carregar: ${err.message}</td></tr>`;
+            }
+        }
+
+        // Añadir una cobertura obligatoria de fecha fija a la base de datos
+        async function addCobertura(e) {
+            e.preventDefault();
+            
+            const apiDB = window.parent.databaseAPI || window.databaseAPI;
+            if (!apiDB) return;
+            
+            const aparcamientoId = document.getElementById('cobAparcamiento').value;
+            const fecha = document.getElementById('cobFecha').value;
+            const turno = document.getElementById('cobTurno').value;
+            const horaInicio = document.getElementById('cobHoraInicio').value;
+            const horaFin = document.getElementById('cobHoraFin').value;
+            
+            if (!aparcamientoId || !fecha || !turno || !horaInicio || !horaFin) {
+                showToast("Tots els camps són obligatoris", "error");
+                return;
+            }
+            
+            try {
+                const checkSql = "SELECT id FROM coberturas_requeridas WHERE aparcamiento_id = ? AND fecha = ? AND turno = ? AND activo = 1";
+                const existing = await apiDB.consultar(checkSql, [aparcamientoId, fecha, turno]);
+                
+                if (existing && existing.length > 0) {
+                    showToast("Ja existeix una cobertura per a aquest centre, fecha i torn.", "error");
+                    return;
+                }
+                
+                const sql = `
+                    INSERT INTO coberturas_requeridas (aparcamiento_id, dia_semana, fecha, turno, hora_inicio, hora_fin, activo)
+                    VALUES (?, NULL, ?, ?, ?, ?, 1)
+                `;
+                await apiDB.ejecutar(sql, [aparcamientoId, fecha, turno, horaInicio, horaFin]);
+                
+                showToast("✅ Cobertura obligatòria temporal afegida correctament.", "success");
+                
+                document.getElementById('cobFecha').value = '';
+                document.getElementById('cobTurno').value = 'MATÍ';
+                document.getElementById('cobHoraInicio').value = '06:00';
+                document.getElementById('cobHoraFin').value = '14:00';
+                
+                await loadCoberturas();
+            } catch (err) {
+                showToast("Error al afegir cobertura: " + err.message, "error");
+            }
+        }
+
+        // Eliminar una cobertura de la base de datos
+        async function deleteCobertura(id) {
+            if (!confirm("⚠️ Estàs segur que vols eliminar aquesta cobertura obligatòria temporal?")) return;
+            
+            const apiDB = window.parent.databaseAPI || window.databaseAPI;
+            if (!apiDB) return;
+            
+            try {
+                const sql = "DELETE FROM coberturas_requeridas WHERE id = ?";
+                await apiDB.ejecutar(sql, [id]);
+                showToast("✅ Cobertura obligatòria eliminada correctament.", "success");
+                await loadCoberturas();
+            } catch (err) {
+                showToast("Error al eliminar cobertura: " + err.message, "error");
+            }
+        }
+
+        // Mostrar Toast
+        function showToast(message, type = "success") {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3500);
+        }
+    </script>
+</body>
+</html>

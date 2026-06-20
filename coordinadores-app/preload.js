@@ -16,5 +16,21 @@ contextBridge.exposeInMainWorld('api', {
   saveAparcamientos: (aparcamientos) => ipcRenderer.invoke('save-aparcamientos', aparcamientos),
   renameAparcamiento: (oldName, newName) => ipcRenderer.invoke('rename-aparcamiento', oldName, newName),
   // Importación manual de JSONs
-  importJsonData: (coordFolder, fileName, jsonContent) => ipcRenderer.invoke('import-json-data', coordFolder, fileName, jsonContent)
+  importJsonData: (coordFolder, fileName, jsonContent) => ipcRenderer.invoke('import-json-data', coordFolder, fileName, jsonContent),
+  // Cerrar aplicación
+  closeApp: () => ipcRenderer.invoke('app-close')
+});
+
+contextBridge.exposeInMainWorld('databaseAPI', {
+  consultar: (sql, params = []) => ipcRenderer.invoke('db-query', { sql, params }),
+  ejecutar: (sql, params = []) => ipcRenderer.invoke('db-execute', { sql, params }),
+  controlConcurrencia: {
+    adquirirLock: (userName, userRole) => ipcRenderer.invoke('lock-acquire', { userName, userRole }),
+    liberarLock: (userName) => ipcRenderer.invoke('lock-release', { userName }),
+    forzarLiberacion: (userRole, adminName) => ipcRenderer.invoke('lock-force-release', { userRole, adminName })
+  },
+  migrarJsonDeutes: (filePath) => ipcRenderer.invoke('migrar-json-deutes', { filePath }),
+  migrarJsonCuadrante: (dataJSON) => ipcRenderer.invoke('migrar-json-cuadrante', { dataJSON }),
+  obtenerPropuestasAsistente: (fecha, aparcamientoId) => ipcRenderer.invoke('obtener-propuestas-asistente', { fecha, aparcamientoId }),
+  calcularAlertasCuadrante: (fechaInicio, fechaFin) => ipcRenderer.invoke('calcular-alertas-cuadrante', { fechaInicio, fechaFin })
 });

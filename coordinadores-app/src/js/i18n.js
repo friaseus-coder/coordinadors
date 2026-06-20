@@ -9,17 +9,37 @@ const i18n = (() => {
     return localStorage.getItem('nyn_idioma') || 'ca';
   }
   
-  // Guardar idioma activo y disparar evento global para los iframes
   function setLanguage(lang) {
     if (lang === 'ca' || lang === 'es') {
       localStorage.setItem('nyn_idioma', lang);
-      // Disparar evento de almacenamiento local para sincronización en caliente
-      window.dispatchEvent(new Event('storage'));
-      // Intentar disparar en el padre si estamos en un iframe
+      
+      // Traducir la ventana actual
+      translatePage();
+      window.dispatchEvent(new CustomEvent('languageChanged', { detail: lang }));
+      
+      // Propagar síncronamente a los iframes hijos
+      const iframes = document.querySelectorAll('iframe');
+      if (iframes.length > 0) {
+        iframes.forEach(iframe => {
+          try {
+            if (iframe.contentWindow) {
+              iframe.contentWindow.localStorage.setItem('nyn_idioma', lang);
+              if (iframe.contentWindow.i18n) {
+                iframe.contentWindow.i18n.translatePage();
+                iframe.contentWindow.dispatchEvent(new CustomEvent('languageChanged', { detail: lang }));
+              }
+            }
+          } catch (e) {}
+        });
+      }
+
+      // Propagar hacia arriba si estamos en un iframe hijo
       try {
         if (window.parent && window.parent !== window) {
           window.parent.localStorage.setItem('nyn_idioma', lang);
-          window.parent.dispatchEvent(new Event('storage'));
+          if (window.parent.i18n) {
+            window.parent.i18n.setLanguage(lang);
+          }
         }
       } catch (e) {}
     }
@@ -57,10 +77,35 @@ const i18n = (() => {
       tabSac: "🛠️ SAC",
       tabNotificador: "📩 Notificador",
       tabLog: "📜 Log",
+      tabRegles: "📋 Normes",
+      tabMore: "➕ Més",
+      reglesTitle: "📋 Normes del Quadrant",
+      reglesSubtitle: "Configuració dels paràmetres operatius i regles de negoci.",
+      colRuleClave: "CLAU",
+      colRuleDesc: "DESCRIPCIÓ",
+      colRuleValor: "VALOR ACTUAL",
+      colRuleCategoria: "CATEGORIA",
+      btnSaveRules: "💾 Desar Canvis",
+      btnAddRuleTitle: "➕ Afegir Nova Norma",
+      lblRuleClave: "Clau de la norma (ex: max_hores)",
+      lblRuleDesc: "Descripció funcional",
+      lblRuleTipo: "Tipus de dada",
+      lblRuleCat: "Categoria",
+      lblRuleValor: "Valor inicial",
+      btnAddRule: "Afegir Norma",
+      ruleTypeNumber: "Número",
+      ruleTypeBoolean: "Booleà (0 / 1)",
+      ruleTypeString: "Text",
+      successSaveRules: "✅ S'han desat els canvis en les normes correctament.",
+      successAddRule: "✅ Norma afegida correctament a la base de dades.",
+      errorAddRuleExists: "⚠️ Aquesta clau ja existeix a la base de dades.",
       welcome: "Benvingut",
       datacenter: "(centre de dades coordinadors)",
       btnUnlockFiles: "Desbloquejar Fitxers",
       btnManageCoord: "⚙️ Coordinadors",
+      btnAdministration: "⚙️ Administració",
+      btnExitApp: "🚪 Sortir",
+      confirmExitApp: "Atenció: Estàs a punt de tancar l'aplicació. Això alliberarà tots els teus bloquejos actius. Vols continuar?",
       celebrationNone: "Avui no se celebra res especial al món 🙁",
       celebrationSpecial: "🌟 Feliç dia de <b>{day}</b>!",
       confirmUnlockAll: "Atenció: Estàs a punt de desbloquejar manualment tots els fitxers del sistema. Això eliminarà qualsevol bloqueig actiu. Desitges continuar?",
@@ -160,10 +205,35 @@ const i18n = (() => {
       tabSac: "🛠️ SAC",
       tabNotificador: "📩 Notificador",
       tabLog: "📜 Log",
+      tabRegles: "📋 Normas",
+      tabMore: "➕ Más",
+      reglesTitle: "📋 Normas del Cuadrante",
+      reglesSubtitle: "Configuración de los parámetros operativos y reglas de negocio.",
+      colRuleClave: "CLAVE",
+      colRuleDesc: "DESCRIPCIÓN",
+      colRuleValor: "VALOR ACTUAL",
+      colRuleCategoria: "CATEGORÍA",
+      btnSaveRules: "💾 Guardar Cambios",
+      btnAddRuleTitle: "➕ Añadir Nueva Norma",
+      lblRuleClave: "Clave de la norma (ej: max_horas)",
+      lblRuleDesc: "Descripción funcional",
+      lblRuleTipo: "Tipo de dato",
+      lblRuleCat: "Categoría",
+      lblRuleValor: "Valor inicial",
+      btnAddRule: "Añadir Norma",
+      ruleTypeNumber: "Número",
+      ruleTypeBoolean: "Booleano (0 / 1)",
+      ruleTypeString: "Texto",
+      successSaveRules: "✅ Se han guardado los cambios en las normas correctamente.",
+      successAddRule: "✅ Norma añadida correctamente en la base de datos.",
+      errorAddRuleExists: "⚠️ Esta clave ya existe en la base de datos.",
       welcome: "Bienvenido",
       datacenter: "(centro de datos coordinadores)",
       btnUnlockFiles: "Desbloquear Archivos",
       btnManageCoord: "⚙️ Coordinadores",
+      btnAdministration: "⚙️ Administración",
+      btnExitApp: "🚪 Salir",
+      confirmExitApp: "Atención: Estás a punto de cerrar la aplicación. Esto liberará todos tus bloqueos activos. ¿Deseas continuar?",
       celebrationNone: "Hoy no se celebra nada especial en el mundo 🙁",
       celebrationSpecial: "🌟 ¡Feliz día de <b>{day}</b>!",
       confirmUnlockAll: "Atención: Estás a punto de desbloquear manualmente todos los archivos del sistema. Esto eliminará cualquier bloqueo activo. ¿Deseas continuar?",
@@ -267,7 +337,7 @@ const i18n = (() => {
 
   // Registrar el listener de cambio en localStorage para refrescar traducción en caliente
   window.addEventListener('storage', (e) => {
-    if (e.key === 'nyn_idioma') {
+    if (!e.key || e.key === 'nyn_idioma') {
       translatePage();
       // Disparar evento personalizado por si la página necesita hacer tareas extra al cambiar idioma
       window.dispatchEvent(new CustomEvent('languageChanged', { detail: getLanguage() }));

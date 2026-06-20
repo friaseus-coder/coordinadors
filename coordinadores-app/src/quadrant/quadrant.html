@@ -642,6 +642,7 @@
             <button class="btn-main" onclick="openDeleteModal()">⚙️ Gestionar Dades</button>
             <button id="btnExport" class="btn-main btn-action" onclick="exportToNextMonth()">🚚 Exportar a ...</button>
             <button id="btnLockMonth" class="btn-main btn-lock" onclick="toggleLockMonth()">🔒 Tancar Mes</button>
+            <button id="btnAlertes" class="btn-main" onclick="toggleAlertsPanel()" style="background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 600; display: none;">⚠️ Alertes (<span id="alertCount">0</span>)</button>
         </div>
 
         <!-- Grupo 3: Arxiu i Importacions -->
@@ -659,6 +660,16 @@
         <!-- Grupo 4: Zona de Perill -->
         <div class="toolbar-group danger-group">
             <button class="btn-danger-right" onclick="resetAll()">🗑️ Esborrar dades del mes</button>
+        </div>
+    </div>
+
+    <!-- Panel de Alertas en Caliente -->
+    <div id="alertsPanel" style="display: none; padding: 10px 24px; background: #fff1f2; border-bottom: 1px solid #fecdd3; font-family: inherit; box-shadow: var(--shadow-sm);">
+        <div style="font-weight: 700; color: #9f1239; font-size: 11px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+            <span>⚠️ SITUACIONS PER SOLUCIONAR (ALERTES DE NEGOCI)</span>
+        </div>
+        <div id="alertsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; max-height: 120px; overflow-y: auto; padding: 4px 0;">
+            <!-- Las alertas se cargarán dinámicamente -->
         </div>
     </div>
 </div>
@@ -870,10 +881,13 @@ async function init() {
                         }
 
                         const classSub = saved.s ? 'is-substitucio' : '';
+                        const clickHandlerStr = (saved.w === "-" || saved.w === "")
+                            ? `onmousedown="event.preventDefault(); openAssistant('${sId}')"`
+                            : "";
 
                         // 3. Contingut de la cel·la
                         td.innerHTML = `<div class="cell-container ${classSub}" style="pointer-events: auto;">
-                            <select class="select-worker" style="pointer-events: auto;" onchange="quickSave('${sId}', this, 'w')">
+                            <select class="select-worker" style="pointer-events: auto;" ${clickHandlerStr} onchange="quickSave('${sId}', this, 'w')">
                                 ${LLISTES.personal.map(p => `<option value="${p}" ${saved.w===p?'selected':''}>${p}</option>`).join('')}
                             </select>
                             <select class="select-hour" style="pointer-events: auto;" onchange="quickSave('${sId}', this, 'h')">
@@ -885,7 +899,8 @@ async function init() {
                     
                     td.onmousedown = (e) => startSelect(sId, e);
                     td.onmouseenter = () => updateSelection(sId);
-                    td.oncontextmenu = (e) => { e.preventDefault(); openNote(sId); }; 
+                    td.oncontextmenu = (e) => { e.preventDefault(); openNote(sId); };
+                    td.ondblclick = () => openAssistant(sId);
                     cellsArr.push(td);
                 }
                 if (rowMatchesFilter) {
@@ -1224,7 +1239,7 @@ function exportToNextMonth() {
 
 
     function isMonthLocked() { return localStorage.getItem(`nyn_locked_${currentYear}_${currentMonth}`) === "true"; }
-  function toggleLockMonth() {
+  async function toggleLockMonth() {
     const locked = isMonthLocked();
     
     if (!locked) { 
@@ -1232,6 +1247,22 @@ function exportToNextMonth() {
         if (confirm("Si tanques el Mes no podràs editar-ne les dades fins que el tornis a obrir i requereix PASSWORD. Vols continuar?")) { 
             localStorage.setItem(`nyn_locked_${currentYear}_${currentMonth}`, "true"); 
             updateLockVisuals(); 
+            
+            // Borrar coberturas requeridas específicas de este mes (coberturas extraordinarias de un día específico)
+            const apiDB = window.parent.databaseAPI || window.databaseAPI;
+            if (apiDB) {
+                try {
+                    const mesNum = (currentMonth + 1).toString().padStart(2, '0');
+                    const patronFecha = `${currentYear}-${mesNum}-%`;
+                    await apiDB.ejecutar(
+                        "DELETE FROM coberturas_requeridas WHERE fecha LIKE ? AND dia_semana IS NULL",
+                        [patronFecha]
+                    );
+                    console.log(`[COBERTURAS] Borradas coberturas extraordinarias para el mes ${currentYear}-${mesNum}`);
+                } catch (err) {
+                    console.error("Error al borrar coberturas requeridas temporales:", err);
+                }
+            }
         } 
     } 
     else { 
@@ -2156,6 +2187,230 @@ function refrescarLlegendaGlobal() {
     }
 }
 
+// === INTEGRACIÓ EN CALIENTE DE ALERTES DE NEGOCI I ASSISTENT INTEL·LIGENT ===
+
+// Registrar listener de canvis en localStorage (despatxats des de persistence.js)
+window.addEventListener('localStorage-changed', (e) => {
+    actualitzarAlertes();
+});
+
+// Executar actualització d'alertes en inicialitzar
+const originalChangeMonth = changeMonth;
+changeMonth = function() {
+    originalChangeMonth.apply(this, arguments);
+    actualitzarAlertes();
+};
+
+async function actualitzarAlertes() {
+    try {
+        const mesNum = (currentMonth + 1).toString().padStart(2, '0');
+        const dias = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const fechaInicio = `${currentYear}-${mesNum}-01`;
+        const fechaFin = `${currentYear}-${mesNum}-${String(dias).padStart(2, '0')}`;
+        
+        const res = await window.databaseAPI.calcularAlertasCuadrante(fechaInicio, fechaFin);
+        if (res && res.success) {
+            const alertas = res.alertas || [];
+            
+            // Actualitzar contador
+            const countEl = document.getElementById('alertCount');
+            if (countEl) countEl.innerText = alertas.length;
+            
+            const btnAlertes = document.getElementById('btnAlertes');
+            if (btnAlertes) {
+                btnAlertes.style.display = alertas.length > 0 ? 'inline-block' : 'none';
+            }
+            
+            // Emplenar llista d'alertes al panell superior
+            const listEl = document.getElementById('alertsList');
+            if (listEl) {
+                if (alertas.length === 0) {
+                    listEl.innerHTML = '<div style="grid-column: 1/-1; color: #15803d; font-weight: 600; font-size: 11px; padding: 4px 0;">✅ No s\'han detectat conflictes de quadrant en aquest mes.</div>';
+                } else {
+                    listEl.innerHTML = alertas.map(al => {
+                        const icon = al.gravedad === 'alta' ? '🔴' : '🟡';
+                        const bgColor = al.gravedad === 'alta' ? '#fff1f2' : '#fef9c3';
+                        const borderColor = al.gravedad === 'alta' ? '#fecdd3' : '#fef08a';
+                        const textColor = al.gravedad === 'alta' ? '#9f1239' : '#854d0e';
+                        
+                        return `
+                            <div style="background: ${bgColor}; border: 1px solid ${borderColor}; padding: 6px 10px; border-radius: 6px; color: ${textColor}; font-size: 10px; line-height: 1.3; font-weight: 500; display: flex; align-items: flex-start; gap: 6px;">
+                                <span style="font-size: 11px;">${icon}</span>
+                                <div>
+                                    <div style="font-weight: 700; font-size: 8.5px; text-transform: uppercase; margin-bottom: 2px;">${al.tipo.toUpperCase().replace(/_/g, ' ')}</div>
+                                    <div>${al.mensaje}</div>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+            
+            // Netejar indicadors d'alertes previs de la taula
+            document.querySelectorAll('.cell-alert-highlight').forEach(el => {
+                el.classList.remove('cell-alert-highlight');
+                el.style.boxShadow = '';
+                const alertDot = el.querySelector('.alert-dot');
+                if (alertDot) alertDot.remove();
+            });
+            
+            // Col·locar indicadors vermells/taronja sobre les celdas afectades
+            alertas.forEach(al => {
+                if (al.fecha && al.parkingNombre && al.turno) {
+                    const dia = parseInt(al.fecha.split('-')[2]);
+                    const sId = `nyn_v12_${currentYear}_${currentMonth}_${al.parkingNombre}_${al.turno}_${dia}`;
+                    const td = document.getElementById("cell_" + sId);
+                    if (td) {
+                        td.classList.add('cell-alert-highlight');
+                        td.style.boxShadow = 'inset 0 0 0 2px rgba(239, 68, 68, 0.45)';
+                        
+                        const cont = td.querySelector('.cell-container');
+                        if (cont && !cont.querySelector('.alert-dot')) {
+                            const dot = document.createElement('div');
+                            dot.className = 'alert-dot';
+                            dot.style.position = 'absolute';
+                            dot.style.top = '2px';
+                            dot.style.left = '2px';
+                            dot.style.width = '6px';
+                            dot.style.height = '6px';
+                            dot.style.backgroundColor = al.gravedad === 'alta' ? 'red' : 'orange';
+                            dot.style.borderRadius = '50%';
+                            dot.style.zIndex = '30';
+                            dot.title = al.mensaje;
+                            cont.appendChild(dot);
+                        }
+                    }
+                }
+            });
+        }
+    } catch (e) {
+        console.error("Error en actualitzarAlertes:", e);
+    }
+}
+
+function toggleAlertsPanel() {
+    const panel = document.getElementById('alertsPanel');
+    if (panel) {
+        const isHidden = panel.style.display === 'none';
+        panel.style.display = isHidden ? 'block' : 'none';
+        
+        const btn = document.getElementById('btnAlertes');
+        if (btn) {
+            btn.style.outline = isHidden ? '2px solid #b91c1c' : '';
+        }
+    }
+}
+
+async function openAssistant(sId) {
+    if (isMonthLocked()) { 
+        alert("Aquest mes està tancat."); 
+        return; 
+    }
+    try {
+        const parts = sId.split('_');
+        const dia = parts[parts.length - 1];
+        const torn = parts[parts.length - 2];
+        const park = parts.slice(4, parts.length - 2).join(' ');
+
+        const mesNum = (currentMonth + 1).toString().padStart(2, '0');
+        const diaNum = parseInt(dia).toString().padStart(2, '0');
+        const fecha = `${currentYear}-${mesNum}-${diaNum}`;
+
+        // Obtenir ID de l'aparcament des de la DB única
+        const dbPark = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE nombre = ?", [park.toUpperCase()]);
+        if (!dbPark || dbPark.length === 0) {
+            alert("No s'ha trobat el centre al catàleg de la base de dades única.");
+            return;
+        }
+        const aparcamientoId = dbPark[0].id;
+
+        // Cridar assistent al backend
+        const res = await window.databaseAPI.obtenerPropuestasAsistente(fecha, aparcamientoId);
+        
+        // Dibuixar info de cel·la
+        const infoEl = document.getElementById('assistantCellInfo');
+        if (infoEl) {
+            infoEl.innerHTML = `
+                <span>🏢 ${park.toUpperCase()}</span>
+                <span>📅 ${diaNum}/${mesNum}/${currentYear}</span>
+                <span>⏰ ${torn}</span>
+            `;
+        }
+
+        const clearRowHtml = `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; margin-bottom: 4px;">
+                <span style="font-weight: 700; font-size: 11px; color: #475569;">Desassignar torn / Deixar buit</span>
+                <button onclick="assignarTreballador('${sId}', '-')" style="background: #64748b; color: white; border: none; font-weight: 700; padding: 4px 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm);">
+                    Desassignar
+                </button>
+            </div>
+        `;
+
+        // Dibuixar sugerits
+        const sugEl = document.getElementById('assistantSuggestionsList');
+        if (sugEl) {
+            if (!res.sugeridos || res.sugeridos.length === 0) {
+                sugEl.innerHTML = clearRowHtml + '<div style="font-size: 10px; color: #64748b; text-align: center; padding: 8px;">No hi ha treballadors actius suggerits.</div>';
+            } else {
+                sugEl.innerHTML = clearRowHtml + res.sugeridos.map(ag => {
+                    const warningsHtml = ag.advertencias && ag.advertencias.length > 0
+                        ? ag.advertencias.map(adv => `<span style="background: #fef9c3; color: #b45309; border: 1px solid #fef08a; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; display: inline-block; margin-top: 2px;">⚠️ ${adv}</span>`).join(' ')
+                        : `<span style="background: #e6f4ea; color: #166534; border: 1px solid #bbf7d0; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; display: inline-block; margin-top: 2px;">✅ Sense conflictes</span>`;
+                        
+                    return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; gap: 10px; font-family: inherit;">
+                            <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
+                                <span style="font-weight: 700; font-size: 11px; color: #1e293b;">${ag.nombre}</span>
+                                <span style="font-size: 9px; color: #64748b;">Rànquing: <strong>${ag.ranking_score}</strong> | Jornada mes: <strong>${ag.dias_mes_actual} dies</strong></span>
+                                <div style="display: flex; flex-wrap: wrap; gap: 4px;">${warningsHtml}</div>
+                            </div>
+                            <button onclick="assignarTreballador('${sId}', '${ag.nombre}')" style="background: var(--nyn-verd-accent); color: white; border: none; font-weight: 700; padding: 0 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm); flex-shrink: 0;">
+                                Assignar
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        // Dibuixar exclosos (Restringits)
+        const restEl = document.getElementById('assistantRestrictionsList');
+        if (restEl) {
+            if (!res.restringidos || res.restringidos.length === 0) {
+                restEl.innerHTML = '<div style="font-size: 10px; color: #64748b; text-align: center; padding: 8px;">No hi ha treballadors exclosos avui.</div>';
+            } else {
+                restEl.innerHTML = res.restringidos.map(ag => {
+                    return `
+                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; opacity: 0.7; font-family: inherit;">
+                            <div style="display: flex; flex-direction: column; gap: 2px; text-align: left; width: 100%;">
+                                <span style="font-weight: 700; font-size: 11px; color: #64748b; text-decoration: line-through;">${ag.nombre}</span>
+                                <span style="color: #b91c1c; font-size: 9px; font-weight: 600; display: inline-block; margin-top: 2px;">❌ Bloquejat: ${ag.motivo_bloqueo}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            }
+        }
+
+        document.getElementById('assistantModal').style.display = 'block';
+    } catch (e) {
+        console.error("Error en openAssistant:", e);
+    }
+}
+
+function assignarTreballador(sId, nomTreballador) {
+    const td = document.getElementById("cell_" + sId);
+    if (!td) return;
+    const selectEl = td.querySelector('.select-worker');
+    if (selectEl) {
+        selectEl.value = nomTreballador;
+        quickSave(sId, selectEl, 'w');
+        document.getElementById('assistantModal').style.display = 'none';
+        
+        // Forçar redibuixat per actualitzar els clicks mousedown i el color si és vacances
+        renderTable();
+    }
+}
 
 </script>
 
@@ -2215,6 +2470,36 @@ function refrescarLlegendaGlobal() {
     <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px;">
         <button class="btn-main" onclick="cancelarImportacioMapejada()">Cancel·lar</button>
         <button class="btn-main btn-action" id="btnConfirmarImport" onclick="confirmarImportacioMapejada()">Confirmar Importació</button>
+    </div>
+</div>
+
+<!-- Modal del Asistente de Asignación Inteligente -->
+<div id="assistantModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; border: 1px solid var(--border); padding: 20px 24px; z-index: 2050; border-radius: 12px; width: 90%; max-width: 580px; max-height: 82vh; overflow-y: auto; box-shadow: var(--shadow-lg); font-family: inherit;">
+    <div style="font-weight: 800; font-size: 13px; margin-bottom: 12px; color: var(--nyn-verd); border-bottom: 2px solid var(--nyn-verd-accent); padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
+        <span>🤖 ASSISTENT D'ASSIGNACIÓ INTEL·LIGENT</span>
+        <button onclick="document.getElementById('assistantModal').style.display='none'" style="background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; height: auto; box-shadow: none; padding: 0;">&times;</button>
+    </div>
+    
+    <div id="assistantCellInfo" style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 11px; color: var(--text-main); margin-bottom: 14px; display: flex; justify-content: space-between; font-weight: 600;">
+        <!-- Se rellena dinámicamente -->
+    </div>
+    
+    <div style="margin-bottom: 16px;">
+        <div style="font-weight: 700; font-size: 9.5px; text-transform: uppercase; color: #15803d; background: #e6f4ea; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px; letter-spacing: 0.5px;">
+            👍 Candidats Suggerits (Ordenats per Rànquing)
+        </div>
+        <div id="assistantSuggestionsList" style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
+            <!-- Sugeridos dinámicos -->
+        </div>
+    </div>
+    
+    <div>
+        <div style="font-weight: 700; font-size: 9.5px; text-transform: uppercase; color: #b91c1c; background: #fee2e2; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px; letter-spacing: 0.5px;">
+            🚫 Candidats Exclosos o No Disponibles
+        </div>
+        <div id="assistantRestrictionsList" style="display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
+            <!-- Restringidos dinámicos -->
+        </div>
     </div>
 </div>
 
