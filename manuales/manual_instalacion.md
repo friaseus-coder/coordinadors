@@ -58,23 +58,27 @@ Para empaquetar e instalar la aplicación en cada puesto:
 ### PASO 3: Vincular el PC del Usuario con el Servidor de Red
 En la carpeta instalada de cada usuario (`coordinadores-win32-x64`):
 1.  Busca el archivo **`config.json`** y ábrelo con el Bloc de notas.
-2.  Modifica el parámetro `"dadesPath"` con la ruta de tu carpeta compartida creada en el Paso 1.
+2.  Modifica el parámetro `"ruta_compartida"` con la ruta de tu carpeta de red compartida creada en el Paso 1.
     *   *Ejemplo usando unidad de red:*
         ```json
         {
-          "dadesPath": "Z:/Coordinadores/dades",
-          "backupsPath": "Z:/Coordinadores/Backups"
+          "coordinador": "ALBERT",
+          "theme": "light",
+          "language": "es",
+          "ruta_compartida": "Z:\\CarpetaCompartida\\Coordinadores"
         }
         ```
     *   *Ejemplo usando ruta directa del servidor (UNC):*
         ```json
         {
-          "dadesPath": "\\\\ServidorOficina\\Coordinadores\\dades",
-          "backupsPath": "\\\\ServidorOficina\\Coordinadores\\Backups"
+          "coordinador": "ALBERT",
+          "theme": "light",
+          "language": "es",
+          "ruta_compartida": "\\\\ServidorOficina\\Coordinadores"
         }
         ```
     > [!WARNING]
-    > Utiliza barras inclinadas `/` o dobles barras invertidas `\\` para separar las carpetas en el JSON para evitar errores de sintaxis.
+    > Utiliza dobles barras invertidas `\\` para separar las carpetas en el JSON para evitar errores de parseo de caracteres de escape en JSON.
 3.  Guarda y cierra el archivo.
 
 ### PASO 4: Habilitar Modificaciones en Caliente (Opcional - Recomendado)
