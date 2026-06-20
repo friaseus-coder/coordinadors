@@ -1,5 +1,6 @@
 {
-  "dadesPath": "./dades",
-  "backupsPath": "./Backups",
-  "_comentario": "Puedes cambiar dadesPath a una ruta de red compartida, por ejemplo: Z:/Coordinadores/dades o \\\\Servidor\\Coordinadores\\dades"
+  "coordinador": "ALBERT",
+  "theme": "light",
+  "language": "es",
+  "ruta_compartida": "Z:\\CarpetaCompartida\\Coordinadores"
 }

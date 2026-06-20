@@ -584,9 +584,26 @@ function obtenerReglasConfiguradas(dbConnection) {
 
 // Inicialización de la aplicación
 app.on('ready', () => {
+  const configPath = path.join(__dirname, 'config.json');
+  let rutaCompartida = path.join(app.getPath('documents'), 'Coordinadores_Local'); // Fallback
+  
   try {
-    // conectarBaseDatosUnica ahora gestiona schema + migraciones internamente
-    conectarBaseDatosUnica(dadesDir);
+    const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    if (configData.ruta_compartida) {
+      rutaCompartida = configData.ruta_compartida;
+    }
+  } catch (error) {
+    console.warn("No se pudo leer la ruta_compartida de config.json, usando local por defecto.");
+  }
+
+  // Nos aseguramos de que la ruta de red existe
+  if (!fs.existsSync(rutaCompartida)) {
+    try { fs.mkdirSync(rutaCompartida, { recursive: true }); } 
+    catch(e) { console.error("No se pudo crear la carpeta en la unidad compartida.", e); }
+  }
+  
+  try {
+    conectarBaseDatosUnica(rutaCompartida);
   } catch (err) {
     console.error("Error crítico al inicializar base de datos única:", err);
   }

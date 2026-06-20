@@ -3,17 +3,15 @@
 
 Este documento detalla el funcionamiento interno, la arquitectura de archivos, la persistencia y la lógica del sistema de concurrencia al 100%. Está destinado a desarrolladores, administradores de sistemas o personal de soporte técnico.
 
----
-
-## 1. Stack Tecnológico e Infraestructura
-La aplicación se ha diseñado para funcionar sin base de datos SQL relacional ni servidores de backend adicionales (como Node.js locales u hosting web). Esto reduce a cero los costes de mantenimiento y simplifica el despliegue en la red de la oficina.
+-## 1. Stack Tecnológico e Infraestructura
+La aplicación se ha diseñado para funcionar sin servidores de backend ni bases de datos en la nube (como PostgreSQL o MySQL remotos). Esto reduce a cero los costes de mantenimiento y simplifica el despliegue en la red de la oficina.
 
 *   **Runtime:** [Electron.js (v31)](https://www.electronjs.org/), que unifica el motor de renderizado Chromium de Google con el entorno de ejecución Node.js de escritorio.
 *   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS) y JavaScript nativo ES6.
 *   **Fuentes de Texto:** Carga de la tipografía premium **Outfit** desde Google Fonts.
-*   **Persistencia:** Base de datos integrada **SQLite (v3)** a nivel local/red para la persistencia transaccional y ágil de los datos históricos y turnos del coordinador (`dades.db` en la subcarpeta del coordinador), combinada con el `localStorage` de Chromium en la capa cliente y archivos estructurados en formato **JSON** para las configuraciones y catálogos maestros compartidos.
+*   **Persistencia (Modelo Relacional):** Base de datos integrada **SQLite (v3)** que implementa un diseño relacional completo de 13 tablas (modelo multisociedad, contratos y reglas parametrizadas) y control de versiones del esquema (`dades.db` en la subcarpeta del coordinador), combinada con el `localStorage` de Chromium en la capa cliente.
+*   **Resiliencia y Fallback:** Los catálogos maestros (como `aparcamientos.json`) se escriben y mantienen en JSON plano en el servidor de red como copias de resiliencia secundaria y lectura fallback durante inicializaciones. Sin embargo, la base de datos relacional SQLite es la fuente de verdad primaria.
 *   **Concurrencia (Multi-usuario):** Sistema de exclusión mutua mediante archivos físicos de bloqueo de Windows (`.lock`) estructurados en formato JSON con expiración temporal activa (TTL de 3 horas) y detección periódica de pérdida en caliente.
-
 
 ---
 
@@ -22,16 +20,22 @@ La aplicación consta de los siguientes archivos y carpetas clave en su estructu
 
 ```
 coordinadores-app/
-├── main.js                 # Proceso principal de Electron (Main Process)
-├── preload.js              # Script puente de seguridad (Context Isolation)
+├── main.js                 # Proceso principal de Electron (Main Process y Migraciones)
+├── preload.js              # Script puente de seguridad (databaseAPI expuesta en Context Isolation)
 ├── package.json            # Metadatos del proyecto y scripts de compilación
 ├── config.json             # Configuración dinámica de rutas de red (Z:\ o UNC)
+├── schema.sql              # Definición canónica del esquema relacional (13 tablas + trigger)
 ├── dades/                  # Carpeta de datos local (Fallback si no hay red)
 │   ├── coordinadores.json  # Registro de coordinadores creados dinámicamente
-│   ├── aparcamientos.json  # Catálogo maestro de aparcamientos y coordinadores
+│   ├── aparcamientos.json  # Catálogo maestro de aparcamientos (JSON de resiliencia)
 │   ├── temp/               # Logs temporales de auditoría activa
 │   │   └── cambios.jsonl
 │   └── dades [Nombre]/     # Subcarpetas creadas dinámicamente por coordinador
+│       └── dades.db        # Base de datos relacional SQLite individual
+├── scripts/                # Scripts de administración, migraciones y utilidades de base de datos
+│   ├── rebuild_plantilla.js # Regenera la plantilla de base de datos de inicio
+│   ├── run_migration_v2.js # Ejecuta la migración del esquema v1 al esquema v2 en producción
+│   └── verify_migration.js # Verifica la integridad y consistencia tras migrar
 ├── dist/                   # Salida del empaquetado del ejecutable portable
 │   └── coordinadores-win32-x64/
 │       ├── coordinadores.exe # Ejecutable final de producción
@@ -54,20 +58,23 @@ coordinadores-app/
 La aplicación aprovecha la separación de procesos de Electron para ofrecer seguridad y flexibilidad de actualización:
 
 ### A. Proceso Principal (Main Process - `main.js`)
-*   Se ejecuta en un entorno completo de Node.js con acceso a las APIs del sistema operativo de Windows.
+*   Se ejecuta en un entorno completo de Node.js con acceso a las APIs del sistema operativo de Windows y librerías nativas como `sqlite3`.
 *   Crea y gestiona la ventana de visualización (`BrowserWindow`).
 *   Configura las rutas dinámicas leyendo `config.json` al iniciar, creando las carpetas `dades/` y `Backups/` automáticamente si no existieran.
-*   Expone servicios a través de la comunicación entre procesos (IPC) de forma 100% asíncrona (liberando el hilo principal de Electron) para la lectura y escritura de archivos locales/red, gestión de bloqueos con TTL, y administración de aparcamientos:
-    *   `read-file`: Handler unificado. Si la ruta pertenece a un coordinador (`dades [Nombre]/...`), consulta SQLite (`dades.db`). Si la clave no está en la base de datos, activa un **fallback automático**: comprueba si existe el archivo `.json` legado correspondiente en disco, lo lee, lo importa a SQLite transaccionalmente y lo devuelve al cliente. Para rutas globales (catálogos), lee el JSON plano directamente del servidor.
-    *   `write-file`: Si es ruta de coordinador, realiza una inserción transaccional `INSERT OR REPLACE INTO kv_store` en SQLite tras verificar que el usuario posee el bloqueo activo. Si es ruta global, escribe el JSON directamente en el servidor físico de archivos de red.
-    *   `get-aparcamientos` y `save-aparcamientos`: Administran el catálogo maestro de centros del fichero unificado `aparcamientos.json`.
-    *   `import-json-data`: Importa manualmente y de forma segura volcados JSON legados dentro de la base de datos SQLite del coordinador.
-
+*   **Inicialización y Migración del Esquema:** Al arrancar el programa, lee el archivo `schema.sql` y ejecuta `aplicarSchemaCanonicoYMigrar()` para asegurar que todas las tablas existan en el `dades.db` del coordinador. Compara la versión instalada en la tabla `versiones_esquema` con la versión esperada mediante `comprobarVersionYMigrar()`. Si detecta una versión inferior (por ejemplo, v1), ejecuta el flujo `migrarV1aV2()`, el cual importa los datos legados de `aparcamientos.json` a la tabla relacional de aparcamientos vinculándolos a la sociedad por defecto y actualizando el número de versión a la versión 2.
+*   Expone servicios a través de la comunicación entre procesos (IPC) de forma 100% asíncrona para la lectura/escritura de archivos locales/red, gestión de bloqueos con TTL, y el nuevo modelo relacional:
+    *   `read-file` y `write-file`: Control de persistencia clave-valor heredada para el cuadrante diario, validando bloqueos activos y garantizando transacciones seguras en SQLite (`INSERT OR REPLACE INTO kv_store`).
+    *   **Canales IPC Relacionales de Sociedades:** CRUD de la tabla `sociedades` (`get-sociedades`, `add-sociedad`, `update-sociedad`, `deactivate-sociedad`).
+    *   **Canales IPC Relacionales de Aparcamientos:** Consulta y modificación estructurada (`get-aparcamientos-relacional`, `update-aparcamiento-relacional`) que escribe en la tabla `aparcamientos` de SQLite y sincroniza el catálogo `aparcamientos.json` como backup secundario.
+    *   **Canales IPC de Contratos de Agentes:** CRUD de contratos vinculando coordinadores/agentes con sociedades del grupo (`get-contratos-agente`, `add-contrato-agente`, `cerrar-contrato-agente`).
+    *   **Auditoría y Auditoría de Datos:** El canal `get-historico-aparcamiento` lee directamente la tabla `historico_aparcamientos` para auditar cualquier cambio realizado sobre los aparcamientos a través de un trigger.
+    *   `import-json-data`: Importa volcados JSON de backups legados mapeándolos y guardándolos transaccionalmente en SQLite.
 
 ### B. Proceso de Renderizado (Renderer Process - Carpeta `src/`)
 *   Muestra la interfaz gráfica dentro del contenedor Chromium de forma aislada.
 *   No tiene acceso directo al sistema operativo ni a Node.js por motivos de seguridad informática (prevención de ataques XSS).
 *   Se comunica con el proceso principal mediante las funciones expuestas en el puente `preload.js` (`window.api`).
+*   **Puente de API Relacional (`window.api.databaseAPI`):** En `preload.js` se definen y exponen los 12 nuevos métodos que permiten al frontend llamar a los handlers del proceso principal para consultar y modificar sociedades, contratos, aparcamientos relacionales e históricos de base de datos de manera limpia y segura.
 
 ### C. Cargador Híbrido Dinámico (Modificaciones en Caliente)
 Para evitar tener que generar y distribuir un nuevo ejecutable `.exe` de 180MB cada vez que se hace un cambio estético de HTML o CSS, el método `createWindow()` en `main.js` realiza la siguiente validación:
@@ -83,6 +90,7 @@ if (fs.existsSync(externalIndexPath)) {
   // Carga el código fuente empaquetado dentro del .exe (app.asar)
   mainWindow.loadFile(internalIndexPath);
 }
+```
 *   **Efecto:** Si copias tu carpeta de desarrollo `src/` al lado de `coordinadores.exe`, la aplicación la prioriza, permitiéndote actualizar pantallas modificando archivos de texto en caliente.
 
 ---
@@ -129,14 +137,14 @@ Cuando el Administrador crea un nuevo coordinador (por ejemplo, "Marc López"):
 2.  **Creación de Estructura:** Electron invoca a `fs.mkdirSync` y crea la subcarpeta `dades Marc/` en el servidor de red.
 3.  **Vinculación de Comerciales:** El módulo de Comerciales (`comercials.html`) carga en cada arranque el listado de `coordinadores.json`. Para cada uno genera dinámicamente una sección y apunta a su base de datos individualizada: `dades Marc/comercials_marc_[mes]_[año].json`.
 
-### C. Gestión Dinámica y Centralizada de Aparcamientos (`aparcamientos.json`)
-Para evitar discrepancias y permitir una asignación flexible de centros, se ha implementado un catálogo relacional maestro:
-1.  **Estructura del Archivo:** En `aparcamientos.json` se almacena un array de objetos con las propiedades `nombre` y `coordinadorId` (por ejemplo, `{ "nombre": "NN BONANOVA", "coordinadorId": "albert" }`).
+### C. Gestión Dinámica y Centralizada de Aparcamientos en SQLite
+Para evitar discrepancias, posibilitar la segmentación multisociedad y garantizar la consistencia relacional de la información, el catálogo de aparcamientos se ha trasladado enteramente a SQLite:
+1.  **Estructura Relacional:** En la tabla `aparcamientos` se guarda un registro estructurado con `id`, `nombre`, `direccion`, `numero_obra` (identificador oficial de obra/centro), `sociedad_id` (clave foránea a la empresa del grupo), y `coordinador_id` (responsable del centro).
 2.  **Carga Dinámica en Módulos:**
-    *   **Comerciales (`comercials.html`):** Agrupa dinámicamente las vacantes cargando el catálogo de aparcamientos y cruzándolo con el `localStorage` de cada coordinador. Ya no existen opciones para añadir o eliminar centros locales individuales dentro de la pestaña de Comerciales, unificando la lógica.
-    *   **Gastos (`despeses.html`):** La función `loadCentres()` invoca a `window.api.getAparcamientos()` y combina los nombres de los aparcamientos activos de la base de datos con los conceptos fijos auxiliares (ej. `VACANCES`, `FESTIU`), ordenando el selector de forma alfabética.
-    *   **Rutas (`ruta.html`):** La función `loadAddresses()` inyecta los aparcamientos activos y conceptos auxiliares directamente en el array global `addresses`, el cual nutre las celdas del calendario. Se oculta el botón de edición local de centros para perfiles de `coordinador` y `comercial` para asegurar que el catálogo dependa enteramente de la base de datos central.
-3.  **Gestión Reactiva en el Portal:** El modal de gestión de aparcamientos de `portal.html` se comunica directamente con los canales IPC, de forma que cualquier cambio (añadir, reasignar o eliminar) se guarda de inmediato en la red, reflejándose reactivamente en el resto de pantallas al recargar o al navegar entre ellas.
+    *   **Comerciales (`comercials.html`):** Consulta de forma relacional cruzada los aparcamientos de SQLite mediante el canal IPC `get-aparcamientos-relacional` para agrupar dinámicamente las vacantes según la asignación de coordinadores y sociedades.
+    *   **Gastos (`despeses.html`) y Rutas (`ruta.html`):** Invocan a la API relacional para obtener los centros activos y alimentan sus selectores y arrays internos automáticamente, vinculándolos a su respectivo responsable y número de obra sin dependencias locales sueltas.
+3.  **Resiliencia mediante JSON secundario:** Al guardar un aparcamiento, el sistema escribe la modificación en SQLite y, de forma secundaria y en paralelo, regenera el archivo `aparcamientos.json` en red. Esto sirve como fallback de solo lectura en arranques problemáticos o para mantener la retrocompatibilidad con módulos legados en proceso de migración.
+4.  **Gestión Reactiva en el Portal:** El modal de aparcamientos en `portal.html` invoca a `update-aparcamiento-relacional` para añadir, modificar CIFs, direcciones, números de obra o reasignar sociedades y coordinadores. Los cambios se propagan de inmediato al persistir en la base de datos central.
 
 ### D. Asistente de Importación y Algoritmo de Mapeo de Discrepancias
 Cuando el usuario sube un backup JSON, la aplicación realiza un análisis previo en memoria (`importarBackupJSON`):
@@ -156,3 +164,57 @@ La aplicación está programada para autogestionarse sin requerir un administrad
 *   **Limpieza de localstorage:** Al iniciar, se ejecuta un proceso automático que elimina del almacenamiento interno de Chromium los logs o registros que tengan una antigüedad superior a dos días para evitar saturar el navegador.
 *   **Copia de Seguridad Mensual Dinámica:** Al arrancar, el Proceso Principal comprueba si existe una subcarpeta para el mes actual en el directorio `Backups/` (ej: `Backups/2026-06/`). Si no existe, realiza de forma silenciosa y recursiva una copia de seguridad de toda la carpeta `dades/` hacia ese directorio mensual.
 *   **Rotación del Log de Auditoría (`temp/cambios.jsonl`):** El historial de cambios se almacena en formato JSON Lines (JSONL) con escritura asíncrona de tipo "append-only". Al ejecutarse la copia de seguridad del mes nuevo, el log de cambios activo del mes anterior queda archivado de manera definitiva dentro del backup y el archivo `temp/cambios.jsonl` activo se vacía por completo para comenzar un registro limpio sin acumular gigabytes de información en el servidor y garantizando operaciones de log ultrarrápidas de coste constante.
+
+---
+
+## 6. Modelo de Datos Relacional Multisociedad (v2)
+
+El esquema de la base de datos SQLite se define formalmente en `schema.sql` y se autogestiona mediante migraciones versionadas. Contiene las siguientes 13 tablas relacionales estructuradas:
+
+1.  **`versiones_esquema`**: Controla el número de versión activa de la base de datos para ejecutar migraciones progresivas (v1 -> v2, etc.).
+2.  **`sociedades`**: Define las empresas del grupo Núñez i Navarro (id, nombre, CIF, dirección, email, teléfono, estado activo/inactivo).
+3.  **`aparcamientos`**: Almacena el catálogo de centros (id, nombre, dirección, número de obra, sociedad asignada mediante `sociedad_id`, y coordinador responsable mediante `coordinador_id`).
+4.  **`historico_aparcamientos`**: Registro histórico de cambios del catálogo de aparcamientos para auditoría.
+5.  **`agentes`**: Entidades de trabajadores o coordinadores (id, nombre, apellidos, rol, estado activo/inactivo).
+6.  **`contratos_agentes`**: Vinculación contractual de los agentes con las sociedades (`agente_id`, `sociedad_id`, fecha de inicio, fecha de fin, si es indefinido).
+7.  **`reglas_negocio`**: Parámetros globales aplicados en tiempo real para control de convenios y políticas del grupo.
+8.  **`cuadrantes_cabecera`**: Cabeceras mensuales de turnos del coordinador (id, coordinador_id, año, mes, estado cerrado).
+9.  **`cuadrantes_detalles`**: Celdas individuales de turnos de trabajadores (id, cabecera_id, trabajador_id, dia, turno, horas, aparcamiento_id, observaciones).
+10. **`vacaciones`**: Registro de vacaciones anuales de los coordinadores.
+11. **`inventarios`**: Cabeceras de control de uniformes y materiales de coordinadores.
+12. **`inventarios_detalles`**: Detalles individuales de artículos y cantidades de inventarios.
+13. **`gastos`**: Control de despeses y tiques de caja chicas mensuales de coordinadores.
+
+### Trigger de Auditoría en Aparcamientos
+Para garantizar un rastreo histórico completo de cambios en los centros sin sobrecargar la lógica de la aplicación, SQLite ejecuta un trigger automático en la base de datos:
+```sql
+CREATE TRIGGER IF NOT EXISTS audit_aparcamientos
+AFTER UPDATE ON aparcamientos
+FOR EACH ROW
+BEGIN
+    INSERT INTO historico_aparcamientos (
+        aparcamiento_id, nombre_anterior, nombre_nuevo, 
+        direccion_anterior, direccion_nuevo, 
+        numero_obra_anterior, numero_obra_nuevo, 
+        sociedad_id_anterior, sociedad_id_nuevo, 
+        coordinador_id_anterior, coordinador_id_nuevo, 
+        usuario, fecha_modificacion, detalles_cambio
+    ) VALUES (
+        OLD.id, OLD.nombre, NEW.nombre,
+        OLD.direccion, NEW.direccion,
+        OLD.numero_obra, NEW.numero_obra,
+        OLD.sociedad_id, NEW.sociedad_id,
+        OLD.coordinador_id, NEW.coordinador_id,
+        'sistema', CURRENT_TIMESTAMP,
+        'Actualización automática vía trigger'
+    );
+END;
+```
+
+### Reglas de Negocio Sembradas (Seed)
+En la inicialización relacional se cargan por defecto 5 reglas de negocio que restringen y controlan las planificaciones:
+*   **`horas_maximas_semanales`**: Límite máximo de horas laborables a la semana por agente (Valor por defecto: `48`).
+*   **`descanso_minimo_horas`**: Descanso obligatorio entre jornadas laborales consecutivas (Valor por defecto: `12`).
+*   **`dias_vacaciones_anuales`**: Días de vacaciones asignados por año natural (Valor por defecto: `30`).
+*   **`permitir_vacio_laborables`**: Determina si se pueden planificar jornadas laborables sin turnos asignados (Valor por defecto: `0` - Falso).
+*   **`bloquear_cruce_sociedades`**: Restringe que un agente trabaje en turnos correspondientes a distintas sociedades dentro de una misma semana de cuadrante (Valor por defecto: `1` - Verdadero). El sistema verifica esta regla para evitar conflictos contables y contractuales.

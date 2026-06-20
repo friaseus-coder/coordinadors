@@ -9,8 +9,8 @@ Este manual describe el proceso para instalar, configurar y desplegar la aplicac
 La aplicación funciona sin servidores de base de datos dedicados en red (como PostgreSQL o MySQL). La arquitectura se basa en bases de datos integradas SQLite local-first y archivos de configuración compartidos en red:
 *   **El Ejecutable (Cliente):** Se instala/copia localmente en el ordenador de cada coordinador.
 *   **La Persistencia de Datos (Servidor de Archivos de Red):** 
-    *   La base de datos SQLite integrada **`dades.db`** en la carpeta de cada coordinador (ej. `dades Albert/dades.db`) que gestiona el cuadrante de forma transaccional de clave-valor.
-    *   Los archivos de datos y configuraciones globales `.json` (como `coordinadores.json`, `aparcamientos.json` maestros).
+    *   La base de datos SQLite integrada **`dades.db`** en la carpeta de cada coordinador (ej. `dades Albert/dades.db`), que gestiona el cuadrante, catálogos locales y la estructura relacional (sociedades, aparcamientos, agentes y contratos). La base de datos es la fuente de verdad primaria.
+    *   Los archivos de datos y configuraciones globales `.json` (como `coordinadores.json`, y `aparcamientos.json` que actúa como backup de resiliencia).
     *   Los archivos temporales de bloqueo `.lock` en la red.
 
 ```
@@ -20,9 +20,10 @@ La aplicación funciona sin servidores de base de datos dedicados en red (como P
 +--------------------+            |       (Z:\Coordinadores\dades)     |
                                   |                                    |
 +--------------------+            |  - coordinadores.json (registro)   |
-|  PC Coordinador 2  | ---------> |  - aparcamientos.json (catálogo)   |
-| (coordinadores.exe)|            |  - dades Albert/dades.db (SQLite)  |
-+--------------------+            |  - ~comercials_albert.lock         |
+|  PC Coordinador 2  | ---------> |  - dades Albert/dades.db (SQLite   |
+| (coordinadores.exe)|            |    relacional con modelo v2)       |
++--------------------+            |  - aparcamientos.json (backup)     |
+                                  |  - ~comercials_albert.lock         |
                                   +------------------------------------+
 ```
 
@@ -33,7 +34,9 @@ La aplicación funciona sin servidores de base de datos dedicados en red (como P
 ### PASO 1: Configurar la Carpeta de Datos Común (Servidor de Red)
 1.  Identifica o crea una carpeta compartida en la red local de la oficina (por ejemplo, en la unidad virtual de red `Z:\` o mediante una ruta de red UNC).
     *   *Ejemplo de ruta:* `Z:\Coordinadores\dades`
-2.  Copia la carpeta de datos de muestra **`coordinadores-app\dades`** del proyecto y pégala en esa ubicación compartida. Este directorio incluye el fichero maestro **`aparcamientos.json`** y las subcarpetas del coordinador con su correspondiente base de datos SQLite **`dades.db`** (que contiene los cuadrantes históricos y actuales).
+2.  Copia la carpeta de datos de muestra **`coordinadores-app\dades`** del proyecto y pégala en esa ubicación compartida. Este directorio incluye el fichero de resiliencia **`aparcamientos.json`** y las subcarpetas del coordinador con su correspondiente base de datos SQLite **`dades.db`** (que contiene el esquema relacional con sus históricos, cuadrantes y tablas maestras).
+    > [!NOTE]
+    > Al arrancar la aplicación por primera vez o tras una actualización, el proceso principal de Electron aplicará de forma automática el esquema relacional canónico desde `schema.sql` y migrará los datos existentes sin intervención del usuario (por ejemplo, del modelo antiguo v1 al modelo multisociedad v2).
 3.  **[CRÍTICO] Permisos de Red:** Asegúrate de que todos los usuarios que vayan a usar la aplicación tengan permisos de Windows de **Lectura, Escritura y Eliminación** sobre esta carpeta compartida.
     > [!IMPORTANT]
     > Los permisos de eliminación son imprescindibles, ya que el sistema crea archivos de bloqueo temporales (`~archivo.lock`) durante la edición y los elimina físicamente al salir para liberar el acceso.
@@ -91,5 +94,6 @@ El ejecutable detectará la carpeta y cargará la interfaz de usuario en calient
 ---
 
 ## 4. Auditoría y Copias de Seguridad Automáticas
-*   **Log de Auditoría (`temp/cambios.jsonl`):** Creado automáticamente en la carpeta de red compartida en formato JSON Lines (JSONL). Registra cada guardado en una nueva línea detallando timestamp, usuario, módulo y acción de forma eficiente y append-only.
+*   **Log de Auditoría de Aplicación (`temp/cambios.jsonl`):** Creado automáticamente en la carpeta de red compartida en formato JSON Lines (JSONL). Registra cada guardado en una nueva línea detallando timestamp, usuario, módulo y acción de forma eficiente y append-only.
+*   **Auditoría Interna de Base de Datos (SQLite Triggers):** La base de datos SQLite integrada en la subcarpeta de cada coordinador implementa auditoría a nivel de datos. Cualquier inserción o modificación en el maestro de aparcamientos queda registrada en la tabla `historico_aparcamientos` con detalles del cambio mediante un trigger automático de base de datos (`audit_aparcamientos`), permitiendo rastrear el histórico de números de obra, direcciones, y responsables asignados.
 *   **Traspaso y Limpieza Mensual:** No requiere intervención humana. El primer usuario que inicie la aplicación en un mes nuevo provocará que Electron guarde una copia de seguridad recursiva en la carpeta `Backups/` del servidor, archive el log del mes anterior en dicha copia y vacíe el archivo temporal `temp/cambios.jsonl` activo para comenzar el registro limpio del nuevo mes.

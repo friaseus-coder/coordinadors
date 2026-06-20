@@ -41,16 +41,36 @@ El administrador ahora puede gestionar quién tiene acceso al sistema directamen
 ---
 
 ## 5. Gestión de Aparcamientos (Solo Jefe de Operaciones)
-El Jefe de Operaciones tiene control total sobre el catálogo de aparcamientos de la empresa y la asignación a su respectivo coordinador responsable:
+El Jefe de Operaciones tiene control total sobre el catálogo de aparcamientos de la empresa y su vinculación formal con las distintas empresas del grupo (Sociedades) y los coordinadores responsables:
 1.  Haz clic en el botón **🚗 Aparcaments** en la barra superior del Portal.
 2.  Aparecerá el panel de gestión donde se muestra el catálogo completo en una tabla interactiva:
-    *   **Crear Aparcamiento:** En la parte superior, escribe el nombre del nuevo aparcamiento, selecciona el coordinador que será responsable de él y pulsa **Afegir Aparcament**.
-    *   **Reasignar Coordinador:** Al lado de cada aparcamiento de la lista, un desplegable muestra el coordinador asignado actualmente. Si deseas cambiar el responsable en tiempo real, simplemente despliega el menú y selecciona el nuevo coordinador. El cambio se guarda automáticamente y de forma inmediata en la red.
-    *   **Eliminar Aparcamiento:** Haz clic en el botón rojo **Eliminar** en la fila correspondiente al aparcamiento.
-3.  **Impacto Global:** Cualquier cambio en la asignación de coordinadores se reflejará dinámicamente en:
-    *   **Comerciales:** Los aparcamientos se agruparán automáticamente bajo el coordinador asignado.
+    *   **Crear Aparcamiento:** En la parte superior, rellena el formulario con el nombre del nuevo aparcamiento, su dirección física, el **Número de Obra** (código contable de control), la **Sociedad** (empresa del grupo Núñez i Navarro a la que pertenece) y el **Coordinador** responsable del mismo. Haz clic en **Afegir Aparcament**.
+    *   **Modificar y Reasignar:** Al lado de cada aparcamiento de la lista, puedes actualizar su número de obra, dirección y reasignar tanto su sociedad como su coordinador asignado de forma directa. Los cambios se guardan y aplican instantáneamente en la base de datos relacional.
+    *   **Eliminar Aparcamiento:** Haz clic en el botón rojo **Eliminar** en la fila correspondiente. El aparcamiento se desactivará para evitar asignaciones inconsistentes en el futuro.
+3.  **Historial de Cambios (Auditoría):** El sistema registra automáticamente cada modificación (cambio de dirección, responsable, número de obra, etc.) en un histórico. Se puede consultar el botón de auditoría del aparcamiento para ver qué datos tenía antes, qué datos tiene ahora, y cuándo se produjo la modificación.
+4.  **Impacto Global:** Cualquier cambio en la asignación de coordinadores y sociedades se reflejará dinámicamente en:
+    *   **Comerciales:** Los aparcamientos se agruparán automáticamente bajo el coordinador asignado y se segmentarán por la sociedad correspondiente.
     *   **Gastos y Rutas:** Los desplegables y calendarios cargarán exclusivamente la lista actualizada de aparcamientos activos.
     *   **Seguridad:** En la pestaña de **Rutas**, se ha inhabilitado el botón de edición local de centros para los coordinadores, evitando la creación de duplicados e inconsistencias.
+
+---
+
+## 5b. Gestión de Sociedades (Solo Jefe de Operaciones)
+El administrador ahora cuenta con un módulo específico para gestionar las sociedades (razones sociales) que componen el grupo de aparcamientos:
+1.  En la barra superior, haz clic en el botón **🏢 Societats**.
+2.  Se abrirá el panel de gestión de empresas, donde podrás ver el catálogo completo de las sociedades activas del grupo (ej. *Aparcamientos Núñez i Navarro SL*, *Pàrkings Urgell SA*, etc.).
+3.  **Registrar Nueva Sociedad:** En el formulario superior, introduce la Razón Social, el CIF/NIF, la Dirección Fiscal, el Correo Electrónico y el Teléfono de contacto. Pulsa el botón **Afegir Societat** para registrarla.
+4.  **Actualizar Datos:** Puedes editar los campos de las sociedades directamente desde la lista interactiva y guardar los cambios.
+5.  **Desactivar Sociedad:** Si una sociedad deja de operar, puedes desactivarla mediante el botón de desactivación. Esto impedirá asociarla a nuevos aparcamientos o contratos, pero mantendrá los registros históricos y cuadrantes pasados consistentes por motivos contables.
+
+---
+
+## 5c. Gestión de Contratos de Agentes (Solo Jefe de Operaciones)
+Para evitar que los coordinadores/agentes queden huérfanos sin vinculación formal y garantizar que las nóminas y cuadrantes coincidan con las empresas responsables del grupo, se ha integrado un gestor de contratos:
+1.  En la barra superior, haz clic en el botón **📄 Contractes**.
+2.  **Vincular Agente a una Sociedad:** En el panel de contratos, selecciona un coordinador/agente, asócialo con la sociedad del grupo para la que trabajará, indica la fecha de inicio del contrato y el tipo de contrato (indefinido o temporal, indicando la fecha de finalización si aplica). Haz clic en **Crear Contracte**.
+3.  **Control de Vigencia:** El sistema mantiene un registro histórico de todos los contratos de cada trabajador.
+4.  **Cierre de Contrato:** Si un agente finaliza su relación con una sociedad o va a cambiar a otra empresa del grupo, el administrador puede cerrar el contrato activo especificando la fecha de fin real. Esto permite registrar un nuevo contrato con la nueva sociedad de forma ordenada y sin solapamientos.
 
 ---
 
@@ -72,6 +92,18 @@ La pantalla del **Quadrant** (Control de Turnos) se ha unificado bajo una estét
     3.  **Archivos e Importación:** Botones para descargar el cuadrante en **Excel**, enviar a **Imprimir/PDF**, exportar backups en JSON o restaurar copias de seguridad de cuadrantes y vacaciones.
     4.  **Zona de Peligro:** Situado en el extremo derecho, el botón rojo coral `Esborrar dades del mes` realiza un borrado total. Requiere escribir tu nombre y confirmar dos veces por escrito para evitar ejecuciones accidentales.
 *   **Persistencia SQLite (dades.db)**: El cuadrante ya no se guarda en JSON plano propenso a corrupciones de escritura. El sistema escribe y lee en caliente los turnos sobre una base de datos integrada y rápida (`dades.db`) en la carpeta del coordinador, de forma transaccional y totalmente segura.
+
+---
+
+## 7b. Control y Validación por Reglas de Negocio
+Para asegurar el cumplimiento de la normativa legal, el convenio colectivo y evitar conflictos contractuales al planificar los turnos, el cuadrante integra validaciones en tiempo real que se ejecutan automáticamente al guardar o asignar turnos:
+*   **Límite de Horas Semanales:** El sistema avisa si algún coordinador supera las **48 horas de trabajo máximas semanales** (o el límite parametrizado en la regla `horas_maximas_semanales`).
+*   **Descanso Mínimo entre Jornadas:** Se verifica que exista un descanso mínimo de **12 horas consecutivas** entre la salida de un turno y la entrada del siguiente (regla `descanso_minimo_horas`).
+*   **Restricción de Cruce de Sociedades:** Para evitar que un empleado trabaje para diferentes empresas del grupo al mismo tiempo (lo cual provocaría incidencias contractuales y de facturación), la regla `bloquear_cruce_sociedades` impide asignar turnos de diferentes sociedades a un mismo agente dentro de la misma semana de planificación.
+*   **Gestión de Días de Vacaciones:** Controla que el total de días de vacaciones planificados por coordinador no supere el saldo máximo configurado (regla `dias_vacaciones_anuales`).
+
+> [!NOTE]
+> Las reglas de negocio son dinámicas y son definidas y administradas exclusivamente por el Jefe de Operaciones para adaptarlas a convenios futuros. Si una planificación infringe una regla estricta (como el cruce de sociedades o la superación de horas), el sistema alertará inmediatamente e impedirá confirmar el guardado del cuadrante para proteger la integridad de los datos.
 
 ---
 
