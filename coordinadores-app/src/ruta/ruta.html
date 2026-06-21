@@ -2,8 +2,9 @@
 <html lang="ca">
 <head>
 <meta charset="UTF-8" />
-<title>Fulla de Visites 2026</title>
+<title data-i18n="rutaTitle">Fulla de Visites 2026</title>
 <script src="../js/persistence.js"></script>
+<script src="../js/i18n.js"></script>
 
 <style>
 /* --- EL TEU CSS ORIGINAL MANTINGUT INTEGRALMENT --- */
@@ -133,15 +134,15 @@ select { width: 100%; font-size: 10px; }
 
 <div class="controls-add-month">
     <div class="controls-month">
-        <label for="monthPicker">Mes:</label>
+        <label for="monthPicker" data-i18n="rutaLabelMes">Mes:</label>
         <input type="month" id="monthPicker" style="height:24px; box-sizing:border-box;" />
     </div>
 
     <div style="display: flex; align-items: center; gap: 8px;">
-        <button class="btn-nyn" id="btnGestioCentres" onclick="obrirGestio()">⚙️ Editar Centres / Backup</button>
+        <button class="btn-nyn" id="btnGestioCentres" onclick="obrirGestio()" data-i18n="rutaBtnManage">⚙️ Editar Centres / Backup</button>
         
         <div id="panelGestio">
-            <h3 style="margin-top:0; font-size:12px; text-transform:uppercase; border-bottom:2px solid #008d36; padding-bottom:5px; color: #008d36;">Gestió de Centres</h3>
+            <h3 style="margin-top:0; font-size:12px; text-transform:uppercase; border-bottom:2px solid #008d36; padding-bottom:5px; color: #008d36;" data-i18n="rutaManageTitle">Gestió de Centres</h3>
             <div style="margin-bottom:10px">
                 <input type="text" id="nouNomInput" style="width:120px; border:1px solid #999; padding:3px; border-radius:4px;">
                 <button onclick="afegirC()" style="background:#008d36; color:white; border:none; padding:4px 10px; cursor:pointer; font-weight:bold; border-radius:4px;">+</button>
@@ -150,23 +151,23 @@ select { width: 100%; font-size: 10px; }
                 <select id="selGestio" style="width:140px; border:1px solid #999; padding:2px; border-radius:4px;"></select>
             </div>
             <div style="display:flex; gap:5px; margin-bottom:15px;">
-                <button onclick="editarC()" style="background:#e8f5e9; color:#2e7d32; border:1px solid #2e7d32; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;">📝 Editar</button>
-                <button onclick="borrarC()" style="background:#ffebee; color:#c62828; border:1px solid #c62828; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;">🗑️ Eliminar</button>
+                <button onclick="editarC()" style="background:#e8f5e9; color:#2e7d32; border:1px solid #2e7d32; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;" data-i18n="rutaBtnEdit">📝 Editar</button>
+                <button onclick="borrarC()" style="background:#ffebee; color:#c62828; border:1px solid #c62828; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;" data-i18n="rutaBtnDelete">🗑️ Eliminar</button>
             </div>
-            <button onclick="document.getElementById('panelGestio').style.display='none'" style="display:block; width:100%; background:#008d36; color:white; border:none; padding:8px; cursor:pointer; font-weight:bold; text-transform:uppercase; border-radius:4px;">Tancar</button>
+            <button onclick="document.getElementById('panelGestio').style.display='none'" style="display:block; width:100%; background:#008d36; color:white; border:none; padding:8px; cursor:pointer; font-weight:bold; text-transform:uppercase; border-radius:4px;" data-i18n="rutaBtnClose">Tancar</button>
         </div>
 
         <div class="legend-wrapper">
           <div style="display: flex; gap: 10px; align-items: center;">
-             <div class="legend-item"><div class="legend-box national"></div><span>Festiu nacional</span></div>
-            <div class="legend-item"><div class="legend-box local"></div><span>Festiu local</span></div>
-            <div class="legend-item"><div class="legend-box convenio"></div><span>Festiu conveni</span></div>
-            <div class="legend-item"><div class="legend-box empresa"></div><span>Festiu empresa</span></div>
-            <div class="legend-item"><div class="legend-box vigilia"></div><span>Vigília</span></div>
-            <div class="legend-item"><div class="legend-box night-circle"></div><span> Visita nocturna</span></div>
-            <div class="legend-item"><div class="legend-box holiday-circle"></div><span>Festiu</span></div>
+             <div class="legend-item"><div class="legend-box national"></div><span data-i18n="rutaLegendNational">Festiu nacional</span></div>
+            <div class="legend-item"><div class="legend-box local"></div><span data-i18n="rutaLegendLocal">Festiu local</span></div>
+            <div class="legend-item"><div class="legend-box convenio"></div><span data-i18n="rutaLegendConvenio">Festiu conveni</span></div>
+            <div class="legend-item"><div class="legend-box empresa"></div><span data-i18n="rutaLegendEmpresa">Festiu empresa</span></div>
+            <div class="legend-item"><div class="legend-box vigilia"></div><span data-i18n="rutaLegendVigilia">Vigília</span></div>
+            <div class="legend-item"><div class="legend-box night-circle"></div><span data-i18n="rutaLegendNight"> Visita nocturna</span></div>
+            <div class="legend-item"><div class="legend-box holiday-circle"></div><span data-i18n="rutaLegendHoliday">Festiu</span></div>
 
-            <span id="llegendaExport" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; gap: 112px; text-transform: none; text-shadow: none; font-weight: normal; margin-left: 25px;">
+            <span id="llegendaExport" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; gap: 112px; text-transform: none; text-shadow: none; font-weight: normal; margin-left: 25px;" data-i18n="rutaLegendExportNone">
                 |  Darrera exportació rutes: Cap dada encara
             </span>
           </div>
@@ -181,9 +182,9 @@ select { width: 100%; font-size: 10px; }
             <div class="chart-container"><canvas id="chartAlbert"></canvas></div>
             <div id="calendar-albert"></div>
             <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                <button id="resetAlbertBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;">⚠️ Reset Albert</button>
-                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Albert')">💾 Exportar Albert</button>
-                <button class="btn-nyn btn-import" onclick="document.getElementById('fileAlbert').click()">📂 Importar Albert</button>
+                <button id="resetAlbertBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;" data-i18n="rutaBtnResetAlbert">⚠️ Reset Albert</button>
+                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Albert')" data-i18n="rutaBtnExportAlbert">💾 Exportar Albert</button>
+                <button class="btn-nyn btn-import" onclick="document.getElementById('fileAlbert').click()" data-i18n="rutaBtnImportAlbert">📂 Importar Albert</button>
                 <input type="file" id="fileAlbert" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Albert')">
             </div>
         </div>
@@ -195,9 +196,9 @@ select { width: 100%; font-size: 10px; }
             <div class="chart-container"><canvas id="chartLaura"></canvas></div>
             <div id="calendar-laura"></div>
             <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                <button id="resetLauraBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;">⚠️ Reset Laura</button>
-                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Laura')">💾 Exportar Laura</button>
-                <button class="btn-nyn btn-import" onclick="document.getElementById('fileLaura').click()">📂 Importar Laura</button>
+                <button id="resetLauraBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;" data-i18n="rutaBtnResetLaura">⚠️ Reset Laura</button>
+                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Laura')" data-i18n="rutaBtnExportLaura">💾 Exportar Laura</button>
+                <button class="btn-nyn btn-import" onclick="document.getElementById('fileLaura').click()" data-i18n="rutaBtnImportLaura">📂 Importar Laura</button>
                 <input type="file" id="fileLaura" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Laura')">
             </div>
         </div>
@@ -215,9 +216,9 @@ function refrescarLlegendaGlobal() {
     
     if (el) {
         if (data && autor) {
-            el.innerHTML = ` |  Darrera exportació rutes: ${data} (per ${autor})`;
+            el.innerHTML = i18n.t('rutaLegendExportPrefix') + `${data} (per ${autor})`;
         } else {
-            el.innerHTML = " |  Darrera exportació rutes: Cap dada encara";
+            el.innerHTML = i18n.t('rutaLegendExportNone');
         }
     }
 }
@@ -501,6 +502,12 @@ async function initRuta() {
     generateCalendars();
 }
 initRuta();
+
+window.addEventListener('languageChanged', () => {
+    i18n.translatePage();
+    refrescarLlegendaGlobal();
+    generateCalendars();
+});
 </script>
 </body>
 </html>

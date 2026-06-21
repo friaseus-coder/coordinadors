@@ -962,6 +962,60 @@ async function loadAparcamientos() {
     }
 }
 
+// --- NUEVA CARGA DE PERSONAL DESDE SQLITE ---
+
+// Unificamos a todos los trabajadores bajo la misma lectura relacional
+async function loadCoordinadores() {
+    try {
+        console.log("Cargando personal (agentes) desde SQLite...");
+        const data = await window.databaseAPI.getAgentesRelacional();
+        
+        // Adaptamos temporalmente la salida para que las pantallas HTML viejas no se rompan
+        // (ya que antes esperaban id, nom, cognoms en lugar del nombre completo)
+        const adaptado = data.map(agente => ({
+            id: agente.id,
+            nombre: agente.nombre, // Usamos el nombre centralizado
+            nom: agente.nombre.split(' ')[0], // Hack de compatibilidad
+            cognoms: agente.nombre.split(' ').slice(1).join(' '), // Hack de compatibilidad
+            ranking: agente.ranking_score,
+            es_empresa_externa: agente.es_empresa_externa
+        }));
+        
+        console.log("Agentes cargados:", adaptado);
+        return adaptado;
+    } catch (error) {
+        console.error('Error loading agentes from SQLite:', error);
+        
+        // Fallback de emergencia al JSON antiguo
+        console.warn("Intentando cargar JSON de coordinadores antiguo como fallback...");
+        try {
+            const legacyData = await window.api.getCoordinadores();
+            return legacyData ? JSON.parse(legacyData) : [];
+        } catch (legacyError) {
+             return [];
+        }
+    }
+}
+
+// Ahora loadComercials simplemente llama a loadCoordinadores para que todos usen la BD única
+async function loadComercials() {
+    return await loadCoordinadores();
+}
+
+// Funciones antiguas (Comentadas por seguridad)
+/*
+async function loadCoordinadores() {
+    try {
+        const data = await window.api.getCoordinadores();
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.error('Error loading coordinadores:', error);
+        return [];
+    }
+}
+async function loadComercials() { ... }
+*/
+
 // Antigua versión (Comentada para no perderla)
 /*
 async function loadAparcamientos() {

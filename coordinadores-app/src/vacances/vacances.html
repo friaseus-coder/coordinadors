@@ -5,6 +5,7 @@
     <title>NyN Pàrquings | Gestió Vacances</title>
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="../js/persistence.js"></script>
+    <script src="../js/i18n.js"></script>
     
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
@@ -115,18 +116,18 @@
 
 <div class="header">
     <div class="header-left">
-        <button class="btn-nyn" onclick="afegirFila()">➕ Afegir Fila</button>
-        <button class="btn-nyn" onclick="openDeleteModal()" style="background:var(--nyn-blau-apagat);">⚙️ Gestionar Dades</button>
-        <button class="btn-nyn" onclick="exportarExcel()" style="background:#2e7d32;">📥 Exportar Excel</button>
-        <button class="btn-nyn" onclick="exportarJSON()" style="background:var(--nyn-lila);">💾 Exportar</button>
-        <button class="btn-nyn" onclick="document.getElementById('inputImportar').click()" style="background:var(--nyn-taronja);">📂 Importar</button>
+        <button class="btn-nyn" onclick="afegirFila()" data-i18n="vacancesAddRow">➕ Afegir Fila</button>
+        <button class="btn-nyn" onclick="openDeleteModal()" style="background:var(--nyn-blau-apagat);" data-i18n="vacancesManageData">⚙️ Gestionar Dades</button>
+        <button class="btn-nyn" onclick="exportarExcel()" style="background:#2e7d32;" data-i18n="vacancesExportExcel">📥 Exportar Excel</button>
+        <button class="btn-nyn" onclick="exportarJSON()" style="background:var(--nyn-lila);" data-i18n="vacancesExportJSON">💾 Exportar</button>
+        <button class="btn-nyn" onclick="document.getElementById('inputImportar').click()" style="background:var(--nyn-taronja);" data-i18n="vacancesImportJSON">📂 Importar</button>
         <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
-        <button class="btn-nyn" onclick="reiniciarTot()" style="background:#d32f2f;">🗑️ Esborrar dades</button>
-        <div id="lastExport">Última exportació: Mai</div>
+        <button class="btn-nyn" onclick="reiniciarTot()" style="background:#d32f2f;" data-i18n="vacancesClearData">🗑️ Esborrar dades</button>
+        <div id="lastExport" data-i18n="vacancesLastExportNone">Última exportació: Mai</div>
     </div>
 
     <div class="header-center">
-        <h1>VACANCES PÀRKINGS</h1>
+        <h1><span data-i18n="vacancesTitle">VACANCES PÀRKINGS</span></h1>
         <select id="selectAny" onchange="inicialitzar()"></select>
     </div>
 </div>
@@ -135,18 +136,18 @@
     <table id="tablaVacances">
         <thead>
             <tr>
-                <th style="width: 145px;"><select id="filterCentre" class="filter-select" onchange="filtrarTaula()"><option value="">CENTRE</option></select></th>
-                <th style="width: 175px;"><select id="filterNom" class="filter-select" onchange="filtrarTaula()"><option value="">TREBALLADOR</option></select></th>
-                <th style="width: 85px;"><select id="filterJornada" class="filter-select" onchange="filtrarTaula()"><option value="">JORNADA</option></select></th>
-                <th style="width: 155px;">1er PERÍODE</th>
-                <th style="width: 155px;">2on PERÍODE</th>
-                <th style="width: 75px;" class="bg-disfrutats">DISFRUTATS</th>
-                <th style="width: 75px;" class="bg-pendents">PENDENTS</th>
-                <th style="width: 85px;" class="bg-corresp">CORRESPONENTS</th>
-                <th style="width: 110px;" class="bg-festiuper">FESTIUS PERÍODE</th>
-                <th style="width: 65px;" class="bg-festius">Nº FESTIUS</th>
-                <th style="width: 90px;">BOSSA HORES</th>
-                <th>OBSERVACIONS</th>
+                <th style="width: 145px;"><select id="filterCentre" class="filter-select" onchange="filtrarTaula()"><option value="" data-i18n="colCentre">CENTRE</option></select></th>
+                <th style="width: 175px;"><select id="filterNom" class="filter-select" onchange="filtrarTaula()"><option value="" data-i18n="colTrabajador">TREBALLADOR</option></select></th>
+                <th style="width: 85px;"><select id="filterJornada" class="filter-select" onchange="filtrarTaula()"><option value="" data-i18n="colJornada">JORNADA</option></select></th>
+                <th style="width: 155px;" data-i18n="vacancesPeriod1">1er PERÍODE</th>
+                <th style="width: 155px;" data-i18n="vacancesPeriod2">2on PERÍODE</th>
+                <th style="width: 75px;" class="bg-disfrutats" data-i18n="vacancesDisfrutados">DISFRUTATS</th>
+                <th style="width: 75px;" class="bg-pendents" data-i18n="vacancesPendientes">PENDENTS</th>
+                <th style="width: 85px;" class="bg-corresp" data-i18n="vacancesCorrespondientes">CORRESPONENTS</th>
+                <th style="width: 110px;" class="bg-festiuper" data-i18n="vacancesFestivosPeriodo">FESTIUS PERÍODE</th>
+                <th style="width: 65px;" class="bg-festius" data-i18n="vacancesNumFestivos">Nº FESTIUS</th>
+                <th style="width: 90px;" data-i18n="vacancesBolsaHoras">BOSSA HORES</th>
+                <th data-i18n="vacancesObservaciones">OBSERVACIONS</th>
                 <th style="width: 25px;">🗑️</th>
             </tr>
         </thead>
@@ -155,26 +156,26 @@
 </div>
 
 <div id="deleteModal">
-    <div style="font-weight:bold; margin-bottom:12px; font-size: 13px;">⚙️ GESTIONAR DADES</div>
+    <div style="font-weight:bold; margin-bottom:12px; font-size: 13px;" data-i18n="vacancesManageDataModal">⚙️ GESTIONAR DADES</div>
     
-    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;">TIPUS DE LLISTA:</label>
+    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;" data-i18n="vacancesLabelTypeList">TIPUS DE LLISTA:</label>
     <select id="deleteType" onchange="updateDeleteOptions()" class="modal-input" style="appearance: auto; padding: 0 5px;">
-        <option value="centres">Centres</option>
-        <option value="plantilla">Treballadors</option>
-        <option value="anys">Anys</option>
+        <option value="centres" data-i18n="vacancesOptCentres">Centres</option>
+        <option value="plantilla" data-i18n="vacancesOptTreballadors">Treballadors</option>
+        <option value="anys" data-i18n="vacancesOptAnys">Anys</option>
     </select>
 
-    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;">SELECCIONA ELEMENT:</label>
+    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;" data-i18n="vacancesLabelSelectElement">SELECCIONA ELEMENT:</label>
     <select id="deleteItem" onchange="syncEditInput()" class="modal-input" style="appearance: auto; padding: 0 5px;"></select>
 
-    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;">NOM (AFEGIR O MODIFICAR):</label>
-    <input type="text" id="editInput" class="modal-input" placeholder="Escriu aquí...">
+    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;" data-i18n="vacancesLabelNameEdit">NOM (AFEGIR O MODIFICAR):</label>
+    <input type="text" id="editInput" class="modal-input" placeholder="Escriu aquí..." data-i18n="vacancesPlaceholderWrite">
 
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top: 5px;">
-        <button onclick="addNewItem()" class="btn-nyn" style="background:var(--nyn-verd);">➕ Afegir Nou</button>
-        <button onclick="modifyItem()" class="btn-nyn" style="background:var(--nyn-taronja);">✏️ Modificar</button>
-        <button onclick="confirmDelete()" class="btn-nyn" style="background:#d32f2f;">🗑️ Eliminar</button>
-        <button onclick="document.getElementById('deleteModal').style.display='none'" class="btn-nyn" style="background:#666;">Tancar</button>
+        <button onclick="addNewItem()" class="btn-nyn" style="background:var(--nyn-verd);" data-i18n="vacancesBtnAddNew">➕ Afegir Nou</button>
+        <button onclick="modifyItem()" class="btn-nyn" style="background:var(--nyn-taronja);" data-i18n="vacancesBtnModify">✏️ Modificar</button>
+        <button onclick="confirmDelete()" class="btn-nyn" style="background:#d32f2f;" data-i18n="vacancesBtnDelete">🗑️ Eliminar</button>
+        <button onclick="document.getElementById('deleteModal').style.display='none'" class="btn-nyn" style="background:#666;" data-i18n="vacancesBtnClose">Tancar</button>
     </div>
 </div>
 
@@ -227,15 +228,15 @@ function esDiaFestiu(data, centre) {
         if (selAny.value === "") selAny.value = ANYS.includes("2026") ? "2026" : ANYS[0];
 
         const storedExport = localStorage.getItem('nyn_last_export_' + selAny.value);
-        document.getElementById('lastExport').innerText = storedExport ? "Última exportació: " + storedExport : "Última exportació: Mai";
+        document.getElementById('lastExport').innerText = storedExport ? i18n.t('vacancesLastExportPrefix') + storedExport : i18n.t('vacancesLastExportNone');
         actualitzarFiltres();
         renderTable();
     }
 
     function actualitzarFiltres() {
-        document.getElementById('filterCentre').innerHTML = '<option value="">CENTRE</option>' + CENTRES.sort().map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('filterNom').innerHTML = '<option value="">TREBALLADOR</option>' + PLANTILLA.sort().map(n => `<option value="${n}">${n}</option>`).join('');
-        document.getElementById('filterJornada').innerHTML = '<option value="">JORNADA</option><option value="T.C.">T.C.</option><option value="T.P.">T.P.</option>';
+        document.getElementById('filterCentre').innerHTML = '<option value="" data-i18n="colCentre">' + i18n.t('colCentre') + '</option>' + CENTRES.sort().map(c => `<option value="${c}">${c}</option>`).join('');
+        document.getElementById('filterNom').innerHTML = '<option value="" data-i18n="colTrabajador">' + i18n.t('colTrabajador') + '</option>' + PLANTILLA.sort().map(n => `<option value="${n}">${n}</option>`).join('');
+        document.getElementById('filterJornada').innerHTML = '<option value="" data-i18n="colJornada">' + i18n.t('colJornada') + '</option><option value="T.C.">T.C.</option><option value="T.P.">T.P.</option>';
     }
 
     function filtrarTaula() {
@@ -498,7 +499,7 @@ function calcularDiesPassats(rang) {
     function confirmDelete() { 
         const type = document.getElementById('deleteType').value; 
         const val = document.getElementById('deleteItem').value; 
-        if(!confirm(`Segur que vols eliminar "${val}"?`)) return; 
+        if(!confirm(i18n.t('vacancesConfirmDelete', {val: val}))) return; 
         if(type === 'centres') CENTRES = CENTRES.filter(i => i !== val); 
         else if(type === 'plantilla') PLANTILLA = PLANTILLA.filter(i => i !== val); 
         else if(type === 'anys') ANYS = ANYS.filter(i => i !== val);
@@ -512,7 +513,7 @@ function calcularDiesPassats(rang) {
         location.reload(); 
     }
 
-    function registrarExportacio() { const now = new Date(); const dataStr = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); localStorage.setItem('nyn_last_export_' + document.getElementById('selectAny').value, dataStr); document.getElementById('lastExport').innerText = "Última exportació: " + dataStr; }
+    function registrarExportacio() { const now = new Date(); const dataStr = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); localStorage.setItem('nyn_last_export_' + document.getElementById('selectAny').value, dataStr); document.getElementById('lastExport').innerText = i18n.t('vacancesLastExportPrefix') + dataStr; }
     
     function exportarJSON() { 
         registrarExportacio(); 
@@ -548,7 +549,7 @@ function calcularDiesPassats(rang) {
                 localStorage.setItem('nyn_vacances_' + anyActual, JSON.stringify(dadesFinals)); 
                 await persistence.syncSave();
                 location.reload(); 
-            } catch (err) { alert("⚠️ Error al importar."); }
+            } catch (err) { alert(i18n.t('vacancesErrorImport')); }
         }; 
         reader.readAsText(e.target.files[0]); 
     }
@@ -562,7 +563,7 @@ function calcularDiesPassats(rang) {
                           .filter(tr => tr.style.display !== "none");
         
         if (rows.length === 0) {
-            alert("No hi ha dades visibles per exportar.");
+            alert(i18n.t('vacancesErrorNoDataExport'));
             return;
         }
 
@@ -599,7 +600,12 @@ function calcularDiesPassats(rang) {
         const dataAvui = new Date().toISOString().slice(0,10);
         XLSX.writeFile(workbook, `Vacances_NyN_${any}_exportat_${dataAvui}.xlsx`);
     }
-    function reiniciarTot() { if(confirm("⚠️ Esborrar tot?")) { localStorage.removeItem('nyn_vacances_' + document.getElementById('selectAny').value); location.reload(); }}
+    function reiniciarTot() { if(confirm(i18n.t('vacancesConfirmResetAll'))) { localStorage.removeItem('nyn_vacances_' + document.getElementById('selectAny').value); location.reload(); }}
+
+    window.addEventListener('languageChanged', () => {
+        i18n.translatePage();
+        inicialitzar();
+    });
 
     window.onload = inicialitzar;
 </script>

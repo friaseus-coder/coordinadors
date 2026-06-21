@@ -5,6 +5,7 @@
     <title>NyN Pàrquings | Control Treballadors</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="../js/persistence.js"></script>
+    <script src="../js/i18n.js"></script>
     
 <style>
     :root {
@@ -19,6 +20,7 @@
         --text-main: #0f2d4a;      /* Azul oscuro para títulos */
         --text-muted: #64748b;     /* Gris para subtítulos/labels */
         --bg-weekend: #f1f5f9;     /* Gris suave para findes */
+        --bg-weekend-header: #f1f5f9;
         --bg-vacances: rgba(186, 104, 200, 0.18); /* Lila suave */
         --danger-coral: #ef4444;   /* Rojo coral premium */
         --danger-bg: #fef2f2;
@@ -606,9 +608,9 @@
 <div class="sticky-top">
     <header>
         <div class="header-center">
-            <span id="displayMonth"></span> 
-            <span id="rellotge"></span>
-            <span id="llegendaExport" style="font-family: inherit; font-size: 13px; color: #ffffff; opacity: 0.9; text-transform: none; text-shadow: none; font-weight: normal; font-style: normal; margin-left: 10px;">
+            <span id="displayMonth" data-i18n="displayMonth"></span> 
+            <span id="rellotge" data-i18n="rellotge"></span>
+            <span id="llegendaExport" style="font-family: inherit; font-size: 13px; color: #ffffff; opacity: 0.9; text-transform: none; text-shadow: none; font-weight: normal; font-style: normal; margin-left: 10px;" data-i18n="llegendaExport">
                 | Darrera exportació: Sense dades
             </span>
         </div>
@@ -616,57 +618,57 @@
     <div class="admin-panel">
         <!-- Grupo 1: Filtres de Visualització -->
         <div class="toolbar-group">
-            <div class="filter-label">📅 Període:</div>
+            <div class="filter-label" data-i18n="quadrantLabelPeriodo">📅 Període:</div>
             <select id="selectMonth" onchange="changeMonth()"></select>
             <select id="selectYear" onchange="changeMonth()"></select>
             
-            <div class="filter-label" style="margin-left: 8px;">🔍 Filtres:</div>
-            <select id="filterPark" onchange="renderTable()"><option value="ALL">Tots els Centres</option></select>
-            <select id="filterWorker" onchange="renderTable()"><option value="ALL">Tots els Treballadors</option></select>
+            <div class="filter-label" style="margin-left: 8px;" data-i18n="quadrantLabelFiltros">🔍 Filtres:</div>
+            <select id="filterPark" onchange="renderTable()"><option value="ALL" data-i18n="quadrantOptAllCentres">Tots els Centres</option></select>
+            <select id="filterWorker" onchange="renderTable()"><option value="ALL" data-i18n="quadrantOptAllWorkers">Tots els Treballadors</option></select>
             <select id="filterHorari" onchange="renderTable()">
-                <option value="ALL">Tots els Horaris / Torns</option>
+                <option value="ALL" data-i18n="quadrantOptAllHours">Tots els Horaris / Torns</option>
                 <optgroup label="Torns Generals">
-                    <option value="T_MATÍ">Només Matí</option>
-                    <option value="T_TARDA">Només Tarda</option>
-                    <option value="T_NIT">Només Nit</option>
+                    <option value="T_MATÍ" data-i18n="quadrantOptMati">Només Matí</option>
+                    <option value="T_TARDA" data-i18n="quadrantOptTarda">Només Tarda</option>
+                    <option value="T_NIT" data-i18n="quadrantOptNit">Només Nit</option>
                 </optgroup>
                 <optgroup label="Franges Específiques" id="optHorarisList"></optgroup>
             </select>
-            <button class="btn-main" onclick="resetFilters()">♻️ Reset Filtres</button>
+            <button class="btn-main" onclick="resetFilters()" data-i18n="quadrantBtnResetFilters">♻️ Reset Filtres</button>
         </div>
 
         <!-- Grupo 2: Accions del Cuadrante -->
         <div class="toolbar-group">
-            <div class="filter-label">⚡ Accions:</div>
-            <button class="btn-main btn-action-sec" onclick="calcularHoresMes()">📊 Recompte Hores</button>
-            <button class="btn-main" onclick="openDeleteModal()">⚙️ Gestionar Dades</button>
-            <button id="btnExport" class="btn-main btn-action" onclick="exportToNextMonth()">🚚 Exportar a ...</button>
-            <button id="btnLockMonth" class="btn-main btn-lock" onclick="toggleLockMonth()">🔒 Tancar Mes</button>
+            <div class="filter-label" data-i18n="quadrantLabelAcciones">⚡ Accions:</div>
+            <button class="btn-main btn-action-sec" onclick="calcularHoresMes()" data-i18n="quadrantBtnRecompte">📊 Recompte Hores</button>
+            <button class="btn-main" onclick="openDeleteModal()" data-i18n="quadrantBtnManageData">⚙️ Gestionar Dades</button>
+            <button id="btnExport" class="btn-main btn-action" onclick="exportToNextMonth()" data-i18n="quadrantBtnExportNext">🚚 Exportar a ...</button>
+            <button id="btnLockMonth" class="btn-main btn-lock" onclick="toggleLockMonth()" data-i18n="quadrantBtnCloseMonth">🔒 Tancar Mes</button>
             <button id="btnAlertes" class="btn-main" onclick="toggleAlertsPanel()" style="background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 600; display: none;">⚠️ Alertes (<span id="alertCount">0</span>)</button>
         </div>
 
         <!-- Grupo 3: Arxiu i Importacions -->
         <div class="toolbar-group">
-            <div class="filter-label">💾 Fitxers:</div>
-            <button class="btn-main btn-archive" onclick="exportarExcel()" style="color: #15803d; font-weight: 600;">📥 Excel</button>
-            <button class="btn-main btn-archive" onclick="window.print()">🖨️ Imprimir</button>
-            <button class="btn-main btn-archive" onclick="exportarBackupJSON()">💾 Exportar Backup</button>
-            <button class="btn-main btn-archive" onclick="document.getElementById('importFile').click()">📂 Importar Backup</button>
-            <button class="btn-main btn-archive" onclick="document.getElementById('fileVacances').click()" style="color: #7e22ce; font-weight: 600;">🌴 Importar Vacances</button>
+            <div class="filter-label" data-i18n="quadrantLabelArchivos">💾 Fitxers:</div>
+            <button class="btn-main btn-archive" onclick="exportarExcel()" style="color: #15803d; font-weight: 600;" data-i18n="quadrantBtnExcel">📥 Excel</button>
+            <button class="btn-main btn-archive" onclick="window.print()" data-i18n="quadrantBtnPrint">🖨️ Imprimir</button>
+            <button class="btn-main btn-archive" onclick="exportarBackupJSON()" data-i18n="quadrantBtnExportBackup">💾 Exportar Backup</button>
+            <button class="btn-main btn-archive" onclick="document.getElementById('importFile').click()" data-i18n="quadrantBtnImportBackup">📂 Importar Backup</button>
+            <button class="btn-main btn-archive" onclick="document.getElementById('fileVacances').click()" style="color: #7e22ce; font-weight: 600;" data-i18n="quadrantBtnImportVacances">🌴 Importar Vacances</button>
             <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarBackupJSON(this)">
             <input type="file" id="fileVacances" style="display:none" onchange="importarVacances(this)">
         </div>
 
         <!-- Grupo 4: Zona de Perill -->
         <div class="toolbar-group danger-group">
-            <button class="btn-danger-right" onclick="resetAll()">🗑️ Esborrar dades del mes</button>
+            <button class="btn-danger-right" onclick="resetAll()" data-i18n="quadrantBtnClearMonth">🗑️ Esborrar dades del mes</button>
         </div>
     </div>
 
     <!-- Panel de Alertas en Caliente -->
     <div id="alertsPanel" style="display: none; padding: 10px 24px; background: #fff1f2; border-bottom: 1px solid #fecdd3; font-family: inherit; box-shadow: var(--shadow-sm);">
         <div style="font-weight: 700; color: #9f1239; font-size: 11px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-            <span>⚠️ SITUACIONS PER SOLUCIONAR (ALERTES DE NEGOCI)</span>
+            <span data-i18n="quadrantAlertsTitle">⚠️ SITUACIONS PER SOLUCIONAR (ALERTES DE NEGOCI)</span>
         </div>
         <div id="alertsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; max-height: 120px; overflow-y: auto; padding: 4px 0;">
             <!-- Las alertas se cargarán dinámicamente -->
@@ -2412,20 +2414,25 @@ function assignarTreballador(sId, nomTreballador) {
     }
 }
 
+window.addEventListener('languageChanged', () => {
+    i18n.translatePage();
+    renderTable();
+});
+
 </script>
 
 <div id="noteModal">
-    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);">OBSERVACIÓ</div>
+    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);" data-i18n="vacancesObservaciones">OBSERVACIÓ</div>
     <input type="hidden" id="currentNoteId"><textarea id="noteText"></textarea>
-    <div style="display:flex; justify-content:flex-end; gap:5px;"><button onclick="saveNote()" class="btn-main">Guardar</button><button onclick="document.getElementById('noteModal').style.display='none'">Tancar</button></div>
+    <div style="display:flex; justify-content:flex-end; gap:5px;"><button onclick="saveNote()" class="btn-main" data-i18n="btnSaveRules">Guardar</button><button onclick="document.getElementById('noteModal').style.display='none'" data-i18n="vacancesBtnClose">Tancar</button></div>
 </div>
 
 <div id="deleteModal">
-    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);">GESTIONAR DADES</div>
-    <select id="deleteType" onchange="updateDeleteOptions()" style="width:100%; margin-bottom:8px;"><option value="parkings">Centres</option><option value="personal">Treballadors</option><option value="horaris">Franges Horàries</option></select>
+    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);" data-i18n="vacancesManageDataModal">GESTIONAR DADES</div>
+    <select id="deleteType" onchange="updateDeleteOptions()" style="width:100%; margin-bottom:8px;"><option value="parkings" data-i18n="vacancesOptCentres">Centres</option><option value="personal" data-i18n="vacancesOptTreballadors">Treballadors</option><option value="horaris" data-i18n="quadrantOptAllHours">Franges Horàries</option></select>
     <select id="deleteItem" onchange="document.getElementById('editInput').value = this.value" style="width:100%; margin-bottom:8px;"></select>
     <input type="text" id="editInput" class="input-edit">
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;"><button onclick="addNewItem()" class="btn-main">Afegir Nou</button><button onclick="saveEditItem()" style="background:#ff9800; color:white; border:none;">Guardar</button><button onclick="confirmDelete()" style="background:#f44336; color:white; border:none;">Eliminar</button><button onclick="document.getElementById('deleteModal').style.display='none'">Tancar</button></div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;"><button onclick="addNewItem()" class="btn-main" data-i18n="vacancesBtnAddNew">Afegir Nou</button><button onclick="saveEditItem()" style="background:#ff9800; color:white; border:none;" data-i18n="btnSaveRules">Guardar</button><button onclick="confirmDelete()" style="background:#f44336; color:white; border:none;" data-i18n="vacancesBtnDelete">Eliminar</button><button onclick="document.getElementById('deleteModal').style.display='none'" data-i18n="vacancesBtnClose">Tancar</button></div>
 </div>
 
 <div id="horesModal">
@@ -2435,7 +2442,7 @@ function assignarTreballador(sId, nomTreballador) {
         <div id="jornadaInfo" style="background:#f8f9fa; padding:10px; border-radius:4px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;"></div>
     </div>
     <div id="taulaResumHores"></div>
-    <div style="margin-top:20px; text-align:right;"><button onclick="document.getElementById('horesModal').style.display='none'" class="btn-tancar-resum">Tancar Resum</button></div>
+    <div style="margin-top:20px; text-align:right;"><button onclick="document.getElementById('horesModal').style.display='none'" class="btn-tancar-resum" data-i18n="vacancesBtnClose">Tancar Resum</button></div>
 </div>
 
 <div id="importMappingModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; border: 1px solid var(--border); padding: 24px; z-index: 2050; border-radius: 12px; width: 90%; max-width: 580px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); font-family: inherit;">

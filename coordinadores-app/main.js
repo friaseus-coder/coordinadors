@@ -119,6 +119,7 @@ function comprobarVersionYMigrar(dbConnection) {
         // Asegurar reglas de negocio completas
         inicializarReglasDeNegocio(dbConnection);
         sincronizarCatalogosIniciales(dbConnection);
+        sincronizarAgentesIniciales(dbConnection);
       }
     });
   });
@@ -200,6 +201,7 @@ function migrarV1aV2(dbConnection) {
         console.log('[Migración v2] ✅ Migración v1 → v2 completada exitosamente.');
         console.log('[Migración v2] Esquema multisociedad activo. Trigger de auditoría instalado.');
         sincronizarCatalogosIniciales(dbConnection);
+        sincronizarAgentesIniciales(dbConnection);
       }
     });
   });
@@ -561,6 +563,57 @@ function inicializarReglasDeNegocio(dbConnection) {
   stmtRegla.finalize(() => {
     console.log('[Reglas] 5 reglas de negocio verificadas/inicializadas.');
   });
+}
+
+// --- SINCRONIZACIÓN DE PERSONAL (AGENTES) A SQLITE ---
+function sincronizarAgentesIniciales(dbConnection) {
+  const jsonPath = path.join(__dirname, 'dades', 'coordinadores.json');
+  if (!fs.existsSync(jsonPath)) return;
+
+  try {
+    const raw = fs.readFileSync(jsonPath, 'utf8');
+    const coordinadores = JSON.parse(raw);
+
+    dbConnection.serialize(() => {
+      dbConnection.run("BEGIN TRANSACTION;");
+      
+      const stmtAgente = dbConnection.prepare(`
+        INSERT INTO agentes (id, nombre, zona_habitual, ranking_score, es_empresa_externa, activo)
+        VALUES (?, ?, ?, 50, 0, 1)
+        ON CONFLICT(id) DO UPDATE SET
+          nombre = excluded.nombre,
+          zona_habitual = excluded.zona_habitual;
+      `);
+
+      // Aseguramos que tengan al menos un contrato activo para que el asistente no falle
+      const stmtContrato = dbConnection.prepare(`
+        INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio)
+        VALUES (?, 1, date('now', 'start of month'));
+      `);
+
+      coordinadores.forEach(c => {
+        // Adaptamos el formato del JSON antiguo (que puede tener 'nom' y 'cognoms' o 'nombre')
+        const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente Desconocido';
+        const zona = c.zona || 'General';
+        
+        stmtAgente.run(c.id, nombreCompleto, zona);
+        stmtContrato.run(c.id);
+      });
+
+      stmtAgente.finalize();
+      stmtContrato.finalize();
+      dbConnection.run("COMMIT;");
+      console.log("[Sincronización] Catálogo de personal (agentes) volcado a SQLite con éxito.");
+    });
+  } catch (error) {
+    console.error("[Sincronización Error] Fallo al cargar Agentes a SQLite:", error);
+    dbConnection.run("ROLLBACK;");
+  }
+}
+
+// Función placeholder para evitar errores de referencia (su lógica real se integró en la migración v1 a v2)
+function sincronizarCatalogosIniciales(dbConnection) {
+  console.log("[Sincronización] Catálogos de aparcamientos ya gestionados vía migración de esquema.");
 }
 
 function obtenerReglasConfiguradas(dbConnection) {
@@ -1310,6 +1363,53 @@ function sincronizarCatalogosIniciales(dbConnection) {
   }
 }
 
+// --- SINCRONIZACIÓN DE PERSONAL (AGENTES) A SQLITE ---
+function sincronizarAgentesIniciales(dbConnection) {
+  const jsonPath = path.join(dadesDir, 'coordinadores.json');
+  if (!fs.existsSync(jsonPath)) return;
+
+  try {
+    const raw = fs.readFileSync(jsonPath, 'utf8');
+    const data = JSON.parse(raw);
+    const coordinadores = Array.isArray(data) ? data : (data.coordinadores || []);
+
+    dbConnection.serialize(() => {
+      dbConnection.run("BEGIN TRANSACTION;");
+      
+      const stmtAgente = dbConnection.prepare(`
+        INSERT INTO agentes (id, nombre, zona_habitual, ranking_score, es_empresa_externa, activo)
+        VALUES (?, ?, ?, 50, 0, 1)
+        ON CONFLICT(id) DO UPDATE SET
+          nombre = excluded.nombre,
+          zona_habitual = excluded.zona_habitual;
+      `);
+
+      // Aseguramos que tengan al menos un contrato activo para que el asistente no falle
+      const stmtContrato = dbConnection.prepare(`
+        INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio)
+        VALUES (?, 1, date('now', 'start of month'));
+      `);
+
+      coordinadores.forEach(c => {
+        // Adaptamos el formato del JSON antiguo (que puede tener 'nom' y 'cognoms' o 'nombre')
+        const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente Desconocido';
+        const zona = c.zona || 'General';
+        
+        stmtAgente.run(c.id, nombreCompleto, zona);
+        stmtContrato.run(c.id);
+      });
+
+      stmtAgente.finalize();
+      stmtContrato.finalize();
+      dbConnection.run("COMMIT;");
+      console.log("[Sincronización] Catálogo de personal (agentes) volcado a SQLite con éxito.");
+    });
+  } catch (error) {
+    console.error("[Sincronización Error] Fallo al cargar Agentes a SQLite:", error);
+    dbConnection.run("ROLLBACK;");
+  }
+}
+
 // --- GESTIÓN DE APARCAMIENTOS EN SQLITE ---
 
 // Leer todos los aparcamientos activos
@@ -1371,6 +1471,23 @@ ipcMain.handle('get-historico-aparcamiento', async (event, aparcamientoId) => {
     db.all(sql, [aparcamientoId], (err, rows) => {
       if (err) reject(err);
       else resolve(rows);
+    });
+  });
+});
+
+// --- GESTIÓN DE PERSONAL (AGENTES) EN SQLITE ---
+ipcMain.handle('get-agentes-relacional', async () => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("Base de datos no inicializada."));
+    // Los traemos ordenados por ranking para que el cuadrante los muestre correctamente
+    const sql = "SELECT * FROM agentes WHERE activo = 1 ORDER BY ranking_score DESC";
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        console.error("Error leyendo agentes de SQLite:", err);
+        reject(err);
+      } else {
+        resolve(rows);
+      }
     });
   });
 });
@@ -1904,6 +2021,23 @@ ipcMain.handle('calcular-alertas-cuadrante', async (event, { fechaInicio, fechaF
     console.error("[Validación Error] Fallo al calcular alertas relacionales:", error);
     return { success: false, error: error.message };
   }
+});
+
+// --- GESTIÓN DE PERSONAL (AGENTES) EN SQLITE ---
+ipcMain.handle('get-agentes-relacional', async () => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("Base de datos no inicializada."));
+    // Los traemos ordenados por ranking para que el cuadrante los muestre correctamente
+    const sql = "SELECT * FROM agentes WHERE activo = 1 ORDER BY ranking_score DESC";
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        console.error("Error leyendo agentes de SQLite:", err);
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
 });
 
 // Motor de Validación de Reglas de Operaciones (Soft Constraints) en Caliente

@@ -48,5 +48,8 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   // --- Contratos de Agentes ---
   getContratosAgente: (agenteId) => ipcRenderer.invoke('get-contratos-agente', agenteId),
   addContratoAgente: (datos) => ipcRenderer.invoke('add-contrato-agente', datos),
-  cerrarContratoAgente: (contratoId) => ipcRenderer.invoke('cerrar-contrato-agente', contratoId)
+  cerrarContratoAgente: (contratoId) => ipcRenderer.invoke('cerrar-contrato-agente', contratoId),
+
+  // --- Personal / Agentes ---
+  getAgentesRelacional: () => ipcRenderer.invoke('get-agentes-relacional')
 });
