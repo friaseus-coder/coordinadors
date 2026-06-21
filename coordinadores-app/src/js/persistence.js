@@ -1107,3 +1107,22 @@ async function saveQuadrant(coordinadorId, month, year, data) {
         return false;
     }
 }
+
+// --- ASISTENTE DE CUADRANTE ---
+/**
+ * Llama al motor de inteligencia en SQLite para obtener los mejores agentes disponibles
+ * para una fecha y un aparcamiento concretos.
+ * @param {string} fecha Formato 'YYYY-MM-DD'
+ * @param {number} aparcamientoId ID en SQLite del aparcamiento
+ */
+async function obtenerAsistenteAsignacion(fecha, aparcamientoId) {
+    try {
+        console.log(`Consultando Asistente para ${fecha} en parking ${aparcamientoId}...`);
+        const resultado = await window.databaseAPI.obtenerRecomendaciones(fecha, aparcamientoId);
+        console.log("Resultado del Asistente:", resultado);
+        return resultado;
+    } catch (error) {
+        console.error("Error al consultar el Asistente de Cuadrante:", error);
+        return { sugeridos: [], descartados: [] };
+    }
+}

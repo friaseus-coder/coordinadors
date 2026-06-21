@@ -1330,6 +1330,7 @@ ipcMain.handle('deactivate-sociedad', async (event, id) => {
     console.error('[SOCIEDADES] Error al desactivar:', error);
     return { success: false, error: error.message };
   }
+});
 
 // --- SINCRONIZACIÓN DE CATÁLOGOS JSON A SQLITE ---
 function sincronizarCatalogosIniciales(dbConnection) {
@@ -2048,23 +2049,6 @@ ipcMain.handle('calcular-alertas-cuadrante', async (event, { fechaInicio, fechaF
   }
 });
 
-// --- GESTIÓN DE PERSONAL (AGENTES) EN SQLITE ---
-ipcMain.handle('get-agentes-relacional', async () => {
-  return new Promise((resolve, reject) => {
-    if (!db) return reject(new Error("Base de datos no inicializada."));
-    // Los traemos ordenados por ranking para que el cuadrante los muestre correctamente
-    const sql = "SELECT * FROM agentes WHERE activo = 1 ORDER BY ranking_score DESC";
-    db.all(sql, [], (err, rows) => {
-      if (err) {
-        console.error("Error leyendo agentes de SQLite:", err);
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
-  });
-});
-
 // Motor de Validación de Reglas de Operaciones (Soft Constraints) en Caliente
 function calcularSituacionesQueSolucionar(turnosQuadrant, agentes, aparcamientos, coberturasRequeridas, reglas) {
   const situaciones = [];
@@ -2389,6 +2373,81 @@ ipcMain.handle('delete-turno-cuadrante', async (event, { fecha, aparcamiento_id,
       if (err) reject(err);
       else resolve({ success: true, deleted: this.changes });
     });
+  });
+});
+
+// --- MOTOR INTELIGENTE: ASISTENTE DE CUADRANTE ---
+ipcMain.handle('obtener-recomendaciones-cuadrante', async (event, { fecha, aparcamientoId }) => {
+  return new Promise(async (resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+
+    try {
+      // 1. Obtener la parametrización de topes desde la BD (por defecto 22 si no existe)
+      let topeMensual = 22; 
+      try {
+        const rowTope = await new Promise((res, rej) => {
+          db.get("SELECT valor FROM reglas_config WHERE clave = 'max_dias_mensuales'", [], (err, r) => err ? rej(err) : res(r));
+        });
+        if (rowTope) topeMensual = parseInt(rowTope.valor) || 22;
+      } catch (e) { console.warn("Usando tope de días por defecto."); }
+
+      // 2. Extraer el mes para la búsqueda (Ej: '2026-06%')
+      const mesBusqueda = fecha.substring(0, 7) + '%';
+
+      // 3. Consulta maestra de Inteligencia de Operaciones
+      const sql = `
+        SELECT 
+            a.id, 
+            a.nombre, 
+            a.ranking_score,
+            a.es_empresa_externa,
+            -- Días trabajados este mes
+            (SELECT COUNT(*) FROM quadrant q WHERE q.agente_id = a.id AND q.fecha LIKE ?) as dias_mes_actual,
+            -- ¿Está de vacaciones hoy?
+            (SELECT COUNT(*) FROM vacances v WHERE v.agente_id = a.id AND ? BETWEEN v.fecha_inicio AND v.fecha_fin) as en_vacaciones,
+            -- ¿Ya trabaja hoy en otro sitio?
+            (SELECT COUNT(*) FROM quadrant q2 WHERE q2.agente_id = a.id AND q2.fecha = ?) as trabajando_hoy
+        FROM agentes a
+        WHERE a.activo = 1
+        ORDER BY a.ranking_score DESC;
+      `;
+
+      db.all(sql, [mesBusqueda, fecha, fecha], (err, rows) => {
+        if (err) return reject(err);
+
+        const sugeridos = [];
+        const descartados = [];
+
+        rows.forEach(agente => {
+          // Las empresas de seguridad externas siempre se sugieren primero y no tienen límites
+          if (agente.es_empresa_externa === 1) {
+            agente.motivo_descarte = null;
+            agente.tipo = "EMPRESA SEGURIDAD";
+            sugeridos.unshift(agente); // Poner al principio
+            return;
+          }
+
+          if (agente.en_vacaciones > 0) {
+            agente.motivo_descarte = "De vacaciones / Baja";
+            descartados.push(agente);
+          } else if (agente.trabajando_hoy > 0) {
+            agente.motivo_descarte = "Ya asignado a otro parking hoy";
+            descartados.push(agente);
+          } else if (agente.dias_mes_actual >= topeMensual) {
+            agente.motivo_descarte = `Al tope mensual (Lleva ${agente.dias_mes_actual}/${topeMensual} días)`;
+            descartados.push(agente);
+          } else {
+            // Está libre, no tiene vacaciones y no ha superado el tope
+            agente.motivo_descarte = null;
+            sugeridos.push(agente);
+          }
+        });
+
+        resolve({ sugeridos, descartados });
+      });
+    } catch (error) {
+      reject(error);
+    }
   });
 });
 

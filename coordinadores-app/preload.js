@@ -32,6 +32,7 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   migrarJsonDeutes: (filePath) => ipcRenderer.invoke('migrar-json-deutes', { filePath }),
   migrarJsonCuadrante: (dataJSON) => ipcRenderer.invoke('migrar-json-cuadrante', { dataJSON }),
   obtenerPropuestasAsistente: (fecha, aparcamientoId) => ipcRenderer.invoke('obtener-propuestas-asistente', { fecha, aparcamientoId }),
+  obtenerRecomendaciones: (fecha, aparcamientoId) => ipcRenderer.invoke('obtener-recomendaciones-cuadrante', { fecha, aparcamientoId }),
   calcularAlertasCuadrante: (fechaInicio, fechaFin) => ipcRenderer.invoke('calcular-alertas-cuadrante', { fechaInicio, fechaFin }),
 
   // --- Sociedades ---
