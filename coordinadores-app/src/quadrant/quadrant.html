@@ -652,6 +652,9 @@
             <div class="filter-label" data-i18n="quadrantLabelArchivos">💾 Fitxers:</div>
             <button class="btn-main btn-archive" onclick="exportarExcel()" style="color: #15803d; font-weight: 600;" data-i18n="quadrantBtnExcel">📥 Excel</button>
             <button class="btn-main btn-archive" onclick="window.print()" data-i18n="quadrantBtnPrint">🖨️ Imprimir</button>
+            <button id="btn-migrar-sqlite" class="px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-medium transition-colors" title="Migrar JSON viejo a base de datos SQLite">
+              <i class="fas fa-database mr-1"></i> Migrar a SQLite
+            </button>
             <button class="btn-main btn-archive" onclick="exportarBackupJSON()" data-i18n="quadrantBtnExportBackup">💾 Exportar Backup</button>
             <button class="btn-main btn-archive" onclick="document.getElementById('importFile').click()" data-i18n="quadrantBtnImportBackup">📂 Importar Backup</button>
             <button class="btn-main btn-archive" onclick="document.getElementById('fileVacances').click()" style="color: #7e22ce; font-weight: 600;" data-i18n="quadrantBtnImportVacances">🌴 Importar Vacances</button>
@@ -2413,6 +2416,47 @@ function assignarTreballador(sId, nomTreballador) {
         renderTable();
     }
 }
+
+// --- IMPORTADOR DE CUADRANTE LEGACY A SQLITE ---
+document.addEventListener('DOMContentLoaded', () => {
+    const btnMigrar = document.getElementById('btn-migrar-sqlite');
+    if(btnMigrar) {
+        btnMigrar.addEventListener('click', async () => {
+            if(confirm("¿Estás seguro de que quieres volcar el JSON actual a la base de datos SQLite? Esto sobrescribirá los turnos existentes.")) {
+                try {
+                    // 1. Cargamos el viejo archivo JSON usando el fallback legacy que hemos mantenido
+                    const coordFolder = `dades ${currentCoordinator || 'Albert'}`;
+                    const fileName = `quadrant_${(currentCoordinator || 'Albert').toUpperCase()}.json`;
+                    
+                    btnMigrar.innerText = "Migrando...";
+                    btnMigrar.disabled = true;
+
+                    const response = await window.api.readFile(`${coordFolder}/${fileName}`);
+                    
+                    if(response.success && response.data) {
+                        // 2. Enviamos todo el JSON a nuestro handler de migración en main.js
+                        const migResult = await window.databaseAPI.migrarJsonCuadrante(response.data);
+                        
+                        if(migResult.success) {
+                            alert(`¡Migración completada! Se han insertado/actualizado ${migResult.total} turnos en la nueva base de datos.`);
+                            // Recargar la pantalla
+                            location.reload();
+                        } else {
+                            alert("Error en la base de datos durante la migración:\n" + migResult.error);
+                        }
+                    } else {
+                        alert("No se pudo leer el archivo JSON antiguo.");
+                    }
+                } catch(error) {
+                    alert("Error crítico durante la migración: " + error.message);
+                } finally {
+                    btnMigrar.innerHTML = '<i class="fas fa-database mr-1"></i> Migrar a SQLite';
+                    btnMigrar.disabled = false;
+                }
+            }
+        });
+    }
+});
 
 window.addEventListener('languageChanged', () => {
     i18n.translatePage();
