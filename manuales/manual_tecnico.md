@@ -23,7 +23,7 @@ coordinadores-app/
 ├── main.js                 # Proceso principal de Electron (Main Process y Migraciones)
 ├── preload.js              # Script puente de seguridad (databaseAPI expuesta en Context Isolation)
 ├── package.json            # Metadatos del proyecto y scripts de compilación
-├── config.json             # Configuración dinámica de rutas de red (Z:\ o UNC)
+├── config.json             # Configuración dinámica de rutas de red (P:\, Z:\ o UNC)
 ├── schema.sql              # Definición canónica del esquema relacional (13 tablas + trigger)
 ├── dades/                  # Carpeta de datos local (Fallback si no hay red)
 │   ├── coordinadores.json  # Registro de coordinadores creados dinámicamente

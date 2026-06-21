@@ -5,7 +5,7 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "package-win": "electron-packager . coordinadores --platform=win32 --arch=x64 --out=dist --overwrite && xcopy /E /I /Y dades dist\\coordinadores-win32-x64\\dades"
+    "package-win": "electron-packager . coordinadores --platform=win32 --arch=x64 --out=dist --overwrite && xcopy /E /I /Y dades dist\\coordinadores-win32-x64\\dades && copy config.json dist\\coordinadores-win32-x64\\"
   },
   "keywords": [],
   "author": "",

@@ -562,6 +562,46 @@ const i18n = (() => {
     localStorage.setItem('app_language', lang);
   };
 
+  async function checkRoleGuard() {
+    const rolesPermitidos = document.body && document.body.getAttribute('data-required-roles');
+    if (rolesPermitidos) {
+      // 1. Obtener rol de sessionStorage
+      let activeRole = sessionStorage.getItem('userRole');
+      if (activeRole === 'jefe operaciones') activeRole = 'jefe_operaciones';
+      
+      // 2. Si no hay rol en sesión, consultar config.json a través de IPC
+      if (!activeRole && window.databaseAPI && window.databaseAPI.getUserConfig) {
+        try {
+          const config = await window.databaseAPI.getUserConfig();
+          if (config.role) {
+            activeRole = config.role;
+          }
+        } catch (e) {
+          console.error("[i18n-Guard] Error al leer config para verificar rol:", e);
+        }
+      }
+      
+      // 3. Fallback seguro (si no hay rol, asumir comercial)
+      activeRole = activeRole || 'comercial';
+      
+      // 4. Comprobar si el rol está permitido
+      const allowedList = rolesPermitidos.split(',').map(r => r.trim());
+      if (!allowedList.includes(activeRole)) {
+        alert("Acceso denegado: no dispone de los permisos necesarios para ver esta pantalla.");
+        // Determinar ruta de redirección al portal
+        const path = window.location.pathname;
+        const redirectUrl = (path.includes('/admin/') || path.includes('/chklst/') || path.includes('/comercials/') || 
+                             path.includes('/despeses/') || path.includes('/deutes/') || path.includes('/inventari/') || 
+                             path.includes('/log/') || path.includes('/notificador/') || path.includes('/quadrant/') || 
+                             path.includes('/ranking/') || path.includes('/regles/') || path.includes('/ruta/') || 
+                             path.includes('/sac/') || path.includes('/vacances/'))
+          ? '../portal.html'
+          : 'portal.html';
+        window.location.href = redirectUrl;
+      }
+    }
+  }
+
   async function initI18n() {
     let savedLang = localStorage.getItem('app_language') || localStorage.getItem('nyn_idioma');
     if (!savedLang && window.databaseAPI && window.databaseAPI.getUserConfig) {
@@ -574,6 +614,9 @@ const i18n = (() => {
     }
     savedLang = savedLang || 'ca'; // fallback to ca if still empty
     setLanguage(savedLang);
+    
+    // Ejecutar verificación de roles
+    await checkRoleGuard();
   }
 
   // Registrar el listener de cambio en localStorage para refrescar traducción en caliente

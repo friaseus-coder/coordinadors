@@ -35,8 +35,9 @@
         #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:10px; z-index:2000; box-shadow: 0 0 15px rgba(0,0,0,0.5); width:700px; max-height: 90vh; border-radius: 4px; flex-direction: column; }
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999; }
     </style>
+    <script src="../js/i18n.js"></script>
 </head>
-<body>
+<body data-required-roles="coordinador,jefe_operaciones">
 
 <div class="header-top">
     <button class="btn-nyn btn-import" onclick="document.getElementById('importFile').click()">📂 Importar</button>

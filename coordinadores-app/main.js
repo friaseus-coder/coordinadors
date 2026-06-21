@@ -722,7 +722,7 @@ function obtenerReglasConfiguradas(dbConnection) {
 
 // Inicialización de la aplicación
 app.on('ready', () => {
-  const configPath = path.join(__dirname, 'config.json');
+  const configPath = configFile;
   let rutaCompartida = path.join(app.getPath('documents'), 'Coordinadores_Local'); // Fallback
   
   try {
@@ -2238,7 +2238,7 @@ function realizarBackupDiario(dbPath) {
     // Intentamos leer el nombre del coordinador del config
     let coordinadorName = 'General';
     try {
-      const configData = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+      const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'));
       if (configData.coordinador) coordinadorName = configData.coordinador;
     } catch(e) {}
 
@@ -2265,7 +2265,7 @@ function verificarCierreMensual(dbPath) {
 
     let coordinadorName = 'General';
     try {
-      const configData = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+      const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'));
       if (configData.coordinador) coordinadorName = configData.coordinador;
     } catch(e) {}
 
@@ -2739,7 +2739,7 @@ ipcMain.handle('importacion-centralizada', async (event, { tipo }) => {
 // --- SISTEMA DE ROLES ---
 ipcMain.handle('get-user-role', () => {
   try {
-    const configPath = path.join(__dirname, 'config.json');
+    const configPath = configFile;
     const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     return configData.role || 'comercial'; // Por seguridad, si falla, es comercial (menor privilegio)
   } catch (e) {
@@ -2749,7 +2749,7 @@ ipcMain.handle('get-user-role', () => {
 
 ipcMain.handle('get-config-coordinador', () => {
   try {
-    const configPath = path.join(__dirname, 'config.json');
+    const configPath = configFile;
     const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
     return configData.coordinador || '';
   } catch (e) {
@@ -2759,7 +2759,7 @@ ipcMain.handle('get-config-coordinador', () => {
 
 ipcMain.handle('get-user-config', () => {
   try {
-    const configPath = path.join(__dirname, 'config.json');
+    const configPath = configFile;
     return JSON.parse(fs.readFileSync(configPath, 'utf8'));
   } catch (e) {
     return {};

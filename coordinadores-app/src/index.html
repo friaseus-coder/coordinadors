@@ -86,7 +86,7 @@
     }
   </style>
 </head>
-<body>
+<body data-required-roles="comercial,coordinador,jefe_operaciones">
 
   <!-- Selector de Idioma Flotante Premium -->
   <div class="lang-selector-container" style="position: absolute; top: 20px; right: 20px; z-index: 1000;">
@@ -161,7 +161,32 @@
     }
 
     // Cargar coordinadores al abrir la página
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Intentar auto-login si existe rol guardado en config.json
+      if (window.databaseAPI && window.databaseAPI.getUserConfig) {
+        try {
+          const config = await window.databaseAPI.getUserConfig();
+          if (config.role) {
+            let mappedRole = config.role;
+            if (mappedRole === 'jefe_operaciones') mappedRole = 'jefe operaciones';
+            
+            let userName = 'Invitado';
+            if (mappedRole === 'jefe operaciones') {
+              userName = 'Administrador';
+            } else if (mappedRole === 'coordinador') {
+              userName = config.coordinador || 'Albert';
+            }
+            
+            sessionStorage.setItem('userRole', mappedRole);
+            sessionStorage.setItem('userName', userName);
+            
+            window.location.href = 'portal.html';
+            return;
+          }
+        } catch (e) {
+          console.error("Error en auto-login desde config.json:", e);
+        }
+      }
       loadCoordinadores();
     });
 
