@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración</title>
+    <!-- Tailwind CSS desde CDN para mantener el estilo del Blueprint y Outfit font -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto bg-white rounded-xl shadow-lg p-6">
+        <h1 class="text-2xl font-bold text-gray-800 border-b pb-4 mb-6"><i class="fas fa-cogs mr-2 text-gray-600"></i> Panel de Administración y Migraciones</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Tarjeta Migración Cuadrante -->
+            <div class="border rounded-lg p-4 bg-gray-50 hover:shadow-md transition">
+                <h3 class="font-bold text-lg text-blue-800 mb-2"><i class="fas fa-calendar-alt mr-2"></i> Cuadrante Histórico</h3>
+                <p class="text-sm text-gray-600 mb-4">Migra los turnos de los antiguos archivos quadrant_ALBERT.json o quadrant_LAURA.json hacia SQLite.</p>
+                <button onclick="ejecutarMigracion('cuadrante')" class="w-full bg-blue-600 text-white font-semibold py-2 rounded shadow hover:bg-blue-700 transition-colors">Importar JSON Cuadrante</button>
+            </div>
+
+            <!-- Tarjeta Migración Vacaciones -->
+            <div class="border rounded-lg p-4 bg-gray-50 hover:shadow-md transition">
+                <h3 class="font-bold text-lg text-green-800 mb-2"><i class="fas fa-umbrella-beach mr-2"></i> Vacaciones</h3>
+                <p class="text-sm text-gray-600 mb-4">Migra el historial de descansos desde Vacances_2026.json.</p>
+                <button onclick="ejecutarMigracion('vacaciones')" class="w-full bg-green-600 text-white font-semibold py-2 rounded shadow hover:bg-green-700 transition-colors">Importar JSON Vacaciones</button>
+            </div>
+
+            <!-- Tarjeta Migración Deudas -->
+            <div class="border rounded-lg p-4 bg-gray-50 hover:shadow-md transition">
+                <h3 class="font-bold text-lg text-red-800 mb-2"><i class="fas fa-money-bill-wave mr-2"></i> Deudas</h3>
+                <p class="text-sm text-gray-600 mb-4">Traspasa el historial de deudas de los comerciales.</p>
+                <button onclick="ejecutarMigracion('deudas')" class="w-full bg-red-600 text-white font-semibold py-2 rounded shadow hover:bg-red-700 transition-colors">Importar JSON Deudas</button>
+            </div>
+
+            <!-- Tarjeta Migración Gastos -->
+            <div class="border rounded-lg p-4 bg-gray-50 hover:shadow-md transition">
+                <h3 class="font-bold text-lg text-orange-800 mb-2"><i class="fas fa-receipt mr-2"></i> Gastos (Despeses)</h3>
+                <p class="text-sm text-gray-600 mb-4">Volca los gastos registrados en despeses.json a la base de datos relacional.</p>
+                <button onclick="ejecutarMigracion('gastos')" class="w-full bg-orange-500 text-white font-semibold py-2 rounded shadow hover:bg-orange-600 transition-colors">Importar JSON Gastos</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function ejecutarMigracion(tipo) {
+            if(confirm(`¿Seleccionar archivo para migrar ${tipo} a la base de datos central?`)) {
+                try {
+                    const resultado = await window.databaseAPI.importacionCentralizada(tipo);
+                    if (resultado.success) {
+                        alert(`¡Éxito! Se han importado ${resultado.total} registros de ${tipo} correctamente.`);
+                    } else if (resultado.reason !== 'Cancelado') {
+                        alert(`Error en la importación: ${resultado.error}`);
+                    }
+                } catch (e) {
+                    alert("Fallo de conexión IPC: " + e.message);
+                }
+            }
+        }
+    </script>
+</body>
+</html>

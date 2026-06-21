@@ -67,9 +67,8 @@ La aplicación aprovecha la separación de procesos de Electron para ofrecer seg
     *   **Canales IPC Relacionales de Sociedades:** CRUD de la tabla `sociedades` (`get-sociedades`, `add-sociedad`, `update-sociedad`, `deactivate-sociedad`).
     *   **Canales IPC Relacionales de Aparcamientos:** Consulta y modificación estructurada (`get-aparcamientos-relacional`, `update-aparcamiento-relacional`) que escribe en la tabla `aparcamientos` de SQLite y sincroniza el catálogo `aparcamientos.json` como backup secundario.
     *   **Canales IPC de Contratos de Agentes:** CRUD de contratos vinculando coordinadores/agentes con sociedades del grupo (`get-contratos-agente`, `add-contrato-agente`, `cerrar-contrato-agente`).
-    *   **Auditoría de Cambios en Aparcamientos:** El canal `get-historico-aparcamiento` lee directamente la tabla `historico_aparcamientos` para auditar cualquier cambio realizado sobre los aparcamientos a través de un trigger.
-    *   `import-json-data`: Importa volcados JSON de backups legados mapeándolos y guardándolos transaccionalmente en SQLite.
-    *   **Canales IPC de Vacaciones:** Control y persistencia de vacaciones (`get-vacaciones-relacional`, `save-vacacion-relacional`, `delete-vacacion-relacional`) y herramienta de migración masiva (`migrar-json-vacaciones`).
+    *   **Canal IPC de Importación Centralizada:** El canal `importacion-centralizada` maneja de forma transaccional y robusta la importación de archivos legacy (.json) para Cuadrantes, Vacaciones, Deudas y Gastos. Abre un diálogo nativo de archivos, procesa la inserción en la base de datos única SQLite y renombra automáticamente el archivo importado a `.MIGRADO` para evitar duplicidades.
+    *   **Canales IPC de Vacaciones:** Control y persistencia de vacaciones (`get-vacaciones-relacional`, `save-vacacion-relacional`, `delete-vacacion-relacional`).
     *   **Canales IPC de Finanzas (Deudas y Gastos):** CRUD transaccional para la gestión de deudas (`get-deutes-relacional`, `save-deute-relacional`, `delete-deute-relacional`) y gastos mensuales (`get-despeses-relacional`, `save-despesa-relacional`, `delete-despesa-relacional`).
     *   **Canales IPC de Inventarios:** CRUD para el seguimiento de artículos de uniforme y equipamiento de coordinadores (`get-inventari-relacional`, `save-inventari-relacional`, `delete-inventari-relacional`).
 
@@ -269,7 +268,24 @@ Debido a que el cuadrante del calendario se genera dinámicamente en el DOM (rec
 ### C. Resolución de Mismatch de Tipos en Personal (Coordinadores)
 Durante la sincronización inicial de los archivos de configuración (`coordinadores.json`), se detectó un error `SQLITE_MISMATCH: datatype mismatch` debido a que el campo `id` de los coordinadores en el archivo JSON es una cadena de texto (ej. `"albert"`, `"laura"`), mientras que el esquema de base de datos define `id` en la tabla `agentes` como un `INTEGER PRIMARY KEY AUTOINCREMENT`.
 1. **Solución Implementada**: Se ha incorporado en `main.js` una función hashing hash-a-entero estable de 32 bits denominada `stringToId(str)`.
-2. **Estabilidad**: Esta función genera siempre el mismo identificador entero positivo para un string determinado de forma síncrona y predecible, independientemente de su posición o adición en el catálogo.
-3. **Persistencia**: Se aplica a todas las consultas de inicialización y sincronización de agentes y contratos (`sincronizarAgentesIniciales`), eliminando la colisión por tipos en SQLite y garantizando la integridad referencial.
+2.    *   **Estabilidad**: Esta función genera siempre el mismo identificador entero positivo para un string determinado de forma síncrona y predecible, independientemente de su posición o adición en el catálogo.
+    *   **Persistencia**: Se aplica a todas las consultas de inicialización y sincronización de agentes y contratos (`sincronizarAgentesIniciales`), eliminando la colisión por tipos en SQLite y garantizando la integridad referencial.
 
+---
 
+## 8. Panel de Administración y Depuración del Legacy JSON
+
+Con la implantación de la **Fase 10**, se ha procedido a una limpieza profunda de la persistencia de la intranet operativa, eliminando todos los fallbacks JSON en las vistas operativas de Cuadrantes, Vacaciones y catálogos principales. SQLite es ahora la fuente de verdad única absoluta.
+
+### A. Panel de Administración Centralizado (`admin.html`)
+*   Se ha diseñado un panel de control reservado para operaciones administrativas globales.
+*   Permite ejecutar las migraciones heredadas en un entorno controlado sin mezclar lógica de migración en las pantallas operativas diarias.
+*   **Vías de Importación Integradas:**
+    1.  **Cuadrante:** Importación y mapeo de turnos desde el JSON de cuadrante legado.
+    2.  **Vacaciones:** Importación y normalización relacional de períodos de descanso.
+    3.  **Deudas:** Importación directa de la lista de deudas legadas.
+    4.  **Gastos:** Importación directa de los archivos de gastos legados.
+
+### B. Salvaguarda Antiduplicidad (.MIGRADO)
+*   Para evitar que se procese un mismo archivo legacy JSON varias veces corrompiendo los registros de SQLite, el proceso principal de Electron renombra los archivos en disco añadiéndoles el sufijo `.MIGRADO` una vez completada la importación transaccional con éxito.
+*   Si se intenta seleccionar de nuevo el archivo, el sistema lo ignorará o rechazará.

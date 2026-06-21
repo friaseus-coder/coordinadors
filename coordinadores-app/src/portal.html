@@ -522,6 +522,7 @@
                 <div class="dropdown-admin-content" id="adminDropdownContent">
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
+                    <button class="dropdown-admin-item" onclick="openAdminPanel(); closeAdminDropdown();">⚙️ Panel Admin y Migraciones</button>
                     <div class="dropdown-divider"></div>
                     <button class="dropdown-admin-item danger" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
                 </div>
@@ -631,6 +632,7 @@
     <div id="notificador" class="tab-content"><iframe data-src="notificador/notificador.html"></iframe></div>
     <div id="log" class="tab-content"><iframe data-src="log/log.html"></iframe></div>
     <div id="regles" class="tab-content"><iframe data-src="regles/regles.html"></iframe></div>
+    <div id="adminPanel" class="tab-content"><iframe data-src="admin/admin.html"></iframe></div>
 
     <script>
         // Configurar los badges del usuario y bienvenida
@@ -1408,6 +1410,10 @@
                     }
                 }
             }
+        }
+
+        function openAdminPanel() {
+            openTab('adminPanel', document.querySelector('.btn-manage-coord'));
         }
 
         function autoNetejaLogs() {

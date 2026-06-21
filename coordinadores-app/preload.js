@@ -76,5 +76,6 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   
   getInventari: () => ipcRenderer.invoke('get-inventari-relacional'),
   saveInventari: (datos) => ipcRenderer.invoke('save-inventari-relacional', datos),
-  deleteInventari: (id) => ipcRenderer.invoke('delete-inventari-relacional', id)
+  deleteInventari: (id) => ipcRenderer.invoke('delete-inventari-relacional', id),
+  importacionCentralizada: (tipo) => ipcRenderer.invoke('importacion-centralizada', { tipo })
 });

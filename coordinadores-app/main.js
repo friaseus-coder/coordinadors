@@ -2531,6 +2531,211 @@ ipcMain.handle('get-inventari-relacional', async () => dbAll("SELECT * FROM inve
 ipcMain.handle('save-inventari-relacional', async (e, d) => dbRun("INSERT INTO inventari (comercial, articulo, fecha_entrega, estado, observaciones) VALUES (?, ?, ?, ?, ?)", [d.comercial, d.articulo, d.fecha_entrega, d.estado, d.observaciones]));
 ipcMain.handle('delete-inventari-relacional', async (e, id) => dbRun("DELETE FROM inventari WHERE id = ?", [id]));
 
+// --- IMPORTACIÓN CENTRALIZADA Y MIGRACIÓN LEGACY ---
+ipcMain.handle('importacion-centralizada', async (event, { tipo }) => {
+  try {
+    // 1. Mostrar diálogo de selección de archivo JSON
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: `Seleccionar archivo JSON de ${tipo}`,
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+      properties: ['openFile']
+    });
+
+    if (canceled || filePaths.length === 0) {
+      return { success: false, reason: 'Cancelado' };
+    }
+
+    const filePath = filePaths[0];
+    const rawData = fs.readFileSync(filePath, 'utf8');
+    const data = JSON.parse(rawData);
+
+    if (tipo === 'cuadrante') {
+      const resultado = await new Promise(async (resolve) => {
+        db.serialize(() => {
+          db.run("BEGIN TRANSACTION;");
+          db.all("SELECT id, nombre FROM agentes", [], (err, agentes) => {
+            if (err) { db.run("ROLLBACK;"); return resolve({ success: false, error: err.message }); }
+            db.all("SELECT id, nombre FROM aparcamientos", [], (err, parkings) => {
+              if (err) { db.run("ROLLBACK;"); return resolve({ success: false, error: err.message }); }
+
+              const agentesMap = new Map(agentes.map(a => [a.nombre.toUpperCase(), a.id]));
+              const parkingsMap = new Map(parkings.map(p => [p.nombre.toUpperCase(), p.id]));
+
+              const stmt = db.prepare(`
+                INSERT OR REPLACE INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, es_substitucio, nota)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+              `);
+
+              let insertados = 0;
+              let agentesNuevos = new Set();
+              let parkingsNuevos = new Set();
+
+              for (const [key, value] of Object.entries(data)) {
+                if (!key.startsWith('nyn_v12_')) continue;
+
+                const parts = key.split('_');
+                if (parts.length < 7) continue;
+
+                const año = parts[2];
+                const mes = parts[3];
+                const dia = parts[parts.length - 1];
+                const turno = parts[parts.length - 2];
+                const nombreParking = parts.slice(4, parts.length - 2).join(' ').toUpperCase();
+
+                let cellData = {};
+                try {
+                  cellData = typeof value === 'string' ? JSON.parse(value) : value;
+                } catch (e) { continue; }
+
+                const wName = (cellData.w || "-").trim();
+                const hRange = (cellData.h || "-").trim();
+                const esSub = cellData.s ? 1 : 0;
+                const notaText = cellData.n || "";
+
+                if (wName === "-" || wName === "") continue;
+
+                let parkingId = parkingsMap.get(nombreParking);
+                if (!parkingId) { parkingsNuevos.add(nombreParking); continue; }
+
+                let agenteId = agentesMap.get(wName.toUpperCase());
+                if (!agenteId) { agentesNuevos.add(wName); continue; }
+
+                const mesNum = (Number(mes) + 1).toString().padStart(2, '0');
+                const diaNum = Number(dia).toString().padStart(2, '0');
+                const fechaStr = `${año}-${mesNum}-${diaNum}`;
+
+                const hoursParts = hRange.split('-');
+                const horaInicio = hoursParts[0] || '06:00';
+                const horaFin = hoursParts[1] || '14:00';
+
+                stmt.run(fechaStr, parkingId, agenteId, turno, horaInicio, horaFin, esSub, notaText);
+                insertados++;
+              }
+
+              stmt.finalize();
+
+              if (agentesNuevos.size > 0 || parkingsNuevos.size > 0) {
+                agentesNuevos.forEach(agName => {
+                  db.run("INSERT OR IGNORE INTO agentes (nombre, activo) VALUES (?, 1)", [agName]);
+                });
+                parkingsNuevos.forEach(pkName => {
+                  db.run("INSERT OR IGNORE INTO aparcamientos (nombre, sociedad_id, activo) VALUES (?, 1, 1)", [pkName]);
+                });
+                db.run("ROLLBACK;");
+                resolve({
+                  success: false,
+                  error: `Catálogos no sincronizados. Se insertaron preventivamente ${agentesNuevos.size} agentes y ${parkingsNuevos.size} aparcamientos nuevos. Vuelve a iniciar la importación para migrar los turnos.`
+                });
+              } else {
+                db.run("COMMIT;", (err) => {
+                  if (err) { db.run("ROLLBACK;"); resolve({ success: false, error: err.message }); }
+                  else resolve({ success: true, total: insertados });
+                });
+              }
+            });
+          });
+        });
+      });
+      if (resultado.success) {
+        fs.renameSync(filePath, filePath + '.MIGRADO');
+      }
+      return resultado;
+    }
+
+    if (tipo === 'vacaciones') {
+      const resultado = await new Promise(async (resolve) => {
+        db.all("SELECT id, nombre FROM agentes", [], (err, agentes) => {
+          if (err) return resolve({ success: false, error: err.message });
+
+          db.serialize(() => {
+            db.run("BEGIN TRANSACTION;");
+            const stmt = db.prepare("INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)");
+
+            let insertadas = 0;
+            for (const item of data) {
+              const agente = agentes.find(a => a.nombre.toUpperCase().includes(item.nombre.toUpperCase()));
+              if (agente && item.fecha_inicio && item.fecha_fin) {
+                stmt.run(agente.id, item.fecha_inicio, item.fecha_fin);
+                insertadas++;
+              }
+            }
+
+            stmt.finalize();
+            db.run("COMMIT;", (errCommit) => {
+              if (errCommit) { db.run("ROLLBACK;"); resolve({ success: false, error: errCommit.message }); }
+              else resolve({ success: true, total: insertadas });
+            });
+          });
+        });
+      });
+      if (resultado.success) {
+        fs.renameSync(filePath, filePath + '.MIGRADO');
+      }
+      return resultado;
+    }
+
+    if (tipo === 'deudas') {
+      const resultado = await new Promise((resolve) => {
+        db.serialize(() => {
+          db.run("BEGIN TRANSACTION;");
+          const stmt = db.prepare(`
+            INSERT INTO deutes (comercial, cliente, import, fecha, activo)
+            VALUES (?, ?, ?, ?, 1)
+          `);
+
+          data.forEach(d => {
+            let valorImport = typeof d.import === 'string'
+              ? Number(d.import.replace(',', '.'))
+              : Number(d.import);
+            stmt.run(d.comercial, d.cliente, valorImport, d.fecha);
+          });
+
+          stmt.finalize();
+          db.run("COMMIT;", (err) => {
+            if (err) { db.run("ROLLBACK;"); resolve({ success: false, error: err.message }); }
+            else resolve({ success: true, total: data.length });
+          });
+        });
+      });
+      if (resultado.success) {
+        fs.renameSync(filePath, filePath + '.MIGRADO');
+      }
+      return resultado;
+    }
+
+    if (tipo === 'gastos') {
+      const resultado = await new Promise((resolve) => {
+        db.serialize(() => {
+          db.run("BEGIN TRANSACTION;");
+          const stmt = db.prepare(`
+            INSERT INTO despeses (fecha, comercial, concepto, importe, estado, coordinador, activo)
+            VALUES (?, ?, ?, ?, ?, ?, 1)
+          `);
+
+          data.forEach(g => {
+            stmt.run(g.fecha, g.comercial, g.concepto, g.importe, g.estado, g.coordinador);
+          });
+
+          stmt.finalize();
+          db.run("COMMIT;", (err) => {
+            if (err) { db.run("ROLLBACK;"); resolve({ success: false, error: err.message }); }
+            else resolve({ success: true, total: data.length });
+          });
+        });
+      });
+      if (resultado.success) {
+        fs.renameSync(filePath, filePath + '.MIGRADO');
+      }
+      return resultado;
+    }
+
+    return { success: false, error: 'Tipo de migración no soportado.' };
+  } catch (err) {
+    console.error('[IMPORT CENTRAL] Error en importacionCentralizada:', err);
+    return { success: false, error: err.message };
+  }
+});
+
 // Cerrar de forma limpia todas las conexiones SQLite al salir
 app.on('will-quit', () => {
   console.log("Aplicación cerrándose, lanzando salvaguarda...");

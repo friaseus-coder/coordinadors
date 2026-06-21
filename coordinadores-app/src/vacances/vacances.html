@@ -122,9 +122,6 @@
         <button class="btn-nyn" onclick="exportarJSON()" style="background:var(--nyn-lila);" data-i18n="vacancesExportJSON">💾 Exportar</button>
         <button class="btn-nyn" onclick="document.getElementById('inputImportar').click()" style="background:var(--nyn-taronja);" data-i18n="vacancesImportJSON">📂 Importar</button>
         <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
-        <button id="btn-migrar-vacaciones-sqlite" class="btn-nyn px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-medium transition-colors ml-2" style="background: #8e24aa;" title="Migrar JSON viejo a base de datos SQLite">
-          <i class="fas fa-database mr-1"></i> Migrar a SQLite
-        </button>
         <button class="btn-nyn" onclick="reiniciarTot()" style="background:#d32f2f;" data-i18n="vacancesClearData">🗑️ Esborrar dades</button>
         <div id="lastExport" data-i18n="vacancesLastExportNone">Última exportació: Mai</div>
     </div>
@@ -797,76 +794,7 @@ function calcularDiesPassats(rang) {
         inicialitzar();
     });
 
-    document.addEventListener('DOMContentLoaded', () => {
-        const btnMigrarVacaciones = document.getElementById('btn-migrar-vacaciones-sqlite');
-        
-        if (btnMigrarVacaciones) {
-            btnMigrarVacaciones.addEventListener('click', async () => {
-                if(confirm("¿Estás seguro de que quieres volcar el histórico del JSON de vacaciones a la base de datos SQLite?")) {
-                    try {
-                        btnMigrarVacaciones.innerText = "Migrando...";
-                        btnMigrarVacaciones.disabled = true;
 
-                        const any = document.getElementById('selectAny').value || '2026';
-                        
-                        // 1. Obtener los datos del JSON antiguo desde localStorage
-                        let rawData = [];
-                        const dadesRaw = localStorage.getItem('nyn_vacances_' + any);
-                        if (dadesRaw) {
-                            rawData = JSON.parse(dadesRaw);
-                        }
-
-                        if (!rawData || rawData.length === 0) {
-                            alert("No se han encontrado datos antiguos en memoria para migrar.");
-                            return;
-                        }
-
-                        // 2. Transformar los datos de la UI al formato plano relacional para la migración
-                        const dataJSONParaMigrar = [];
-                        for (const fila of rawData) {
-                            const nombre = (fila.n || "").trim();
-                            if (nombre === "-" || nombre === "") continue;
-
-                            const parsearYAgregar = (rangoStr) => {
-                                if (!rangoStr || rangoStr === "-") return;
-                                const parseado = persistence.parsearRangoFecha(rangoStr, any);
-                                if (parseado) {
-                                    dataJSONParaMigrar.push({
-                                        nombre: nombre,
-                                        fecha_inicio: parseado.inicio,
-                                        fecha_fin: parseado.fin
-                                    });
-                                }
-                            };
-
-                            parsearYAgregar(fila.p);
-                            parsearYAgregar(fila.p2);
-                        }
-
-                        if (dataJSONParaMigrar.length === 0) {
-                            alert("No se han encontrado períodos de vacaciones válidos para migrar.");
-                            return;
-                        }
-
-                        // 3. Ejecutar la migración en SQLite
-                        const resultado = await window.databaseAPI.migrarJsonVacaciones(dataJSONParaMigrar);
-
-                        if (resultado.success) {
-                            alert(`¡Migración completada! Se insertaron ${resultado.total} registros de vacaciones.`);
-                            location.reload(); // Recargamos para que lea de SQLite
-                        } else {
-                            alert("Error migrando a SQLite: " + resultado.error);
-                        }
-                    } catch (error) {
-                        alert("Error crítico durante la migración: " + error.message);
-                    } finally {
-                        btnMigrarVacaciones.innerHTML = '<i class="fas fa-database mr-1"></i> Migrar a SQLite';
-                        btnMigrarVacaciones.disabled = false;
-                    }
-                }
-            });
-        }
-    });
 
     window.onload = inicialitzar;
 </script>

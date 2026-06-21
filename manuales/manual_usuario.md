@@ -160,7 +160,6 @@ Para evitar que dos coordinadores editen y pisen el trabajo del otro en el disco
 El módulo de **Vacances** ha sido modernizado y ahora interactúa directamente con la base de datos única relacional de SQLite, garantizando una planificación exacta y libre de inconsistencias:
 1.  **Edición Interactiva y Guardado Automático:** Cada vez que modificas la fecha de inicio o fin de un período de vacaciones, o actualizas las observaciones de un trabajador en la tabla, el sistema guarda los cambios de forma asíncrona en la base de datos en segundo plano sin necesidad de pulsar un botón de guardado.
 2.  **Eliminación de Vacaciones:** Si dejas una fecha vacía o eliminas una fila de vacaciones en la pantalla, el registro correspondiente se borra físicamente de SQLite al instante.
-3.  **Botón de Migración Masiva:** Si tu base de datos relacional está vacía y deseas cargar las vacaciones históricas que guardabas en archivos JSON tradicionales, haz clic en el botón **"🔄 Migrar a SQLite"** situado en la cabecera de la sección de vacaciones. El asistente importará todo el historial de vacaciones JSON antiguo y lo sembrará en la tabla SQLite de forma automática en una transacción de red única.
 
 ---
 
@@ -177,3 +176,16 @@ Para proteger tus datos operativos de cualquier corte de red, problemas de sincr
 1.  **Copia Diaria de Seguridad:** Cada vez que cierras la aplicación al terminar tu jornada, el sistema realiza de forma silenciosa una copia completa de la base de datos de trabajo y la guarda en la carpeta local **Documentos/Coordinadores_Backups/dades_[TuNombre]/Diario/**. Esta copia se actualiza automáticamente con tus últimos cambios de cada día.
 2.  **Cierre Mensual Congelado (Foto Fija Histórica):** Al arrancar el programa, la aplicación detecta de forma inteligente si se ha iniciado un nuevo mes. De ser así, congela el estado del mes anterior de manera inmutable en la carpeta **Documentos/Coordinadores_Backups/dades_[TuNombre]/Historico/** con el año y mes correspondientes. Estas fotos históricas nunca se sobrescriben ni se eliminan, sirviendo de archivo contable local inalterable.
 3.  **Ubicación de los Resguardos:** En caso de que necesites recuperar información histórica o ante una eventual caída de los sistemas de red, podrás encontrar todas estas copias de seguridad organizadas por carpetas directamente en la sección "Documentos" de tu ordenador Windows.
+
+---
+
+## 13. Panel de Administración y Migración Centralizada (Solo Administradores)
+
+Con la unificación del motor de base de datos SQLite y la eliminación completa del almacenamiento JSON heredado, se ha habilitado un panel de administración centralizado que agrupa todas las herramientas de mantenimiento y migración histórica:
+1.  **Acceso al Panel:** Haz clic en tu nombre en la barra de menú o en el menú de configuración y selecciona la opción del **Panel de Administración** (disponible para el Jefe de Operaciones).
+2.  **Volcado Histórico de Datos:** Desde esta pantalla, puedes seleccionar e importar de forma segura los archivos antiguos de tus módulos JSON heredados:
+    *   **Cuadrante:** Migra todos los turnos del JSON seleccionado a las tablas correspondientes de SQLite.
+    *   **Vacaciones:** Normaliza e importa el historial completo de vacaciones de los coordinadores.
+    *   **Gastos:** Carga todos los históricos de tickets y caja chica directamente en base de datos.
+    *   **Deudas:** Importa el saldo pendiente de excesos de jornada del personal.
+3.  **Seguridad y Evitación de Duplicados:** Al procesar un archivo con éxito, el sistema le añade de forma automática la extensión `.MIGRADO` al nombre del archivo original en tu disco de red. Esto evita que se vuelva a importar accidentalmente el mismo archivo, lo cual duplicaría registros y alteraría las cuentas y planificaciones de la base de datos centralizada.
