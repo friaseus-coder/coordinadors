@@ -122,6 +122,7 @@
         <button class="btn-nyn" onclick="exportarJSON()" style="background:var(--nyn-lila);" data-i18n="vacancesExportJSON">💾 Exportar</button>
         <button class="btn-nyn" onclick="document.getElementById('inputImportar').click()" style="background:var(--nyn-taronja);" data-i18n="vacancesImportJSON">📂 Importar</button>
         <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
+        <button class="btn-nyn" onclick="migrarDatosALaTablaRelacional()" style="background:#8e24aa;">🔄 Migrar a SQLite</button>
         <button class="btn-nyn" onclick="reiniciarTot()" style="background:#d32f2f;" data-i18n="vacancesClearData">🗑️ Esborrar dades</button>
         <div id="lastExport" data-i18n="vacancesLastExportNone">Última exportació: Mai</div>
     </div>
@@ -230,7 +231,7 @@ function esDiaFestiu(data, centre) {
         const storedExport = localStorage.getItem('nyn_last_export_' + selAny.value);
         document.getElementById('lastExport').innerText = storedExport ? i18n.t('vacancesLastExportPrefix') + storedExport : i18n.t('vacancesLastExportNone');
         actualitzarFiltres();
-        renderTable();
+        await renderTable();
     }
 
     function actualitzarFiltres() {
@@ -252,39 +253,123 @@ function esDiaFestiu(data, centre) {
         marcarSeparadors();
     }
 
-  function renderTable() {
-    const any = document.getElementById('selectAny').value;
-    if(!any) return;
-    const dades = JSON.parse(localStorage.getItem('nyn_vacances_' + any)) || [];
-    const tbody = document.getElementById('listaVacances');
-    tbody.innerHTML = "";
-
-    if (dades.length > 0) {
-        // Fem una còpia de les dades i les invertim per mantenir l'ordre original al fer prepend
-        dades.reverse().forEach(d => {
-            afegirFila(d);
-            // Agafem la fila que acabem de crear (la primera que s'ha inserit)
-            const tr = tbody.rows[0];
-            
-            // BUSQUEM EL SELECT DE CENTRE DINS LA FILA
-            const selectCentre = tr.cells[0].querySelector('select');
-            
-            // Si té un centre triat (que no sigui "-"), disparem l'event de canvi
-            // per a que la funció 'configurarCalendari' s'activi i busqui els festius
-            if (selectCentre && selectCentre.value !== "-") {
-                const event = new Event('change');
-                selectCentre.dispatchEvent(event);
+    async function renderTable() {
+        const any = document.getElementById('selectAny').value;
+        if(!any) return;
+        
+        // 1. Cargamos las vacaciones relacionales de SQLite
+        const vacancesSQLite = await loadVacacionesSQLite();
+        // 2. Cargamos los metadatos desde el localStorage
+        const dades = JSON.parse(localStorage.getItem('nyn_vacances_' + any)) || [];
+        
+        // Filtrar vacaciones relacionales de SQLite del año seleccionado
+        const vacancesDelAny = vacancesSQLite.filter(v => v.fecha_inicio.startsWith(any) || v.fecha_fin.startsWith(any));
+        
+        // Función helper para formatear fechas YYYY-MM-DD a DD/MM/YYYY
+        function formatearFechaSQL(fechaSQL) {
+            if (!fechaSQL) return "";
+            const parts = fechaSQL.split('-');
+            if (parts.length < 3) return fechaSQL;
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        
+        // Agrupamos las vacaciones de SQLite por agente_nombre (insensible a mayúsculas/minúsculas)
+        const agrupadoSQLite = {};
+        vacancesDelAny.forEach(v => {
+            const nombreClave = v.agente_nombre.toUpperCase();
+            if (!agrupadoSQLite[nombreClave]) {
+                agrupadoSQLite[nombreClave] = [];
             }
+            agrupadoSQLite[nombreClave].push(v);
         });
-    } else {
-        afegirFila();
+        
+        // Ordenamos cronológicamente las vacaciones de cada agente
+        for (const nombre in agrupadoSQLite) {
+            agrupadoSQLite[nombre].sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
+        }
+        
+        // Mapeamos y actualizamos las fechas de los períodos de los metadatos cargados
+        const dadesActualitzades = dades.map(d => {
+            const nombreAgente = (d.n || "").trim();
+            if (nombreAgente === "-" || nombreAgente === "") return d;
+            
+            const periodosAgente = agrupadoSQLite[nombreAgente.toUpperCase()];
+            if (periodosAgente && periodosAgente.length > 0) {
+                // Primer período
+                const p1 = periodosAgente[0];
+                const inicio1 = formatearFechaSQL(p1.fecha_inicio);
+                const fin1 = formatearFechaSQL(p1.fecha_fin);
+                d.p = (inicio1 === fin1) ? inicio1 : `${inicio1} a ${fin1}`;
+                
+                // Segundo período
+                if (periodosAgente.length > 1) {
+                    const p2 = periodosAgente[1];
+                    const inicio2 = formatearFechaSQL(p2.fecha_inicio);
+                    const fin2 = formatearFechaSQL(p2.fecha_fin);
+                    d.p2 = (inicio2 === fin2) ? inicio2 : `${inicio2} a ${fin2}`;
+                } else {
+                    d.p2 = "";
+                }
+            } else {
+                // Si no tiene vacaciones en SQLite, vaciamos los periodos
+                d.p = "";
+                d.p2 = "";
+            }
+            return d;
+        });
+        
+        // Comprobar si hay agentes con vacaciones en SQLite que no estén en nuestros metadatos
+        for (const nombreClave in agrupadoSQLite) {
+            const existeEnMetadatos = dadesActualitzades.some(d => d.n.toUpperCase() === nombreClave);
+            if (!existeEnMetadatos) {
+                const periodosAgente = agrupadoSQLite[nombreClave];
+                const p1 = periodosAgente[0];
+                const inicio1 = formatearFechaSQL(p1.fecha_inicio);
+                const fin1 = formatearFechaSQL(p1.fecha_fin);
+                const rango1 = (inicio1 === fin1) ? inicio1 : `${inicio1} a ${fin1}`;
+                
+                let rango2 = "";
+                if (periodosAgente.length > 1) {
+                    const p2 = periodosAgente[1];
+                    const inicio2 = formatearFechaSQL(p2.fecha_inicio);
+                    const fin2 = formatearFechaSQL(p2.fecha_fin);
+                    rango2 = (inicio2 === fin2) ? inicio2 : `${inicio2} a ${fin2}`;
+                }
+                
+                dadesActualitzades.push({
+                    c: "-", 
+                    n: p1.agente_nombre, 
+                    j: "T.C.", 
+                    p: rango1,
+                    p2: rango2,
+                    d: 0,
+                    cor: 30,
+                    fp: "",
+                    f: 0,
+                    b: "-",
+                    obs: "Creado automáticamente desde SQLite"
+                });
+            }
+        }
+        
+        const tbody = document.getElementById('listaVacances');
+        tbody.innerHTML = "";
+
+        if (dadesActualitzades.length > 0) {
+            dadesActualitzades.reverse().forEach(d => {
+                afegirFila(d);
+                const tr = tbody.rows[0];
+                const selectCentre = tr.cells[0].querySelector('select');
+                if (selectCentre && selectCentre.value !== "-") {
+                    const event = new Event('change');
+                    selectCentre.dispatchEvent(event);
+                }
+            });
+        } else {
+            afegirFila();
+        }
+        ordenarTaula();
     }
-    ordenarTaula();
-}
-
-
-
-
 
     function afegirFila(d = {}) {
         const tbody = document.getElementById('listaVacances');
@@ -606,6 +691,57 @@ function calcularDiesPassats(rang) {
         i18n.translatePage();
         inicialitzar();
     });
+
+    async function migrarDatosALaTablaRelacional() {
+        const any = document.getElementById('selectAny').value;
+        const dadesRaw = localStorage.getItem('nyn_vacances_' + any);
+        if (!dadesRaw) {
+            alert("No hi ha dades a local per migrar.");
+            return;
+        }
+
+        try {
+            const dades = JSON.parse(dadesRaw);
+            const dataJSONParaMigrar = [];
+
+            for (const fila of dades) {
+                const nombre = (fila.n || "").trim();
+                if (nombre === "-" || nombre === "") continue;
+
+                const parsearYAgregar = (rangoStr) => {
+                    if (!rangoStr || rangoStr === "-") return;
+                    const parseado = persistence.parsearRangoFecha(rangoStr, any);
+                    if (parseado) {
+                        dataJSONParaMigrar.push({
+                            nombre: nombre,
+                            fecha_inicio: parseado.inicio,
+                            fecha_fin: parseado.fin
+                        });
+                    }
+                };
+
+                parsearYAgregar(fila.p);
+                parsearYAgregar(fila.p2);
+            }
+
+            if (dataJSONParaMigrar.length === 0) {
+                alert("No s'han trobat períodes de vacances vàlids per migrar.");
+                return;
+            }
+
+            console.log("Migrando vacaciones a la tabla relacional:", dataJSONParaMigrar);
+            const res = await window.databaseAPI.migrarJsonVacaciones(dataJSONParaMigrar);
+            if (res && res.success) {
+                alert(`S'han migrat correctament ${res.total} registres de vacances a SQLite.`);
+                await inicialitzar();
+            } else {
+                alert("Error en realitzar la migració.");
+            }
+        } catch (e) {
+            console.error("Error durante la migración de vacaciones:", e);
+            alert("S'ha produït un error durant la migració.");
+        }
+    }
 
     window.onload = inicialitzar;
 </script>

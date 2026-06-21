@@ -2393,6 +2393,78 @@ ipcMain.handle('obtener-recomendaciones-cuadrante', async (event, { fecha, aparc
   });
 });
 
+// --- GESTIÓN DE VACACIONES (SQLITE) ---
+
+ipcMain.handle('get-vacaciones-relacional', async () => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    // Obtenemos las vacaciones cruzando con el nombre del agente
+    const sql = `
+      SELECT v.id, v.agente_id, a.nombre as agente_nombre, v.fecha_inicio, v.fecha_fin
+      FROM vacances v
+      JOIN agentes a ON v.agente_id = a.id
+      ORDER BY v.fecha_inicio ASC
+    `;
+    db.all(sql, [], (err, rows) => {
+      if (err) reject(err); else resolve(rows);
+    });
+  });
+});
+
+ipcMain.handle('save-vacacion-relacional', async (event, { agente_id, fecha_inicio, fecha_fin }) => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    const sql = "INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)";
+    db.run(sql, [agente_id, fecha_inicio, fecha_fin], function(err) {
+      if (err) reject(err); else resolve({ success: true, id: this.lastID });
+    });
+  });
+});
+
+ipcMain.handle('delete-vacacion-relacional', async (event, { id }) => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    const sql = "DELETE FROM vacances WHERE id = ?";
+    db.run(sql, [id], function(err) {
+      if (err) reject(err); else resolve({ success: true });
+    });
+  });
+});
+
+// Importador masivo desde JSON de Vacaciones antiguo
+ipcMain.handle('migrar-json-vacaciones', async (event, { dataJSON }) => {
+  return new Promise(async (resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    
+    // Traemos los agentes para mapear el nombre antiguo al ID de SQLite
+    const agentes = await new Promise((res, rej) => db.all("SELECT id, nombre FROM agentes", [], (e, rows) => e ? rej(e) : res(rows)));
+    
+    db.serialize(() => {
+      db.run("BEGIN TRANSACTION;");
+      const stmt = db.prepare("INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)");
+      
+      let insertadas = 0;
+      
+      // La estructura vieja suele ser arrays o un objeto con nombres
+      // Adaptamos de forma genérica asumiendo que dataJSON es iterado por la UI
+      for (const item of dataJSON) {
+        // Buscar el agente
+        const agente = agentes.find(a => a.nombre.toUpperCase().includes(item.nombre.toUpperCase()));
+        if (agente && item.fecha_inicio && item.fecha_fin) {
+          stmt.run(agente.id, item.fecha_inicio, item.fecha_fin);
+          insertadas++;
+        }
+      }
+      
+      stmt.finalize();
+      db.run("COMMIT;", (err) => {
+        if (err) { db.run("ROLLBACK;"); reject(err); } 
+        else resolve({ success: true, total: insertadas });
+      });
+    });
+  });
+});
+
 // Cerrar de forma limpia todas las conexiones SQLite al salir
 app.on('will-quit', () => {
   // Realizar backup diario antes de salir

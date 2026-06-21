@@ -928,7 +928,8 @@ const persistence = (() => {
     syncLoad,
     syncSave,
     getFilePath: () => currentFilePath,
-    isReadOnly: () => isReadOnlyMode
+    isReadOnly: () => isReadOnlyMode,
+    parsearRangoFecha: parsearRangoFecha
   };
 })();
 
@@ -1124,5 +1125,34 @@ async function obtenerAsistenteAsignacion(fecha, aparcamientoId) {
     } catch (error) {
         console.error("Error al consultar el Asistente de Cuadrante:", error);
         return { sugeridos: [], descartados: [] };
+    }
+}
+
+// --- NUEVAS FUNCIONES DE VACACIONES (SQLITE) ---
+async function loadVacacionesSQLite() {
+    try {
+        console.log("Cargando vacaciones desde SQLite...");
+        return await window.databaseAPI.getVacacionesRelacional();
+    } catch (error) {
+        console.error("Error cargando vacaciones SQLite:", error);
+        return [];
+    }
+}
+
+async function saveVacacionSQLite(agenteId, fechaInicio, fechaFin) {
+    try {
+        return await window.databaseAPI.saveVacacionRelacional({ agente_id: agenteId, fecha_inicio: fechaInicio, fecha_fin: fechaFin });
+    } catch (error) {
+        console.error("Error guardando vacación SQLite:", error);
+        return { success: false };
+    }
+}
+
+async function deleteVacacionSQLite(id) {
+    try {
+        return await window.databaseAPI.deleteVacacionRelacional({ id });
+    } catch (error) {
+        console.error("Error borrando vacación SQLite:", error);
+        return { success: false };
     }
 }

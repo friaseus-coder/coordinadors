@@ -57,5 +57,11 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   // --- Cuadrante Relacional ---
   getTurnosCuadrante: (fechaInicio, fechaFin) => ipcRenderer.invoke('get-turnos-cuadrante', { fechaInicio, fechaFin }),
   saveTurnoCuadrante: (turnoData) => ipcRenderer.invoke('save-turno-cuadrante', turnoData),
-  deleteTurnoCuadrante: (fecha, aparcamiento_id, turno) => ipcRenderer.invoke('delete-turno-cuadrante', { fecha, aparcamiento_id, turno })
+  deleteTurnoCuadrante: (fecha, aparcamiento_id, turno) => ipcRenderer.invoke('delete-turno-cuadrante', { fecha, aparcamiento_id, turno }),
+
+  // --- Vacaciones ---
+  getVacacionesRelacional: () => ipcRenderer.invoke('get-vacaciones-relacional'),
+  saveVacacionRelacional: (datos) => ipcRenderer.invoke('save-vacacion-relacional', datos),
+  deleteVacacionRelacional: (id) => ipcRenderer.invoke('delete-vacacion-relacional', id),
+  migrarJsonVacaciones: (dataJSON) => ipcRenderer.invoke('migrar-json-vacaciones', { dataJSON })
 });
