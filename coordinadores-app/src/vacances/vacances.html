@@ -122,7 +122,9 @@
         <button class="btn-nyn" onclick="exportarJSON()" style="background:var(--nyn-lila);" data-i18n="vacancesExportJSON">💾 Exportar</button>
         <button class="btn-nyn" onclick="document.getElementById('inputImportar').click()" style="background:var(--nyn-taronja);" data-i18n="vacancesImportJSON">📂 Importar</button>
         <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
-        <button class="btn-nyn" onclick="migrarDatosALaTablaRelacional()" style="background:#8e24aa;">🔄 Migrar a SQLite</button>
+        <button id="btn-migrar-vacaciones-sqlite" class="btn-nyn px-3 py-1 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm font-medium transition-colors ml-2" style="background: #8e24aa;" title="Migrar JSON viejo a base de datos SQLite">
+          <i class="fas fa-database mr-1"></i> Migrar a SQLite
+        </button>
         <button class="btn-nyn" onclick="reiniciarTot()" style="background:#d32f2f;" data-i18n="vacancesClearData">🗑️ Esborrar dades</button>
         <div id="lastExport" data-i18n="vacancesLastExportNone">Última exportació: Mai</div>
     </div>
@@ -212,6 +214,7 @@ function esDiaFestiu(data, centre) {
     }
 
     async function inicialitzar() {
+        window.AGENTES_SQLITE = await loadCoordinadores();
         await persistence.syncLoad('vacances');
         CENTRES = JSON.parse(localStorage.getItem('nyn_centres')) || [];
         PLANTILLA = JSON.parse(localStorage.getItem('nyn_plantilla')) || [];
@@ -300,6 +303,7 @@ function esDiaFestiu(data, centre) {
                 const inicio1 = formatearFechaSQL(p1.fecha_inicio);
                 const fin1 = formatearFechaSQL(p1.fecha_fin);
                 d.p = (inicio1 === fin1) ? inicio1 : `${inicio1} a ${fin1}`;
+                d.id1 = p1.id;
                 
                 // Segundo período
                 if (periodosAgente.length > 1) {
@@ -307,13 +311,16 @@ function esDiaFestiu(data, centre) {
                     const inicio2 = formatearFechaSQL(p2.fecha_inicio);
                     const fin2 = formatearFechaSQL(p2.fecha_fin);
                     d.p2 = (inicio2 === fin2) ? inicio2 : `${inicio2} a ${fin2}`;
+                    d.id2 = p2.id;
                 } else {
                     d.p2 = "";
+                    d.id2 = "";
                 }
             } else {
-                // Si no tiene vacaciones en SQLite, vaciamos los periodos
                 d.p = "";
+                d.id1 = "";
                 d.p2 = "";
+                d.id2 = "";
             }
             return d;
         });
@@ -341,7 +348,9 @@ function esDiaFestiu(data, centre) {
                     n: p1.agente_nombre, 
                     j: "T.C.", 
                     p: rango1,
+                    id1: p1.id,
                     p2: rango2,
+                    id2: periodosAgente.length > 1 ? periodosAgente[1].id : "",
                     d: 0,
                     cor: 30,
                     fp: "",
@@ -385,7 +394,7 @@ function esDiaFestiu(data, centre) {
                 </select>
             </td>
             <td class="col-nom">
-                <select onchange="desar()">
+                <select onchange="canviTrabajador(this); desar()">
                     <option value="-">-</option>
                     ${PLANTILLA.sort().map(v => `<option value="${v}" ${v===nSel?'selected':''}>${v}</option>`).join('')}
                 </select>
@@ -396,8 +405,8 @@ function esDiaFestiu(data, centre) {
                     <option ${j==='T.P.'?'selected':''}>T.P.</option>
                 </select>
             </td>
-            <td style="background:#f9f9f9"><input type="text" class="input-periode" value="${d.p||''}" readonly></td>
-            <td style="background:#fcfcfc"><input type="text" class="input-periode" value="${d.p2||''}" readonly></td>
+            <td style="background:#f9f9f9"><input type="text" class="input-periode" value="${d.p||''}" data-db-id="${d.id1||''}" readonly></td>
+            <td style="background:#fcfcfc"><input type="text" class="input-periode" value="${d.p2||''}" data-db-id="${d.id2||''}" readonly></td>
             <td class="bg-disfrutats"><input type="number" min="0" value="${d.d||0}" oninput="validarPositiu(this); calcular(this)"></td>
             <td class="bg-pendents">0</td>
             <td class="bg-corresp"><input type="number" min="0" value="${d.cor||30}" oninput="validarPositiu(this); calcular(this)"></td>
@@ -405,13 +414,32 @@ function esDiaFestiu(data, centre) {
             <td class="bg-festius"><input type="number" min="0" value="${d.f||0}" oninput="validarPositiu(this); aplicarColorFestius(this); desar()"></td>
             <td><input type="text" value="${d.b||'-'}" oninput="desar()"></td>
             <td><input type="text" style="text-align:left; padding-left:5px" value="${d.obs||''}" oninput="desar()"></td>
-            <td><button class="btn-delete-row" onclick="this.closest('tr').remove(); desar(); marcarSeparadors();">✖</button></td>
+            <td><button class="btn-delete-row" onclick="eliminarFilaVacaciones(this)">✖</button></td>
         `;
         tbody.prepend(tr);
         configurarCalendari(tr);
         aplicarColorJornada(tr.cells[2].querySelector('select'));
         aplicarColorFestius(tr.querySelector('td.bg-festius input'));
         calcular(tr.querySelector('input[type="number"]'));
+    }
+
+    async function eliminarFilaVacaciones(btn) {
+        const tr = btn.closest('tr');
+        if (!tr) return;
+
+        if (confirm("Estàs segur que vols eliminar aquesta fila i totes les seves vacances associades en SQLite?")) {
+            const inputsPeriode = tr.querySelectorAll('.input-periode');
+            for (const input of inputsPeriode) {
+                const dbId = input.getAttribute('data-db-id');
+                if (dbId) {
+                    console.log(`Eliminando vacación relacional con ID: ${dbId}`);
+                    await deleteVacacionSQLite(Number(dbId));
+                }
+            }
+            tr.remove();
+            desar();
+            marcarSeparadors();
+        }
     }
 
     function canviCentre(sel) { sel.closest('td').style.backgroundColor = colorsMap[sel.value] || "#fff"; desar(); ordenarTaula(); }
@@ -478,7 +506,10 @@ function configurarCalendari(tr) {
     tr.querySelectorAll(".input-periode").forEach(input => {
         flatpickr(input, { 
             mode: "range", dateFormat: "d/m/Y", locale: "ca", allowInput: true,
-            onClose: () => { actualitzarTotAut(); }
+            onClose: (selectedDates, dateStr, instance) => { 
+                actualitzarTotAut(); 
+                sincronizarPeriodoSQLite(instance.element);
+            }
         });
     });
 
@@ -498,6 +529,80 @@ function configurarCalendari(tr) {
         canviCentre(e.target);
         actualitzarTotAut(); 
     };
+}
+
+async function sincronizarPeriodoSQLite(input) {
+    const tr = input.closest('tr');
+    if (!tr) return;
+    
+    const selectAgente = tr.cells[1].querySelector('select');
+    if (!selectAgente) return;
+    
+    const nombreAgente = selectAgente.value;
+    const dbId = input.getAttribute('data-db-id');
+    const any = document.getElementById('selectAny').value || '2026';
+    
+    if (nombreAgente === "-" || nombreAgente === "") {
+        if (dbId) {
+            await deleteVacacionSQLite(Number(dbId));
+            input.removeAttribute('data-db-id');
+        }
+        return;
+    }
+    
+    if (typeof AGENTES_SQLITE === 'undefined' || !AGENTES_SQLITE) {
+        AGENTES_SQLITE = await loadCoordinadores();
+    }
+    const agenteObj = AGENTES_SQLITE.find(a => a.nombre.toUpperCase() === nombreAgente.toUpperCase());
+    if (!agenteObj) {
+        console.warn("Agente no encontrado en SQLite:", nombreAgente);
+        return;
+    }
+    const agenteId = agenteObj.id;
+    
+    const dateStr = input.value.trim();
+    if (dateStr === "" || dateStr === "-") {
+        if (dbId) {
+            await deleteVacacionSQLite(Number(dbId));
+            input.removeAttribute('data-db-id');
+            desar();
+        }
+        return;
+    }
+    
+    const parseado = persistence.parsearRangoFecha(dateStr, any);
+    if (!parseado) {
+        console.warn("Rango de fecha no válido:", dateStr);
+        return;
+    }
+    
+    try {
+        if (dbId) {
+            console.log(`Borrando vacación anterior con ID: ${dbId}`);
+            await deleteVacacionSQLite(Number(dbId));
+            input.removeAttribute('data-db-id');
+        }
+        
+        console.log(`Guardando vacación relacional para agente ${agenteId} (${nombreAgente}): ${parseado.inicio} a ${parseado.fin}`);
+        const res = await saveVacacionSQLite(agenteId, parseado.inicio, parseado.fin);
+        if (res && res.success && res.id) {
+            input.setAttribute('data-db-id', res.id);
+            console.log(`Vacación guardada en SQLite con nuevo ID: ${res.id}`);
+        }
+        desar();
+    } catch (e) {
+        console.error("Error sincronizando vacación SQLite:", e);
+    }
+}
+
+async function canviTrabajador(select) {
+    const tr = select.closest('tr');
+    if (!tr) return;
+    
+    const inputs = tr.querySelectorAll('.input-periode');
+    for (const input of inputs) {
+        await sincronizarPeriodoSQLite(input);
+    }
 }
 
 
@@ -692,56 +797,76 @@ function calcularDiesPassats(rang) {
         inicialitzar();
     });
 
-    async function migrarDatosALaTablaRelacional() {
-        const any = document.getElementById('selectAny').value;
-        const dadesRaw = localStorage.getItem('nyn_vacances_' + any);
-        if (!dadesRaw) {
-            alert("No hi ha dades a local per migrar.");
-            return;
-        }
+    document.addEventListener('DOMContentLoaded', () => {
+        const btnMigrarVacaciones = document.getElementById('btn-migrar-vacaciones-sqlite');
+        
+        if (btnMigrarVacaciones) {
+            btnMigrarVacaciones.addEventListener('click', async () => {
+                if(confirm("¿Estás seguro de que quieres volcar el histórico del JSON de vacaciones a la base de datos SQLite?")) {
+                    try {
+                        btnMigrarVacaciones.innerText = "Migrando...";
+                        btnMigrarVacaciones.disabled = true;
 
-        try {
-            const dades = JSON.parse(dadesRaw);
-            const dataJSONParaMigrar = [];
+                        const any = document.getElementById('selectAny').value || '2026';
+                        
+                        // 1. Obtener los datos del JSON antiguo desde localStorage
+                        let rawData = [];
+                        const dadesRaw = localStorage.getItem('nyn_vacances_' + any);
+                        if (dadesRaw) {
+                            rawData = JSON.parse(dadesRaw);
+                        }
 
-            for (const fila of dades) {
-                const nombre = (fila.n || "").trim();
-                if (nombre === "-" || nombre === "") continue;
+                        if (!rawData || rawData.length === 0) {
+                            alert("No se han encontrado datos antiguos en memoria para migrar.");
+                            return;
+                        }
 
-                const parsearYAgregar = (rangoStr) => {
-                    if (!rangoStr || rangoStr === "-") return;
-                    const parseado = persistence.parsearRangoFecha(rangoStr, any);
-                    if (parseado) {
-                        dataJSONParaMigrar.push({
-                            nombre: nombre,
-                            fecha_inicio: parseado.inicio,
-                            fecha_fin: parseado.fin
-                        });
+                        // 2. Transformar los datos de la UI al formato plano relacional para la migración
+                        const dataJSONParaMigrar = [];
+                        for (const fila of rawData) {
+                            const nombre = (fila.n || "").trim();
+                            if (nombre === "-" || nombre === "") continue;
+
+                            const parsearYAgregar = (rangoStr) => {
+                                if (!rangoStr || rangoStr === "-") return;
+                                const parseado = persistence.parsearRangoFecha(rangoStr, any);
+                                if (parseado) {
+                                    dataJSONParaMigrar.push({
+                                        nombre: nombre,
+                                        fecha_inicio: parseado.inicio,
+                                        fecha_fin: parseado.fin
+                                    });
+                                }
+                            };
+
+                            parsearYAgregar(fila.p);
+                            parsearYAgregar(fila.p2);
+                        }
+
+                        if (dataJSONParaMigrar.length === 0) {
+                            alert("No se han encontrado períodos de vacaciones válidos para migrar.");
+                            return;
+                        }
+
+                        // 3. Ejecutar la migración en SQLite
+                        const resultado = await window.databaseAPI.migrarJsonVacaciones(dataJSONParaMigrar);
+
+                        if (resultado.success) {
+                            alert(`¡Migración completada! Se insertaron ${resultado.total} registros de vacaciones.`);
+                            location.reload(); // Recargamos para que lea de SQLite
+                        } else {
+                            alert("Error migrando a SQLite: " + resultado.error);
+                        }
+                    } catch (error) {
+                        alert("Error crítico durante la migración: " + error.message);
+                    } finally {
+                        btnMigrarVacaciones.innerHTML = '<i class="fas fa-database mr-1"></i> Migrar a SQLite';
+                        btnMigrarVacaciones.disabled = false;
                     }
-                };
-
-                parsearYAgregar(fila.p);
-                parsearYAgregar(fila.p2);
-            }
-
-            if (dataJSONParaMigrar.length === 0) {
-                alert("No s'han trobat períodes de vacances vàlids per migrar.");
-                return;
-            }
-
-            console.log("Migrando vacaciones a la tabla relacional:", dataJSONParaMigrar);
-            const res = await window.databaseAPI.migrarJsonVacaciones(dataJSONParaMigrar);
-            if (res && res.success) {
-                alert(`S'han migrat correctament ${res.total} registres de vacances a SQLite.`);
-                await inicialitzar();
-            } else {
-                alert("Error en realitzar la migració.");
-            }
-        } catch (e) {
-            console.error("Error durante la migración de vacaciones:", e);
-            alert("S'ha produït un error durant la migració.");
+                }
+            });
         }
-    }
+    });
 
     window.onload = inicialitzar;
 </script>

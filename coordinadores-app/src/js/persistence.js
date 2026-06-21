@@ -673,39 +673,11 @@ const persistence = (() => {
           key, JSON.stringify(rawVacances)
         ]);
 
-        // 2. Volcar de manera atómica a la tabla relacional vacances para el cuadrante inteligente
-        for (const fila of rawVacances) {
-          const nombreAgente = (fila.n || "-").trim();
-          if (nombreAgente === "-" || nombreAgente === "") continue;
-
-          // Buscar ID de agente
-          const aRow = await window.databaseAPI.consultar("SELECT id FROM agentes WHERE nombre = ?", [nombreAgente]);
-          if (aRow && aRow.length > 0) {
-            const agenteId = aRow[0].id;
-
-            // Eliminar vacaciones previas del agente para este año
-            const queryBorrar = "DELETE FROM vacances WHERE agente_id = ? AND (fecha_inicio LIKE ? OR fecha_fin LIKE ?)";
-            await window.databaseAPI.ejecutar(queryBorrar, [agenteId, `${any}-%`, `${any}-%`]);
-
-            // Parsear e insertar los rangos de vacaciones válidos
-            const rango1 = parsearRangoFecha(fila.p, any);
-            const rango2 = parsearRangoFecha(fila.p2, any);
-
-            if (rango1) {
-              await window.databaseAPI.ejecutar("INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)", [
-                agenteId, rango1.inicio, rango1.fin
-              ]);
-            }
-            if (rango2) {
-              await window.databaseAPI.ejecutar("INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)", [
-                agenteId, rango2.inicio, rango2.fin
-              ]);
-            }
-          }
-        }
+        // Se elimina el volcado atómico porque el frontend gestiona ahora de forma directa
+        // el CRUD de vacaciones relacionales mediante saveVacacionSQLite y deleteVacacionSQLite
         return true;
       } catch (err) {
-        console.error('[PERSISTENCE] Error guardando vacaciones relacionales:', err);
+        console.error('[PERSISTENCE] Error guardando vacaciones en kv_store:', err);
         return false;
       }
     }
