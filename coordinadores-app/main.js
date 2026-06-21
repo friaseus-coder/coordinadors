@@ -1353,10 +1353,9 @@ function sincronizarCatalogosIniciales(dbConnection) {
 
       // 2. Preparar la inserción/actualización de aparcamientos
       const stmt = dbConnection.prepare(`
-        INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-        ON CONFLICT(id) DO UPDATE SET
-          numero_obra = excluded.numero_obra,
+        INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ON CONFLICT(numero_obra) DO UPDATE SET
           nombre = excluded.nombre,
           zona = excluded.zona,
           es_remotizado = excluded.es_remotizado,
@@ -1367,16 +1366,16 @@ function sincronizarCatalogosIniciales(dbConnection) {
       `);
 
       // 3. Volcar los datos del JSON
-      parkings.forEach(p => {
+      parkings.forEach((p, idx) => {
         // Valores por defecto (Salvavidas) si el JSON no los tiene
-        const numObra = p.numero_obra || `OB-${1000 + p.id}`;
+        const numObra = p.numero_obra || `OB-${1000 + (p.id || idx)}`;
         const esRemoto = p.es_remotizado ? 1 : 0;
         const gestion = p.tipo_gestion || 'propio';
         const vacioLab = p.permitir_vacio_laborables ? 1 : 0;
         const sociedad = p.sociedad_id || 1; // Asignamos a la sociedad por defecto que acabamos de crear
         const responsable = p.coordinador_responsable || 'Ambos';
 
-        stmt.run(p.id, numObra, p.nombre, p.zona, esRemoto, gestion, vacioLab, sociedad, responsable);
+        stmt.run(numObra, p.nombre, p.zona, esRemoto, gestion, vacioLab, sociedad, responsable);
       });
 
       stmt.finalize();
