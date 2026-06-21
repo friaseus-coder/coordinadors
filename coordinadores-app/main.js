@@ -89,6 +89,9 @@ function conectarBaseDatosUnica(rutaCompartida) {
         if (typeof sincronizarAgentesIniciales === 'function') sincronizarAgentesIniciales(db);
         asegurarTablasSecundarias(db);
       }
+
+      // NUEVO: Verificar histórico mensual tras conectar
+      verificarCierreMensual(dbPath);
     }
   });
 
@@ -2222,55 +2225,77 @@ function formatearFecha(fechaString) {
   return `${dia}/${mes}/${año}`;
 }
 
-function realizarBackupDiario(dbPath, coordinadorName) {
-  if (!dbPath || !fs.existsSync(dbPath)) return;
-  const baseDir = path.join(app.getPath('documents'), 'Coordinadores_Backups', `dades_${coordinadorName}`);
-  const diarioDir = path.join(baseDir, 'Diario');
+// --- SISTEMA DE DOBLE BACKUP LOCAL ---
 
-  if (!fs.existsSync(diarioDir)) {
-    fs.mkdirSync(diarioDir, { recursive: true });
-  }
-
-  const destino = path.join(diarioDir, `dades_${coordinadorName}_diario.db`);
+/**
+ * Realiza una copia diaria en la carpeta Documentos locales del usuario.
+ * @param {string} dbPath - Ruta de la BD activa actual
+ */
+function realizarBackupDiario(dbPath) {
   try {
+    if (!dbPath || !fs.existsSync(dbPath)) return;
+
+    // Intentamos leer el nombre del coordinador del config
+    let coordinadorName = 'General';
+    try {
+      const configData = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+      if (configData.coordinador) coordinadorName = configData.coordinador;
+    } catch(e) {}
+
+    const baseDir = path.join(app.getPath('documents'), 'Coordinadores_Backups', `dades_${coordinadorName}`);
+    const diarioDir = path.join(baseDir, 'Diario');
+    
+    if (!fs.existsSync(diarioDir)) fs.mkdirSync(diarioDir, { recursive: true });
+
+    const destino = path.join(diarioDir, `dades_${coordinadorName}_diario.db`);
     fs.copyFileSync(dbPath, destino);
-    console.log(`[Backup Diario] Copia realizada exitosamente en: ${destino}`);
+    console.log(`[Backup] Copia diaria local guardada en: ${destino}`);
   } catch (e) {
-    console.error("[Backup Diario Error] Fallo al copiar el archivo:", e.message);
+    console.error("[Backup Error] Fallo al realizar la copia diaria:", e);
   }
 }
 
-function verificarYEjecutarCierreMensual(dbPath, coordinadorName) {
-  if (!dbPath || !fs.existsSync(dbPath)) return;
-  const fecha = new Date();
-  const mesActual = fecha.getMonth() + 1;
-  const añoActual = fecha.getFullYear();
+/**
+ * Comprueba si el mes ha cambiado y realiza una foto histórica inmutable del mes anterior.
+ * @param {string} dbPath - Ruta de la BD activa actual
+ */
+function verificarCierreMensual(dbPath) {
+  try {
+    if (!dbPath || !fs.existsSync(dbPath)) return;
 
-  let mesACerrar = mesActual - 1;
-  let añoACerrar = añoActual;
-  if (mesACerrar === 0) {
-    mesACerrar = 12;
-    añoACerrar = añoActual - 1;
-  }
-
-  const baseDir = path.join(app.getPath('documents'), 'Coordinadores_Backups', `dades_${coordinadorName}`);
-  const historicoDir = path.join(baseDir, 'Historico');
-
-  if (!fs.existsSync(historicoDir)) {
-    fs.mkdirSync(historicoDir, { recursive: true });
-  }
-
-  const mesFormateado = mesACerrar.toString().padStart(2, '0');
-  const nombreArchivoHistorico = `dades_${coordinadorName}_${añoACerrar}_${mesFormateado}.db`;
-  const rutaDestinoHistorico = path.join(historicoDir, nombreArchivoHistorico);
-
-  if (!fs.existsSync(rutaDestinoHistorico)) {
+    let coordinadorName = 'General';
     try {
-      fs.copyFileSync(dbPath, rutaDestinoHistorico);
-      console.log(`[Cierre Mensual] Mes ${mesFormateado}/${añoACerrar} congelado en histórico: ${rutaDestinoHistorico}`);
-    } catch (e) {
-      console.error("[Cierre Mensual Error] No se pudo crear el archivo congelado:", e.message);
+      const configData = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+      if (configData.coordinador) coordinadorName = configData.coordinador;
+    } catch(e) {}
+
+    const fecha = new Date();
+    let mesCierre = fecha.getMonth(); // getMonth() devuelve 0-11, el mes pasado es directamente getMonth()
+    let añoCierre = fecha.getFullYear();
+    
+    // Si estamos en Enero (0), el mes a cerrar es Diciembre (12) del año pasado
+    if (mesCierre === 0) {
+      mesCierre = 12;
+      añoCierre -= 1;
     }
+
+    const baseDir = path.join(app.getPath('documents'), 'Coordinadores_Backups', `dades_${coordinadorName}`);
+    const historicoDir = path.join(baseDir, 'Historico');
+    
+    if (!fs.existsSync(historicoDir)) fs.mkdirSync(historicoDir, { recursive: true });
+
+    const mesStr = mesCierre.toString().padStart(2, '0');
+    const destino = path.join(historicoDir, `dades_${coordinadorName}_${añoCierre}_${mesStr}.db`);
+
+    // Si la foto histórica de ese mes y año NO existe aún, la creamos
+    if (!fs.existsSync(destino)) {
+      fs.copyFileSync(dbPath, destino);
+      console.log(`[Backup] Cierre mensual histórico congelado en: ${destino}`);
+    } else {
+      console.log(`[Backup] El cierre del mes ${mesStr}/${añoCierre} ya estaba realizado.`);
+    }
+  } catch (e) {
+    console.error("[Backup Error] Fallo al realizar el cierre mensual:", e);
   }
 }
 
@@ -2508,9 +2533,9 @@ ipcMain.handle('delete-inventari-relacional', async (e, id) => dbRun("DELETE FRO
 
 // Cerrar de forma limpia todas las conexiones SQLite al salir
 app.on('will-quit', () => {
-  // Realizar backup diario antes de salir
+  console.log("Aplicación cerrándose, lanzando salvaguarda...");
   if (currentDbPath) {
-    realizarBackupDiario(currentDbPath, coordinadorActivo);
+    realizarBackupDiario(currentDbPath);
   }
 
   if (db) {

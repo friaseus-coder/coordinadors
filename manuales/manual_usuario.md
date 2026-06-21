@@ -169,3 +169,11 @@ Los módulos auxiliares de **Deudas (Exceso de jornada)**, **Gastos** e **Invent
 1.  **Sincronización en Tiempo Real:** Todos los coordinadores comparten la misma base de datos, por lo que cualquier registro financiero o alta de inventario introducida es visible para el resto de la oficina de manera inmediata al abrir o recargar la pestaña.
 2.  **Persistencia Transaccional Segura:** Al realizar cambios en estos listados, la aplicación guarda la información de forma transparente en SQLite. El sistema utiliza una estrategia de reescritura transaccional que asegura que el guardado sea robusto, eliminando el riesgo de corrupciones por apagados imprevistos o micro-cortes en la conexión de red de la oficina.
 3.  **Operatividad Intacta:** La interfaz de usuario mantiene su misma apariencia intuitiva y flujo de trabajo anterior, pero con la robustez y velocidad de almacenamiento de una base de datos profesional.
+
+---
+
+## 12. Sistema de Doble Salvaguarda Local (Backups Automáticos)
+Para proteger tus datos operativos de cualquier corte de red, problemas de sincronización de la nube o desconexión temporal, la aplicación gestiona de forma totalmente automática y transparente un sistema de doble copia de seguridad en tu equipo local:
+1.  **Copia Diaria de Seguridad:** Cada vez que cierras la aplicación al terminar tu jornada, el sistema realiza de forma silenciosa una copia completa de la base de datos de trabajo y la guarda en la carpeta local **Documentos/Coordinadores_Backups/dades_[TuNombre]/Diario/**. Esta copia se actualiza automáticamente con tus últimos cambios de cada día.
+2.  **Cierre Mensual Congelado (Foto Fija Histórica):** Al arrancar el programa, la aplicación detecta de forma inteligente si se ha iniciado un nuevo mes. De ser así, congela el estado del mes anterior de manera inmutable en la carpeta **Documentos/Coordinadores_Backups/dades_[TuNombre]/Historico/** con el año y mes correspondientes. Estas fotos históricas nunca se sobrescriben ni se eliminan, sirviendo de archivo contable local inalterable.
+3.  **Ubicación de los Resguardos:** En caso de que necesites recuperar información histórica o ante una eventual caída de los sistemas de red, podrás encontrar todas estas copias de seguridad organizadas por carpetas directamente en la sección "Documentos" de tu ordenador Windows.
