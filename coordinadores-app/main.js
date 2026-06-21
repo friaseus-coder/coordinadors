@@ -62,37 +62,30 @@ function conectarBaseDatosUnica(rutaCompartida) {
 
   const necesitaInit = !fs.existsSync(dbPath);
 
-  // Abrimos la base de datos
   db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
-      console.error(`[DB Error] Error al abrir la base de datos: ${err.message}`);
+      console.error(`[DB Error] Error al abrir DB: ${err.message}`);
     } else {
-      console.log(`[DB] Conectado exitosamente a la base de datos única en: ${dbPath}`);
+      console.log(`[DB] Conectado en: ${dbPath}`);
       db.run("PRAGMA foreign_keys = ON;");
       
-      // Inicializar y sincronizar dependiendo de si es base nueva o existente
       if (necesitaInit) {
         const schemaPath = path.join(__dirname, 'schema.sql');
         if (fs.existsSync(schemaPath)) {
             const schema = fs.readFileSync(schemaPath, 'utf8');
             db.exec(schema, (errSchema) => {
-               if(errSchema) {
-                   console.error("Error aplicando schema", errSchema);
-               } else {
+               if(errSchema) console.error("Error aplicando schema", errSchema);
+               else {
                  inicializarReglasDeNegocio(db);
-                 sincronizarCatalogosIniciales(db);
-                 sincronizarAgentesIniciales(db);
+                 if (typeof sincronizarCatalogosIniciales === 'function') sincronizarCatalogosIniciales(db);
+                 if (typeof sincronizarAgentesIniciales === 'function') sincronizarAgentesIniciales(db);
                }
             });
-        } else {
-            inicializarReglasDeNegocio(db);
-            sincronizarCatalogosIniciales(db);
-            sincronizarAgentesIniciales(db);
         }
       } else {
         inicializarReglasDeNegocio(db);
-        sincronizarCatalogosIniciales(db);
-        sincronizarAgentesIniciales(db);
+        if (typeof sincronizarCatalogosIniciales === 'function') sincronizarCatalogosIniciales(db);
+        if (typeof sincronizarAgentesIniciales === 'function') sincronizarAgentesIniciales(db);
       }
     }
   });
@@ -600,57 +593,83 @@ function stringToId(str) {
   return Math.abs(hash) || 1;
 }
 
-// --- SINCRONIZACIÓN DE PERSONAL (AGENTES) A SQLITE ---
+// --- SINCRONIZACIÓN DE CATÁLOGOS JSON A SQLITE ---
+function sincronizarCatalogosIniciales(dbConnection) {
+  const jsonPath = path.join(__dirname, 'dades', 'aparcamientos.json');
+  if (!fs.existsSync(jsonPath)) return;
+  
+  try {
+    const rawData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    const parkings = Array.isArray(rawData) ? rawData : (rawData.aparcamientos || []);
+    dbConnection.serialize(() => {
+      dbConnection.run("BEGIN TRANSACTION;");
+      
+      // Asegurar sociedad por defecto
+      dbConnection.run("INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo) VALUES (1, 'Empresa Principal', 'EMP_01', 1)");
+      
+      const stmt = dbConnection.prepare(`
+        INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, zona = excluded.zona;
+      `);
+      
+      parkings.forEach((p, idx) => {
+        const idAparcamiento = p.id || (idx + 1);
+        stmt.run(
+          idAparcamiento, 
+          p.numero_obra || `OB-${idAparcamiento}`, 
+          p.nombre, 
+          p.zona || 'General', 
+          p.es_remotizado ? 1 : 0, 
+          p.tipo_gestion || 'propio', 
+          p.permitir_vacio_laborables ? 1 : 0, 
+          p.sociedad_id || 1, 
+          p.coordinador_responsable || 'Ambos'
+        );
+      });
+      
+      stmt.finalize();
+      dbConnection.run("COMMIT;");
+      console.log("[DB] Aparcamientos sincronizados desde JSON.");
+    });
+  } catch (error) { 
+    console.error("[DB Error] Error sincronizando aparcamientos:", error); 
+  }
+}
+
 function sincronizarAgentesIniciales(dbConnection) {
   const jsonPath = path.join(__dirname, 'dades', 'coordinadores.json');
   if (!fs.existsSync(jsonPath)) return;
-
+  
   try {
-    const raw = fs.readFileSync(jsonPath, 'utf8');
-    const data = JSON.parse(raw);
-    const coordinadores = Array.isArray(data) ? data : (data.coordinadores || []);
-
+    const rawData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
+    const coordinadores = Array.isArray(rawData) ? rawData : (rawData.coordinadores || []);
     dbConnection.serialize(() => {
       dbConnection.run("BEGIN TRANSACTION;");
       
       const stmtAgente = dbConnection.prepare(`
         INSERT INTO agentes (id, nombre, zona_habitual, ranking_score, es_empresa_externa, activo)
-        VALUES (?, ?, ?, 50, 0, 1)
-        ON CONFLICT(id) DO UPDATE SET
-          nombre = excluded.nombre,
-          zona_habitual = excluded.zona_habitual;
+        VALUES (?, ?, ?, 50, 0, 1) 
+        ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre;
       `);
-
-      // Aseguramos que tengan al menos un contrato activo para que el asistente no falle
-      const stmtContrato = dbConnection.prepare(`
-        INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio)
-        VALUES (?, 1, date('now', 'start of month'));
-      `);
-
+      
+      const stmtContrato = dbConnection.prepare("INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio) VALUES (?, 1, date('now', 'start of month'));");
+      
       coordinadores.forEach(c => {
-        // Adaptamos el formato del JSON antiguo (que puede tener 'nom' y 'cognoms' o 'nombre')
-        const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente Desconocido';
-        const zona = c.zona || 'General';
+        const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente';
         const agenteIntId = stringToId(c.id);
-        
-        stmtAgente.run(agenteIntId, nombreCompleto, zona);
+        stmtAgente.run(agenteIntId, nombreCompleto, c.zona || 'General');
         stmtContrato.run(agenteIntId);
       });
-
+      
       stmtAgente.finalize();
       stmtContrato.finalize();
       dbConnection.run("COMMIT;");
-      console.log("[Sincronización] Catálogo de personal (agentes) volcado a SQLite con éxito.");
+      console.log("[DB] Agentes sincronizados desde JSON.");
     });
-  } catch (error) {
-    console.error("[Sincronización Error] Fallo al cargar Agentes a SQLite:", error);
-    dbConnection.run("ROLLBACK;");
+  } catch (error) { 
+    console.error("[DB Error] Error sincronizando agentes:", error); 
   }
-}
-
-// Función placeholder para evitar errores de referencia (su lógica real se integró en la migración v1 a v2)
-function sincronizarCatalogosIniciales(dbConnection) {
-  console.log("[Sincronización] Catálogos de aparcamientos ya gestionados vía migración de esquema.");
 }
 
 function obtenerReglasConfiguradas(dbConnection) {
@@ -1344,109 +1363,6 @@ ipcMain.handle('deactivate-sociedad', async (event, id) => {
   }
 });
 
-// --- SINCRONIZACIÓN DE CATÁLOGOS JSON A SQLITE ---
-function sincronizarCatalogosIniciales(dbConnection) {
-  const jsonPath = path.join(dadesDir, 'aparcamientos.json');
-  if (!fs.existsSync(jsonPath)) return;
-
-  try {
-    const raw = fs.readFileSync(jsonPath, 'utf8');
-    const data = JSON.parse(raw);
-    const parkings = Array.isArray(data) ? data : (data.aparcamientos || []);
-
-    dbConnection.serialize(() => {
-      dbConnection.run("BEGIN TRANSACTION;");
-
-      // 1. Crear una Sociedad por defecto para que no falle la Foreign Key
-      dbConnection.run(`
-        INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo)
-        VALUES (1, 'Empresa Principal S.L.', 'EMP_01', 1)
-      `);
-
-      // 2. Preparar la inserción/actualización de aparcamientos
-      const stmt = dbConnection.prepare(`
-        INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-        ON CONFLICT(numero_obra) DO UPDATE SET
-          nombre = excluded.nombre,
-          zona = excluded.zona,
-          es_remotizado = excluded.es_remotizado,
-          tipo_gestion = excluded.tipo_gestion,
-          permitir_vacio_laborables = excluded.permitir_vacio_laborables,
-          sociedad_id = excluded.sociedad_id,
-          coordinador_responsable = excluded.coordinador_responsable;
-      `);
-
-      // 3. Volcar los datos del JSON
-      parkings.forEach((p, idx) => {
-        // Valores por defecto (Salvavidas) si el JSON no los tiene
-        const numObra = p.numero_obra || `OB-${1000 + (p.id || idx)}`;
-        const esRemoto = p.es_remotizado ? 1 : 0;
-        const gestion = p.tipo_gestion || 'propio';
-        const vacioLab = p.permitir_vacio_laborables ? 1 : 0;
-        const sociedad = p.sociedad_id || 1; // Asignamos a la sociedad por defecto que acabamos de crear
-        const responsable = p.coordinador_responsable || 'Ambos';
-
-        stmt.run(numObra, p.nombre, p.zona, esRemoto, gestion, vacioLab, sociedad, responsable);
-      });
-
-      stmt.finalize();
-      dbConnection.run("COMMIT;");
-      console.log("[Sincronización] Catálogo de aparcamientos volcado a SQLite con éxito.");
-    });
-  } catch (error) {
-    console.error("[Sincronización Error] Fallo al cargar JSON a SQLite:", error);
-    dbConnection.run("ROLLBACK;");
-  }
-}
-
-// --- SINCRONIZACIÓN DE PERSONAL (AGENTES) A SQLITE ---
-function sincronizarAgentesIniciales(dbConnection) {
-  const jsonPath = path.join(dadesDir, 'coordinadores.json');
-  if (!fs.existsSync(jsonPath)) return;
-
-  try {
-    const raw = fs.readFileSync(jsonPath, 'utf8');
-    const data = JSON.parse(raw);
-    const coordinadores = Array.isArray(data) ? data : (data.coordinadores || []);
-
-    dbConnection.serialize(() => {
-      dbConnection.run("BEGIN TRANSACTION;");
-      
-      const stmtAgente = dbConnection.prepare(`
-        INSERT INTO agentes (id, nombre, zona_habitual, ranking_score, es_empresa_externa, activo)
-        VALUES (?, ?, ?, 50, 0, 1)
-        ON CONFLICT(id) DO UPDATE SET
-          nombre = excluded.nombre,
-          zona_habitual = excluded.zona_habitual;
-      `);
-
-      // Aseguramos que tengan al menos un contrato activo para que el asistente no falle
-      const stmtContrato = dbConnection.prepare(`
-        INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio)
-        VALUES (?, 1, date('now', 'start of month'));
-      `);
-
-      coordinadores.forEach(c => {
-        // Adaptamos el formato del JSON antiguo (que puede tener 'nom' y 'cognoms' o 'nombre')
-        const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente Desconocido';
-        const zona = c.zona || 'General';
-        const agenteIntId = stringToId(c.id);
-        
-        stmtAgente.run(agenteIntId, nombreCompleto, zona);
-        stmtContrato.run(agenteIntId);
-      });
-
-      stmtAgente.finalize();
-      stmtContrato.finalize();
-      dbConnection.run("COMMIT;");
-      console.log("[Sincronización] Catálogo de personal (agentes) volcado a SQLite con éxito.");
-    });
-  } catch (error) {
-    console.error("[Sincronización Error] Fallo al cargar Agentes a SQLite:", error);
-    dbConnection.run("ROLLBACK;");
-  }
-}
 
 // --- GESTIÓN DE APARCAMIENTOS EN SQLITE ---
 
