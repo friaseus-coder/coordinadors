@@ -292,20 +292,19 @@ Con la implantación de la **Fase 10**, se ha procedido a una limpieza profunda 
 
 ---
 
-## 9. Sistema de Roles (RBAC) y Distribución de Ejecutables Independientes
+## 9. Sistema de Roles (RBAC) con Selección en Caliente
 
-Con la consolidación de la Fase 10, la intranet implementa una arquitectura basada en roles (Role-Based Access Control) que permite generar 3 ejecutables independientes desde la misma base de código:
+Con la consolidación de la Fase 10, la intranet implementa una arquitectura basada en roles (Role-Based Access Control) que permite filtrar el acceso a los módulos operativos desde una única pantalla interactiva unificada:
 
 1.  **Comercial:** Acceso exclusivo a visualización y consulta de comerciales, rutas y rankings.
 2.  **Coordinador:** Acceso operativo diario (cuadrante, vacaciones, deudas, gastos e inventario) para su gestión personal.
 3.  **Jefe de Operaciones (Administrador):** Acceso global absoluto y herramientas de administración, base de datos relacional y configuración.
 
-### A. Configuración y Empaquetamiento
-*   El rol activo se define mediante la propiedad `"role"` en el archivo `config.json` (valores válidos: `"comercial"`, `"coordinador"`, `"jefe_operaciones"`).
-*   Al empaquetar la aplicación con Electron Packager, se inyecta el `config.json` con el rol preestablecido dentro del archivo inmutable `app.asar`. Esto produce tres versiones ejecutables cerradas e independientes según el destinatario.
+### A. Almacenamiento de Sesión y Redirección
+*   Al arrancar la aplicación, se despliega la pantalla de acceso ([index.html](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/src/index.html)) donde el usuario elige interactivamente su rol mediante tarjetas estéticas.
+*   Al pulsar "Entrar al Portal", la aplicación registra el rol y el nombre de usuario seleccionados en el almacenamiento de sesión activa de Chromium (`sessionStorage.setItem('userRole', ...)` y `sessionStorage.setItem('userName', ...)`), redirigiendo al portal.
 
 ### B. Ocultación Reactiva y Filtrado Visual
-*   En el arranque de la aplicación, el proceso principal expone el canal IPC `get-user-role` para proveer el rol del archivo de configuración al frontend de forma segura.
 *   En `portal.html`, los elementos del menú de navegación superior están etiquetados con el atributo HTML5 `data-roles`, el cual enumera los roles autorizados para ver dicha pestaña (ej. `data-roles="coordinador,jefe_operaciones"`).
-*   Durante el evento `DOMContentLoaded`, un script recorre recursivamente los botones del menú y aplica estilos de ocultación (`display: none`) a todas las secciones que no pertenezcan al rol recuperado desde la configuración, garantizando la consistencia visual y previniendo el acceso no autorizado de manera sencilla y robusta.
+*   Durante el evento `DOMContentLoaded`, un script recorre recursivamente los botones del menú y aplica estilos de ocultación (`display: none`) a todas las secciones que no pertenezcan al rol activo recuperado del `sessionStorage`, garantizando la consistencia visual y previniendo el acceso no autorizado de manera sencilla y robusta.
 

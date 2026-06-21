@@ -11,15 +11,12 @@ Este manual describe el funcionamiento diario de la aplicación de Coordinadores
 
 ---
 
-## 2. Acceso por Ejecutables e Inicio Automático (Fase 10)
-A partir de la versión consolidada, el acceso está restringido mediante ejecutables independientes para cada rol corporativo, configurados directamente en la compilación de la aplicación:
+## 2. Pantalla de Acceso: Selección de Perfil
+Al iniciar, verás una pantalla donde debes seleccionar tu rol. Dependiendo del perfil elegido, se te otorgarán diferentes permisos:
 
-*   **Ejecutable Comercial:** Inicia el sistema automáticamente y oculta las pestañas de administración y de operaciones diarias. Solo permite ver y consultar las pestañas de Comerciales, Rutas y Rankings.
-*   **Ejecutable Coordinador:** Inicia el sistema de forma directa asociándolo al nombre del coordinador configurado. Permite la edición operativa del cuadrante, vacaciones, deudas, gastos e inventario bajo el control de bloqueos automáticos en red, pero oculta las opciones administrativas.
-*   **Ejecutable Jefe de Operaciones (Administrador):** Inicia con privilegios globales absolutos, mostrando todas las pestañas operativas, de gestión relacional (Sociedades, Contratos, Aparcamientos, Coordinadores) y el Panel de Administración centralizado.
-
-> [!NOTE]
-> Gracias a este sistema de redirección por configuración de rol, la pantalla de acceso interactiva manual solo se mostrará si no se ha configurado un rol preestablecido en el archivo `config.json` de la instalación.
+*   **Jefe de Operaciones (Administrador):** Permite lectura y escritura completas. Además de modificar datos, habilita la opción de **forzar el desbloqueo** de archivos si un compañero dejó un módulo abierto en otro equipo y la pestaña de **Gestión de Coordinadores**.
+*   **Coordinador (Edición Segura):** Permite modificar cuadrantes, vacaciones, inventarios, etc., protegiendo el trabajo mediante bloqueos en tiempo real. Al seleccionarlo, debes elegir tu nombre de la lista desplegable.
+*   **Otro Perfil (Solo Lectura):** Diseñado para usuarios de consulta rápida (ej. facturación, comerciales, etc.). No bloquea los archivos ni permite guardar cambios.
 
 ---
 

@@ -260,7 +260,27 @@ const i18n = (() => {
       rutaBtnExportLaura: "💾 Exportar Laura",
       rutaBtnImportAlbert: "📂 Importar Albert",
       rutaBtnImportLaura: "📂 Importar Laura",
-      colJornada: "JORNADA"
+      colJornada: "JORNADA",
+      quadrantOptFrangesHoraries: "Franges Horàries",
+      quadrantTitleRecompte: "📊 RECOMPTE D'HORES",
+      asistenteTitle: "Assistent",
+      asistenteBtnDesasignar: "Desassignar",
+      asistenteRecomendados: "Recomanats",
+      asistenteDescartados: "Descartats",
+      asistenteNoSugeridos: "No hi ha treballadors suggerits.",
+      asistenteNoDescartados: "No hi ha treballadors descartats.",
+      asistenteExterno: "EXTERN",
+      asistenteRanking: "Rànquing",
+      asistenteHorasMes: "Hores mes",
+      asistenteConflictosOk: "Sense conflictes",
+      asistenteAsignar: "ASSIGNAR",
+      asistenteLabelDesasignar: "Desassignar torn / Deixar buit",
+      mappingModalTitle: "📂 MAPEIG DE DADES D'IMPORTACIÓ",
+      mappingModalDesc: "S'han detectat discrepàncies entre els centres/treballadors del fitxer seleccionat i el teu catàleg local. Si us plau, indica com s'han d'associar aquests elements:",
+      mappingModalCentres: "🏢 centres no coincidents",
+      mappingModalTreballadors: "👤 treballadors no coincidents",
+      mappingModalBtnCancel: "Cancel·lar",
+      mappingModalBtnConfirm: "Confirmar Importació"
     },
     es: {
       // Login (index.html)
@@ -476,7 +496,27 @@ const i18n = (() => {
       rutaBtnExportLaura: "💾 Exportar Laura",
       rutaBtnImportAlbert: "📂 Importar Albert",
       rutaBtnImportLaura: "📂 Importar Laura",
-      colJornada: "JORNADA"
+      colJornada: "JORNADA",
+      quadrantOptFrangesHoraries: "Franjas Horarias",
+      quadrantTitleRecompte: "📊 RECUENTO DE HORAS",
+      asistenteTitle: "Asistente",
+      asistenteBtnDesasignar: "Desasignar",
+      asistenteRecomendados: "Recomendados",
+      asistenteDescartados: "Descartados",
+      asistenteNoSugeridos: "No hay trabajadores sugeridos.",
+      asistenteNoDescartados: "No hay trabajadores descartados.",
+      asistenteExterno: "EXTERNO",
+      asistenteRanking: "Ranking",
+      asistenteHorasMes: "Horas mes",
+      asistenteConflictosOk: "Sin conflictos",
+      asistenteAsignar: "ASIGNAR",
+      asistenteLabelDesasignar: "Desassignar turno / Dejar vacío",
+      mappingModalTitle: "📂 MAPEO DE DATOS DE IMPORTACIÓN",
+      mappingModalDesc: "Se han detectado discrepancias entre los centros/trabajadores del archivo seleccionado y tu catálogo local. Por favor, indica cómo se deben asociar estos elementos:",
+      mappingModalCentres: "🏢 centros no coincidentes",
+      mappingModalTreballadors: "👤 trabajadores no coincidentes",
+      mappingModalBtnCancel: "Cancelar",
+      mappingModalBtnConfirm: "Confirmar Importación"
     }
   };
 

@@ -696,7 +696,7 @@
     <!-- PANEL DEL ASISTENTE INTELIGENTE -->
     <aside id="panel-asistente" class="hidden w-80 bg-orange-50 border-l border-orange-200 p-4 overflow-y-auto flex-shrink-0 shadow-inner" style="min-width: 320px; max-width: 320px;">
       <div class="flex justify-between items-center mb-4 border-b border-orange-200 pb-2">
-        <h3 class="text-lg font-bold text-orange-800" style="margin: 0;"><i class="fas fa-robot mr-2"></i> Asistente</h3>
+        <h3 class="text-lg font-bold text-orange-800" style="margin: 0;"><i class="fas fa-robot mr-2"></i> <span data-i18n="asistenteTitle">Asistente</span></h3>
         <button id="cerrar-asistente" class="text-orange-500 hover:text-orange-800" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 0; box-shadow: none; height: auto;"><i class="fas fa-times"></i></button>
       </div>
       
@@ -706,19 +706,19 @@
 
       <div class="mb-4">
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit;">
-              <span style="font-weight: 700; font-size: 11px; color: #475569;">Desassignar torn / Deixar buit</span>
-              <button id="btn-desasignar-asistente" style="background: #64748b; color: white; border: none; font-weight: 700; padding: 4px 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm);">
+              <span style="font-weight: 700; font-size: 11px; color: #475569;" data-i18n="asistenteLabelDesasignar">Desassignar torn / Deixar buit</span>
+              <button id="btn-desasignar-asistente" style="background: #64748b; color: white; border: none; font-weight: 700; padding: 4px 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm);" data-i18n="asistenteBtnDesasignar">
                   Desassignar
               </button>
           </div>
       </div>
 
-      <h4 class="text-sm font-bold text-green-700 mb-2 mt-4 uppercase"><i class="fas fa-check-circle mr-1"></i> Recomendados</h4>
+      <h4 class="text-sm font-bold text-green-700 mb-2 mt-4 uppercase"><i class="fas fa-check-circle mr-1"></i> <span data-i18n="asistenteRecomendados">Recomendados</span></h4>
       <ul id="lista-sugeridos" class="space-y-2 mb-6" style="padding-left: 0; list-style: none;">
         <!-- Dinámico -->
       </ul>
 
-      <h4 class="text-sm font-bold text-red-700 mb-2 uppercase"><i class="fas fa-ban mr-1"></i> Descartados</h4>
+      <h4 class="text-sm font-bold text-red-700 mb-2 uppercase"><i class="fas fa-ban mr-1"></i> <span data-i18n="asistenteDescartados">Descartados</span></h4>
       <ul id="lista-descartados" class="space-y-2 opacity-75" style="padding-left: 0; list-style: none;">
         <!-- Dinámico -->
       </ul>
@@ -726,7 +726,32 @@
 </div>
 
 <script>
-    const MESOS = ["Gener","Febrer","Març","Abril","Maig","Juny","Juliol","Agost","Setembre","Octubre","Novembre","Desembre"];
+    let MESOS = [];
+    function updateMesosList() {
+        MESOS = i18n.getLanguage() === 'es'
+            ? ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
+            : ["Gener","Febrer","Març","Abril","Maig","Juny","Juliol","Agost","Setembre","Octubre","Novembre","Desembre"];
+    }
+    updateMesosList();
+
+    function populateMonthSelector() {
+        const mS = document.getElementById('selectMonth');
+        if (!mS) return;
+        const val = mS.value;
+        mS.innerHTML = "";
+        updateMesosList();
+        MESOS.forEach((m, i) => mS.add(new Option(m, i)));
+        if (val !== "") mS.value = val;
+    }
+
+    function getTranslatedTorn(torn) {
+        if (i18n.getLanguage() === 'es') {
+            if (torn === "MATÍ") return "MAÑANA";
+            if (torn === "TARDA") return "TARDE";
+            if (torn === "NIT") return "NOCHE";
+        }
+        return torn;
+    }
     let LLISTES = {
         personal: JSON.parse(localStorage.getItem('nyn_personal')) || ["-"],
         horaris: JSON.parse(localStorage.getItem('nyn_horaris')) || ["-"],
@@ -827,7 +852,7 @@ async function init() {
         localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
 
         const mS = document.getElementById('selectMonth'), yS = document.getElementById('selectYear');
-        MESOS.forEach((m,i)=> mS.add(new Option(m,i)));
+        populateMonthSelector();
         [2026,2027].forEach(y=> yS.add(new Option(y,y)));
         const ara = new Date();
         currentMonth = (currentMonth !== undefined) ? currentMonth : ara.getMonth();
@@ -853,8 +878,10 @@ async function init() {
         currentMonth = parseInt(document.getElementById('selectMonth').value);
         currentYear = parseInt(document.getElementById('selectYear').value);
         const nextM = (currentMonth + 1) % 12;
-        document.getElementById('btnExport').innerText = `🚀 Exportar a ${MESOS[nextM]} `;
-        document.getElementById('displayMonth').innerText = `${MESOS[currentMonth].toUpperCase()} ${currentYear}`;
+        const exportLabel = i18n.getLanguage() === 'es' ? 'Exportar a' : 'Exportar a';
+        document.getElementById('btnExport').innerText = `🚀 ${exportLabel} ${MESOS[nextM]} `;
+        const displayLabel = i18n.getLanguage() === 'es' ? 'Mes de ' : 'Mes de ';
+        document.getElementById('displayMonth').innerText = `${displayLabel}${MESOS[currentMonth].toUpperCase()} ${currentYear}`;
         cacheDades = {}; 
         Object.keys(localStorage).forEach(key => {
             if (key.startsWith(`nyn_v12_${currentYear}_${currentMonth}_`)) {
@@ -866,9 +893,12 @@ async function init() {
 
     function renderHeader() {
         const hr = document.getElementById('headerRow'); if (!hr) return;
-        hr.innerHTML = '<th class="col-name">HORARI</th>';
+        const horariLabel = i18n.getLanguage() === 'es' ? 'HORARIO' : 'HORARI';
+        hr.innerHTML = `<th class="col-name">${horariLabel}</th>`;
         const days = new Date(currentYear, currentMonth + 1, 0).getDate();
-        const NOM_DIES = ["Diu", "Dill", "Dim", "Dix", "Dij", "Div", "Dis"];
+        const NOM_DIES = i18n.getLanguage() === 'es'
+            ? ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
+            : ["Diu", "Dill", "Dim", "Dix", "Dij", "Div", "Dis"];
         for (let d = 1; d <= days; d++) {
             const dateObj = new Date(currentYear, currentMonth, d);
             const diaSetmana = NOM_DIES[dateObj.getDay()];
@@ -960,7 +990,7 @@ async function init() {
                     tr.className = `row-${torn.toLowerCase()} park-row-${safeParkName} ${isPendent ? "parking-section-pendent" : ""}`;
                     const nameTd = document.createElement('td'); 
                     nameTd.className = 'col-name'; 
-                    nameTd.innerText = torn;
+                    nameTd.innerText = getTranslatedTorn(torn);
                     tr.appendChild(nameTd); 
                     cellsArr.forEach(c => tr.appendChild(c));
                     centerRows.push(tr); 
@@ -986,7 +1016,8 @@ async function init() {
 
    function quickSave(id, el, field) {
     if (isMonthLocked()) { 
-        alert("Aquest mes està tancat."); 
+        const closedMsg = i18n.getLanguage() === 'es' ? "Este mes está cerrado." : "Aquest mes està tancat.";
+        alert(closedMsg); 
         renderTable(); 
         return; 
     }
@@ -1179,14 +1210,22 @@ async function init() {
 
     function renderitzarResum(resum, horesMax) {
         document.getElementById('titreResum').innerText = `${MESOS[currentMonth].toUpperCase()} ${currentYear}`;
+        const isEs = i18n.getLanguage() === 'es';
+        const labelJornada = isEs ? "Jornada laborable:" : "Jornada laborable:";
+        const labelDiurnas = isEs ? "■ DIURNAS" : "■ DIÜRNES";
+        const labelNocturnas = isEs ? "■ NOCTURNAS" : "■ NOCTURNES";
+        const labelFestivas = isEs ? "■ FESTIVAS" : "■ FESTIVES";
         document.getElementById('jornadaInfo').innerHTML = `
-            <div><span style="color:#666; font-size:10px;">Jornada laborable:</span> <strong style="color:#2e7d32; font-size:12px; margin-left:5px;">${horesMax}h</strong></div>
-            <div style="display:flex; gap:10px; font-size:8px; font-weight:bold;"><span style="color:#4caf50;">■ DIÜRNES</span><span style="color:#9c27b0;">■ NOCTURNES</span><span style="color:#f44336;">■ FESTIVES</span></div>
+            <div><span style="color:#666; font-size:10px;">${labelJornada}</span> <strong style="color:#2e7d32; font-size:12px; margin-left:5px;">${horesMax}h</strong></div>
+            <div style="display:flex; gap:10px; font-size:8px; font-weight:bold;"><span style="color:#4caf50;">${labelDiurnas}</span><span style="color:#9c27b0;">${labelNocturnas}</span><span style="color:#f44336;">${labelFestivas}</span></div>
         `;
         const valorsTotals = Object.values(resum).map(r => r.total);
         const maxVisual = Math.max(horesMax + 20, (valorsTotals.length > 0 ? Math.max(...valorsTotals) : 0) + 10);
         const pConveni = (horesMax / maxVisual) * 100;
-        let html = `<table style="width:100%; font-size:9px; border-collapse:collapse; table-layout:fixed;"><thead style="background:#eee;"><tr><th style="border:1px solid #ddd; padding:8px; text-align:left; width:130px;">TREBALLADOR</th><th style="border:1px solid #ddd; padding:8px; text-align:center;">DISTRIBUCIÓ D'HORES</th><th style="border:1px solid #ddd; padding:8px; background:#e8f5e9; width:60px;">TOTAL</th></tr></thead><tbody>`;
+        const headerTreballador = isEs ? "TRABAJADOR" : "TREBALLADOR";
+        const headerDistribucio = isEs ? "DISTRIBUCIÓN DE HORAS" : "DISTRIBUCIÓ D'HORES";
+        const headerTotal = isEs ? "TOTAL" : "TOTAL";
+        let html = `<table style="width:100%; font-size:9px; border-collapse:collapse; table-layout:fixed;"><thead style="background:#eee;"><tr><th style="border:1px solid #ddd; padding:8px; text-align:left; width:130px;">${headerTreballador}</th><th style="border:1px solid #ddd; padding:8px; text-align:center;">${headerDistribucio}</th><th style="border:1px solid #ddd; padding:8px; background:#e8f5e9; width:60px;">${headerTotal}</th></tr></thead><tbody>`;
         Object.keys(resum).sort().forEach((p) => {
             const r = resum[p]; if (r.total === 0) return;
             const pD = (r.diurnes/maxVisual)*100, pN = (r.nocturnes/maxVisual)*100, pF = (r.festives/maxVisual)*100;
@@ -1207,7 +1246,10 @@ function exportToNextMonth() {
     const nMI = (currentMonth + 1) % 12;
     const nY = (currentMonth === 11) ? currentYear + 1 : currentYear;
 
-    if (confirm(`⚠️ Vols exportar la rotació a ${MESOS[nMI]}?\r\nEs respectaran els torns de cap de setmana i no s'ompliran buits.`)) {
+    const confirmMsg = i18n.getLanguage() === 'es'
+        ? `⚠️ ¿Deseas exportar la rotación a ${MESOS[nMI]}?\r\nSe respetarán los turnos de fin de semana y no se rellenarán huecos.`
+        : `⚠️ Vols exportar la rotació a ${MESOS[nMI]}?\r\nEs respectaran els torns de cap de setmana i no s'ompliran buits.`;
+    if (confirm(confirmMsg)) {
         
         // 1. NETEJA ABSOLUTA DEL MES DE DESTÍ
         // Primer esborrem tot el febrer per assegurar que no quedi brossa de proves anteriors
@@ -1282,7 +1324,8 @@ function exportToNextMonth() {
         document.getElementById('selectYear').value = nY;
         changeMonth();
         
-        alert("✅ Exportació realitzada");
+        const doneMsg = i18n.getLanguage() === 'es' ? "✅ Exportación realizada" : "✅ Exportació realitzada";
+        alert(doneMsg);
     }
 }
 
@@ -1296,7 +1339,10 @@ function exportToNextMonth() {
     
     if (!locked) { 
         // Missatge en tancar
-        if (confirm("Si tanques el Mes no podràs editar-ne les dades fins que el tornis a obrir i requereix PASSWORD. Vols continuar?")) { 
+        const lockConfirmMsg = i18n.getLanguage() === 'es'
+            ? "Si cierras el Mes no podrás editar sus datos hasta que lo vuelvas a abrir y requiere CONTRASEÑA. ¿Deseas continuar?"
+            : "Si tanques el Mes no podràs editar-ne les dades fins que el tornis a obrir i requereix PASSWORD. Vols continuar?";
+        if (confirm(lockConfirmMsg)) { 
             localStorage.setItem(`nyn_locked_${currentYear}_${currentMonth}`, "true"); 
             updateLockVisuals(); 
             
@@ -1319,12 +1365,17 @@ function exportToNextMonth() {
     } 
     else { 
         // NOU MISSATGE EN OBRIR:
-        if (confirm("Vols tornar a obrir el mes i fer-lo editable? requereix PASSWORD. Vols continuar?")) {
-            if (prompt("Codi:") === "1234") { 
+        const unlockConfirmMsg = i18n.getLanguage() === 'es'
+            ? "¿Deseas volver a abrir el mes y hacerlo editable? requiere CONTRASEÑA. ¿Deseas continuar?"
+            : "Vols volver a obrir el mes i fer-lo editable? requereix PASSWORD. Vols continuar?";
+        if (confirm(unlockConfirmMsg)) {
+            const codeLabel = i18n.getLanguage() === 'es' ? "Código:" : "Codi:";
+            if (prompt(codeLabel) === "1234") { 
                 localStorage.setItem(`nyn_locked_${currentYear}_${currentMonth}`, "false"); 
                 updateLockVisuals(); 
             } else {
-                alert("Codi incorrecte");
+                const wrongCodeMsg = i18n.getLanguage() === 'es' ? "Código incorrecto" : "Codi incorrecte";
+                alert(wrongCodeMsg);
             }
         }
     }
@@ -1336,15 +1387,18 @@ function exportToNextMonth() {
     }
 
 
-// 1. FUNCIÓ RESET (Amb seguretat i LOG)
-    function resetAll() { 
-        if (isMonthLocked()) return; 
-
-        const mesNom = MESOS[currentMonth].toUpperCase();
-        
-        if(confirm("⚠️ PERILL: S'esborraran totes les dades del mes i per tant perdràs tota la feina feta. N'estàs segur?")) { 
-            if(confirm("⚠️ Estàs totalment convençut de voler esborrar totes les dades d'aquest mes? Aquesta acció no es pot desfer.")) {
-                const usuari = prompt("Per seguretat i registre, introdueix el teu nom (ALBERT / LAURA):");
+// 1. FUNCIÓ RESET (Amb seguretat i LOG)        const dangerMsg1 = i18n.getLanguage() === 'es'
+            ? "⚠️ PELIGRO: Se borrarán todos los datos del mes y por lo tanto perderás todo el trabajo realizado. ¿Estás seguro?"
+            : "⚠️ PERILL: S'esborraran totes les dades del mes i per tant perdràs tota la feina feta. N'estàs segur?";
+        const dangerMsg2 = i18n.getLanguage() === 'es'
+            ? "⚠️ ¿Estás totalmente convencido de querer borrar todos los datos de este mes? Esta acción no se puede deshacer."
+            : "⚠️ Estàs totalment convençut de voler esborrar totes les dades d'aquest mes? Aquesta acció no es pot desfer.";
+        if(confirm(dangerMsg1)) { 
+            if(confirm(dangerMsg2)) {
+                const userPromptMsg = i18n.getLanguage() === 'es'
+                    ? "Por seguridad y registro, introduce tu nombre (ALBERT / LAURA):"
+                    : "Per seguretat i registre, introdueix el teu nom (ALBERT / LAURA):";
+                const usuari = prompt(userPromptMsg);
                 
                 if (usuari && (usuari.toUpperCase() === "ALBERT" || usuari.toUpperCase() === "LAURA")) {
                     const prefix = `nyn_v12_${currentYear}_${currentMonth}`;
@@ -1354,10 +1408,22 @@ function exportToNextMonth() {
                     });
 
                     // REGISTREM L'ACCIÓ
-                    registrarLog(usuari, `⚠️ HA ESBORRAT TOT EL QUADRANT de ${mesNom} ${currentYear}.`);
+                    const logMsg = i18n.getLanguage() === 'es'
+                        ? `⚠️ HA BORRADO TODO EL CUADRANTE de ${mesNom} ${currentYear}.`
+                        : `⚠️ HA ESBORRAT TOT EL QUADRANT de ${mesNom} ${currentYear}.`;
+                    registrarLog(usuari, logMsg);
 
-                    alert("Dades esborrades correctament.");
+                    const doneMsg = i18n.getLanguage() === 'es' ? "Datos borrados correctamente." : "Dades esborrades correctament.";
+                    alert(doneMsg);
                     changeMonth(); 
+                } else {
+                    const cancelMsg = i18n.getLanguage() === 'es'
+                        ? "Acción cancelada: Nombre de usuario no válido."
+                        : "Acció cancel·lada: Nom d'usuari no vàlid.";
+                    alert(cancelMsg);
+                }
+            }
+        } angeMonth(); 
                 } else {
                     alert("Acció cancel·lada: Nom d'usuari no vàlid.");
                 }
@@ -1829,20 +1895,24 @@ function importarBackupJSON(input) {
 function mostrarModalMapeig(discrepanciesCentres, discrepanciesTreballadors) {
     const listCentres = document.getElementById('mappingParkingsList');
     const listWorkers = document.getElementById('mappingWorkersList');
+    const isEs = i18n.getLanguage() === 'es';
     
     // Centros
     if (discrepanciesCentres.length > 0) {
         document.getElementById('mappingParkingsSection').style.display = 'block';
         listCentres.innerHTML = discrepanciesCentres.map((c, idx) => {
             const coincidencia = trobarCoincidenciaAproximada(c, LLISTES.parkings);
+            const createText = isEs ? `➕ [Crear nuevo centro: "${c}"]` : `➕ [Crear nou centre: "${c}"]`;
+            const ignoreText = isEs ? `❌ [Ignorar datos de este centro]` : `❌ [Ignorar dades d'aquest centre]`;
+            const associateText = isEs ? `Asociar a:` : `Associar a:`;
             return `
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; padding: 6px; background: #fafafa; border-radius: 4px; border: 1px solid #eee; margin-bottom: 4px;">
                     <span style="font-weight: 600; color: #334155; word-break: break-all;">${c}</span>
                     <select class="map-centre-select" data-original="${c}" style="width: 250px; font-size: 11px; height: 26px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                        <option value="_CREATE_NEW_">➕ [Crear nou centre: "${c}"]</option>
-                        <option value="_IGNORE_">❌ [Ignorar dades d'aquest centre]</option>
+                        <option value="_CREATE_NEW_">${createText}</option>
+                        <option value="_IGNORE_">${ignoreText}</option>
                         ${LLISTES.parkings.filter(p => p !== "-").map(p => `
-                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>Asociar a: ${p}</option>
+                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>${associateText} ${p}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -1858,14 +1928,17 @@ function mostrarModalMapeig(discrepanciesCentres, discrepanciesTreballadors) {
         document.getElementById('mappingWorkersSection').style.display = 'block';
         listWorkers.innerHTML = discrepanciesTreballadors.map((t, idx) => {
             const coincidencia = trobarCoincidenciaAproximada(t, LLISTES.personal);
+            const createText = isEs ? `➕ [Crear nuevo trabajador: "${t}"]` : `➕ [Crear nou treballador: "${t}"]`;
+            const ignoreText = isEs ? `❌ [Ignorar datos de este trabajador]` : `❌ [Ignorar dades d'aquest treballador]`;
+            const associateText = isEs ? `Asociar a:` : `Associar a:`;
             return `
                 <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; padding: 6px; background: #fafafa; border-radius: 4px; border: 1px solid #eee; margin-bottom: 4px;">
                     <span style="font-weight: 600; color: #334155; word-break: break-all;">${t}</span>
                     <select class="map-treballador-select" data-original="${t}" style="width: 250px; font-size: 11px; height: 26px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                        <option value="_CREATE_NEW_">➕ [Crear nou treballador: "${t}"]</option>
-                        <option value="_IGNORE_">❌ [Ignorar dades d'aquest treballador]</option>
+                        <option value="_CREATE_NEW_">${createText}</option>
+                        <option value="_IGNORE_">${ignoreText}</option>
                         ${LLISTES.personal.filter(p => p !== "-").map(p => `
-                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>Asociar a: ${p}</option>
+                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>${associateText} ${p}</option>
                         `).join('')}
                     </select>
                 </div>
@@ -2018,12 +2091,14 @@ async function confirmarImportacioMapejada() {
         
         await persistence.syncSave();
         
-        alert("✅ Backup importat i mapejat correctament!");
+        const successMsg = i18n.getLanguage() === 'es' ? "✅ ¡Backup importado y mapeado correctamente!" : "✅ Backup importat i mapejat correctament!";
+        alert(successMsg);
         location.reload();
         
     } catch(err) {
         console.error("Error en la importació mapejada:", err);
-        alert("❌ S'ha produït un error al processar l'importació mapejada.");
+        const errorMsg = i18n.getLanguage() === 'es' ? "❌ Se ha producido un error al procesar la importación mapeada." : "❌ S'ha produït un error al processar l'importació mapejada.";
+        alert(errorMsg);
     } finally {
         btn.disabled = false;
         btn.innerText = 'Confirmar Importació';
@@ -2437,7 +2512,8 @@ async function abrirAsistente(fechaSQL, parkingId, parkingNombre, celdaDOM) {
 
 async function openAssistant(sId) {
     if (isMonthLocked()) { 
-        alert("Aquest mes està tancat."); 
+        const closedMsg = i18n.getLanguage() === 'es' ? "Este mes está cerrado." : "Aquest mes està tancat.";
+        alert(closedMsg); 
         return; 
     }
     
@@ -2474,7 +2550,7 @@ async function openAssistant(sId) {
         if (infoCelda) {
             infoCelda.innerHTML = `
                 <div class="font-bold text-gray-800">🏢 ${park.toUpperCase()}</div>
-                <div class="text-xs text-gray-500 mt-1">📅 ${diaNum}/${mesNum}/${currentYear} | ⏰ ${torn}</div>
+                <div class="text-xs text-gray-500 mt-1">📅 ${diaNum}/${mesNum}/${currentYear} | ⏰ ${getTranslatedTorn(torn)}</div>
             `;
         }
         
@@ -2504,20 +2580,20 @@ async function openAssistant(sId) {
                     li.className = "bg-white p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md cursor-pointer transition-all flex flex-col gap-1.5 group relative";
                     
                     let badge = '';
-                    if (agente.tipo === 'EMPRESA SEGURIDAD') badge = '<span class="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold ml-2">EXTERNO</span>';
+                    if (agente.tipo === 'EMPRESA SEGURIDAD') badge = `<span class="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold ml-2">${i18n.t('asistenteExterno')}</span>`;
                     else if (agente.ranking_score >= 80) badge = '<span class="text-[9px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-bold ml-2">TOP</span>';
 
                     const warningsHtml = agente.advertencias && agente.advertencias.length > 0
                         ? agente.advertencias.map(adv => `<span class="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded text-[9px] font-medium inline-block">⚠️ ${adv}</span>`).join(' ')
-                        : `<span class="bg-emerald-50 text-emerald-800 border border-emerald-100 px-1.5 py-0.5 rounded text-[9px] font-medium inline-block">✅ Sense conflictes</span>`;
+                        : `<span class="bg-emerald-50 text-emerald-800 border border-emerald-100 px-1.5 py-0.5 rounded text-[9px] font-medium inline-block">✅ ${i18n.t('asistenteConflictosOk')}</span>`;
 
                     li.innerHTML = `
                         <div class="flex justify-between items-start w-100" style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
                             <div>
                                 <div class="font-bold text-gray-800 text-xs">${agente.nombre}${badge}</div>
-                                <div class="text-[10px] text-gray-500 mt-0.5">Ranking: ${agente.ranking_score} | Horas mes: ${agente.dias_mes_actual * 8}h</div>
+                                <div class="text-[10px] text-gray-500 mt-0.5">${i18n.t('asistenteRanking')}: ${agente.ranking_score} | ${i18n.t('asistenteHorasMes')}: ${agente.dias_mes_actual * 8}h</div>
                             </div>
-                            <button class="bg-green-600 text-white px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 font-bold transition-opacity" style="border: none; padding: 3px 8px; cursor: pointer; border-radius: 4px;">ASIGNAR</button>
+                            <button class="bg-green-600 text-white px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 font-bold transition-opacity" style="border: none; padding: 3px 8px; cursor: pointer; border-radius: 4px;">${i18n.t('asistenteAsignar')}</button>
                         </div>
                         <div class="flex flex-wrap gap-1 mt-1 border-t border-gray-100 pt-1.5" style="display: flex; flex-wrap: wrap; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 6px;">${warningsHtml}</div>
                     `;
@@ -2526,7 +2602,7 @@ async function openAssistant(sId) {
                     ulSugeridos.appendChild(li);
                 });
             } else {
-                ulSugeridos.innerHTML = '<li class="text-sm text-gray-500 bg-white p-3 rounded-lg border border-gray-200 text-center">No hi ha treballadors sugerits.</li>';
+                ulSugeridos.innerHTML = `<li class="text-sm text-gray-500 bg-white p-3 rounded-lg border border-gray-200 text-center">${i18n.t('asistenteNoSugeridos')}</li>`;
             }
         }
 
@@ -2545,7 +2621,7 @@ async function openAssistant(sId) {
                     ulDescartados.appendChild(li);
                 });
             } else {
-                ulDescartados.innerHTML = '<li class="text-xs text-gray-400 text-center py-2">No hi ha treballadors descartats.</li>';
+                ulDescartados.innerHTML = `<li class="text-xs text-gray-400 text-center py-2">${i18n.t('asistenteNoDescartados')}</li>`;
             }
         }
     } catch (e) {
@@ -2576,7 +2652,8 @@ function asignarAgenteACelda(nombreTrabajador) {
 }
 window.addEventListener('languageChanged', () => {
     i18n.translatePage();
-    renderTable();
+    populateMonthSelector();
+    changeMonth();
 });
 
 </script>
@@ -2589,7 +2666,7 @@ window.addEventListener('languageChanged', () => {
 
 <div id="deleteModal">
     <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);" data-i18n="vacancesManageDataModal">GESTIONAR DADES</div>
-    <select id="deleteType" onchange="updateDeleteOptions()" style="width:100%; margin-bottom:8px;"><option value="parkings" data-i18n="vacancesOptCentres">Centres</option><option value="personal" data-i18n="vacancesOptTreballadors">Treballadors</option><option value="horaris" data-i18n="quadrantOptAllHours">Franges Horàries</option></select>
+    <select id="deleteType" onchange="updateDeleteOptions()" style="width:100%; margin-bottom:8px;"><option value="parkings" data-i18n="vacancesOptCentres">Centres</option><option value="personal" data-i18n="vacancesOptTreballadors">Treballadors</option><option value="horaris" data-i18n="quadrantOptFrangesHoraries">Franges Horàries</option></select>
     <select id="deleteItem" onchange="document.getElementById('editInput').value = this.value" style="width:100%; margin-bottom:8px;"></select>
     <input type="text" id="editInput" class="input-edit">
     <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;"><button onclick="addNewItem()" class="btn-main" data-i18n="vacancesBtnAddNew">Afegir Nou</button><button onclick="saveEditItem()" style="background:#ff9800; color:white; border:none;" data-i18n="btnSaveRules">Guardar</button><button onclick="confirmDelete()" style="background:#f44336; color:white; border:none;" data-i18n="vacancesBtnDelete">Eliminar</button><button onclick="document.getElementById('deleteModal').style.display='none'" data-i18n="vacancesBtnClose">Tancar</button></div>
@@ -2598,7 +2675,7 @@ window.addEventListener('languageChanged', () => {
 <div id="horesModal">
     <div class="hores-modal-header">
         <button onclick="document.getElementById('horesModal').style.display='none'" class="close-btn-top">&times;</button>
-        <div class="hores-title-box"><span style="font-weight:900; font-size:12px; color:var(--nyn-verd-centre);">📊 RECOMPTE D'HORES - <span id="titreResum"></span></span></div>
+        <div class="hores-title-box"><span style="font-weight:900; font-size:12px; color:var(--nyn-verd-centre);" data-i18n="quadrantTitleRecompte">📊 RECOMPTE D'HORES - </span><span id="titreResum" style="font-weight:900; font-size:12px; color:var(--nyn-verd-centre);"></span></div>
         <div id="jornadaInfo" style="background:#f8f9fa; padding:10px; border-radius:4px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;"></div>
     </div>
     <div id="taulaResumHores"></div>
@@ -2606,16 +2683,16 @@ window.addEventListener('languageChanged', () => {
 </div>
 
 <div id="importMappingModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; border: 1px solid var(--border); padding: 24px; z-index: 2050; border-radius: 12px; width: 90%; max-width: 580px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); font-family: inherit;">
-    <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px; color: var(--nyn-verd); border-bottom: 2px solid var(--nyn-verd-accent); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+    <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px; color: var(--nyn-verd); border-bottom: 2px solid var(--nyn-verd-accent); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;" data-i18n="mappingModalTitle">
         📂 MAPEIG DE DADES D'IMPORTACIÓ
     </div>
-    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;">
+    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;" data-i18n="mappingModalDesc">
         S'han detectat discrepàncies entre els centres/treballadors del fitxer seleccionat i el teu catàleg local. Si us plau, indica com s'han d'associar aquests elements:
     </p>
 
     <!-- Discrepàncies de Centres -->
     <div id="mappingParkingsSection" style="margin-bottom: 18px;">
-        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #e6f4ea; padding: 4px 8px; border-radius: 4px; display: inline-block;">
+        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #e6f4ea; padding: 4px 8px; border-radius: 4px; display: inline-block;" data-i18n="mappingModalCentres">
             🏢 centres no coincidents
         </div>
         <div id="mappingParkingsList" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
@@ -2625,7 +2702,7 @@ window.addEventListener('languageChanged', () => {
 
     <!-- Discrepàncies de Treballadors -->
     <div id="mappingWorkersSection" style="margin-bottom: 20px;">
-        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #fef9c3; color: var(--nyn-substitucio-text); padding: 4px 8px; border-radius: 4px; display: inline-block;">
+        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #fef9c3; color: var(--nyn-substitucio-text); padding: 4px 8px; border-radius: 4px; display: inline-block;" data-i18n="mappingModalTreballadors">
             👤 treballadors no coincidents
         </div>
         <div id="mappingWorkersList" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
@@ -2635,8 +2712,8 @@ window.addEventListener('languageChanged', () => {
 
     <!-- Botones de Acción -->
     <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px;">
-        <button class="btn-main" onclick="cancelarImportacioMapejada()">Cancel·lar</button>
-        <button class="btn-main btn-action" id="btnConfirmarImport" onclick="confirmarImportacioMapejada()">Confirmar Importació</button>
+        <button class="btn-main" onclick="cancelarImportacioMapejada()" data-i18n="mappingModalBtnCancel">Cancel·lar</button>
+        <button class="btn-main btn-action" id="btnConfirmarImport" onclick="confirmarImportacioMapejada()" data-i18n="mappingModalBtnConfirm">Confirmar Importació</button>
     </div>
 </div>
 

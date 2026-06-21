@@ -434,10 +434,9 @@ const persistence = (() => {
         const personal = agentes.map(a => a.nombre);
         originalSetItem.call(localStorage, 'nyn_personal', JSON.stringify(["-", ...personal]));
 
-        // 2. Cargar aparcamientos asignados para LLISTES.parkings
-        const userLower = userName.toLowerCase();
-        const queryParkings = "SELECT nombre FROM aparcamientos WHERE activo = 1 AND (LOWER(coordinador_responsable) = ? OR coordinador_responsable = 'Ambos') ORDER BY nombre ASC";
-        const parkings = await window.databaseAPI.consultar(queryParkings, [userLower]);
+        // 2. Cargar aparcamientos asignados para LLISTES.parkings (Todos los centros activos para visibilidad completa de coordinadores)
+        const queryParkings = "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC";
+        const parkings = await window.databaseAPI.consultar(queryParkings, []);
         const parkingsNames = parkings.map(p => p.nombre);
         originalSetItem.call(localStorage, 'nyn_parkings', JSON.stringify(["-", ...parkingsNames]));
 

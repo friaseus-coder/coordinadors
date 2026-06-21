@@ -501,7 +501,7 @@
                     <button class="dropdown-more-item menu-item" onclick="selectMoreTab('inventari', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabInventari">📦 Inventari</button>
                     <button class="dropdown-more-item menu-item" onclick="selectMoreTab('sac_incidencies', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabSac">🛠️ SAC</button>
                     <button class="dropdown-more-item menu-item" onclick="selectMoreTab('notificador', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabNotificador">📩 Notificador</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('log', this)" data-roles="jefe_operaciones" data-i18n="tabLog">📜 Log</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('log', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabLog">📜 Log</button>
                     <button class="dropdown-more-item menu-item" onclick="selectMoreTab('regles', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRegles">📋 Normes</button>
                 </div>
             </div>
@@ -517,7 +517,7 @@
             <div id="userDisplayBadge" class="user-badge"></div>
             
             <!-- Menú Desplegable de Administración -->
-            <div class="dropdown-admin menu-item" id="adminDropdown" data-roles="jefe_operaciones" style="display: none;">
+            <div class="dropdown-admin menu-item" id="adminDropdown" data-roles="coordinador,jefe_operaciones" style="display: none;">
                 <button class="btn-manage-coord" onclick="toggleAdminDropdown(event)" data-i18n="btnAdministration">⚙️ Administració</button>
                 <div class="dropdown-admin-content" id="adminDropdownContent">
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
@@ -707,12 +707,10 @@
             // Sincronización inicial
             refreshLangUI();
             
-            if (role === 'jefe operaciones') {
-                badge.classList.add('admin');
+            if (role === 'jefe operaciones' || role === 'coordinador') {
+                badge.classList.add(role === 'jefe operaciones' ? 'admin' : 'coord');
                 const drop = document.getElementById('adminDropdown');
                 if (drop) drop.style.display = 'inline-block';
-            } else if (role === 'coordinador') {
-                badge.classList.add('coord');
             } else {
                 badge.classList.add('other');
             }
@@ -1644,40 +1642,53 @@
         });
 
         // --- FILTRADO DE ROLES ---
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             try {
-                if (window.databaseAPI && window.databaseAPI.getUserRole) {
-                    const userRole = await window.databaseAPI.getUserRole();
-                    
-                    document.querySelectorAll('.menu-item').forEach(item => {
-                        const rolesPermitidos = item.getAttribute('data-roles');
-                        if (rolesPermitidos) {
-                            if (!rolesPermitidos.split(',').includes(userRole)) {
-                                item.style.setProperty('display', 'none', 'important');
-                            }
-                        }
+                let userRole = sessionStorage.getItem('userRole');
+                if (userRole === 'jefe operaciones') userRole = 'jefe_operaciones';
+                
+                if (!userRole && window.databaseAPI && window.databaseAPI.getUserRole) {
+                    window.databaseAPI.getUserRole().then(dbRole => {
+                        applyRoleFiltering(dbRole);
                     });
-                    
-                    // Ocultar botón "Més" si todos los elementos del dropdown secundario están ocultos
-                    const dropdownItems = document.querySelectorAll('.dropdown-more-content .menu-item');
-                    let hayVisibles = false;
-                    dropdownItems.forEach(item => {
-                        if (item.style.display !== 'none') {
-                            hayVisibles = true;
-                        }
-                    });
-                    
-                    if (!hayVisibles) {
-                        const moreDropdown = document.getElementById('moreDropdown');
-                        if (moreDropdown) {
-                            moreDropdown.style.setProperty('display', 'none', 'important');
-                        }
-                    }
+                } else if (userRole) {
+                    applyRoleFiltering(userRole);
                 }
             } catch (e) {
                 console.error('[PORTAL] Error al aplicar filtrado de roles:', e);
             }
         });
+
+        function applyRoleFiltering(userRole) {
+            document.querySelectorAll('.menu-item').forEach(item => {
+                const rolesPermitidos = item.getAttribute('data-roles');
+                if (rolesPermitidos) {
+                    if (!rolesPermitidos.split(',').includes(userRole)) {
+                        item.style.setProperty('display', 'none', 'important');
+                    } else {
+                        item.style.removeProperty('display');
+                    }
+                }
+            });
+            
+            // Ocultar botón "Més" si todos los elementos del dropdown secundario están ocultos
+            const dropdownItems = document.querySelectorAll('.dropdown-more-content .menu-item');
+            let hayVisibles = false;
+            dropdownItems.forEach(item => {
+                if (item.style.display !== 'none') {
+                    hayVisibles = true;
+                }
+            });
+            
+            const moreDropdown = document.getElementById('moreDropdown');
+            if (moreDropdown) {
+                if (!hayVisibles) {
+                    moreDropdown.style.setProperty('display', 'none', 'important');
+                } else {
+                    moreDropdown.style.removeProperty('display');
+                }
+            }
+        }
     </script>
 </body>
 </html>
