@@ -481,11 +481,11 @@
         <div style="display: flex; align-items: center; gap: 8px; flex: 1; justify-content: center; max-width: 72%; min-width: 0;">
             <!-- Contenedor central de pestañas -->
             <div class="tabs-container" style="max-width: 100%; overflow-x: visible;">
-                <button class="tab-button active" onclick="openTab('home', this)" data-i18n="tabHome">🏠 Inici</button>
-                <button class="tab-button" onclick="openTab('quadrant', this)" data-i18n="tabQuadrant">📋 Quadrant</button>
-                <button class="tab-button" onclick="openTab('rutes', this)" data-i18n="tabRoutes">📍 Rutes</button>
-                <button class="tab-button" onclick="openTab('vacances', this)" data-i18n="tabVacances">🏖️ Vacances</button>
-                <button class="tab-button" onclick="openTab('comercials', this)" data-i18n="tabComercials">💰 Comercials</button>
+                <button class="tab-button active menu-item" onclick="openTab('home', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabHome">🏠 Inici</button>
+                <button class="tab-button menu-item" onclick="openTab('quadrant', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabQuadrant">📋 Quadrant</button>
+                <button class="tab-button menu-item" onclick="openTab('rutes', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRoutes">📍 Rutes</button>
+                <button class="tab-button menu-item" onclick="openTab('vacances', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabVacances">🏖️ Vacances</button>
+                <button class="tab-button menu-item" onclick="openTab('comercials', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabComercials">💰 Comercials</button>
             </div>
             
             <!-- Desplegable para pestañas secundarias (fuera del contenedor overflow) -->
@@ -494,15 +494,15 @@
                     <span id="moreTabLabel" data-i18n="tabMore">➕ Més</span> ▾
                 </button>
                 <div class="dropdown-more-content" id="moreDropdownContent">
-                    <button class="dropdown-more-item" onclick="selectMoreTab('ranking', this)" data-i18n="tabRanking">⭐ Ranking</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('deutes', this)" data-i18n="tabDeutes">⏳ Deutes</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('checklist', this)" data-i18n="tabChecklist">✅ Chklst</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('gastos', this)" data-i18n="tabGastos">💸 Despeses</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('inventari', this)" data-i18n="tabInventari">📦 Inventari</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('sac_incidencies', this)" data-i18n="tabSac">🛠️ SAC</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('notificador', this)" data-i18n="tabNotificador">📩 Notificador</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('log', this)" data-i18n="tabLog">📜 Log</button>
-                    <button class="dropdown-more-item" onclick="selectMoreTab('regles', this)" data-i18n="tabRegles">📋 Normes</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('ranking', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabRanking">⭐ Ranking</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('deutes', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabDeutes">⏳ Deutes</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('checklist', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabChecklist">✅ Chklst</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('gastos', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabGastos">💸 Despeses</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('inventari', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabInventari">📦 Inventari</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('sac_incidencies', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabSac">🛠️ SAC</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('notificador', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabNotificador">📩 Notificador</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('log', this)" data-roles="jefe_operaciones" data-i18n="tabLog">📜 Log</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('regles', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRegles">📋 Normes</button>
                 </div>
             </div>
         </div>
@@ -517,7 +517,7 @@
             <div id="userDisplayBadge" class="user-badge"></div>
             
             <!-- Menú Desplegable de Administración -->
-            <div class="dropdown-admin" id="adminDropdown" style="display: none;">
+            <div class="dropdown-admin menu-item" id="adminDropdown" data-roles="jefe_operaciones" style="display: none;">
                 <button class="btn-manage-coord" onclick="toggleAdminDropdown(event)" data-i18n="btnAdministration">⚙️ Administració</button>
                 <div class="dropdown-admin-content" id="adminDropdownContent">
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
@@ -1640,6 +1640,42 @@
             const dropdownMore = document.getElementById('moreDropdown');
             if (dropdownMore && !dropdownMore.contains(event.target)) {
                 closeMoreDropdown();
+            }
+        });
+
+        // --- FILTRADO DE ROLES ---
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                if (window.databaseAPI && window.databaseAPI.getUserRole) {
+                    const userRole = await window.databaseAPI.getUserRole();
+                    
+                    document.querySelectorAll('.menu-item').forEach(item => {
+                        const rolesPermitidos = item.getAttribute('data-roles');
+                        if (rolesPermitidos) {
+                            if (!rolesPermitidos.split(',').includes(userRole)) {
+                                item.style.setProperty('display', 'none', 'important');
+                            }
+                        }
+                    });
+                    
+                    // Ocultar botón "Més" si todos los elementos del dropdown secundario están ocultos
+                    const dropdownItems = document.querySelectorAll('.dropdown-more-content .menu-item');
+                    let hayVisibles = false;
+                    dropdownItems.forEach(item => {
+                        if (item.style.display !== 'none') {
+                            hayVisibles = true;
+                        }
+                    });
+                    
+                    if (!hayVisibles) {
+                        const moreDropdown = document.getElementById('moreDropdown');
+                        if (moreDropdown) {
+                            moreDropdown.style.setProperty('display', 'none', 'important');
+                        }
+                    }
+                }
+            } catch (e) {
+                console.error('[PORTAL] Error al aplicar filtrado de roles:', e);
             }
         });
     </script>

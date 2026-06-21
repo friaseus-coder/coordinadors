@@ -159,7 +159,36 @@
     }
 
     // Cargar coordinadores al abrir la página
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Intentar login automático si el rol viene hardcodeado en config.json
+      try {
+        if (window.databaseAPI && window.databaseAPI.getUserRole) {
+          const userRole = await window.databaseAPI.getUserRole();
+          const configCoord = await window.databaseAPI.getConfigCoordinador();
+
+          if (userRole === 'jefe_operaciones') {
+            sessionStorage.setItem('userRole', 'jefe operaciones');
+            sessionStorage.setItem('userName', 'Administrador');
+            window.location.href = 'portal.html';
+            return;
+          } else if (userRole === 'comercial') {
+            sessionStorage.setItem('userRole', 'comercial');
+            sessionStorage.setItem('userName', 'Invitado');
+            window.location.href = 'portal.html';
+            return;
+          } else if (userRole === 'coordinador') {
+            if (configCoord) {
+              sessionStorage.setItem('userRole', 'coordinador');
+              sessionStorage.setItem('userName', configCoord);
+              window.location.href = 'portal.html';
+              return;
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[LOGIN] Error en login automático por rol configurado:', e);
+      }
+
       // Activar el botón de idioma activo
       const activeLang = i18n.getLanguage();
       document.querySelectorAll('.lang-btn').forEach(btn => {

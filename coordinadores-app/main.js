@@ -2736,6 +2736,27 @@ ipcMain.handle('importacion-centralizada', async (event, { tipo }) => {
   }
 });
 
+// --- SISTEMA DE ROLES ---
+ipcMain.handle('get-user-role', () => {
+  try {
+    const configPath = path.join(__dirname, 'config.json');
+    const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    return configData.role || 'comercial'; // Por seguridad, si falla, es comercial (menor privilegio)
+  } catch (e) {
+    return 'comercial'; 
+  }
+});
+
+ipcMain.handle('get-config-coordinador', () => {
+  try {
+    const configPath = path.join(__dirname, 'config.json');
+    const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
+    return configData.coordinador || '';
+  } catch (e) {
+    return '';
+  }
+});
+
 // Cerrar de forma limpia todas las conexiones SQLite al salir
 app.on('will-quit', () => {
   console.log("Aplicación cerrándose, lanzando salvaguarda...");

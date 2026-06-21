@@ -554,20 +554,14 @@ const persistence = (() => {
       return combinedData;
     }
 
-    // Fallback para otros módulos (Gastos, etc.) usando la tabla kv_store en dades.db única
+    // Caso general para otros módulos (Gastos, etc.) usando la tabla kv_store en dades.db única
     try {
       const rows = await window.databaseAPI.consultar("SELECT value FROM kv_store WHERE key = ?", [currentFilePath]);
       if (rows && rows.length > 0 && rows[0].value) {
         return JSON.parse(rows[0].value);
       }
     } catch (dbErr) {
-      console.warn(`[PERSISTENCE] Clave ${currentFilePath} no encontrada en kv_store. Intentando fallback legacy...`);
-    }
-
-    // Fallback legacy a archivos JSON físicos
-    const result = await api.readFile(currentFilePath);
-    if (result.success) {
-      return result.data;
+      console.warn(`[PERSISTENCE] Clave ${currentFilePath} no encontrada en kv_store.`, dbErr);
     }
     return null;
   }
@@ -690,14 +684,8 @@ const persistence = (() => {
       return true;
     } catch (err) {
       console.error(`[PERSISTENCE] Error escribiendo clave ${currentFilePath} en la base de datos única:`, err);
+      return false;
     }
-
-    // Fallback legacy a archivos físicos
-    const result = await api.writeFile(currentFilePath, data, userName);
-    if (!result.success && result.error === 'LOCK_LOST') {
-      handleLockLoss();
-    }
-    return result.success;
   }
 
   // Guardado diferido (Debounce)

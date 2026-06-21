@@ -130,9 +130,6 @@
 <div class="header-top">
     <div class="controls-wrapper">
         <select id="anyActual" class="sel-any-header" onchange="canviarAny()"></select>
-        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarJSON(event)">
-        <button class="btn-nyn btn-import" onclick="document.getElementById('importFile').click()">📂 Importar</button>
-        <button class="btn-nyn btn-export" onclick="exportarJSON()">💾 Exportar</button>
         <button class="btn-nyn btn-manage" onclick="obrirGestio()">⚙️ Gestionar Dades</button>
         <button class="btn-nyn btn-add" onclick="afegirFila()">✚ Fila Nova</button>
     </div>
@@ -147,9 +144,7 @@
             <span id="countCelles">nº cel·les: 0</span>
         </div>
     </div>
-    <span id="llegendaExportDeutes" style="margin-left: 15px; font-size: 11px; color: #111; border-left: 1px solid #ccc; padding-left: 10px; display: inline-block; vertical-align: middle;">
-        Darrera exportació: Cap dada encara
-    </span>
+    
     <div class="title-wrapper">
         <h1 id="titolPrincipal">Control Excés Jornada</h1>
     </div>
@@ -435,80 +430,6 @@
         if(confirm("eliminar fila?")) { dadesGlobals[anySeleccionat].splice(idx, 1); guardarAlLocal(); renderTable(); } 
     }
 
-    function importarJSON(event) {
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            try {
-                const json = JSON.parse(e.target.result);
-                const dataLocal = parseInt(localStorage.getItem('nyn_deutes_export_raw')) || 0;
-                const dataImportada = json.METADATA_EXPORT_RAW || 0;
-                if (dataImportada < dataLocal && dataImportada !== 0) {
-                    const conf = confirm(`⚠️ ATENCIÓ: Estàs intentant importar un fitxer MÉS ANTIC...\n\nData fitxer: ${json.METADATA_EXPORT_DATA}\nData actual: ${localStorage.getItem('nyn_deutes_export_data')}\n\nSegur?`);
-                    if (!conf) return;
-                }
-                if (json.configAnys) configAnys = json.configAnys;
-                if (json.mestres) mestres = json.mestres;
-                if (json.dades) dadesGlobals = json.dades; 
-                else if (json["2026"]) dadesGlobals = json;
-                if (json.METADATA_EXPORT_DATA) {
-                    localStorage.setItem('nyn_deutes_export_data', json.METADATA_EXPORT_DATA);
-                    localStorage.setItem('nyn_deutes_export_autor', json.METADATA_EXPORT_AUTOR);
-                    localStorage.setItem('nyn_deutes_export_raw', json.METADATA_EXPORT_RAW);
-                }
-                reassignarColors(); 
-                guardarAlLocal(); 
-                await persistence.syncSave();
-                actualitzarSelectorsAny(); 
-                renderCapcalera(); 
-                renderTable();
-                refrescarLlegendaDeutes();
-                alert("✅ Importació completada.");
-            } catch (err) { alert("❌ Fitxer no vàlid."); }
-        };
-        reader.readAsText(event.target.files[0]);
-    }
-
-    function exportarJSON() {
-        const ara = new Date();
-        const timestampRaw = ara.getTime(); 
-        const dataFormatada = ara.toLocaleString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-        const dataNomFitxer = ara.toLocaleDateString('ca-ES').replace(/\//g, '-');
-        const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
-        let autorLog = "SISTEMA";
-        if (nomSencer.toUpperCase().includes("ALBERT")) autorLog = "ALBERT";
-        else if (nomSencer.toUpperCase().includes("LAURA")) autorLog = "LAURA";
-        const dadesAExportar = { dades: dadesGlobals, mestres: mestres, configAnys: configAnys, METADATA_EXPORT_DATA: dataFormatada, METADATA_EXPORT_AUTOR: autorLog, METADATA_EXPORT_RAW: timestampRaw };
-        localStorage.setItem('nyn_deutes_export_data', dataFormatada);
-        localStorage.setItem('nyn_deutes_export_autor', autorLog);
-        localStorage.setItem('nyn_deutes_export_raw', timestampRaw); 
-        refrescarLlegendaDeutes();
-        const blob = new Blob([JSON.stringify(dadesAExportar, null, 2)], {type: "application/json"});
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = `deutes_${dataNomFitxer}_${autorLog}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-    }
-
-    function refrescarLlegendaDeutes() {
-        const data = localStorage.getItem('nyn_deutes_export_data');
-        const autor = localStorage.getItem('nyn_deutes_export_autor');
-        const el = document.getElementById('llegendaExportDeutes');
-        const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
-        let joSoc = "SISTEMA";
-        if (nomSencer.toUpperCase().includes("ALBERT")) joSoc = "ALBERT";
-        else if (nomSencer.toUpperCase().includes("LAURA")) joSoc = "LAURA";
-        if (el) {
-            if (data && autor) {
-                el.innerHTML = `| Darrera exportació: ${data} (per ${autor})`;
-                if (autor !== joSoc && autor !== "SISTEMA") {
-                    el.style.color = "#d35400"; el.style.backgroundColor = "#fff3cd"; el.style.padding = "2px 8px"; el.style.borderRadius = "4px";
-                } else { el.style.color = "#111"; el.style.backgroundColor = "transparent"; }
-            } else { el.innerHTML = "| Darrera exportació: Cap dada encara"; }
-        }
-    }
-
     function actualitzarSelectorsAny() {
         document.getElementById('anyActual').innerHTML = Object.keys(configAnys).sort().map(a => `<option value="${a}" ${a===anySeleccionat?'selected':''}>${a}</option>`).join('');
     }
@@ -555,7 +476,6 @@
         actualitzarSelectorsAny(); 
         renderCapcalera(); 
         renderTable(); 
-        refrescarLlegendaDeutes(); 
     };
 </script>
 </body>
