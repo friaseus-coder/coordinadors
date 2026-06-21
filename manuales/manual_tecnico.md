@@ -67,14 +67,17 @@ La aplicación aprovecha la separación de procesos de Electron para ofrecer seg
     *   **Canales IPC Relacionales de Sociedades:** CRUD de la tabla `sociedades` (`get-sociedades`, `add-sociedad`, `update-sociedad`, `deactivate-sociedad`).
     *   **Canales IPC Relacionales de Aparcamientos:** Consulta y modificación estructurada (`get-aparcamientos-relacional`, `update-aparcamiento-relacional`) que escribe en la tabla `aparcamientos` de SQLite y sincroniza el catálogo `aparcamientos.json` como backup secundario.
     *   **Canales IPC de Contratos de Agentes:** CRUD de contratos vinculando coordinadores/agentes con sociedades del grupo (`get-contratos-agente`, `add-contrato-agente`, `cerrar-contrato-agente`).
-    *   **Auditoría y Auditoría de Datos:** El canal `get-historico-aparcamiento` lee directamente la tabla `historico_aparcamientos` para auditar cualquier cambio realizado sobre los aparcamientos a través de un trigger.
+    *   **Auditoría de Cambios en Aparcamientos:** El canal `get-historico-aparcamiento` lee directamente la tabla `historico_aparcamientos` para auditar cualquier cambio realizado sobre los aparcamientos a través de un trigger.
     *   `import-json-data`: Importa volcados JSON de backups legados mapeándolos y guardándolos transaccionalmente en SQLite.
+    *   **Canales IPC de Vacaciones:** Control y persistencia de vacaciones (`get-vacaciones-relacional`, `save-vacacion-relacional`, `delete-vacacion-relacional`) y herramienta de migración masiva (`migrar-json-vacaciones`).
+    *   **Canales IPC de Finanzas (Deudas y Gastos):** CRUD transaccional para la gestión de deudas (`get-deutes-relacional`, `save-deute-relacional`, `delete-deute-relacional`) y gastos mensuales (`get-despeses-relacional`, `save-despesa-relacional`, `delete-despesa-relacional`).
+    *   **Canales IPC de Inventarios:** CRUD para el seguimiento de artículos de uniforme y equipamiento de coordinadores (`get-inventari-relacional`, `save-inventari-relacional`, `delete-inventari-relacional`).
 
 ### B. Proceso de Renderizado (Renderer Process - Carpeta `src/`)
 *   Muestra la interfaz gráfica dentro del contenedor Chromium de forma aislada.
 *   No tiene acceso directo al sistema operativo ni a Node.js por motivos de seguridad informática (prevención de ataques XSS).
 *   Se comunica con el proceso principal mediante las funciones expuestas en el puente `preload.js` (`window.api`).
-*   **Puente de API Relacional (`window.api.databaseAPI`):** En `preload.js` se definen y exponen los 12 nuevos métodos que permiten al frontend llamar a los handlers del proceso principal para consultar y modificar sociedades, contratos, aparcamientos relacionales e históricos de base de datos de manera limpia y segura.
+*   **Puente de API Relacional (`window.api.databaseAPI`):** En `preload.js` se definen y exponen los métodos que permiten al frontend llamar a los handlers del proceso principal para consultar y modificar sociedades, contratos, aparcamientos relacionales, históricos de base de datos, vacaciones, deudas, gastos e inventarios de manera limpia y segura.
 
 ### C. Cargador Híbrido Dinámico (Modificaciones en Caliente)
 Para evitar tener que generar y distribuir un nuevo ejecutable `.exe` de 180MB cada vez que se hace un cambio estético de HTML o CSS, el método `createWindow()` en `main.js` realiza la siguiente validación:
@@ -160,6 +163,22 @@ Cuando el usuario sube un backup JSON, la aplicación realiza un análisis previ
     Si la similitud supera el umbral del `40%`, se preselecciona la opción local en el desplegable de mapeo.
 3.  **Procesamiento y Guardado Adaptado:** Al confirmar, el sistema procesa las altas correspondientes (si se seleccionó `[Crear nou...]`), remapea las celdas y claves adaptándolas a la base de datos local y migra los turnos de cualquier versión obsoleta a la versión actual `v12` de cuadrante. Por último, se ejecuta `persistence.syncSave()` para escribir la actualización definitiva en SQLite y se recarga la interfaz.
 
+### E. Módulo de Vacaciones y Gestión de Persistencia Relacional en SQLite
+Para evitar discrepancias en la planificación y coordinar los turnos con los descansos del personal, el módulo de vacaciones se conecta directamente a la tabla `vacances` de la base de datos única SQLite:
+1.  **Persistencia Interactiva en Tiempo Real:** El frontend de `vacances.html` utiliza identificadores `data-db-id` asociados a cada celda de entrada en el DOM para registrar de forma unívoca el ID asignado por SQLite.
+2.  **Operaciones CRUD directas:** 
+    - Las modificaciones individuales en la tabla (como fechas de inicio o fin de períodos) se registran de forma asíncrona mediante el método `saveVacacionSQLite` invocando al canal `save-vacacion-relacional`.
+    - Las eliminaciones de celdas o filas completas invocan a `deleteVacacionSQLite` liberando las vacaciones correspondientes en SQLite al instante.
+3.  **Asistente de Migración de Vacaciones:** Se incorpora un botón de migración masiva (`#btn-migrar-vacaciones-sqlite`) en la barra del módulo de vacaciones. Al ser pulsado, lee el archivo JSON legado, mapea de forma heurística el nombre del coordinador en texto plano contra su identificador numérico de base de datos relacional y realiza una transacción masiva en SQLite (`migrar-json-vacaciones`), sembrando la tabla `vacances` sin pérdidas de información histórica.
+
+### F. Módulos Financieros y de Inventario (Deudas, Gastos, Inventario)
+Los submódulos menores de gestión financiera y control operativo (Deudas `deutes`, Gastos `despeses` e Inventario `inventari`) se han migrado completamente al motor SQLite para garantizar la consistencia en el servidor de red local:
+1.  **Creación Dinámica de Tablas:** Durante el arranque de la base de datos, el método `asegurarTablasSecundarias(db)` en `main.js` verifica y crea las tablas si no existieran en la base de datos del coordinador.
+2.  **Estrategia de Guardado Masivo por Transacción:** Debido a que el frontend de estos módulos procesa y edita colecciones de datos completas en memoria enviando toda la matriz al guardar, se adaptó el backend en `persistence.js` para realizar una operación de vaciado y guardado masivo en una transacción única. Al guardar cambios:
+    - Se elimina el contenido activo correspondiente al módulo (`DELETE FROM [tabla]`).
+    - Se insertan secuencialmente las nuevas filas enviadas por la interfaz mediante sentencias preparadas en SQLite (`INSERT INTO [tabla]...`).
+    - Este flujo mantiene una compatibilidad total con la lógica del frontend legado y asegura que las operaciones de inserción y eliminación sean seguras frente a cortes de red o caídas accidentales.
+
 ---
 
 ## 5. Auditoría y Tareas de Mantenimiento
@@ -184,10 +203,10 @@ El esquema de la base de datos SQLite se define formalmente en `schema.sql` y se
 7.  **`reglas_negocio`**: Parámetros globales aplicados en tiempo real para control de convenios y políticas del grupo.
 8.  **`cuadrantes_cabecera`**: Cabeceras mensuales de turnos del coordinador (id, coordinador_id, año, mes, estado cerrado).
 9.  **`cuadrantes_detalles`**: Celdas individuales de turnos de trabajadores (id, cabecera_id, trabajador_id, dia, turno, horas, aparcamiento_id, observaciones).
-10. **`vacaciones`**: Registro de vacaciones anuales de los coordinadores.
-11. **`inventarios`**: Cabeceras de control de uniformes y materiales de coordinadores.
-12. **`inventarios_detalles`**: Detalles individuales de artículos y cantidades de inventarios.
-13. **`gastos`**: Control de despeses y tiques de caja chicas mensuales de coordinadores.
+10. **`vacances`**: Registro de vacaciones anuales de los coordinadores (`agente_id`, `fecha_inicio`, `fecha_fin`).
+11. **`inventari`**: Control de inventario de uniformes y materiales entregados (`id`, `comercial`, `articulo`, `fecha_entrega`, `estado`, `observaciones`, `activo`).
+12. **`despeses`**: Control de gastos y tickets de caja chica mensuales (`id`, `fecha`, `comercial`, `concepto`, `importe`, `estado`, `coordinador`, `activo`).
+13. **`deutes`**: Registro de deudas o excesos de jornada por coordinador (`id`, `comercial`, `cliente`, `import`, `fecha`, `activo`).
 
 ### Trigger de Auditoría en Aparcamientos
 Para garantizar un rastreo histórico completo de cambios en los centros sin sobrecargar la lógica de la aplicación, SQLite ejecuta un trigger automático en la base de datos:

@@ -1128,3 +1128,50 @@ async function deleteVacacionSQLite(id) {
         return { success: false };
     }
 }
+
+// --- DEUDAS ---
+async function loadDeutes(coordinadorId) {
+    try { return await window.databaseAPI.getDeutes(); } 
+    catch (e) { console.error(e); return []; }
+}
+async function saveDeutes(coordinadorId, data) {
+    try {
+        if(Array.isArray(data)) {
+            await window.databaseAPI.ejecutar("DELETE FROM deutes"); 
+            for(let item of data) {
+                await window.databaseAPI.saveDeute(item);
+            }
+        }
+        return true;
+    } catch (e) { return false; }
+}
+
+// --- GASTOS ---
+async function loadDespeses(coordinadorId) {
+    try { return await window.databaseAPI.getDespeses(); } 
+    catch (e) { console.error(e); return []; }
+}
+async function saveDespeses(coordinadorId, data) {
+    try {
+        if(Array.isArray(data)) {
+            await window.databaseAPI.ejecutar("DELETE FROM despeses"); 
+            for(let item of data) await window.databaseAPI.saveDespesa(item);
+        }
+        return true;
+    } catch (e) { return false; }
+}
+
+// --- INVENTARIO ---
+async function loadInventari(coordinadorId) {
+    try { return await window.databaseAPI.getInventari(); } 
+    catch (e) { console.error(e); return []; }
+}
+async function saveInventari(coordinadorId, data) {
+    try {
+        if(Array.isArray(data)) {
+            await window.databaseAPI.ejecutar("DELETE FROM inventari"); 
+            for(let item of data) await window.databaseAPI.saveInventari(item);
+        }
+        return true;
+    } catch (e) { return false; }
+}

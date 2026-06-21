@@ -63,5 +63,18 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   getVacacionesRelacional: () => ipcRenderer.invoke('get-vacaciones-relacional'),
   saveVacacionRelacional: (datos) => ipcRenderer.invoke('save-vacacion-relacional', datos),
   deleteVacacionRelacional: (id) => ipcRenderer.invoke('delete-vacacion-relacional', id),
-  migrarJsonVacaciones: (dataJSON) => ipcRenderer.invoke('migrar-json-vacaciones', { dataJSON })
+  migrarJsonVacaciones: (dataJSON) => ipcRenderer.invoke('migrar-json-vacaciones', { dataJSON }),
+  
+  // Finanzas e Inventario
+  getDeutes: () => ipcRenderer.invoke('get-deutes-relacional'),
+  saveDeute: (datos) => ipcRenderer.invoke('save-deute-relacional', datos),
+  deleteDeute: (id) => ipcRenderer.invoke('delete-deute-relacional', id),
+  
+  getDespeses: () => ipcRenderer.invoke('get-despeses-relacional'),
+  saveDespesa: (datos) => ipcRenderer.invoke('save-despesa-relacional', datos),
+  deleteDespesa: (id) => ipcRenderer.invoke('delete-despesa-relacional', id),
+  
+  getInventari: () => ipcRenderer.invoke('get-inventari-relacional'),
+  saveInventari: (datos) => ipcRenderer.invoke('save-inventari-relacional', datos),
+  deleteInventari: (id) => ipcRenderer.invoke('delete-inventari-relacional', id)
 });

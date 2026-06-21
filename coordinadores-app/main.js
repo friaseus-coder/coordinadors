@@ -79,6 +79,7 @@ function conectarBaseDatosUnica(rutaCompartida) {
                  inicializarReglasDeNegocio(db);
                  if (typeof sincronizarCatalogosIniciales === 'function') sincronizarCatalogosIniciales(db);
                  if (typeof sincronizarAgentesIniciales === 'function') sincronizarAgentesIniciales(db);
+                 asegurarTablasSecundarias(db);
                }
             });
         }
@@ -86,11 +87,34 @@ function conectarBaseDatosUnica(rutaCompartida) {
         inicializarReglasDeNegocio(db);
         if (typeof sincronizarCatalogosIniciales === 'function') sincronizarCatalogosIniciales(db);
         if (typeof sincronizarAgentesIniciales === 'function') sincronizarAgentesIniciales(db);
+        asegurarTablasSecundarias(db);
       }
     }
   });
 
   return db;
+}
+
+// --- ASEGURAR TABLAS SECUNDARIAS (FINANZAS E INVENTARIO) ---
+function asegurarTablasSecundarias(dbConnection) {
+  dbConnection.serialize(() => {
+    // Tabla Deudas
+    dbConnection.run(`CREATE TABLE IF NOT EXISTS deutes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comercial TEXT, cliente TEXT, import TEXT, fecha TEXT, activo INTEGER DEFAULT 1
+    )`);
+    // Tabla Gastos
+    dbConnection.run(`CREATE TABLE IF NOT EXISTS despeses (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      fecha TEXT, comercial TEXT, concepto TEXT, importe TEXT, estado TEXT, coordinador TEXT, activo INTEGER DEFAULT 1
+    )`);
+    // Tabla Inventario
+    dbConnection.run(`CREATE TABLE IF NOT EXISTS inventari (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      comercial TEXT, articulo TEXT, fecha_entrega TEXT, estado TEXT, observaciones TEXT, activo INTEGER DEFAULT 1
+    )`);
+    console.log("[DB] Tablas secundarias (Deudas, Gastos, Inventario) verificadas.");
+  });
 }
 
 // ============================================================
@@ -2464,6 +2488,23 @@ ipcMain.handle('migrar-json-vacaciones', async (event, { dataJSON }) => {
     });
   });
 });
+
+// --- GESTIÓN DE DEUDAS, GASTOS E INVENTARIO (SQLITE) ---
+
+// DEUDAS
+ipcMain.handle('get-deutes-relacional', async () => dbAll("SELECT * FROM deutes WHERE activo = 1 ORDER BY fecha DESC"));
+ipcMain.handle('save-deute-relacional', async (e, d) => dbRun("INSERT INTO deutes (comercial, cliente, import, fecha) VALUES (?, ?, ?, ?)", [d.comercial, d.cliente, d.import, d.fecha]));
+ipcMain.handle('delete-deute-relacional', async (e, id) => dbRun("DELETE FROM deutes WHERE id = ?", [id]));
+
+// GASTOS
+ipcMain.handle('get-despeses-relacional', async () => dbAll("SELECT * FROM despeses WHERE activo = 1 ORDER BY fecha DESC"));
+ipcMain.handle('save-despesa-relacional', async (e, d) => dbRun("INSERT INTO despeses (fecha, comercial, concepto, importe, estado, coordinador) VALUES (?, ?, ?, ?, ?, ?)", [d.fecha, d.comercial, d.concepto, d.importe, d.estado, d.coordinador]));
+ipcMain.handle('delete-despesa-relacional', async (e, id) => dbRun("DELETE FROM despeses WHERE id = ?", [id]));
+
+// INVENTARIO
+ipcMain.handle('get-inventari-relacional', async () => dbAll("SELECT * FROM inventari WHERE activo = 1 ORDER BY fecha_entrega DESC"));
+ipcMain.handle('save-inventari-relacional', async (e, d) => dbRun("INSERT INTO inventari (comercial, articulo, fecha_entrega, estado, observaciones) VALUES (?, ?, ?, ?, ?)", [d.comercial, d.articulo, d.fecha_entrega, d.estado, d.observaciones]));
+ipcMain.handle('delete-inventari-relacional', async (e, id) => dbRun("DELETE FROM inventari WHERE id = ?", [id]));
 
 // Cerrar de forma limpia todas las conexiones SQLite al salir
 app.on('will-quit', () => {

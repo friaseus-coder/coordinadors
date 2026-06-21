@@ -153,3 +153,19 @@ Para evitar que dos coordinadores editen y pisen el trabajo del otro en el disco
     *   Si esto ocurre, copia manualmente los cambios realizados que no se hayan guardado, recarga el módulo para comprobar el estado y, si es necesario, vuelve a adquirir el bloqueo de edición.
 *   **Liberación de Bloqueo**: Para permitir que los demás editen de forma normal, simplemente pulsa el botón de volver al menú principal o cierra la aplicación. El bloqueo temporal se eliminará físicamente al instante.
 *   **Desbloqueo de Emergencia**: Si alguien se fue de la oficina y dejó un archivo bloqueado en su equipo sin que hayan pasado las 3 horas de expiración, un **Jefe de Operaciones** puede entrar al módulo y pulsar en el botón **"Forçar Desbloqueig"** del banner superior para liberar el acceso manualmente en el servidor.
+
+---
+
+## 10. Gestión de Vacaciones en Red (SQLite)
+El módulo de **Vacances** ha sido modernizado y ahora interactúa directamente con la base de datos única relacional de SQLite, garantizando una planificación exacta y libre de inconsistencias:
+1.  **Edición Interactiva y Guardado Automático:** Cada vez que modificas la fecha de inicio o fin de un período de vacaciones, o actualizas las observaciones de un trabajador en la tabla, el sistema guarda los cambios de forma asíncrona en la base de datos en segundo plano sin necesidad de pulsar un botón de guardado.
+2.  **Eliminación de Vacaciones:** Si dejas una fecha vacía o eliminas una fila de vacaciones en la pantalla, el registro correspondiente se borra físicamente de SQLite al instante.
+3.  **Botón de Migración Masiva:** Si tu base de datos relacional está vacía y deseas cargar las vacaciones históricas que guardabas en archivos JSON tradicionales, haz clic en el botón **"🔄 Migrar a SQLite"** situado en la cabecera de la sección de vacaciones. El asistente importará todo el historial de vacaciones JSON antiguo y lo sembrará en la tabla SQLite de forma automática en una transacción de red única.
+
+---
+
+## 11. Control de Finanzas e Inventario (Deudas, Gastos e Inventario)
+Los módulos auxiliares de **Deudas (Exceso de jornada)**, **Gastos** e **Inventario de Uniformes** se han integrado completamente en la base de datos SQLite única en red:
+1.  **Sincronización en Tiempo Real:** Todos los coordinadores comparten la misma base de datos, por lo que cualquier registro financiero o alta de inventario introducida es visible para el resto de la oficina de manera inmediata al abrir o recargar la pestaña.
+2.  **Persistencia Transaccional Segura:** Al realizar cambios en estos listados, la aplicación guarda la información de forma transparente en SQLite. El sistema utiliza una estrategia de reescritura transaccional que asegura que el guardado sea robusto, eliminando el riesgo de corrupciones por apagados imprevistos o micro-cortes en la conexión de red de la oficina.
+3.  **Operatividad Intacta:** La interfaz de usuario mantiene su misma apariencia intuitiva y flujo de trabajo anterior, pero con la robustez y velocidad de almacenamiento de una base de datos profesional.
