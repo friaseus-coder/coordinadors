@@ -118,6 +118,7 @@ function comprobarVersionYMigrar(dbConnection) {
         console.log('[DB] Esquema actualizado. No se necesitan migraciones.');
         // Asegurar reglas de negocio completas
         inicializarReglasDeNegocio(dbConnection);
+        sincronizarCatalogosIniciales(dbConnection);
       }
     });
   });
@@ -198,6 +199,7 @@ function migrarV1aV2(dbConnection) {
       } else {
         console.log('[Migración v2] ✅ Migración v1 → v2 completada exitosamente.');
         console.log('[Migración v2] Esquema multisociedad activo. Trigger de auditoría instalado.');
+        sincronizarCatalogosIniciales(dbConnection);
       }
     });
   });
@@ -1250,7 +1252,63 @@ ipcMain.handle('deactivate-sociedad', async (event, id) => {
     console.error('[SOCIEDADES] Error al desactivar:', error);
     return { success: false, error: error.message };
   }
-});
+
+// --- SINCRONIZACIÓN DE CATÁLOGOS JSON A SQLITE ---
+function sincronizarCatalogosIniciales(dbConnection) {
+  const jsonPath = path.join(dadesDir, 'aparcamientos.json');
+  if (!fs.existsSync(jsonPath)) return;
+
+  try {
+    const raw = fs.readFileSync(jsonPath, 'utf8');
+    const data = JSON.parse(raw);
+    const parkings = Array.isArray(data) ? data : (data.aparcamientos || []);
+
+    dbConnection.serialize(() => {
+      dbConnection.run("BEGIN TRANSACTION;");
+
+      // 1. Crear una Sociedad por defecto para que no falle la Foreign Key
+      dbConnection.run(`
+        INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo)
+        VALUES (1, 'Empresa Principal S.L.', 'EMP_01', 1)
+      `);
+
+      // 2. Preparar la inserción/actualización de aparcamientos
+      const stmt = dbConnection.prepare(`
+        INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+        ON CONFLICT(id) DO UPDATE SET
+          numero_obra = excluded.numero_obra,
+          nombre = excluded.nombre,
+          zona = excluded.zona,
+          es_remotizado = excluded.es_remotizado,
+          tipo_gestion = excluded.tipo_gestion,
+          permitir_vacio_laborables = excluded.permitir_vacio_laborables,
+          sociedad_id = excluded.sociedad_id,
+          coordinador_responsable = excluded.coordinador_responsable;
+      `);
+
+      // 3. Volcar los datos del JSON
+      parkings.forEach(p => {
+        // Valores por defecto (Salvavidas) si el JSON no los tiene
+        const numObra = p.numero_obra || `OB-${1000 + p.id}`;
+        const esRemoto = p.es_remotizado ? 1 : 0;
+        const gestion = p.tipo_gestion || 'propio';
+        const vacioLab = p.permitir_vacio_laborables ? 1 : 0;
+        const sociedad = p.sociedad_id || 1; // Asignamos a la sociedad por defecto que acabamos de crear
+        const responsable = p.coordinador_responsable || 'Ambos';
+
+        stmt.run(p.id, numObra, p.nombre, p.zona, esRemoto, gestion, vacioLab, sociedad, responsable);
+      });
+
+      stmt.finalize();
+      dbConnection.run("COMMIT;");
+      console.log("[Sincronización] Catálogo de aparcamientos volcado a SQLite con éxito.");
+    });
+  } catch (error) {
+    console.error("[Sincronización Error] Fallo al cargar JSON a SQLite:", error);
+    dbConnection.run("ROLLBACK;");
+  }
+}
 
 // --- GESTIÓN DE APARCAMIENTOS EN SQLITE ---
 
