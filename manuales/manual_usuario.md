@@ -46,7 +46,12 @@ El Jefe de Operaciones tiene control total sobre el catálogo de aparcamientos d
 2.  Aparecerá el panel de gestión donde se muestra el catálogo completo en una tabla interactiva:
     *   **Crear Aparcamiento:** En la parte superior, rellena el formulario con el nombre del nuevo aparcamiento, su dirección física, el **Número de Obra** (código contable de control), la **Sociedad** (empresa del grupo Núñez i Navarro a la que pertenece) y el **Coordinador** responsable del mismo. Haz clic en **Afegir Aparcament**.
     *   **Modificar y Reasignar:** Al lado de cada aparcamiento de la lista, puedes actualizar su número de obra, dirección y reasignar tanto su sociedad como su coordinador asignado de forma directa. Los cambios se guardan y aplican instantáneamente en la base de datos relacional.
-    *   **Eliminar Aparcamiento:** Haz clic en el botón rojo **Eliminar** en la fila correspondiente. El aparcamiento se desactivará para evitar asignaciones inconsistentes en el futuro.
+    *   **Eliminar Aparcamiento:** Haz clic en el botón rojo **✕** al lado de la fila del aparcamiento. Esto lo desactivará mediante borrado lógico, previniendo su asignación futura sin afectar a los registros del pasado.
+    *   **Exportar a Excel (CSV):** En la esquina inferior izquierda del modal, haz clic en el botón verde **Exportar Excel**. Se descargará un archivo CSV compatible con Microsoft Excel conteniendo todos los datos relacionales de la base de datos (ID, Número de Obra, Nombre, Coordinador, etc.).
+    *   **Importar desde Excel (CSV):** Haz clic en el botón amarillo **Importar Excel** en la parte inferior izquierda del modal, selecciona tu archivo CSV modificado o con nuevos registros y el sistema lo procesará de inmediato.
+        -   Si una línea tiene un **ID** numérico que ya existe, actualizará sus datos en SQLite.
+        -   Si una línea no tiene **ID** (registro nuevo), la insertará como un nuevo aparcamiento en SQLite.
+        -   Al finalizar, sincronizará de forma automática el archivo de red `aparcamientos.json` para reflejar todos los cambios de forma consistente.
 3.  **Historial de Cambios (Auditoría):** El sistema registra automáticamente cada modificación (cambio de dirección, responsable, número de obra, etc.) en un histórico. Se puede consultar el botón de auditoría del aparcamiento para ver qué datos tenía antes, qué datos tiene ahora, y cuándo se produjo la modificación.
 4.  **Impacto Global:** Cualquier cambio en la asignación de coordinadores y sociedades se reflejará dinámicamente en:
     *   **Comerciales:** Los aparcamientos se agruparán automáticamente bajo el coordinador asignado y se segmentarán por la sociedad correspondiente.

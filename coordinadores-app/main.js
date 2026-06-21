@@ -1254,6 +1254,8 @@ ipcMain.handle('get-aparcamientos', async () => {
 ipcMain.handle('save-aparcamientos', async (event, aparcamientos) => {
   try {
     // Sincronizar el array recibido con la tabla relacional
+    const activeIds = [];
+    
     for (const ap of aparcamientos) {
       let responsable = 'Ambos';
       if (ap.coordinadorId === 'albert') responsable = 'Albert';
@@ -1266,7 +1268,7 @@ ipcMain.handle('save-aparcamientos', async (event, aparcamientos) => {
           UPDATE aparcamientos SET
             nombre = ?, zona = ?, coordinador_responsable = ?,
             numero_obra = ?, sociedad_id = ?, es_remotizado = ?,
-            tipo_gestion = ?, permitir_vacio_laborables = ?
+            tipo_gestion = ?, permitir_vacio_laborables = ?, activo = 1
           WHERE id = ?
         `, [
           ap.nombre.toUpperCase(), ap.zona || '', responsable,
@@ -1274,10 +1276,11 @@ ipcMain.handle('save-aparcamientos', async (event, aparcamientos) => {
           ap.tipo_gestion || 'propio', ap.permitir_vacio_laborables || 0,
           ap.id
         ]);
+        activeIds.push(ap.id);
       } else {
         // Insertar nuevo
         const numObra = ap.numero_obra || `OB-${Date.now()}`;
-        await dbRun(`
+        const result = await dbRun(`
           INSERT INTO aparcamientos (numero_obra, nombre, zona, coordinador_responsable, sociedad_id, es_remotizado, tipo_gestion, permitir_vacio_laborables, activo)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
         `, [
@@ -1285,7 +1288,18 @@ ipcMain.handle('save-aparcamientos', async (event, aparcamientos) => {
           ap.sociedad_id || 1, ap.es_remotizado || 0,
           ap.tipo_gestion || 'propio', ap.permitir_vacio_laborables || 0
         ]);
+        if (result && result.lastID) {
+          activeIds.push(result.lastID);
+        }
       }
+    }
+
+    // Desactivar todos los aparcamientos activos que no estén en la lista de IDs actualizada
+    if (activeIds.length > 0) {
+      const placeholders = activeIds.map(() => '?').join(',');
+      await dbRun(`UPDATE aparcamientos SET activo = 0 WHERE id NOT IN (${placeholders})`, activeIds);
+    } else {
+      await dbRun(`UPDATE aparcamientos SET activo = 0`);
     }
 
     // Mantener el JSON sincronizado como respaldo

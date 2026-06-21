@@ -568,7 +568,16 @@
                 <button class="btn-add-coord" onclick="addAparcament()" data-i18n="btnAdd" style="flex: 0.8;">➕ Afegir</button>
             </div>
             <div id="aparcamentList" class="modal-list" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;"></div>
-            <div class="modal-footer">
+            <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-manage-coord" style="background: #e2f0d9; color: #385723; border-color: #c5e0b4;" onclick="exportarAparcamentsCSV()">
+                        <i class="fas fa-file-excel mr-1"></i> Exportar Excel
+                    </button>
+                    <button class="btn-manage-coord" style="background: #fff2cc; color: #7f6000; border-color: #ffe599;" onclick="document.getElementById('importAparcamentsCsvFile').click()">
+                        <i class="fas fa-file-import mr-1"></i> Importar Excel
+                    </button>
+                    <input type="file" id="importAparcamentsCsvFile" accept=".csv" style="display:none" onchange="importarAparcamentsCSV(this)">
+                </div>
                 <button class="btn-close-modal" onclick="closeAparcamentModal()" data-i18n="btnClose">Tancar</button>
             </div>
         </div>
@@ -1172,6 +1181,151 @@
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
                 alert('❌ Error: ' + err.message);
             }
+        }
+
+        async function exportarAparcamentsCSV() {
+            try {
+                const aparcamientos = await window.api.getAparcamientos();
+                let csvContent = "\uFEFF"; // BOM para UTF-8 en Excel Windows
+                
+                // Cabecera del CSV
+                csvContent += "ID;NumeroObra;Nombre;Zona;EsRemotizado;TipoGestion;VacioLaborables;SociedadID;CoordinadorResponsable\r\n";
+                
+                aparcamientos.forEach(ap => {
+                    const id = ap.id || "";
+                    const numObra = ap.numero_obra || "";
+                    const nombre = ap.nombre || "";
+                    const zona = ap.zona || "";
+                    const esRemoto = ap.es_remotizado ? 1 : 0;
+                    const gestion = ap.tipo_gestion || "propio";
+                    const vacioLab = ap.permitir_vacio_laborables ? 1 : 0;
+                    const sociedadId = ap.sociedad_id || 1;
+                    const responsable = ap.coordinador_responsable || "Ambos";
+                    
+                    csvContent += `${id};${numObra};${nombre};${zona};${esRemoto};${gestion};${vacioLab};${sociedadId};${responsable}\r\n`;
+                });
+                
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `aparcamientos_catalogo.csv`;
+                a.click();
+                
+                alert("✅ Catàleg d'aparcaments exportat a Excel (CSV) correctament.");
+            } catch (err) {
+                console.error("Error al exportar aparcamientos:", err);
+                alert("❌ Error al exportar: " + err.message);
+            }
+        }
+
+        async function importarAparcamentsCSV(input) {
+            const file = input.files[0];
+            if (!file) return;
+            
+            const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split(/\r?\n/);
+                    
+                    if (lines.length < 2) {
+                        alert("❌ El fitxer CSV és buit o no és vàlid.");
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Validar cabecera básica
+                    const header = lines[0].toLowerCase();
+                    if (!header.includes("nombre") && !header.includes("coordinador")) {
+                        alert("❌ El format del fitxer no és vàlid. Ha de contenir capçalera amb camps como Nombre y CoordinadorResponsable.");
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        return;
+                    }
+                    
+                    // Iniciar transacción en SQLite
+                    await window.databaseAPI.ejecutar("BEGIN TRANSACTION;");
+                    
+                    let importados = 0;
+                    let actualizados = 0;
+                    
+                    for (let i = 1; i < lines.length; i++) {
+                        const line = lines[i].trim();
+                        if (!line) continue;
+                        
+                        const fields = line.split(';');
+                        if (fields.length < 3) continue;
+                        
+                        const id = fields[0] ? parseInt(fields[0].trim()) : null;
+                        const numObra = fields[1] ? fields[1].trim() : null;
+                        const nombre = fields[2] ? fields[2].trim().toUpperCase() : "";
+                        const zona = fields[3] ? fields[3].trim() : "General";
+                        const esRemoto = fields[4] ? parseInt(fields[4].trim()) || 0 : 0;
+                        const gestion = fields[5] ? fields[5].trim().toLowerCase() : "propio";
+                        const vacioLab = fields[6] ? parseInt(fields[6].trim()) || 0 : 0;
+                        const sociedadId = fields[7] ? parseInt(fields[7].trim()) || 1 : 1;
+                        const responsable = fields[8] ? fields[8].trim() : "Ambos";
+                        
+                        if (!nombre) continue;
+                        
+                        if (id) {
+                            const check = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE id = ?", [id]);
+                            if (check && check.length > 0) {
+                                await window.databaseAPI.ejecutar(`
+                                    UPDATE aparcamientos SET 
+                                        numero_obra = ?, nombre = ?, zona = ?, es_remotizado = ?, 
+                                        tipo_gestion = ?, permitir_vacio_laborables = ?, sociedad_id = ?, 
+                                        coordinador_responsable = ?, activo = 1 
+                                    WHERE id = ?
+                                `, [numObra || `OB-${id}`, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable, id]);
+                                actualizados++;
+                            } else {
+                                await window.databaseAPI.ejecutar(`
+                                    INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+                                `, [id, numObra || `OB-${id}`, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable]);
+                                importados++;
+                            }
+                        } else {
+                            const generatedNumObra = numObra || `OB-${Date.now() + i}`;
+                            await window.databaseAPI.ejecutar(`
+                                INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+                            `, [generatedNumObra, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable]);
+                            importados++;
+                        }
+                    }
+                    
+                    await window.databaseAPI.ejecutar("COMMIT;");
+                    
+                    // Sincronizar catálogo maestro en red
+                    const updatedAparcamientos = await window.api.getAparcamientos();
+                    await window.api.saveAparcamientos(updatedAparcamientos);
+                    
+                    input.value = "";
+                    await refreshAparcamentList();
+                    
+                    // Recargar iframe activo
+                    const activeContent = document.querySelector('.tab-content.active');
+                    if (activeContent) {
+                        const iframe = activeContent.querySelector('iframe');
+                        if (iframe) iframe.src = iframe.src;
+                    }
+                    
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    alert(`✅ Sincronització massiva d'Excel completada:\n- Nous inserits: ${importados}\n- Existents actualitzats: ${actualizados}`);
+                } catch (err) {
+                    await window.databaseAPI.ejecutar("ROLLBACK;");
+                    input.value = "";
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    console.error("Error al importar aparcamientos CSV:", err);
+                    alert("❌ Error al importar: " + err.message);
+                }
+            };
+            reader.readAsText(file);
         }
 
         function registrarLog(usuari, accio) {
