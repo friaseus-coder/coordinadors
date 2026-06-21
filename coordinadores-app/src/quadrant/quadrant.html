@@ -949,6 +949,23 @@ async function init() {
                     td.onmouseenter = () => updateSelection(sId);
                     td.oncontextmenu = (e) => { e.preventDefault(); openNote(sId); };
                     td.ondblclick = () => openAssistant(sId);
+                    td.addEventListener('click', (e) => {
+                        if (isMonthLocked()) return;
+                        
+                        const saved = cacheDades[sId] || {w: "-", h: "-", s: false, n: ""};
+                        if (saved.w === "-" || saved.w === "") {
+                            const parts = sId.split('_');
+                            const dia = parts[parts.length - 1];
+                            const torn = parts[parts.length - 2];
+                            const park = parts.slice(4, parts.length - 2).join(' ');
+
+                            const mesNum = (currentMonth + 1).toString().padStart(2, '0');
+                            const diaNum = parseInt(dia).toString().padStart(2, '0');
+                            const fechaSQL = `${currentYear}-${mesNum}-${diaNum}`;
+
+                            abrirAsistente(fechaSQL, null, park, td);
+                        }
+                    });
                     cellsArr.push(td);
                 }
                 if (rowMatchesFilter) {
@@ -2375,6 +2392,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
+async function abrirAsistente(fechaSQL, parkingId, parkingNombre, celdaDOM) {
+    if (celdaDOM) {
+        const sId = celdaDOM.id.replace("cell_", "");
+        await openAssistant(sId);
+    }
+}
 
 async function openAssistant(sId) {
     if (isMonthLocked()) { 
