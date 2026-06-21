@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <title>NyN Pàrquings | Control Treballadors</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        }
+      }
+    </script>
     <script src="../js/persistence.js"></script>
     <script src="../js/i18n.js"></script>
     
@@ -679,11 +688,44 @@
     </div>
 </div>
 
-<div class="table-wrapper">
-    <table id="mainTable">
-        <thead><tr id="headerRow"></tr></thead>
-        <tbody id="tableBody"></tbody>
-    </table>
+<div class="flex flex-row overflow-hidden" style="display: flex; flex-direction: row; align-items: stretch; min-height: calc(100vh - 120px); width: 100%;">
+    <div class="table-wrapper" style="flex-grow: 1; overflow-x: auto; padding: 16px 24px;">
+        <table id="mainTable">
+            <thead><tr id="headerRow"></tr></thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+    </div>
+    
+    <!-- PANEL DEL ASISTENTE INTELIGENTE -->
+    <aside id="panel-asistente" class="hidden w-80 bg-orange-50 border-l border-orange-200 p-4 overflow-y-auto flex-shrink-0 shadow-inner" style="min-width: 320px; max-width: 320px;">
+      <div class="flex justify-between items-center mb-4 border-b border-orange-200 pb-2">
+        <h3 class="text-lg font-bold text-orange-800" style="margin: 0;"><i class="fas fa-robot mr-2"></i> Asistente</h3>
+        <button id="cerrar-asistente" class="text-orange-500 hover:text-orange-800" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 0; box-shadow: none; height: auto;"><i class="fas fa-times"></i></button>
+      </div>
+      
+      <div id="info-celda-asistente" class="text-sm text-gray-700 mb-4 bg-white p-2 rounded border border-orange-100">
+        <!-- Aquí irá la info del parking y día -->
+      </div>
+
+      <div class="mb-4">
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit;">
+              <span style="font-weight: 700; font-size: 11px; color: #475569;">Desassignar torn / Deixar buit</span>
+              <button id="btn-desasignar-asistente" style="background: #64748b; color: white; border: none; font-weight: 700; padding: 4px 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm);">
+                  Desassignar
+              </button>
+          </div>
+      </div>
+
+      <h4 class="text-sm font-bold text-green-700 mb-2 mt-4 uppercase"><i class="fas fa-check-circle mr-1"></i> Recomendados</h4>
+      <ul id="lista-sugeridos" class="space-y-2 mb-6" style="padding-left: 0; list-style: none;">
+        <!-- Dinámico -->
+      </ul>
+
+      <h4 class="text-sm font-bold text-red-700 mb-2 uppercase"><i class="fas fa-ban mr-1"></i> Descartados</h4>
+      <ul id="lista-descartados" class="space-y-2 opacity-75" style="padding-left: 0; list-style: none;">
+        <!-- Dinámico -->
+      </ul>
+    </aside>
 </div>
 
 <script>
@@ -2306,11 +2348,55 @@ function toggleAlertsPanel() {
     }
 }
 
+// --- LÓGICA FRONTEND DEL ASISTENTE ---
+let celdaSeleccionadaActual = null;
+let idCeldaSeleccionadaActual = null;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const panelAsistente = document.getElementById('panel-asistente');
+    const btnCerrarAsistente = document.getElementById('cerrar-asistente');
+    const btnDesasignar = document.getElementById('btn-desasignar-asistente');
+
+    if (btnCerrarAsistente) {
+        btnCerrarAsistente.addEventListener('click', () => {
+            if (panelAsistente) panelAsistente.classList.add('hidden');
+            celdaSeleccionadaActual = null;
+            idCeldaSeleccionadaActual = null;
+            clearSelection();
+        });
+    }
+
+    if (btnDesasignar) {
+        btnDesasignar.addEventListener('click', () => {
+            if (idCeldaSeleccionadaActual) {
+                asignarAgenteACelda('-');
+            }
+        });
+    }
+});
+
 async function openAssistant(sId) {
     if (isMonthLocked()) { 
         alert("Aquest mes està tancat."); 
         return; 
     }
+    
+    // Marcar visualmente la celda seleccionada
+    clearSelection();
+    selectedIds = [sId];
+    const td = document.getElementById("cell_" + sId);
+    if (td) {
+        td.classList.add('selected-cell');
+    }
+    
+    idCeldaSeleccionadaActual = sId;
+    celdaSeleccionadaActual = td;
+    
+    const panelAsistente = document.getElementById('panel-asistente');
+    if (!panelAsistente) return;
+    
+    panelAsistente.classList.remove('hidden');
+    
     try {
         const parts = sId.split('_');
         const dia = parts[parts.length - 1];
@@ -2321,6 +2407,24 @@ async function openAssistant(sId) {
         const diaNum = parseInt(dia).toString().padStart(2, '0');
         const fecha = `${currentYear}-${mesNum}-${diaNum}`;
 
+        const infoCelda = document.getElementById('info-celda-asistente');
+        const ulSugeridos = document.getElementById('lista-sugeridos');
+        const ulDescartados = document.getElementById('lista-descartados');
+        
+        if (infoCelda) {
+            infoCelda.innerHTML = `
+                <div class="font-bold text-gray-800">🏢 ${park.toUpperCase()}</div>
+                <div class="text-xs text-gray-500 mt-1">📅 ${diaNum}/${mesNum}/${currentYear} | ⏰ ${torn}</div>
+            `;
+        }
+        
+        if (ulSugeridos) {
+            ulSugeridos.innerHTML = '<li class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin text-2xl text-orange-500"></i></li>';
+        }
+        if (ulDescartados) {
+            ulDescartados.innerHTML = '';
+        }
+
         // Obtenir ID de l'aparcament des de la DB única
         const dbPark = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE nombre = ?", [park.toUpperCase()]);
         if (!dbPark || dbPark.length === 0) {
@@ -2330,90 +2434,84 @@ async function openAssistant(sId) {
         const aparcamientoId = dbPark[0].id;
 
         // Cridar assistent al backend
-        const res = await window.databaseAPI.obtenerPropuestasAsistente(fecha, aparcamientoId);
+        const res = await obtenerAsistenteAsignacion(fecha, aparcamientoId);
         
-        // Dibuixar info de cel·la
-        const infoEl = document.getElementById('assistantCellInfo');
-        if (infoEl) {
-            infoEl.innerHTML = `
-                <span>🏢 ${park.toUpperCase()}</span>
-                <span>📅 ${diaNum}/${mesNum}/${currentYear}</span>
-                <span>⏰ ${torn}</span>
-            `;
-        }
+        if (ulSugeridos) {
+            ulSugeridos.innerHTML = '';
+            if (res.sugeridos && res.sugeridos.length > 0) {
+                res.sugeridos.forEach(agente => {
+                    const li = document.createElement('li');
+                    li.className = "bg-white p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md cursor-pointer transition-all flex flex-col gap-1.5 group relative";
+                    
+                    let badge = '';
+                    if (agente.tipo === 'EMPRESA SEGURIDAD') badge = '<span class="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold ml-2">EXTERNO</span>';
+                    else if (agente.ranking_score >= 80) badge = '<span class="text-[9px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-bold ml-2">TOP</span>';
 
-        const clearRowHtml = `
-            <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit; margin-bottom: 4px;">
-                <span style="font-weight: 700; font-size: 11px; color: #475569;">Desassignar torn / Deixar buit</span>
-                <button onclick="assignarTreballador('${sId}', '-')" style="background: #64748b; color: white; border: none; font-weight: 700; padding: 4px 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm);">
-                    Desassignar
-                </button>
-            </div>
-        `;
+                    const warningsHtml = agente.advertencias && agente.advertencias.length > 0
+                        ? agente.advertencias.map(adv => `<span class="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded text-[9px] font-medium inline-block">⚠️ ${adv}</span>`).join(' ')
+                        : `<span class="bg-emerald-50 text-emerald-800 border border-emerald-100 px-1.5 py-0.5 rounded text-[9px] font-medium inline-block">✅ Sense conflictes</span>`;
 
-        // Dibuixar sugerits
-        const sugEl = document.getElementById('assistantSuggestionsList');
-        if (sugEl) {
-            if (!res.sugeridos || res.sugeridos.length === 0) {
-                sugEl.innerHTML = clearRowHtml + '<div style="font-size: 10px; color: #64748b; text-align: center; padding: 8px;">No hi ha treballadors actius suggerits.</div>';
-            } else {
-                sugEl.innerHTML = clearRowHtml + res.sugeridos.map(ag => {
-                    const warningsHtml = ag.advertencias && ag.advertencias.length > 0
-                        ? ag.advertencias.map(adv => `<span style="background: #fef9c3; color: #b45309; border: 1px solid #fef08a; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; display: inline-block; margin-top: 2px;">⚠️ ${adv}</span>`).join(' ')
-                        : `<span style="background: #e6f4ea; color: #166534; border: 1px solid #bbf7d0; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 600; display: inline-block; margin-top: 2px;">✅ Sense conflictes</span>`;
-                        
-                    return `
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; gap: 10px; font-family: inherit;">
-                            <div style="display: flex; flex-direction: column; gap: 2px; text-align: left;">
-                                <span style="font-weight: 700; font-size: 11px; color: #1e293b;">${ag.nombre}</span>
-                                <span style="font-size: 9px; color: #64748b;">Rànquing: <strong>${ag.ranking_score}</strong> | Jornada mes: <strong>${ag.dias_mes_actual} dies</strong></span>
-                                <div style="display: flex; flex-wrap: wrap; gap: 4px;">${warningsHtml}</div>
+                    li.innerHTML = `
+                        <div class="flex justify-between items-start w-100" style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
+                            <div>
+                                <div class="font-bold text-gray-800 text-xs">${agente.nombre}${badge}</div>
+                                <div class="text-[10px] text-gray-500 mt-0.5">Ranking: ${agente.ranking_score} | Horas mes: ${agente.dias_mes_actual * 8}h</div>
                             </div>
-                            <button onclick="assignarTreballador('${sId}', '${ag.nombre}')" style="background: var(--nyn-verd-accent); color: white; border: none; font-weight: 700; padding: 0 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm); flex-shrink: 0;">
-                                Assignar
-                            </button>
+                            <button class="bg-green-600 text-white px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 font-bold transition-opacity" style="border: none; padding: 3px 8px; cursor: pointer; border-radius: 4px;">ASIGNAR</button>
                         </div>
+                        <div class="flex flex-wrap gap-1 mt-1 border-t border-gray-100 pt-1.5" style="display: flex; flex-wrap: wrap; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 6px;">${warningsHtml}</div>
                     `;
-                }).join('');
+                    
+                    li.addEventListener('click', () => asignarAgenteACelda(agente.nombre));
+                    ulSugeridos.appendChild(li);
+                });
+            } else {
+                ulSugeridos.innerHTML = '<li class="text-sm text-gray-500 bg-white p-3 rounded-lg border border-gray-200 text-center">No hi ha treballadors sugerits.</li>';
             }
         }
 
-        // Dibuixar exclosos (Restringits)
-        const restEl = document.getElementById('assistantRestrictionsList');
-        if (restEl) {
-            if (!res.restringidos || res.restringidos.length === 0) {
-                restEl.innerHTML = '<div style="font-size: 10px; color: #64748b; text-align: center; padding: 8px;">No hi ha treballadors exclosos avui.</div>';
-            } else {
-                restEl.innerHTML = res.restringidos.map(ag => {
-                    return `
-                        <div style="display: flex; align-items: center; justify-content: space-between; padding: 8px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; opacity: 0.7; font-family: inherit;">
-                            <div style="display: flex; flex-direction: column; gap: 2px; text-align: left; width: 100%;">
-                                <span style="font-weight: 700; font-size: 11px; color: #64748b; text-decoration: line-through;">${ag.nombre}</span>
-                                <span style="color: #b91c1c; font-size: 9px; font-weight: 600; display: inline-block; margin-top: 2px;">❌ Bloquejat: ${ag.motivo_bloqueo}</span>
-                            </div>
-                        </div>
+        if (ulDescartados) {
+            ulDescartados.innerHTML = '';
+            const descartados = res.restringidos || res.descartados || [];
+            if (descartados.length > 0) {
+                descartados.forEach(agente => {
+                    const li = document.createElement('li');
+                    li.className = "bg-red-50/50 p-2.5 rounded-lg border border-red-100 flex flex-col gap-1 text-left";
+                    const motivo = agente.motivo_bloqueo || agente.motivo_descarte || 'No disponible';
+                    li.innerHTML = `
+                        <div class="font-bold text-gray-700 text-xs">${agente.nombre}</div>
+                        <div class="text-[9.5px] text-red-700 font-medium flex items-start gap-1"><i class="fas fa-exclamation-triangle mt-0.5 flex-shrink-0"></i> <span>${motivo}</span></div>
                     `;
-                }).join('');
+                    ulDescartados.appendChild(li);
+                });
+            } else {
+                ulDescartados.innerHTML = '<li class="text-xs text-gray-400 text-center py-2">No hi ha treballadors descartats.</li>';
             }
         }
-
-        document.getElementById('assistantModal').style.display = 'block';
     } catch (e) {
         console.error("Error en openAssistant:", e);
     }
 }
 
-function assignarTreballador(sId, nomTreballador) {
-    const td = document.getElementById("cell_" + sId);
-    if (!td) return;
-    const selectEl = td.querySelector('.select-worker');
-    if (selectEl) {
-        selectEl.value = nomTreballador;
-        quickSave(sId, selectEl, 'w');
-        document.getElementById('assistantModal').style.display = 'none';
-        
-        // Forçar redibuixat per actualitzar els clicks mousedown i el color si és vacances
-        renderTable();
+function asignarAgenteACelda(nombreTrabajador) {
+    if (idCeldaSeleccionadaActual && celdaSeleccionadaActual) {
+        const selectEl = celdaSeleccionadaActual.querySelector('.select-worker');
+        if (selectEl) {
+            selectEl.value = nombreTrabajador;
+            quickSave(idCeldaSeleccionadaActual, selectEl, 'w');
+            
+            // Ocultar panel
+            const panelAsistente = document.getElementById('panel-asistente');
+            if (panelAsistente) {
+                panelAsistente.classList.add('hidden');
+            }
+            
+            celdaSeleccionadaActual = null;
+            idCeldaSeleccionadaActual = null;
+            clearSelection();
+            
+            renderTable();
+        }
     }
 }
 
@@ -2524,35 +2622,6 @@ window.addEventListener('languageChanged', () => {
     </div>
 </div>
 
-<!-- Modal del Asistente de Asignación Inteligente -->
-<div id="assistantModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; border: 1px solid var(--border); padding: 20px 24px; z-index: 2050; border-radius: 12px; width: 90%; max-width: 580px; max-height: 82vh; overflow-y: auto; box-shadow: var(--shadow-lg); font-family: inherit;">
-    <div style="font-weight: 800; font-size: 13px; margin-bottom: 12px; color: var(--nyn-verd); border-bottom: 2px solid var(--nyn-verd-accent); padding-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-        <span>🤖 ASSISTENT D'ASSIGNACIÓ INTEL·LIGENT</span>
-        <button onclick="document.getElementById('assistantModal').style.display='none'" style="background: none; border: none; font-size: 22px; color: var(--text-muted); cursor: pointer; height: auto; box-shadow: none; padding: 0;">&times;</button>
-    </div>
-    
-    <div id="assistantCellInfo" style="background: #f8fafc; padding: 8px 12px; border-radius: 8px; border: 1px solid #e2e8f0; font-size: 11px; color: var(--text-main); margin-bottom: 14px; display: flex; justify-content: space-between; font-weight: 600;">
-        <!-- Se rellena dinámicamente -->
-    </div>
-    
-    <div style="margin-bottom: 16px;">
-        <div style="font-weight: 700; font-size: 9.5px; text-transform: uppercase; color: #15803d; background: #e6f4ea; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px; letter-spacing: 0.5px;">
-            👍 Candidats Suggerits (Ordenats per Rànquing)
-        </div>
-        <div id="assistantSuggestionsList" style="display: flex; flex-direction: column; gap: 4px; max-height: 250px; overflow-y: auto; padding-right: 4px;">
-            <!-- Sugeridos dinámicos -->
-        </div>
-    </div>
-    
-    <div>
-        <div style="font-weight: 700; font-size: 9.5px; text-transform: uppercase; color: #b91c1c; background: #fee2e2; padding: 3px 8px; border-radius: 4px; display: inline-block; margin-bottom: 6px; letter-spacing: 0.5px;">
-            🚫 Candidats Exclosos o No Disponibles
-        </div>
-        <div id="assistantRestrictionsList" style="display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
-            <!-- Restringidos dinámicos -->
-        </div>
-    </div>
-</div>
 
 </body>
 </html>
