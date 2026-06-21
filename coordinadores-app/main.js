@@ -60,6 +60,8 @@ function conectarBaseDatosUnica(rutaCompartida) {
     }
   }
 
+  const necesitaInit = !fs.existsSync(dbPath);
+
   // Abrimos la base de datos
   db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
     if (err) {
@@ -67,8 +69,31 @@ function conectarBaseDatosUnica(rutaCompartida) {
     } else {
       console.log(`[DB] Conectado exitosamente a la base de datos única en: ${dbPath}`);
       db.run("PRAGMA foreign_keys = ON;");
-      // Aplicar schema.sql canónico (CREATE IF NOT EXISTS = idempotente)
-      aplicarSchemaCanonicoYMigrar(db);
+      
+      // Inicializar y sincronizar dependiendo de si es base nueva o existente
+      if (necesitaInit) {
+        const schemaPath = path.join(__dirname, 'schema.sql');
+        if (fs.existsSync(schemaPath)) {
+            const schema = fs.readFileSync(schemaPath, 'utf8');
+            db.exec(schema, (errSchema) => {
+               if(errSchema) {
+                   console.error("Error aplicando schema", errSchema);
+               } else {
+                 inicializarReglasDeNegocio(db);
+                 sincronizarCatalogosIniciales(db);
+                 sincronizarAgentesIniciales(db);
+               }
+            });
+        } else {
+            inicializarReglasDeNegocio(db);
+            sincronizarCatalogosIniciales(db);
+            sincronizarAgentesIniciales(db);
+        }
+      } else {
+        inicializarReglasDeNegocio(db);
+        sincronizarCatalogosIniciales(db);
+        sincronizarAgentesIniciales(db);
+      }
     }
   });
 
