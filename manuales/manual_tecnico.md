@@ -218,3 +218,27 @@ En la inicialización relacional se cargan por defecto 5 reglas de negocio que r
 *   **`dias_vacaciones_anuales`**: Días de vacaciones asignados por año natural (Valor por defecto: `30`).
 *   **`permitir_vacio_laborables`**: Determina si se pueden planificar jornadas laborables sin turnos asignados (Valor por defecto: `0` - Falso).
 *   **`bloquear_cruce_sociedades`**: Restringe que un agente trabaje en turnos correspondientes a distintas sociedades dentro de una misma semana de cuadrante (Valor por defecto: `1` - Verdadero). El sistema verifica esta regla para evitar conflictos contables y contractuales.
+
+---
+
+## 7. Asistente de Asignación Inteligente y Delegación de Eventos
+
+### A. Algoritmo de Candidatos de Asignación
+El asistente lateral de asignación inteligente realiza un procesamiento multicapa en el Proceso Principal (`main.js`) a través de la función `obtenerAsistenteAsignacion(fecha, aparcamientoId)`:
+1. **Filtro de Contratos Activos**: Consulta los contratos vigentes de los agentes para la sociedad propietaria del aparcamiento en la fecha solicitada.
+2. **Evaluación de Restricciones y Reglas**:
+   - **Vacaciones**: Compara el cuadrante y las vacaciones aprobadas del agente para descartar candidatos que se encuentren en período de descanso.
+   - **Descanso Mínimo entre Jornadas (12h)**: Compara los turnos asignados del día anterior, día actual y día posterior para asegurar que no se produzca solapamiento o infracción del descanso de 12 horas.
+   - **Cruce de Sociedades**: Verifica que el agente no esté asignado a otra sociedad en la misma semana del calendario.
+3. **Cálculo de Puntuación (Ranking Score)**: Se puntúa a los trabajadores en base a criterios de conveniencia (cercanía de su domicilio al centro, experiencia previa en el centro, horas acumuladas en el mes para evitar horas extras excesivas y preferencias).
+4. **Clasificación**:
+   - **Recomendados**: Candidatos que cumplen todas las reglas estrictas. Si su score es mayor o igual a 80, reciben el badge visual `TOP`. Los trabajadores subcontratados reciben el badge `EXTERNO`.
+   - **Descartados**: Candidatos excluidos con el motivo explícito del descarte (ej. "En vacaciones", "Infracción de descanso de 12h", "Cruce de sociedades").
+
+### B. Arquitectura de Delegación de Eventos de Interfaz
+Debido a que el cuadrante del calendario se genera dinámicamente en el DOM (reconstruyendo todos los elementos `<td>` al filtrar o cambiar de período), los listeners individuales de eventos solían quedar huérfanos o perderse. Para solucionarlo:
+1. Se ha inyectado en el renderizado de la tabla atributos de datos específicos en cada celda: `data-fecha`, `data-parking` y `data-sid`.
+2. Se implementó un escuchador único global: `document.addEventListener('click', (e) => { ... })`.
+3. Al hacer clic, se utiliza `e.target.closest('td')` para identificar la celda correspondiente del cuadrante de forma ágil y centralizada.
+4. **Control de Edición Manual**: El listener delegado analiza el estado de la celda en memoria (`cacheDades[sId]`). Si la celda ya tiene un trabajador asignado, el evento no se propaga al asistente lateral. Esto permite que los selectores nativos (`select.select-worker` y `select.select-hour`) funcionen con normalidad al hacer clics sencillos para cambios manuales directos, evitando la sobreposición o apertura no deseada del asistente.
+

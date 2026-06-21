@@ -107,6 +107,24 @@ Para asegurar el cumplimiento de la normativa legal, el convenio colectivo y evi
 
 ---
 
+## 7c. Asistente de Asignación Inteligente (Panel Lateral)
+Para facilitarte la planificación de turnos y evitar errores de convenios o asignaciones incorrectas, el cuadrante cuenta con un **Asistente de Asignación Inteligente** integrado en un panel lateral derecho.
+
+*   **¿Cómo abrir el Asistente?**
+    Haz un clic simple sobre cualquier celda vacía del cuadrante, o doble clic sobre cualquier celda (ya tenga o no un trabajador asignado). El panel lateral se deslizará automáticamente mostrando la información pertinente.
+*   **Secciones del Asistente**:
+    1.  **Información del Turno**: En la parte superior verás el nombre del aparcamiento, la fecha exacta y el turno (Matí, Tarda o Nit) seleccionado.
+    2.  **Acción de Desasignar**: Un botón rápido para desasignar al agente actual y dejar la celda en blanco de forma directa.
+    3.  **Trabajadores Recomendados**: Una lista ordenada de candidatos que cumplen con todos los requisitos legales y de descanso.
+        -   **Badge TOP**: Indica que el trabajador tiene una alta puntuación de recomendación (por proximidad, experiencia o saldo de horas).
+        -   **Badge EXTERNO**: Indica que es personal subcontratado de una empresa de seguridad externa.
+        -   **Advertencias de Negocio**: Aunque el agente esté recomendado, el asistente te avisará si acumula horas cercanas al límite para que puedas tomar la mejor decisión.
+    4.  **Trabajadores Descartados**: Aquellos empleados que legalmente **no pueden** cubrir este turno. El asistente te mostrará el motivo exacto de la exclusión (ej. *"Se encuentra de vacaciones"*, *"Infracción de descanso mínimo de 12h"* o *"Conflicto por cruce de sociedades"*).
+*   **Asignar al Instante**:
+    Pasa el ratón sobre cualquier candidato recomendado y haz clic en el botón verde **Asignar**. El asistente colocará al trabajador en la celda y guardará el cambio de forma automática en la base de datos única SQLite (`quickSave`).
+
+---
+
 ## 8. Asistente de Importación con Mapeo de Discrepancias
 Cuando importes un archivo de copia de seguridad JSON al cuadrante:
 1.  **Análisis Automático:** El asistente escaneará el archivo y extraerá todos los centros y empleados que contiene.

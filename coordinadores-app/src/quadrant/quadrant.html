@@ -906,7 +906,15 @@ async function init() {
                     const saved = cacheDades[sId] || {w: "-", h: "-", s: false, n: ""};
                     const matchW = (fWorker === "ALL" || saved.w === fWorker);
                     const matchH = (fHorari === "ALL" || fHorari.startsWith("T_") || saved.h === fHorari);
-                    const td = document.createElement('td'); td.id = "cell_" + sId;
+                    const mesNum = (currentMonth + 1).toString().padStart(2, '0');
+                    const diaNum = d.toString().padStart(2, '0');
+                    const fechaFormateada = `${currentYear}-${mesNum}-${diaNum}`;
+                    
+                    const td = document.createElement('td'); 
+                    td.id = "cell_" + sId;
+                    td.dataset.fecha = fechaFormateada;
+                    td.dataset.parking = park;
+                    td.dataset.sid = sId;
                     
 
 		if (matchW && matchH) {
@@ -949,23 +957,6 @@ async function init() {
                     td.onmouseenter = () => updateSelection(sId);
                     td.oncontextmenu = (e) => { e.preventDefault(); openNote(sId); };
                     td.ondblclick = () => openAssistant(sId);
-                    td.addEventListener('click', (e) => {
-                        if (isMonthLocked()) return;
-                        
-                        const saved = cacheDades[sId] || {w: "-", h: "-", s: false, n: ""};
-                        if (saved.w === "-" || saved.w === "") {
-                            const parts = sId.split('_');
-                            const dia = parts[parts.length - 1];
-                            const torn = parts[parts.length - 2];
-                            const park = parts.slice(4, parts.length - 2).join(' ');
-
-                            const mesNum = (currentMonth + 1).toString().padStart(2, '0');
-                            const diaNum = parseInt(dia).toString().padStart(2, '0');
-                            const fechaSQL = `${currentYear}-${mesNum}-${diaNum}`;
-
-                            abrirAsistente(fechaSQL, null, park, td);
-                        }
-                    });
                     cellsArr.push(td);
                 }
                 if (rowMatchesFilter) {
@@ -2389,6 +2380,54 @@ document.addEventListener('DOMContentLoaded', () => {
             if (idCeldaSeleccionadaActual) {
                 asignarAgenteACelda('-');
             }
+        });
+    }
+});
+
+function loadAparcamientos() {
+    return window.api.getAparcamientos();
+}
+
+// --- FIX: DELEGACIÓN DE EVENTOS PARA EL CUADRANTE ---
+document.addEventListener('click', (e) => {
+    // 1. Buscamos si el clic se hizo dentro de una celda interactiva del calendario
+    const celda = e.target.closest('td'); 
+    
+    // Si no es un TD, o es una celda vacía de relleno del calendario (ej. gris), no hacemos nada
+    if (!celda || celda.classList.contains('bg-gray-200') || !celda.dataset.fecha) return;
+
+    // Si el mes está cerrado, no hacer nada
+    if (isMonthLocked()) return;
+
+    // Para evitar interferir con la edición manual del select en celdas asignadas
+    const sId = celda.dataset.sid;
+    if (sId) {
+        const saved = cacheDades[sId] || {w: "-", h: "-", s: false, n: ""};
+        if (saved.w !== "-" && saved.w !== "") {
+            // Si ya hay un trabajador asignado, permitimos que el usuario interactúe con el selector directamente
+            return;
+        }
+    }
+
+    // 2. Extraemos los datos ocultos que debería tener la celda
+    const fechaSQL = celda.dataset.fecha; 
+    const parkingNombre = celda.dataset.parking;
+
+    // 3. Abrimos el asistente si tenemos los datos necesarios
+    if (fechaSQL && parkingNombre) {
+        // Recuperar el ID del parking desde los catálogos cargados en memoria
+        loadAparcamientos().then(parkings => {
+            const parkingObj = parkings.find(p => p.nombre === parkingNombre);
+            if (parkingObj) {
+                // Llamamos a la función que abre y rellena el panel lateral
+                abrirAsistente(fechaSQL, parkingObj.id, parkingNombre, celda);
+            } else {
+                // Fallback si no está en el catálogo
+                abrirAsistente(fechaSQL, null, parkingNombre, celda);
+            }
+        }).catch(err => {
+            console.error("Error al cargar aparcamientos en delegación de eventos:", err);
+            abrirAsistente(fechaSQL, null, parkingNombre, celda);
         });
     }
 });
