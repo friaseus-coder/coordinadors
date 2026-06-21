@@ -590,6 +590,16 @@ function inicializarReglasDeNegocio(dbConnection) {
   });
 }
 
+function stringToId(str) {
+  if (!str) return 0;
+  if (!isNaN(str)) return parseInt(str);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = str.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return Math.abs(hash) || 1;
+}
+
 // --- SINCRONIZACIÓN DE PERSONAL (AGENTES) A SQLITE ---
 function sincronizarAgentesIniciales(dbConnection) {
   const jsonPath = path.join(__dirname, 'dades', 'coordinadores.json');
@@ -597,7 +607,8 @@ function sincronizarAgentesIniciales(dbConnection) {
 
   try {
     const raw = fs.readFileSync(jsonPath, 'utf8');
-    const coordinadores = JSON.parse(raw);
+    const data = JSON.parse(raw);
+    const coordinadores = Array.isArray(data) ? data : (data.coordinadores || []);
 
     dbConnection.serialize(() => {
       dbConnection.run("BEGIN TRANSACTION;");
@@ -620,9 +631,10 @@ function sincronizarAgentesIniciales(dbConnection) {
         // Adaptamos el formato del JSON antiguo (que puede tener 'nom' y 'cognoms' o 'nombre')
         const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente Desconocido';
         const zona = c.zona || 'General';
+        const agenteIntId = stringToId(c.id);
         
-        stmtAgente.run(c.id, nombreCompleto, zona);
-        stmtContrato.run(c.id);
+        stmtAgente.run(agenteIntId, nombreCompleto, zona);
+        stmtContrato.run(agenteIntId);
       });
 
       stmtAgente.finalize();
@@ -1419,9 +1431,10 @@ function sincronizarAgentesIniciales(dbConnection) {
         // Adaptamos el formato del JSON antiguo (que puede tener 'nom' y 'cognoms' o 'nombre')
         const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente Desconocido';
         const zona = c.zona || 'General';
+        const agenteIntId = stringToId(c.id);
         
-        stmtAgente.run(c.id, nombreCompleto, zona);
-        stmtContrato.run(c.id);
+        stmtAgente.run(agenteIntId, nombreCompleto, zona);
+        stmtContrato.run(agenteIntId);
       });
 
       stmtAgente.finalize();

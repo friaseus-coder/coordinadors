@@ -242,3 +242,10 @@ Debido a que el cuadrante del calendario se genera dinámicamente en el DOM (rec
 3. Al hacer clic, se utiliza `e.target.closest('td')` para identificar la celda correspondiente del cuadrante de forma ágil y centralizada.
 4. **Control de Edición Manual**: El listener delegado analiza el estado de la celda en memoria (`cacheDades[sId]`). Si la celda ya tiene un trabajador asignado, el evento no se propaga al asistente lateral. Esto permite que los selectores nativos (`select.select-worker` y `select.select-hour`) funcionen con normalidad al hacer clics sencillos para cambios manuales directos, evitando la sobreposición o apertura no deseada del asistente.
 
+### C. Resolución de Mismatch de Tipos en Personal (Coordinadores)
+Durante la sincronización inicial de los archivos de configuración (`coordinadores.json`), se detectó un error `SQLITE_MISMATCH: datatype mismatch` debido a que el campo `id` de los coordinadores en el archivo JSON es una cadena de texto (ej. `"albert"`, `"laura"`), mientras que el esquema de base de datos define `id` en la tabla `agentes` como un `INTEGER PRIMARY KEY AUTOINCREMENT`.
+1. **Solución Implementada**: Se ha incorporado en `main.js` una función hashing hash-a-entero estable de 32 bits denominada `stringToId(str)`.
+2. **Estabilidad**: Esta función genera siempre el mismo identificador entero positivo para un string determinado de forma síncrona y predecible, independientemente de su posición o adición en el catálogo.
+3. **Persistencia**: Se aplica a todas las consultas de inicialización y sincronización de agentes y contratos (`sincronizarAgentesIniciales`), eliminando la colisión por tipos en SQLite y garantizando la integridad referencial.
+
+
