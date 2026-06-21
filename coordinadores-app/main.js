@@ -1252,61 +1252,69 @@ ipcMain.handle('deactivate-sociedad', async (event, id) => {
   }
 });
 
-// --- APARCAMIENTOS RELACIONALES ---
+// --- GESTIÓN DE APARCAMIENTOS EN SQLITE ---
 
+// Leer todos los aparcamientos activos
 ipcMain.handle('get-aparcamientos-relacional', async () => {
-  try {
-    return await dbAll(`
-      SELECT a.*, s.nombre_fiscal as sociedad_nombre, s.codigo_corto as sociedad_codigo
-      FROM aparcamientos a
-      LEFT JOIN sociedades s ON a.sociedad_id = s.id
-      WHERE a.activo = 1
-      ORDER BY a.coordinador_responsable, a.nombre
-    `);
-  } catch (error) {
-    console.error('[APARCAMIENTOS] Error al listar relacional:', error);
-    return [];
-  }
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("Base de datos no inicializada."));
+    const sql = "SELECT * FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC";
+    db.all(sql, [], (err, rows) => {
+      if (err) {
+        console.error("Error leyendo aparcamientos de SQLite:", err);
+        reject(err);
+      } else {
+        resolve(rows);
+      }
+    });
+  });
 });
 
+// Guardar o actualizar un aparcamiento
 ipcMain.handle('update-aparcamiento-relacional', async (event, id, datos) => {
-  try {
-    await dbRun(`
-      UPDATE aparcamientos SET
-        nombre = COALESCE(?, nombre),
-        numero_obra = COALESCE(?, numero_obra),
-        zona = COALESCE(?, zona),
-        sociedad_id = COALESCE(?, sociedad_id),
-        es_remotizado = COALESCE(?, es_remotizado),
-        tipo_gestion = COALESCE(?, tipo_gestion),
-        permitir_vacio_laborables = COALESCE(?, permitir_vacio_laborables),
-        coordinador_responsable = COALESCE(?, coordinador_responsable)
-      WHERE id = ?
-    `, [
-      datos.nombre || null, datos.numero_obra || null, datos.zona || null,
-      datos.sociedad_id || null, datos.es_remotizado, datos.tipo_gestion || null,
-      datos.permitir_vacio_laborables, datos.coordinador_responsable || null, id
-    ]);
-    console.log(`[APARCAMIENTOS] Parking id=${id} actualizado relacionalmente.`);
-    return { success: true };
-  } catch (error) {
-    console.error('[APARCAMIENTOS] Error al actualizar relacional:', error);
-    return { success: false, error: error.message };
-  }
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("Base de datos no inicializada."));
+    
+    if (id) {
+      // Es una actualización
+      const sql = `
+        UPDATE aparcamientos 
+        SET nombre = ?, zona = ?, es_remotizado = ?, tipo_gestion = ?, permitir_vacio_laborables = ?, sociedad_id = ?, coordinador_responsable = ?
+        WHERE id = ?
+      `;
+      const params = [datos.nombre, datos.zona, datos.es_remotizado, datos.tipo_gestion, datos.permitir_vacio_laborables, datos.sociedad_id, datos.coordinador_responsable, id];
+      
+      db.run(sql, params, function(err) {
+        if (err) reject(err);
+        else resolve({ success: true, id: id, changes: this.changes });
+      });
+    } else {
+      // Es uno nuevo
+      const sql = `
+        INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      const numObra = datos.numero_obra || `OB-${Date.now()}`; // Generar un número de obra temporal si no viene
+      const params = [numObra, datos.nombre, datos.zona, datos.es_remotizado, datos.tipo_gestion, datos.permitir_vacio_laborables, datos.sociedad_id, datos.coordinador_responsable];
+
+      db.run(sql, params, function(err) {
+        if (err) reject(err);
+        else resolve({ success: true, id: this.lastID });
+      });
+    }
+  });
 });
 
+// Leer el historial de cambios de un aparcamiento
 ipcMain.handle('get-historico-aparcamiento', async (event, aparcamientoId) => {
-  try {
-    return await dbAll(`
-      SELECT * FROM historico_aparcamientos
-      WHERE aparcamiento_id = ?
-      ORDER BY fecha_cambio DESC
-      LIMIT 100
-    `, [aparcamientoId]);
-  } catch (error) {
-    console.error('[HISTORICO] Error al consultar:', error);
-    return [];
-  }
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("Base de datos no inicializada."));
+    const sql = "SELECT * FROM historico_aparcamientos WHERE aparcamiento_id = ? ORDER BY fecha_cambio DESC";
+    db.all(sql, [aparcamientoId], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
 });
 
 // --- CONTRATOS DE AGENTES ---

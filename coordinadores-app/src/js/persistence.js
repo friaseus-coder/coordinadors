@@ -938,3 +938,39 @@ const persistence = (() => {
     isReadOnly: () => isReadOnlyMode
   };
 })();
+
+// --- NUEVA CARGA DESDE SQLITE ---
+async function loadAparcamientos() {
+    try {
+        console.log("Cargando aparcamientos desde SQLite...");
+        // Usamos la nueva API relacional
+        const data = await window.databaseAPI.getAparcamientosRelacional();
+        console.log("Aparcamientos cargados de SQLite:", data);
+        return data || [];
+    } catch (error) {
+        console.error('Error loading aparcamientos from SQLite:', error);
+        
+        // Fallback: Si falla SQLite por lo que sea, intentamos cargar el viejo JSON
+        console.warn("Intentando cargar JSON antiguo como fallback...");
+        try {
+            const legacyData = await window.api.getAparcamientos();
+            return legacyData ? JSON.parse(legacyData) : [];
+        } catch (legacyError) {
+             console.error('Error loading fallback JSON:', legacyError);
+             return [];
+        }
+    }
+}
+
+// Antigua versión (Comentada para no perderla)
+/*
+async function loadAparcamientos() {
+    try {
+        const data = await window.api.getAparcamientos();
+        return data ? JSON.parse(data) : [];
+    } catch (error) {
+        console.error('Error loading aparcamientos:', error);
+        return [];
+    }
+}
+*/
