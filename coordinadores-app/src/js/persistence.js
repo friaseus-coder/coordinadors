@@ -995,29 +995,115 @@ async function loadComercials() {
     return await loadCoordinadores();
 }
 
-// Funciones antiguas (Comentadas por seguridad)
-/*
-async function loadCoordinadores() {
+// --- NUEVA CARGA DEL CUADRANTE DESDE SQLITE ---
+async function loadQuadrant(coordinadorId, month, year) {
     try {
-        const data = await window.api.getCoordinadores();
-        return data ? JSON.parse(data) : [];
-    } catch (error) {
-        console.error('Error loading coordinadores:', error);
-        return [];
-    }
-}
-async function loadComercials() { ... }
-*/
+        console.log(`Cargando cuadrante desde SQLite para ${month}/${year}`);
+        
+        // 1. Calculamos el rango de fechas del mes
+        const mesStr = String(month).padStart(2, '0');
+        const startDate = `${year}-${mesStr}-01`;
+        const lastDay = new Date(year, month, 0).getDate();
+        const endDate = `${year}-${mesStr}-${lastDay}`;
 
-// Antigua versión (Comentada para no perderla)
-/*
-async function loadAparcamientos() {
-    try {
-        const data = await window.api.getAparcamientos();
-        return data ? JSON.parse(data) : [];
+        // 2. Pedimos los turnos a SQLite a través de nuestro nuevo puente
+        const turnosSQLite = await window.databaseAPI.getTurnosCuadrante(startDate, endDate);
+        
+        // 3. Traducimos (Hack) la respuesta plana de SQLite al viejo formato anidado que espera el HTML
+        const dataReconstruida = {};
+        
+        turnosSQLite.forEach(turno => {
+            // Ejemplo clave antigua: "nyn_v12_2026_06_15_Mañana_Parking Central"
+            const diaNum = turno.fecha.split('-')[2];
+            const claveLarga = `nyn_v12_${year}_${mesStr}_${diaNum}_${turno.turno}_${turno.aparcamiento_nombre}`;
+            
+            dataReconstruida[claveLarga] = {
+                w: turno.agente_nombre,
+                h: `${turno.hora_inicio}-${turno.hora_fin}`,
+                s: turno.horas_trabajadas === 0 ? true : undefined // Asumimos sub si horas = 0 (ajustar según tu lógica)
+            };
+        });
+
+        console.log("Cuadrante reconstruido para la UI:", dataReconstruida);
+        return dataReconstruida;
+        
     } catch (error) {
-        console.error('Error loading aparcamientos:', error);
-        return [];
+        console.error('Error loading quadrant from SQLite:', error);
+        
+        // Fallback de emergencia al viejo JSON
+        console.warn("Intentando cargar JSON de cuadrante antiguo como fallback...");
+        try {
+            const fileName = `quadrant_${coordinadorId.toUpperCase()}.json`;
+            const coordFolder = `dades ${coordinadorId}`;
+            const path = `${coordFolder}/${fileName}`;
+            const response = await window.api.readFile(path);
+            return response.success ? response.data : {};
+        } catch (legacyError) {
+             return {};
+        }
     }
 }
-*/
+
+// --- NUEVO GUARDADO DE CELDA INDIVIDUAL A SQLITE ---
+async function saveQuadrant(coordinadorId, month, year, data) {
+    try {
+        // Tu UI antigua manda TODO el cuadrante de golpe en 'data'. 
+        // Para SQLite, esto es ineficiente. Lo ideal es guardar celda a celda.
+        // Pero como estamos adaptando, vamos a recorrer el objeto que manda la UI 
+        // y hacer insert/updates de las celdas que tengan nombre de trabajador.
+
+        console.log("Sincronizando cuadrante modificado hacia SQLite...");
+        
+        // Necesitamos mapear nombres a IDs (SQLite usa IDs)
+        // Pedimos los catálogos en memoria rápido para la traducción
+        const agentes = await loadComercials(); 
+        const parkings = await loadAparcamientos();
+        
+        for (const [clave, cellData] of Object.entries(data)) {
+             // Solo procesamos celdas con datos reales
+             if(!cellData || !cellData.w || cellData.w === "" || cellData.w === "-") continue;
+             
+             // Desglosamos la clave vieja: "nyn_v12_2026_06_15_Mañana_Parking Central"
+             const parts = clave.split('_');
+             if (parts.length < 6) continue;
+             
+             const dia = parts[4];
+             const turnoTexto = parts[5];
+             const parkingNombre = parts.slice(6).join('_'); // Todo lo demás es el nombre
+             
+             const fechaSQL = `${year}-${String(month).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+             
+             // Buscamos los IDs correspondientes
+             const parkingObj = parkings.find(p => p.nombre === parkingNombre);
+             const agenteObj = agentes.find(a => a.nombre.toUpperCase() === cellData.w.toUpperCase() || a.nom.toUpperCase() === cellData.w.toUpperCase());
+             
+             if(parkingObj && agenteObj) {
+                 const [hIni, hFin] = (cellData.h || "06:00-14:00").split('-');
+                 
+                 const turnoParaGuardar = {
+                     fecha: fechaSQL,
+                     aparcamiento_id: parkingObj.id,
+                     agente_id: agenteObj.id,
+                     turno: turnoTexto,
+                     hora_inicio: hIni,
+                     hora_fin: hFin,
+                     horas_trabajadas: 8 // Por defecto, se podría calcular dinámicamente
+                 };
+                 
+                 // Guardamos individualmente la celda en SQLite
+                 await window.databaseAPI.saveTurnoCuadrante(turnoParaGuardar);
+             }
+        }
+        
+        // Guardamos también un JSON de respaldo para seguridad (Legacy mode)
+        const fileName = `quadrant_${coordinadorId.toUpperCase()}.json`;
+        const coordFolder = `dades ${coordinadorId}`;
+        const path = `${coordFolder}/${fileName}`;
+        await window.api.writeFile(path, data, userName);
+        
+        return true;
+    } catch (error) {
+        console.error('Error saving quadrant to SQLite:', error);
+        return false;
+    }
+}
