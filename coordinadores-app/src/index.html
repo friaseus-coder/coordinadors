@@ -89,9 +89,11 @@
 <body>
 
   <!-- Selector de Idioma Flotante Premium -->
-  <div class="lang-selector-container" style="position: absolute; top: 20px; right: 20px; z-index: 1000; display: flex; gap: 8px;">
-    <button class="lang-btn" onclick="i18n.setLanguage('ca'); location.reload();">CAT</button>
-    <button class="lang-btn" onclick="i18n.setLanguage('es'); location.reload();">ESP</button>
+  <div class="lang-selector-container" style="position: absolute; top: 20px; right: 20px; z-index: 1000;">
+    <select id="language-selector" onchange="window.changeLanguage(this.value); location.reload();" style="padding: 6px 12px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); font-size: 11px; font-weight: 600; color: #94a3b8; outline: none; cursor: pointer;">
+        <option value="ca">Català</option>
+        <option value="es">Español</option>
+    </select>
   </div>
 
   <div class="login-container">
@@ -160,13 +162,6 @@
 
     // Cargar coordinadores al abrir la página
     document.addEventListener('DOMContentLoaded', () => {
-      // Activar el botón de idioma activo
-      const activeLang = i18n.getLanguage();
-      document.querySelectorAll('.lang-btn').forEach(btn => {
-        if (btn.innerText.toLowerCase() === (activeLang === 'ca' ? 'cat' : 'esp')) {
-          btn.classList.add('active');
-        }
-      });
       loadCoordinadores();
     });
 

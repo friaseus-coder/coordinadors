@@ -534,14 +534,6 @@ const persistence = (() => {
           console.warn(`[PERSISTENCE] Clave ${filePath} no encontrada en kv_store para leer.`, dbErr);
         }
 
-        // Fallback a archivo JSON físico
-        if (!coordData) {
-          const result = await api.readFile(filePath);
-          if (result.success) {
-            coordData = result.data;
-          }
-        }
-
         // Fusionar claves
         if (coordData) {
           for (const key in coordData) {
@@ -850,19 +842,18 @@ const persistence = (() => {
           }
         }
 
-        // Si tenemos datos activos en localstorage para la clave de mes/año de este coordinador, los guardamos en su JSON correspondiente
+        // Si tenemos datos activos en localstorage para la clave de mes/año de este coordinador, los guardamos en SQLite kv_store
         const targetKey = `${prefix}${mes}_${any}`;
         if (localStorage.getItem(targetKey) !== null || hasData) {
           const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}.json`;
-          const writeRes = await api.writeFile(filePath, coordData, userName);
-          if (!writeRes.success) {
-            console.error(`[PERSISTENCE] Error al guardar datos de comerciales para ${coord.nombre}:`, writeRes.error);
-            if (writeRes.error === 'LOCK_LOST') {
-              handleLockLoss();
-            }
+          try {
+            await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+              filePath, JSON.stringify(coordData)
+            ]);
+            console.log(`[PERSISTENCE] Guardados comerciales de ${coord.nombre} en SQLite kv_store: ${filePath}`);
+          } catch (writeErr) {
+            console.error(`[PERSISTENCE] Error al guardar datos de comerciales para ${coord.nombre} en SQLite:`, writeErr);
             success = false;
-          } else {
-            console.log(`[PERSISTENCE] Guardados comerciales de ${coord.nombre} en: ${filePath}`);
           }
         }
       }

@@ -79,5 +79,6 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   deleteInventari: (id) => ipcRenderer.invoke('delete-inventari-relacional', id),
   importacionCentralizada: (tipo) => ipcRenderer.invoke('importacion-centralizada', { tipo }),
   getUserRole: () => ipcRenderer.invoke('get-user-role'),
-  getConfigCoordinador: () => ipcRenderer.invoke('get-config-coordinador')
+  getConfigCoordinador: () => ipcRenderer.invoke('get-config-coordinador'),
+  getUserConfig: () => ipcRenderer.invoke('get-user-config')
 });

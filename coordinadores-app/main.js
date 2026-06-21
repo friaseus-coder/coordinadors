@@ -2757,6 +2757,16 @@ ipcMain.handle('get-config-coordinador', () => {
   }
 });
 
+ipcMain.handle('get-user-config', () => {
+  try {
+    const configPath = path.join(__dirname, 'config.json');
+    return JSON.parse(fs.readFileSync(configPath, 'utf8'));
+  } catch (e) {
+    return {};
+  }
+});
+
+
 // Cerrar de forma limpia todas las conexiones SQLite al salir
 app.on('will-quit', () => {
   console.log("Aplicación cerrándose, lanzando salvaguarda...");

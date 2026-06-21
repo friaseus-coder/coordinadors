@@ -536,6 +536,12 @@ const i18n = (() => {
         }
       }
     });
+
+    // Sincronizar el selector de idioma si existe en la página
+    const selector = document.getElementById('language-selector');
+    if (selector) {
+      selector.value = lang;
+    }
   }
 
   // Obtener una clave de traducción con reemplazo opcional de plantillas {clave}
@@ -551,21 +557,39 @@ const i18n = (() => {
     return text;
   }
 
+  window.changeLanguage = function(lang) {
+    setLanguage(lang);
+    localStorage.setItem('app_language', lang);
+  };
+
+  async function initI18n() {
+    let savedLang = localStorage.getItem('app_language') || localStorage.getItem('nyn_idioma');
+    if (!savedLang && window.databaseAPI && window.databaseAPI.getUserConfig) {
+      try {
+        const config = await window.databaseAPI.getUserConfig();
+        savedLang = config.language;
+      } catch (e) {
+        console.error("Error reading config.json for language:", e);
+      }
+    }
+    savedLang = savedLang || 'ca'; // fallback to ca if still empty
+    setLanguage(savedLang);
+  }
+
   // Registrar el listener de cambio en localStorage para refrescar traducción en caliente
   window.addEventListener('storage', (e) => {
-    if (!e.key || e.key === 'nyn_idioma') {
+    if (!e.key || e.key === 'nyn_idioma' || e.key === 'app_language') {
+      const activeLang = getLanguage();
       translatePage();
-      // Disparar evento personalizado por si la página necesita hacer tareas extra al cambiar idioma
-      window.dispatchEvent(new CustomEvent('languageChanged', { detail: getLanguage() }));
+      window.dispatchEvent(new CustomEvent('languageChanged', { detail: activeLang }));
     }
   });
 
-  // Autoejecutar traducción cuando el DOM esté listo
+  // Autoejecutar traducción e inicialización cuando el DOM esté listo
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', translatePage);
+    document.addEventListener('DOMContentLoaded', initI18n);
   } else {
-    // Si ya cargó, traducir directamente
-    setTimeout(translatePage, 1);
+    setTimeout(initI18n, 1);
   }
 
   return {

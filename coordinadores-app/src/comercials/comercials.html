@@ -420,6 +420,18 @@
         }
     }
 
+    // Obtener la API de Base de Datos de forma segura
+    let dbApi = window.databaseAPI;
+    if (!dbApi) {
+        try {
+            if (window.parent && window.parent.databaseAPI) {
+                dbApi = window.parent.databaseAPI;
+            }
+        } catch (e) {
+            console.warn('[COMERCIALS] No se puede acceder a window.parent.databaseAPI:', e);
+        }
+    }
+
     // Obtener valores de la sesión de forma segura (con fallback al padre)
     function getSessionItem(key) {
         let val = sessionStorage.getItem(key);
@@ -751,23 +763,35 @@
 
         const clauDesti = prefix + mesDesti + '_' + anyDesti;
         
-        // Comprobar si existen datos en el destino leyendo el archivo físico
+        // Comprobar si existen datos en el destino leyendo de SQLite kv_store
         const coordNombre = coord ? coord.nombre : coordId;
         const pathDesti = `dades ${coordNombre}/comercials_${coordId}_${mesDesti}_${anyDesti}.json`;
         
-        if (!electronApi) {
+        if (!dbApi) {
             alert(i18n.t('errorApiNotAvailable'));
             return;
         }
         
-        const checkRes = await electronApi.readFile(pathDesti);
-        if (checkRes.success && checkRes.data) {
-            const dadesDestiFisiques = checkRes.data[clauDesti];
-            if (dadesDestiFisiques && dadesDestiFisiques !== '[]' && JSON.parse(dadesDestiFisiques).length > 0) {
-                const toLabel = i18n.t('opt' + mesDesti.charAt(0).toUpperCase() + mesDesti.slice(1)) + " " + anyDesti;
-                alert(i18n.t('errorDestExists', { to: toLabel.toUpperCase() }));
-                return;
+        let destExists = false;
+        try {
+            const rows = await dbApi.consultar("SELECT value FROM kv_store WHERE key = ?", [pathDesti]);
+            if (rows && rows.length > 0 && rows[0].value) {
+                const destData = JSON.parse(rows[0].value);
+                if (destData && destData[clauDesti]) {
+                    const parsedRows = JSON.parse(destData[clauDesti]);
+                    if (parsedRows && parsedRows.length > 0) {
+                        destExists = true;
+                    }
+                }
             }
+        } catch (e) {
+            console.error('[COMERCIALS] Error al comprobar destino en SQLite:', e);
+        }
+
+        if (destExists) {
+            const toLabel = i18n.t('opt' + mesDesti.charAt(0).toUpperCase() + mesDesti.slice(1)) + " " + anyDesti;
+            alert(i18n.t('errorDestExists', { to: toLabel.toUpperCase() }));
+            return;
         }
 
         const fromLabel = i18n.t('opt' + mesActual.charAt(0).toUpperCase() + mesActual.slice(1)) + " " + anyActual;
@@ -785,15 +809,25 @@
             payload["nn_last_export_time_shared"] = ara;
             payload["nn_last_export_author_shared"] = coordNombre.toUpperCase();
 
-            const writeRes = await electronApi.writeFile(pathDesti, payload, userName);
+            // Guardar en la base de datos centralizada SQLite kv_store
+            let writeSuccess = false;
+            try {
+                await dbApi.ejecutar(
+                    "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
+                    [pathDesti, JSON.stringify(payload)]
+                );
+                writeSuccess = true;
+            } catch (writeErr) {
+                console.error('[COMERCIALS] Error al guardar copia en SQLite:', writeErr);
+            }
             
-            if (writeRes.success) {
+            if (writeSuccess) {
                 alert(i18n.t('successCopyComercials', { to: toLabel.toUpperCase() }));
                 document.getElementById('mesActual').value = mesDesti;
                 document.getElementById('anyActual').value = anyDesti;
                 canviarMes();
             } else {
-                alert(i18n.t('errorWriteDest') + writeRes.error);
+                alert(i18n.t('errorWriteDest'));
             }
         }
     }
