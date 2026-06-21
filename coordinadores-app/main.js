@@ -2324,6 +2324,74 @@ function verificarYEjecutarCierreMensual(dbPath, coordinadorName) {
   }
 }
 
+// --- GESTIÓN DEL CUADRANTE EN SQLITE ---
+
+// Leer turnos de un mes/periodo concreto
+ipcMain.handle('get-turnos-cuadrante', async (event, { fechaInicio, fechaFin }) => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    
+    const sql = `
+      SELECT q.*, a.nombre as agente_nombre, ap.nombre as aparcamiento_nombre 
+      FROM quadrant q
+      JOIN agentes a ON q.agente_id = a.id
+      JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
+      WHERE q.fecha >= ? AND q.fecha <= ?
+    `;
+    
+    db.all(sql, [fechaInicio, fechaFin], (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    });
+  });
+});
+
+// Guardar o actualizar un turno individual
+ipcMain.handle('save-turno-cuadrante', async (event, turnoData) => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    
+    // Primero buscamos si ya existe ese turno exacto (misma fecha, parking y turno) para hacer UPDATE
+    const sqlCheck = "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?";
+    db.get(sqlCheck, [turnoData.fecha, turnoData.aparcamiento_id, turnoData.turno], (err, row) => {
+      if (err) return reject(err);
+
+      if (row) {
+        // Actualizamos el existente
+        const sqlUpdate = `
+          UPDATE quadrant 
+          SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ? 
+          WHERE id = ?
+        `;
+        db.run(sqlUpdate, [turnoData.agente_id, turnoData.hora_inicio, turnoData.hora_fin, turnoData.horas_trabajadas, row.id], function(errUpd) {
+          if (errUpd) reject(errUpd); else resolve({ success: true, id: row.id, action: 'updated' });
+        });
+      } else {
+        // Insertamos uno nuevo
+        const sqlInsert = `
+          INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `;
+        db.run(sqlInsert, [turnoData.fecha, turnoData.aparcamiento_id, turnoData.agente_id, turnoData.turno, turnoData.hora_inicio, turnoData.hora_fin, turnoData.horas_trabajadas], function(errIns) {
+          if (errIns) reject(errIns); else resolve({ success: true, id: this.lastID, action: 'inserted' });
+        });
+      }
+    });
+  });
+});
+
+// Borrar un turno (cuando el coordinador vacía una celda)
+ipcMain.handle('delete-turno-cuadrante', async (event, { fecha, aparcamiento_id, turno }) => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    const sql = "DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?";
+    db.run(sql, [fecha, aparcamiento_id, turno], function(err) {
+      if (err) reject(err);
+      else resolve({ success: true, deleted: this.changes });
+    });
+  });
+});
+
 // Cerrar de forma limpia todas las conexiones SQLite al salir
 app.on('will-quit', () => {
   // Realizar backup diario antes de salir

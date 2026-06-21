@@ -442,18 +442,14 @@ const persistence = (() => {
         originalSetItem.call(localStorage, 'nyn_parkings', JSON.stringify(["-", ...parkingsNames]));
 
         // 3. Cargar asignaciones del cuadrante relacional del mes
-        const queryTurnos = `
-          SELECT q.*, ag.nombre as agente_nombre, ap.nombre as parking_nombre 
-          FROM quadrant q 
-          JOIN agentes ag ON q.agente_id = ag.id 
-          JOIN aparcamientos ap ON q.aparcamiento_id = ap.id 
-          WHERE q.fecha LIKE ?
-        `;
-        const turnos = await window.databaseAPI.consultar(queryTurnos, [mesBusqueda]);
-
+        const fechaInicio = `${any}-${mesNum}-01`;
+        const ultimoDia = new Date(any, mes + 1, 0).getDate();
+        const fechaFin = `${any}-${mesNum}-${ultimoDia}`;
+        const turnos = await window.databaseAPI.getTurnosCuadrante(fechaInicio, fechaFin);
+ 
         turnos.forEach(row => {
           const dia = parseInt(row.fecha.split('-')[2]);
-          const cellKey = `nyn_v12_${any}_${mes}_${row.parking_nombre}_${row.turno}_${dia}`;
+          const cellKey = `nyn_v12_${any}_${mes}_${row.aparcamiento_nombre}_${row.turno}_${dia}`;
           combinedData[cellKey] = {
             w: row.agente_nombre,
             h: `${row.hora_inicio}-${row.hora_fin}`,
@@ -605,46 +601,43 @@ const persistence = (() => {
             const fechaStr = `${año}-${mesNum}-${diaNum}`;
 
             if (trabajador === "-" || trabajador === "") {
-              // Eliminar turno si está vacío
-              const deleteQuery = `
-                DELETE FROM quadrant 
-                WHERE fecha = ? 
-                  AND aparcamiento_id = (SELECT id FROM aparcamientos WHERE nombre = ?) 
-                  AND turno = ?
-              `;
-              await window.databaseAPI.ejecutar(deleteQuery, [fechaStr, nombreParking, turno]);
+              // Buscar ID del aparcamiento para poder eliminar por ID
+              const pRow = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
+              if (pRow && pRow.length > 0) {
+                const parkingId = pRow[0].id;
+                // Eliminar turno si está vacío
+                await window.databaseAPI.deleteTurnoCuadrante(fechaStr, parkingId, turno);
+              }
             } else {
               // Buscar IDs
-              const pRow = await window.databaseAPI.consultar("SELECT id, sociedad_id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
+              const pRow = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
               const aRow = await window.databaseAPI.consultar("SELECT id FROM agentes WHERE nombre = ?", [trabajador]);
 
               if (pRow && pRow.length > 0 && aRow && aRow.length > 0) {
                 const parkingId = pRow[0].id;
                 const agenteId = aRow[0].id;
-                let sociedadId = pRow[0].sociedad_id;
-
-                // Buscar sociedad del contrato del agente para registrar el snapshot
-                const cRow = await window.databaseAPI.consultar(`
-                  SELECT sociedad_id 
-                  FROM contratos_agentes 
-                  WHERE agente_id = ? AND ? >= fecha_inicio AND (fecha_fin IS NULL OR ? <= fecha_fin)
-                `, [agenteId, fechaStr, fechaStr]);
-                if (cRow && cRow.length > 0) {
-                  sociedadId = cRow[0].sociedad_id;
-                }
 
                 // Parsear horas
                 const hoursParts = horario.split('-');
                 const horaInicio = hoursParts[0] || '06:00';
                 const horaFin = hoursParts[1] || '14:00';
+                
+                // Calcular horas trabajadas
+                const startHour = parseFloat(horaInicio.split(':')[0]) + parseFloat(horaInicio.split(':')[1] || 0) / 60;
+                let endHour = parseFloat(horaFin.split(':')[0]) + parseFloat(horaFin.split(':')[1] || 0) / 60;
+                if (endHour < startHour) endHour += 24; // Turno nocturno
+                const horasTrabajadas = endHour - startHour;
 
-                const insertQuery = `
-                  INSERT OR REPLACE INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, es_substitucio, nota, sociedad_contrato_snapshot_id)
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                `;
-                await window.databaseAPI.ejecutar(insertQuery, [
-                  fechaStr, parkingId, agenteId, turno, horaInicio, horaFin, esSub, notaText, sociedadId
-                ]);
+                // Guardar usando la nueva API relacional expuesta
+                await window.databaseAPI.saveTurnoCuadrante({
+                  fecha: fechaStr,
+                  aparcamiento_id: parkingId,
+                  agente_id: agenteId,
+                  turno: turno,
+                  hora_inicio: horaInicio,
+                  hora_fin: horaFin,
+                  horas_trabajadas: horasTrabajadas
+                });
               }
             }
           } else if (key.startsWith('nyn_pendent_')) {

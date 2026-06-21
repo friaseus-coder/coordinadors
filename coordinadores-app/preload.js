@@ -51,5 +51,10 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   cerrarContratoAgente: (contratoId) => ipcRenderer.invoke('cerrar-contrato-agente', contratoId),
 
   // --- Personal / Agentes ---
-  getAgentesRelacional: () => ipcRenderer.invoke('get-agentes-relacional')
+  getAgentesRelacional: () => ipcRenderer.invoke('get-agentes-relacional'),
+
+  // --- Cuadrante Relacional ---
+  getTurnosCuadrante: (fechaInicio, fechaFin) => ipcRenderer.invoke('get-turnos-cuadrante', { fechaInicio, fechaFin }),
+  saveTurnoCuadrante: (turnoData) => ipcRenderer.invoke('save-turno-cuadrante', turnoData),
+  deleteTurnoCuadrante: (fecha, aparcamiento_id, turno) => ipcRenderer.invoke('delete-turno-cuadrante', { fecha, aparcamiento_id, turno })
 });
