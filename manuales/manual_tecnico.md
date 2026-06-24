@@ -56,23 +56,20 @@ La aplicación aprovecha la separación de procesos de Electron para ofrecer seg
 ### A. Proceso Principal (Main Process - `main.js`)
 *   Se ejecuta en un entorno completo de Node.js con acceso a las APIs del sistema operativo de Windows y librerías nativas como `sqlite3`.
 *   Crea y gestiona la ventana de visualización (`BrowserWindow`).
-*   Configura las rutas dinámicas y de red compartida leyendo el archivo `config.json` al iniciar, extrayendo la propiedad `ruta_compartida` para conectar la base de datos única SQLite e inicializar los directorios si no existieran en la unidad de red local.
-*   **Inicialización y Migración del Esquema:** Al arrancar el programa, lee el archivo `schema.sql` y ejecuta `aplicarSchemaCanonicoYMigrar()` para asegurar que todas las tablas existan en el `dades.db` del coordinador. Compara la versión instalada en la tabla `versiones_esquema` con la versión esperada mediante `comprobarVersionYMigrar()`. Si detecta una versión inferior (por ejemplo, v1), ejecuta el flujo `migrarV1aV2()`, el cual importa los datos legados de `aparcamientos.json` a la tabla relacional de aparcamientos vinculándolos a la sociedad por defecto y actualizando el número de versión a la versión 2.
-*   Expone servicios a través de la comunicación entre procesos (IPC) de forma 100% asíncrona para la lectura/escritura de archivos locales/red, gestión de bloqueos con TTL, y el nuevo modelo relacional:
-    *   `read-file` y `write-file`: Control de persistencia clave-valor heredada para el cuadrante diario, validando bloqueos activos y garantizando transacciones seguras en SQLite (`INSERT OR REPLACE INTO kv_store`).
-    *   **Canales IPC Relacionales de Sociedades:** CRUD de la tabla `sociedades` (`get-sociedades`, `add-sociedad`, `update-sociedad`, `deactivate-sociedad`).
-    *   **Canales IPC Relacionales de Aparcamientos:** Consulta y modificación estructurada (`get-aparcamientos-relacional`, `update-aparcamiento-relacional`) que escribe en la tabla `aparcamientos` de SQLite y sincroniza el catálogo `aparcamientos.json` como backup secundario.
-    *   **Canales IPC de Contratos de Agentes:** CRUD de contratos vinculando coordinadores/agentes con sociedades del grupo (`get-contratos-agente`, `add-contrato-agente`, `cerrar-contrato-agente`).
-    *   **Canal IPC de Importación Centralizada:** El canal `importacion-centralizada` maneja de forma transaccional y robusta la importación de archivos legacy (.json) para Cuadrantes, Vacaciones, Deudas y Gastos. Abre un diálogo nativo de archivos, procesa la inserción en la base de datos única SQLite y renombra automáticamente el archivo importado a `.MIGRADO` para evitar duplicidades.
-    *   **Canales IPC de Vacaciones:** Control y persistencia de vacaciones (`get-vacaciones-relacional`, `save-vacacion-relacional`, `delete-vacacion-relacional`).
-    *   **Canales IPC de Finanzas (Deudas y Gastos):** CRUD transaccional para la gestión de deudas (`get-deutes-relacional`, `save-deute-relacional`, `delete-deute-relacional`) y gastos mensuales (`get-despeses-relacional`, `save-despesa-relacional`, `delete-despesa-relacional`).
-    *   **Canales IPC de Inventarios:** CRUD para el seguimiento de artículos de uniforme y equipamiento de coordinadores (`get-inventari-relacional`, `save-inventari-relacional`, `delete-inventari-relacional`).
+*   Configura las rutas dinámicas y de red compartida leyendo el archivo `config.json` al iniciar, extrayendo la propiedad `ruta_compartida` (`NETWORK_DIR`) e inicializando los 4 archivos SQLite en red si no existieran.
+*   **Inicialización y Sincronización Inicial (Sharding):** Al arrancar, el programa ejecuta `syncAllToLocal()`. Si alguna de las 4 bases de datos no existe en red, la crea aplicando su respectivo esquema SQL (`schema_operativa.sql`, `schema_finanzas.sql`, `schema_comercial.sql` o `schema_catalogos.sql`). Luego, copia los 4 archivos SQLite a la caché local (`app.getPath('userData')/db_cache`).
+*   **Mapeo y Enrutamiento de Consultas (Compatibilidad):** El Proceso Principal redirige dinámicamente las peticiones legadas de `db-query` y `db-execute` al shard correspondiente analizando el texto de la consulta SQL (mediante `resolverDbKeyDesdeSql`), permitiendo que el software heredado funcione sin modificaciones.
+*   **Mapeo de Claves Foráneas (Joins Cruzados):** Al establecer la conexión local con `operativa`, `finanzas` o `comercial`, Electron ejecuta automáticamente la sentencia `ATTACH DATABASE '<ruta_de_catalogos>' AS catalogos;`. Esto hace que las tablas maestras de catálogos estén disponibles en los otros shards para consultas de unión (`JOIN`) transparentemente.
+*   **Canales IPC de Base de Datos y Exclusión Mutua:**
+    *   `db-read` (Consulta de Caché Local): Devuelve de forma instantánea el resultado de leer de la conexión SQLite local de la clave indicada (`dbKey`).
+    *   `db-write` (Escritura con Mutex): Recibe la query, adquiere un bloqueo exclusivo de carpeta en red (`acquireLock(dbKey)`), abre el archivo SQLite físico de red, ejecuta la query con `journal_mode = DELETE`, cierra el archivo de red, libera el bloqueo (`releaseLock`) y sincroniza la modificación a local para mantener la caché al día.
+    *   Los handlers de base de datos específicos (`get-turnos-cuadrante`, `save-turno-cuadrante`, `delete-turno-cuadrante`, `save-vacacion-relacional`, etc.) fueron adaptados para operar sobre sus respectivos shards y aplicar el mutex de red de manera segura.
 
 ### B. Proceso de Renderizado (Renderer Process - Carpeta `src/`)
 *   Muestra la interfaz gráfica dentro del contenedor Chromium de forma aislada.
 *   No tiene acceso directo al sistema operativo ni a Node.js por motivos de seguridad informática (prevención de ataques XSS).
-*   Se comunica con el proceso principal mediante las funciones expuestas en el puente `preload.js` (`window.api`).
-*   **Puente de API Relacional (`window.api.databaseAPI`):** En `preload.js` se definen y exponen los métodos que permiten al frontend llamar a los handlers del proceso principal para consultar y modificar sociedades, contratos, aparcamientos relacionales, históricos de base de datos, vacaciones, deudas, gastos e inventarios de manera limpia y segura.
+*   Se comunica con el proceso principal mediante las funciones expuestas en el puente `preload.js` (`window.api` y `window.dbAPI`).
+*   **Puente del Motor de Persistencia Relacional (`window.dbAPI`):** En `preload.js` se definen y exponen los métodos `read(dbKey, query, params)` y `write(dbKey, query, params)` que permiten al frontend realizar consultas de selección (SELECT) en la caché local o sentencias de modificación (INSERT/UPDATE/DELETE) atómicas con Mutex en red de forma directa. Se conserva `window.databaseAPI` para mantener retrocompatibilidad.
 
 ### C. Cargador Híbrido Dinámico (Modificaciones en Caliente)
 Para evitar tener que generar y distribuir un nuevo ejecutable `.exe` de 180MB cada vez que se hace un cambio estético de HTML o CSS, el método `createWindow()` en `main.js` realiza la siguiente validación:
@@ -94,210 +91,261 @@ if (fs.existsSync(externalIndexPath)) {
 ---
 
 ## 4. Persistencia, Sincronización y Control de Concurrencia (Red)
-El archivo `src/js/persistence.js` es el núcleo lógico que coordina la carga, el guardado y el bloqueo multi-usuario en la red local.
+La arquitectura de persistencia se basa en la **Triple Estrategia (Sharding Lógico + Caché Local de Lectura + Mutex de Carpeta en Red)** para maximizar la estabilidad y el rendimiento en entornos sin servidor que acceden a una unidad de red compartida (SMB).
 
 ```
                   +---------------------------+
-                  |    persistence.js (Web)   |
+                  |  persistence.js (Frontend)|
                   +---------------------------+
                      /                     \
-        (Lectura/Escritura Local)       (IPC Bridge en preload.js)
+       (Consultas Locales / SELECT)     (Escrituras / IPC Bridge)
                    /                         \
-      +------------------------+      +---------------------------+
-      | localstorage (Chrome)  |      |   main.js (Node / Red)    |
-      +------------------------+      +---------------------------+
-                                                    |
-                                       (Acceso Físico al Servidor)
-                                                    |
-                                      +---------------------------+
-                                      |   Disco de Red Compartido  |
-                                      |    - dades.db (SQLite)    |
-                                      |    - ~quadrant.json.lock  |
-                                      +---------------------------+
+      +-------------------------+      +---------------------------+
+      |  Conexiones Caché Local |      |   main.js (Electron Main) |
+      |  %LocalAppData%/db_cache|      +---------------------------+
+      +-------------------------+                    |
+                   |                    (Adquisición de Mutex en Red)
+             [ATTACH DATABASE]                       |
+                   |                   +----------------------------+
+                   v                   | Carpeta _<dbKey>.lock/     |
+      +-------------------------+      +----------------------------+
+      | catalogos_maestros.db  |                     |
+      |   (Maestros Adjuntos)   |         (Escritura Física en Red)
+      +-------------------------+                    |
+                                                     v
+                                       +----------------------------+
+                                       | Archivos Shards en Red     |
+                                       | - operativa_rrhh.db        |
+                                       | - finanzas_inventario.db   |
+                                       | - comercial.db             |
+                                       | - catalogos_maestros.db    |
+                                       +----------------------------+
+                                                     |
+                                            (Libera Mutex y Sync)
+                                                     v
+                                       +----------------------------+
+                                       | Sobrescribe Caché Local    |
+                                       +----------------------------+
 ```
 
-### A. Ciclo de Vida de Lectura/Escritura y Control de Concurrencia
-Cuando un coordinador abre un módulo (por ejemplo, el Cuadrante de Albert):
-1.  **Bloqueo de Red y Registro de Tiempo (TTL de 3 horas):** `persistence.js` llama a `acquire-lock` sobre la ruta de red `dades Albert/quadrant_ALBERT` (sin la extensión `.json`).
-    *   El proceso principal de Electron (`main.js`) comprueba si el archivo de bloqueo `dades Albert/~quadrant_ALBERT.lock` ya existe y lee su contenido.
-    *   **Si el bloqueo ha expirado (más de 3 horas transcurridas desde su marca de tiempo):** `main.js` lo elimina de forma automática y asíncrona, otorgando el nuevo bloqueo al usuario solicitante.
-    *   **Si el bloqueo pertenece al usuario activo:** Se renueva la marca de tiempo (timestamp) del archivo de bloqueo concediéndole 3 horas más.
-    *   **Si está activo por otro usuario:** Devuelve el estado de ocupado. La interfaz gráfica deshabilita todos los controles de edición de forma inmediata y muestra un banner rojo informativo.
-2.  **Verificación en Caliente (Heartbeat de 30 segundos):** Durante la sesión de edición, el frontend (`persistence.js`) realiza una comprobación en segundo plano cada 30 segundos (`check-lock`) para validar si el bloqueo sigue perteneciendo al usuario activo. Si un Jefe de Operaciones forzó la liberación o el tiempo del bloqueo expira, la interfaz gráfica lanza un aviso emergente en pantalla y deshabilita de forma irreversible los controles de edición para evitar la pérdida de cambios.
-3.  **Carga de Datos:** Si se adquirió el bloqueo, `persistence.js` realiza de forma asíncrona la lectura física (`read-file`) que consulta directamente la base de datos SQLite integrada (`dades.db`) cargando el valor en el `localStorage` local y renderizando la interfaz.
-4.  **Guardado Optimizado (Debounce a 400 ms y Validación):** Cada edición del usuario escribe en `localStorage` y desencadena un guardado diferido (`debouncedSave` configurado a 400 ms) para reducir la sobrecarga de I/O en la red.
-    *   Al ejecutar la escritura en el backend (`write-file`), Electron valida primero que el usuario activo siga siendo el poseedor legítimo del bloqueo. Si el bloqueo se perdió o expiró, la escritura física en SQLite es rechazada devolviendo el error `LOCK_LOST`, bloqueando la UI del usuario y notificándole inmediatamente.
-5.  **Liberación de Bloqueo:** Al volver al menú principal o al cerrar la ventana, el proceso de renderizado llama a `release-lock` para eliminar el archivo `.lock` en red de forma asíncrona.
+### A. Inicialización, Caché Local y Sincronización
+Para mitigar la latencia de red de Windows (SMB) y evitar bloqueos en lecturas concurrentes, la aplicación opera bajo un modelo de lectura local:
+1.  **Cargador Inicial**: Al arrancar la aplicación, el proceso principal (`main.js`) detecta la ruta del servidor compartida leyendo la clave `ruta_compartida` (o `NETWORK_DIR`) desde el archivo `config.json`.
+2.  **Inicialización de Archivos**: Si alguno de los 4 archivos SQLite shards no existe en la ruta de red, la aplicación lo crea de forma limpia en el servidor y ejecuta su correspondiente esquema SQL canónico (`schema_operativa.sql`, `schema_finanzas.sql`, `schema_comercial.sql` o `schema_catalogos.sql`).
+3.  **Copia en Caché Local (`syncAllToLocal()`)**: Tras verificar los archivos en red, la aplicación cierra cualquier conexión local abierta y copia los 4 archivos SQLite físicos a la caché local del usuario en `%LocalAppData%/IntranetCoordinadores/db_cache/` (obtenido vía `app.getPath('userData')/db_cache`).
+4.  **Lecturas Locales Integradas (`db-read`)**: El frontend realiza todas las consultas de lectura (`SELECT`) a través del canal `window.dbAPI.read(dbKey, query, params)`. Estas consultas se resuelven exclusivamente sobre las bases de datos de la caché local de forma instantánea, eliminando retrasos por fluctuaciones de red.
 
-### B. Gestión Dinámica de Coordinadores
-Cuando el Administrador crea un nuevo coordinador (por ejemplo, "Marc López"):
-1.  **Registro Central:** Se añade al archivo `coordinadores.json` en la raíz de la carpeta de datos compartida.
-2.  **Creación de Estructura:** Electron invoca a `fs.mkdirSync` y crea la subcarpeta `dades Marc/` en el servidor de red.
-3.  **Vinculación de Comerciales:** El módulo de Comerciales (`comercials.html`) carga en cada arranque el listado de `coordinadores.json`. Para cada uno genera dinámicamente una sección y apunta a su clave de base de datos individualizada: `dades Marc/comercials_marc_[mes]_[año]` (sin extensión `.json`).
+### B. Joins Cruzados mediante ATTACH DATABASE
+Para mantener la compatibilidad con consultas complejas del frontend legado que realizan uniones (`JOIN`) entre tablas de operativa/finanzas y tablas maestras (como `agentes` o `aparcamientos`), el cargador de conexiones locales ejecuta la sentencia SQLite `ATTACH DATABASE` al abrir las conexiones locales:
+*   Al inicializar la base de datos `operativa`, `finanzas` o `comercial` en caché local, se ejecuta dinámicamente:
+    `ATTACH DATABASE '<ruta_local>/catalogos_maestros.db' AS catalogos;`
+*   Esto mapea de forma transparente las tablas de catálogos dentro del mismo contexto de conexión, permitiendo resolver consultas con sintaxis del tipo `JOIN catalogos.agentes a ON q.agente_id = a.id` sin necesidad de reescribir la lógica de consultas de la interfaz de usuario.
 
-### C. Gestión Dinámica y Centralizada de Aparcamientos en SQLite
-Para evitar discrepancias, posibilitar la segmentación multisociedad y garantizar la consistencia relacional de la información, el catálogo de aparcamientos se ha trasladado enteramente a SQLite:
-1.  **Estructura Relacional:** En la tabla `aparcamientos` se guarda un registro estructurado con `id`, `nombre`, `direccion`, `numero_obra` (identificador oficial de obra/centro), `sociedad_id` (clave foránea a la empresa del grupo), y `coordinador_id` (responsable del centro).
-2.  **Carga Dinámica en Módulos:**
-    *   **Comerciales (`comercials.html`):** Consulta de forma relacional cruzada los aparcamientos de SQLite mediante el canal IPC `get-aparcamientos-relacional` para agrupar dinámicamente las vacantes según la asignación de coordinadores y sociedades.
-    *   **Gastos (`despeses.html`) y Rutas (`ruta.html`):** Invocan a la API relacional para obtener los centros activos y alimentan sus selectores y arrays internos automáticamente, vinculándolos a su respectivo responsable y número de obra sin dependencias locales sueltas.
-3.  **Resiliencia mediante JSON secundario:** Al guardar un aparcamiento, el sistema escribe la modificación en SQLite y, de forma secundaria y en paralelo, regenera el archivo `aparcamientos.json` en red. Esto sirve como fallback de solo lectura en arranques problemáticos o para mantener la retrocompatibilidad con módulos legados en proceso de migración.
-4.  **Gestión Reactiva y Borrado Lógico:** El modal de aparcamientos en `portal.html` invoca al canal IPC `save-aparcamientos` para guardar el estado completo del catálogo. Los cambios se guardan transaccionalmente en la base de datos única SQLite. Aquellos aparcamientos que han sido eliminados de la lista de la interfaz por el usuario (y por ende no viajan en el payload del cliente) son detectados por `save-aparcamientos` y marcados mediante borrado lógico (`activo = 0`), lo cual asegura la consistencia de los datos históricos y previene que sigan apareciendo en consultas activas.
-5.  **Importación y Exportación Masiva en Excel (CSV)**: El frontend expone las funciones `exportarAparcamentsCSV()` e `importarAparcamentsCSV(input)`. 
-    - La exportación lee el catálogo relacional completo y genera un documento CSV separado por punto y coma (`;`) forzando el carácter de codificación BOM (`\uFEFF`) para compatibilidad directa con MS Excel en entornos Windows en español/catalán.
-    - La importación procesa el CSV del usuario en una transacción SQLite única mediante llamadas directas al canal `db-execute`. Si un aparcamiento cuenta con ID numérico en la fila, ejecuta un `UPDATE`, de lo contrario, realiza un `INSERT` con ID autogenerado, sincronizando posteriormente el archivo JSON de red en caliente con `save-aparcamientos` para mantener la resiliencia en red.
+### C. Exclusión Mutua Atómica (Mutex de Red en Escritura)
+Para evitar la corrupción de datos que ocurre cuando múltiples instancias de SQLite escriben de forma concurrente en un archivo compartido en red, el proceso principal canaliza todas las consultas de modificación (`INSERT`, `UPDATE`, `DELETE`) a través del canal `db-write` bajo un estricto patrón de exclusión mutua:
+1.  **Solicitud de Escritura**: El cliente solicita una escritura llamando a `window.dbAPI.write(dbKey, query, params)`.
+2.  **Adquisición de Candado Físico (`acquireLock`)**: El backend de Electron intenta crear un directorio físico llamado `_<dbKey>.lock` (por ejemplo, `_operativa.lock`) en la carpeta de red compartida (`NETWORK_DIR`) mediante `fs.mkdirSync(lockDir)`.
+    *   **Si la carpeta ya existe (`EEXIST`)**: Significa que otro coordinador está escribiendo en esa base de datos. El proceso entra en un bucle de reintento automático (hasta 15 intentos espaciados por 1 segundo de retraso).
+    *   **Si expira el reintento**: La petición falla, rechazando la escritura para proteger la integridad del archivo.
+3.  **Escritura Directa en Red**: Una vez adquirido el candado, Electron:
+    *   Abre una conexión directa exclusiva a la base de datos correspondiente en red.
+    *   Ejecuta `PRAGMA journal_mode = DELETE;` para desactivar el diario de transacciones persistente (WAL/journal en red), escribiendo directamente sobre el archivo principal y reduciendo riesgos de archivos temporales huérfanos.
+    *   Ejecuta la consulta SQL con los parámetros proporcionados.
+    *   Cierra la conexión física a la base de datos de red de forma limpia.
+4.  **Liberación del Mutex (`releaseLock`)**: Elimina el directorio físico de bloqueo `_<dbKey>.lock` utilizando `fs.rmdirSync(lockDir)`.
+5.  **Refresco de Caché Local**: Inmediatamente después de liberar el candado en red, Electron ejecuta `syncToLocal(dbKey)` para cerrar la conexión local, copiar el archivo modificado de red a la caché local de `%LocalAppData%` y reabrir la conexión de lectura. Esto asegura que el coordinador que acaba de escribir tenga su caché actualizada al 100%.
 
-
-### D. Asistente de Importación y Algoritmo de Mapeo de Discrepancias
-Cuando el usuario sube un backup JSON, la aplicación realiza un análisis previo en memoria (`importarBackupJSON`):
-1.  **Detección de Discrepancias:** Extrae los aparcamientos de las claves y los trabajadores del campo `w`, y los compara contra los catálogos locales. Si hay discrepancias, despliega el modal `#importMappingModal`.
-2.  **Algoritmo de Similitud de Cadenas:** Para cada discrepancia, el sistema busca la opción local más adecuada en `LLISTES` calculando una similitud en base a distancia de caracteres sobre cadenas normalizadas (sin acentos, mayúsculas ni caracteres especiales):
-    ```javascript
-    const cleanStr = (s) => s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
-    ```
-    Si la similitud supera el umbral del `40%`, se preselecciona la opción local en el desplegable de mapeo.
-3.  **Procesamiento y Guardado Adaptado:** Al confirmar, el sistema procesa las altas correspondientes (si se seleccionó `[Crear nou...]`), remapea las celdas y claves adaptándolas a la base de datos local y migra los turnos de cualquier versión obsoleta a la versión actual `v12` de cuadrante. Por último, se ejecuta `persistence.syncSave()` para escribir la actualización definitiva en SQLite y se recarga la interfaz.
-
-### E. Módulo de Vacaciones y Gestión de Persistencia Relacional en SQLite
-Para evitar discrepancias en la planificación y coordinar los turnos con los descansos del personal, el módulo de vacaciones se conecta directamente a la tabla `vacances` de la base de datos única SQLite:
-1.  **Persistencia Interactiva en Tiempo Real:** El frontend de `vacances.html` utiliza identificadores `data-db-id` asociados a cada celda de entrada en el DOM para registrar de forma unívoca el ID asignado por SQLite.
-2.  **Operaciones CRUD directas:** 
-    - Las modificaciones individuales en la tabla (como fechas de inicio o fin de períodos) se registran de forma asíncrona mediante el método `saveVacacionSQLite` invocando al canal `save-vacacion-relacional`.
-    - Las eliminaciones de celdas o filas completas invocan a `deleteVacacionSQLite` liberando las vacaciones correspondientes en SQLite al instante.
-3.  **Asistente de Migración de Vacaciones:** Se incorpora un botón de migración masiva (`#btn-migrar-vacaciones-sqlite`) en la barra del módulo de vacaciones. Al ser pulsado, lee el archivo JSON legado, mapea de forma heurística el nombre del coordinador en texto plano contra su identificador numérico de base de datos relacional y realiza una transacción masiva en SQLite (`migrar-json-vacaciones`), sembrando la tabla `vacances` sin pérdidas de información histórica.
-
-### F. Módulos Financieros y de Inventario (Deudas, Gastos, Inventario)
-Los submódulos menores de gestión financiera y control operativo (Deudas `deutes`, Gastos `despeses` e Inventario `inventari`) se han migrado completamente al motor SQLite para garantizar la consistencia en el servidor de red local:
-1.  **Creación Dinámica de Tablas:** Durante el arranque de la base de datos, el método `asegurarTablasSecundarias(db)` en `main.js` verifica y crea las tablas si no existieran en la base de datos del coordinador.
-2.  **Estrategia de Guardado Masivo por Transacción:** Debido a que el frontend de estos módulos procesa y edita colecciones de datos completas en memoria enviando toda la matriz al guardar, se adaptó el backend en `persistence.js` para realizar una operación de vaciado y guardado masivo en una transacción única. Al guardar cambios:
-    - Se elimina el contenido activo correspondiente al módulo (`DELETE FROM [tabla]`).
-    - Se insertan secuencialmente las nuevas filas enviadas por la interfaz mediante sentencias preparadas en SQLite (`INSERT INTO [tabla]...`).
-    - Este flujo mantiene una compatibilidad total con la lógica del frontend legado y asegura que las operaciones de inserción y eliminación sean seguras frente a cortes de red o caídas accidentales.
+> [!IMPORTANT]
+> **Diferencia entre Lock Cooperativo y Mutex de Red**:
+> *   **Mutex de Red (`_<dbKey>.lock`)**: Control físico de bajo nivel a nivel de archivo SQLite para evitar corrupción de base de datos durante operaciones de escritura rápidas (`INSERT/UPDATE/DELETE`). Es de corta duración (milisegundos) y se gestiona automáticamente en `main.js`.
+> *   **Lock Cooperativo (`~quadrant_[coord].lock`)**: Lógica de negocio a nivel de interfaz de usuario. Al entrar a editar el cuadrante de un coordinador, se crea este archivo `.lock` en red con un TTL de 3 horas. Su objetivo es impedir que dos personas editen concurrentemente la cuadrícula visual de turnos de un mismo coordinador. Si está ocupado, la interfaz del segundo usuario se carga en modo "Solo lectura".
 
 ---
 
 ## 5. Auditoría y Tareas de Mantenimiento
-La aplicación está programada para autogestionarse sin requerir un administrador de base de datos:
+La aplicación se autogestiona para mantener la integridad de los históricos y evitar la saturación de los sistemas:
 
-*   **Limpieza de localstorage:** Al iniciar, se ejecuta un proceso automático que elimina del almacenamiento interno de Chromium los logs o registros que tengan una antigüedad superior a dos días para evitar saturar el navegador.
-*   **Sistema de Doble Backup Local (Fase 9):** Para proteger la base de datos `dades.db` contra pérdidas de red o fallos de sincronización con el servidor de la nube, el proceso principal implementa dos niveles de salvaguarda física en el directorio local "Documentos" del usuario (bajo la ruta `Documents/Coordinadores_Backups/dades_[coordinador]/`):
-    - **Backup Diario (`realizarBackupDiario`):** Al cerrar la aplicación (evento `will-quit`), se copia el archivo de base de datos activa a la subcarpeta `Diario/` con el nombre `dades_[coordinador]_diario.db`. Esta copia se sobrescribe en cada cierre para garantizar el estado diario más reciente.
-    - **Cierre Mensual Congelado (`verificarCierreMensual`):** Al iniciar la conexión con la base de datos (`conectarBaseDatosUnica`), el sistema comprueba el mes del calendario. Si detecta que ha cambiado el mes respecto al mes del último cierre, realiza una copia de seguridad histórica inmutable en la subcarpeta `Historico/` con la nomenclatura `dades_[coordinador]_[año]_[mes].db`. Si el archivo de ese mes ya existe, la operación se omite, asegurando una "foto fija" inalterable de cada mes contable.
+*   **Sistema de Doble Backup Local Multishard**:
+    Para evitar la pérdida de información por fallos en red, cortes eléctricos o corrupción accidental, se ha implementado un sistema automático de backups locales en la carpeta `Documents/Coordinadores_Backups/dades_[coordinador]/` de cada estación de trabajo:
+    1.  **Backup Diario (`realizarBackupDiario`)**: En el evento `will-quit` de Electron (al cerrar el programa), la aplicación itera sobre las 4 bases de datos activas en red y las respalda en la subcarpeta `Diario/` con la nomenclatura `[dbKey]_[coordinador]_diario.db`. Esta copia se sobrescribe de manera diaria garantizando el respaldo de la última jornada de trabajo.
+    2.  **Cierre Mensual Congelado (`verificarCierreMensual`)**: Al iniciar la conexión con las bases de datos, el sistema evalúa si el mes del calendario ha cambiado respecto al último registro. De ser así, copia las bases de datos de red activas a la subcarpeta `Historico/` con el formato `[dbKey]_[coordinador]_[año]_[mes].db`. Si el archivo del mes ya existe, la operación se omite para evitar sobrescribir cierres contables cerrados.
 
 ---
 
 ## 6. Modelo de Datos Relacional Multisociedad (v2)
+Con la implementación de la refactorización de base de datos, el esquema único original se ha segmentado lógicamente en 4 shards SQLite independientes para evitar cuellos de botella y maximizar la concurrencia:
 
-El esquema de la base de datos SQLite se define formalmente en `schema.sql` y se autogestiona mediante migraciones versionadas. Contiene las siguientes 13 tablas relacionales estructuradas:
+### A. Distribución de Tablas por Base de Datos
 
-1.  **`versiones_esquema`**: Controla el número de versión activa de la base de datos para ejecutar migraciones progresivas (v1 -> v2, etc.).
-2.  **`sociedades`**: Define las empresas del grupo Núñez i Navarro (id, nombre, CIF, dirección, email, teléfono, estado activo/inactivo).
-3.  **`aparcamientos`**: Almacena el catálogo de centros (id, nombre, dirección, número de obra, sociedad asignada mediante `sociedad_id`, y coordinador responsable mediante `coordinador_id`).
-4.  **`historico_aparcamientos`**: Registro histórico de cambios del catálogo de aparcamientos para auditoría.
-5.  **`agentes`**: Entidades de trabajadores o coordinadores (id, nombre, apellidos, rol, estado activo/inactivo).
-6.  **`contratos_agentes`**: Vinculación contractual de los agentes con las sociedades (`agente_id`, `sociedad_id`, fecha de inicio, fecha de fin, si es indefinido).
-7.  **`reglas_negocio`**: Parámetros globales aplicados en tiempo real para control de convenios y políticas del grupo.
-8.  **`cuadrantes_cabecera`**: Cabeceras mensuales de turnos del coordinador (id, coordinador_id, año, mes, estado cerrado).
-9.  **`cuadrantes_detalles`**: Celdas individuales de turnos de trabajadores (id, cabecera_id, trabajador_id, dia, turno, horas, aparcamiento_id, observaciones).
-10. **`vacances`**: Registro de vacaciones anuales de los coordinadores (`agente_id`, `fecha_inicio`, `fecha_fin`).
-11. **`inventari`**: Control de inventario de uniformes y materiales entregados (`id`, `comercial`, `articulo`, `fecha_entrega`, `estado`, `observaciones`, `activo`).
-12. **`despeses`**: Control de gastos y tickets de caja chica mensuales (`id`, `fecha`, `comercial`, `concepto`, `importe`, `estado`, `coordinador`, `activo`).
-13. **`deutes`**: Registro de deudas o excesos de jornada por coordinador (`id`, `comercial`, `cliente`, `import`, `fecha`, `activo`).
+#### 1. `operativa_rrhh.db`
+Contiene la información diaria de turnos, vacaciones y control de ausencias o deudas del personal del coordinador.
+*   **`quadrant`**: Celdas individuales de turnos diarios.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `fecha` (TEXT - YYYY-MM-DD)
+    *   `aparcamiento_id` (INTEGER)
+    *   `agente_id` (INTEGER)
+    *   `sociedad_contrato_snapshot_id` (INTEGER - Snapshot para auditoría contractual)
+    *   `turno` (TEXT - 'MATÍ', 'TARDA', 'NIT', etc.)
+    *   `hora_inicio` (TEXT - HH:MM)
+    *   `hora_fin` (TEXT - HH:MM)
+    *   `horas_trabajadas` (INTEGER - por defecto 8)
+    *   `es_substitucio` (INTEGER - 0 o 1)
+    *   `nota` (TEXT - observaciones libres)
+*   **`vacances`**: Registro de vacaciones anuales y bajas de agentes.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `agente_id` (INTEGER)
+    *   `fecha_inicio` (TEXT - YYYY-MM-DD)
+    *   `fecha_fin` (TEXT - YYYY-MM-DD)
+*   **`deutes`**: Deudas o excesos de jornada por coordinador.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `comercial` (TEXT)
+    *   `cliente` (TEXT)
+    *   `import` (REAL)
+    *   `fecha` (TEXT - YYYY-MM-DD)
+    *   `activo` (INTEGER - 0 o 1)
+*   **`kv_store`**: Almacén clave-valor heredado operativo.
+*   **`schema_version`**: Control de versión de estructura del shard operativo.
 
-### Trigger de Auditoría en Aparcamientos
-Para garantizar un rastreo histórico completo de cambios en los centros sin sobrecargar la lógica de la aplicación, SQLite ejecuta un trigger automático en la base de datos:
+#### 2. `finanzas_inventario.db`
+Centraliza el registro contable de caja chica (gastos) y el control de materiales entregados (uniformes).
+*   **`despeses`**: Registro de gastos y tickets mensuales.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `fecha` (TEXT - YYYY-MM-DD)
+    *   `comercial` (TEXT)
+    *   `concepto` (TEXT)
+    *   `importe` (TEXT)
+    *   `estado` (TEXT)
+    *   `coordinador` (TEXT)
+    *   `activo` (INTEGER - 0 o 1)
+*   **`inventari`**: Control de uniformes y materiales entregados a trabajadores.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `comercial` (TEXT)
+    *   `articulo` (TEXT)
+    *   `fecha_entrega` (TEXT - YYYY-MM-DD)
+    *   `estado` (TEXT)
+    *   `observaciones` (TEXT)
+    *   `activo` (INTEGER - 0 o 1)
+*   **`kv_store`**: Almacén clave-valor de finanzas.
+*   **`schema_version`**: Versión del shard de finanzas.
+
+#### 3. `comercial.db`
+Almacena la parametrización de precios, tarifas y datos específicos del módulo comercial.
+*   **`kv_store`**: Almacén clave-valor para tarifas y rankings comerciales.
+*   **`schema_version`**: Versión del shard comercial.
+
+#### 4. `catalogos_maestros.db`
+Contiene la parametrización global del grupo (sociedades, parkings, contratos y agentes). Es de vital importancia ya que actúa como base de datos de solo lectura unida (`ATTACH`) en el resto de shards.
+*   **`sociedades`**: Razón social de empresas (id, nombre_fiscal, codigo_corto, activo).
+*   **`aparcamientos`**: Catálogo de centros de trabajo.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `numero_obra` (TEXT UNIQUE)
+    *   `nombre` (TEXT NOT NULL)
+    *   `zona` (TEXT)
+    *   `es_remotizado` (INTEGER - 0 o 1)
+    *   `tipo_gestion` (TEXT - 'propio' o 'socios')
+    *   `permitir_vacio_laborables` (INTEGER - 0 o 1)
+    *   `sociedad_id` (INTEGER - FK sociedades)
+    *   `coordinador_responsable` (TEXT - 'Albert', 'Laura' o 'Ambos')
+    *   `activo` (INTEGER - 0 o 1)
+*   **`coberturas_requeridas`**: Turnos obligatorios por aparcamiento (recurrente o extraordinario).
+*   **`agentes`**: Catálogo de personal de plantilla y empresas externas.
+*   **`contratos_agentes`**: Vinculación temporal de trabajadores con sociedades para control de cruces.
+*   **`reglas_config`**: Reglas de negocio globales (horas_maximas_semanales, descanso_minimo_horas, etc.).
+*   **`historico_aparcamientos`**: Tabla de auditoría interna de cambios en los centros.
+*   **`schema_version`**: Versión del shard de catálogos.
+
+### B. Trigger de Auditoría en Aparcamientos
+Para garantizar un rastreo histórico completo de cambios en los centros, SQLite ejecuta un trigger automático dentro de `catalogos_maestros.db`:
 ```sql
-CREATE TRIGGER IF NOT EXISTS audit_aparcamientos
+CREATE TRIGGER IF NOT EXISTS log_cambios_aparcamientos
 AFTER UPDATE ON aparcamientos
 FOR EACH ROW
 BEGIN
-    INSERT INTO historico_aparcamientos (
-        aparcamiento_id, nombre_anterior, nombre_nuevo, 
-        direccion_anterior, direccion_nuevo, 
-        numero_obra_anterior, numero_obra_nuevo, 
-        sociedad_id_anterior, sociedad_id_nuevo, 
-        coordinador_id_anterior, coordinador_id_nuevo, 
-        usuario, fecha_modificacion, detalles_cambio
-    ) VALUES (
-        OLD.id, OLD.nombre, NEW.nombre,
-        OLD.direccion, NEW.direccion,
-        OLD.numero_obra, NEW.numero_obra,
-        OLD.sociedad_id, NEW.sociedad_id,
-        OLD.coordinador_id, NEW.coordinador_id,
-        'sistema', CURRENT_TIMESTAMP,
-        'Actualización automática vía trigger'
-    );
+    INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
+    SELECT OLD.id, 'nombre', OLD.nombre, NEW.nombre
+    WHERE OLD.nombre <> NEW.nombre;
+
+    INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
+    SELECT OLD.id, 'numero_obra', OLD.numero_obra, NEW.numero_obra
+    WHERE COALESCE(OLD.numero_obra, '') <> COALESCE(NEW.numero_obra, '');
+
+    INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
+    SELECT OLD.id, 'es_remotizado',
+           CASE OLD.es_remotizado WHEN 1 THEN 'Sí' ELSE 'No' END,
+           CASE NEW.es_remotizado WHEN 1 THEN 'Sí' ELSE 'No' END
+    WHERE OLD.es_remotizado <> NEW.es_remotizado;
+
+    INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
+    SELECT OLD.id, 'permitir_vacio_laborables',
+           CASE OLD.permitir_vacio_laborables WHEN 1 THEN 'Permitido' ELSE 'Prohibido' END,
+           CASE NEW.permitir_vacio_laborables WHEN 1 THEN 'Permitido' ELSE 'Prohibido' END
+    WHERE OLD.permitir_vacio_laborables <> NEW.permitir_vacio_laborables;
+
+    INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
+    SELECT OLD.id, 'coordinador_responsable', OLD.coordinador_responsable, NEW.coordinador_responsable
+    WHERE OLD.coordinador_responsable <> NEW.coordinador_responsable;
+
+    INSERT INTO historico_aparcamientos (aparcamiento_id, campo_modificado, valor_anterior, valor_nuevo)
+    SELECT OLD.id, 'sociedad_id', CAST(OLD.sociedad_id AS TEXT), CAST(NEW.sociedad_id AS TEXT)
+    WHERE COALESCE(OLD.sociedad_id, 0) <> COALESCE(NEW.sociedad_id, 0);
 END;
 ```
-
-### Reglas de Negocio Sembradas (Seed)
-En la inicialización relacional se cargan por defecto 5 reglas de negocio que restringen y controlan las planificaciones:
-*   **`horas_maximas_semanales`**: Límite máximo de horas laborables a la semana por agente (Valor por defecto: `48`).
-*   **`descanso_minimo_horas`**: Descanso obligatorio entre jornadas laborales consecutivas (Valor por defecto: `12`).
-*   **`dias_vacaciones_anuales`**: Días de vacaciones asignados por año natural (Valor por defecto: `30`).
-*   **`permitir_vacio_laborables`**: Determina si se pueden planificar jornadas laborables sin turnos asignados (Valor por defecto: `0` - Falso).
-*   **`bloquear_cruce_sociedades`**: Restringe que un agente trabaje en turnos correspondientes a distintas sociedades dentro de una misma semana de cuadrante (Valor por defecto: `1` - Verdadero). El sistema verifica esta regla para evitar conflictos contables y contractuales.
 
 ---
 
 ## 7. Asistente de Asignación Inteligente y Delegación de Eventos
 
 ### A. Algoritmo de Candidatos de Asignación
-El asistente lateral de asignación inteligente realiza un procesamiento multicapa en el Proceso Principal (`main.js`) a través de la función `obtenerAsistenteAsignacion(fecha, aparcamientoId)`:
-1. **Filtro de Contratos Activos**: Consulta los contratos vigentes de los agentes para la sociedad propietaria del aparcamiento en la fecha solicitada.
-2. **Evaluación de Restricciones y Reglas**:
-   - **Vacaciones**: Compara el cuadrante y las vacaciones aprobadas del agente para descartar candidatos que se encuentren en período de descanso.
-   - **Descanso Mínimo entre Jornadas (12h)**: Compara los turnos asignados del día anterior, día actual y día posterior para asegurar que no se produzca solapamiento o infracción del descanso de 12 horas.
-   - **Cruce de Sociedades**: Verifica que el agente no esté asignado a otra sociedad en la misma semana del calendario.
-3. **Cálculo de Puntuación (Ranking Score)**: Se puntúa a los trabajadores en base a criterios de conveniencia (cercanía de su domicilio al centro, experiencia previa en el centro, horas acumuladas en el mes para evitar horas extras excesivas y preferencias).
-4. **Clasificación**:
-   - **Recomendados**: Candidatos que cumplen todas las reglas estrictas. Si su score es mayor o igual a 80, reciben el badge visual `TOP`. Los trabajadores subcontratados reciben el badge `EXTERNO`.
-   - **Descartados**: Candidatos excluidos con el motivo explícito del descarte (ej. "En vacaciones", "Infracción de descanso de 12h", "Cruce de sociedades").
+El asistente lateral de asignación inteligente realiza un procesamiento multicapa en el Proceso Principal (`main.js`) a través del handler `obtener-recomendaciones-cuadrante`:
+1.  **Filtro de Contratos Activos**: Evalúa los contratos vigentes de los agentes para la sociedad propietaria del aparcamiento en la fecha solicitada.
+2.  **Evaluación de Restricciones y Reglas**:
+    *   **Vacaciones**: Compara el cuadrante y las vacaciones aprobadas del agente para descartar candidatos que se encuentren en período de descanso o de baja.
+    *   **Duplicidad de Asignación**: Compara los turnos asignados del día actual para impedir que un agente trabaje en dos aparcamientos distintos el mismo día.
+    *   **Tope Mensual**: Compara el número de jornadas del agente en el mes con la regla `max_dias_mensuales` (22 por defecto) para derivarlo a descartado en caso de exceso.
+3.  **Clasificación en UI**:
+    *   **Sugeridos**: Candidatos libres. Si se trata de un proveedor de seguridad externo, se marca como `EMPRESA SEGURIDAD` y se posiciona de forma prioritaria al principio del listado al no estar sujeto a límites de horas o convenios de sociedades.
+    *   **Descartados**: Candidatos excluidos indicando la causa específica (ej: "De vacaciones / Baja", "Ya asignado a otro parking hoy", o exceso del tope de días).
 
 ### B. Arquitectura de Delegación de Eventos de Interfaz
-Debido a que el cuadrante del calendario se genera dinámicamente en el DOM (reconstruyendo todos los elementos `<td>` al filtrar o cambiar de período), los listeners individuales de eventos solían quedar huérfanos o perderse. Para solucionarlo:
-1. Se ha inyectado en el renderizado de la tabla atributos de datos específicos en cada celda: `data-fecha`, `data-parking` y `data-sid`.
-2. Se implementó un escuchador único global: `document.addEventListener('click', (e) => { ... })`.
-3. Al hacer clic, se utiliza `e.target.closest('td')` para identificar la celda correspondiente del cuadrante de forma ágil y centralizada.
-4. **Control de Edición Manual**: El listener delegado analiza el estado de la celda en memoria (`cacheDades[sId]`). Si la celda ya tiene un trabajador asignado, el evento no se propaga al asistente lateral. Esto permite que los selectores nativos (`select.select-worker` y `select.select-hour`) funcionen con normalidad al hacer clics sencillos para cambios manuales directos, evitando la sobreposición o apertura no deseada del asistente.
+Debido a que el cuadrante del calendario se genera dinámicamente en el DOM (reconstruyendo todos los elementos `<td>` al filtrar o cambiar de período), los listeners individuales de eventos se gestionarían de forma ineficiente. Para solucionarlo:
+1.  Se inyectan en el renderizado de la tabla atributos de datos específicos en cada celda: `data-fecha`, `data-parking` y `data-sid`.
+2.  Se implementó un escuchador único global en la vista: `document.addEventListener('click', (e) => { ... })`.
+3.  Al hacer clic, se utiliza `e.target.closest('td')` para identificar la celda correspondiente de forma rápida y centralizada.
+4.  **Control de Edición Manual**: El listener delegado analiza el estado en memoria. Si el clic ocurre sobre los selectores de trabajador (`select.select-worker`) o de horas (`select.select-hour`) para edición manual directa, la apertura automática del panel lateral del asistente inteligente es bloqueada. Esto previene superposiciones no deseadas en el flujo de trabajo del coordinador.
 
 ### C. Resolución de Mismatch de Tipos en Personal (Coordinadores)
-Durante la sincronización inicial de los archivos de configuración (`coordinadores.json`), se detectó un error `SQLITE_MISMATCH: datatype mismatch` debido a que el campo `id` de los coordinadores en el archivo JSON es una cadena de texto (ej. `"albert"`, `"laura"`), mientras que el esquema de base de datos define `id` en la tabla `agentes` como un `INTEGER PRIMARY KEY AUTOINCREMENT`.
-1. **Solución Implementada**: Se ha incorporado en `main.js` una función hashing hash-a-entero estable de 32 bits denominada `stringToId(str)`.
-2.    *   **Estabilidad**: Esta función genera siempre el mismo identificador entero positivo para un string determinado de forma síncrona y predecible, independientemente de su posición o adición en el catálogo.
-    *   **Persistencia**: Se aplica a todas las consultas de inicialización y sincronización de agentes y contratos (`sincronizarAgentesIniciales`), eliminando la colisión por tipos en SQLite y garantizando la integridad referencial.
+Durante la sincronización de archivos de configuración (`coordinadores.json`), se detectó un error `SQLITE_MISMATCH: datatype mismatch` debido a que el campo `id` de los coordinadores en el archivo JSON es una cadena de texto (ej. `"albert"`, `"laura"`), mientras que el esquema de base de datos define `id` en la tabla `agentes` como un `INTEGER PRIMARY KEY AUTOINCREMENT`.
+1.  **Solución Implementada**: Se ha incorporado en `main.js` una función hashing hash-a-entero estable de 32 bits denominada `stringToId(str)`.
+2.  *   **Estabilidad**: Esta función genera siempre el mismo identificador entero positivo para un string determinado de forma síncrona y predecible.
+    *   **Persistencia**: Se aplica a todas las consultas de inicialización y sincronización de agentes y contratos, eliminando la colisión por tipos en SQLite y garantizando la integridad referencial.
 
 ---
 
 ## 8. Panel de Administración y Depuración del Legacy JSON
-
-Con la implantación de la **Fase 10**, se ha procedido a una limpieza profunda de la persistencia de la intranet operativa, eliminando todos los fallbacks JSON en las vistas operativas de Cuadrantes, Vacaciones y catálogos principales. SQLite es ahora la fuente de verdad única absoluta.
+Con la implantación de la **Fase 10**, SQLite es la fuente de verdad única absoluta en la aplicación, habiéndose eliminado los antiguos fallbacks locales y archivos JSON en la edición diaria.
 
 ### A. Panel de Administración Centralizado (`admin.html`)
-*   Se ha diseñado un panel de control reservado para operaciones administrativas globales.
-*   Permite ejecutar las migraciones heredadas en un entorno controlado sin mezclar lógica de migración en las pantallas operativas diarias.
-*   **Vías de Importación Integradas:**
-    1.  **Cuadrante:** Importación y mapeo de turnos desde el JSON de cuadrante legado.
-    2.  **Vacaciones:** Importación y normalización relacional de períodos de descanso.
-    3.  **Deudas:** Importación directa de la lista de deudas legadas.
-    4.  **Gastos:** Importación directa de los archivos de gastos legados.
+*   Se ha diseñado un panel reservado para operaciones administrativas.
+*   Permite ejecutar las migraciones heredadas en un entorno seguro e inyectar registros en la base de datos sin contaminar las pantallas operativas ordinarias.
+*   **Vías de Importación Integradas**:
+    1.  **Cuadrante**: Importación y mapeo de turnos desde el JSON de cuadrante legado.
+    2.  **Vacaciones**: Importación y normalización relacional de períodos de descanso.
+    3.  **Deudas**: Importación directa de la lista de deudas legadas.
+    4.  **Gastos**: Importación directa de los archivos de gastos legados.
 
-### B. Salvaguarda Antiduplicidad (.MIGRADO)
-*   Para evitar que se procese un mismo archivo legacy JSON varias veces corrompiendo los registros de SQLite, el proceso principal de Electron renombra los archivos en disco añadiéndoles el sufijo `.MIGRADO` una vez completada la importación transaccional con éxito.
-*   Si se intenta seleccionar de nuevo el archivo, el sistema lo ignorará o rechazará.
+### B. Salvaguarda Antiduplicidad (`.MIGRADO`)
+Para evitar que se procese un mismo archivo legacy JSON varias veces y se dupliquen registros en SQLite, el proceso principal de Electron renombra los archivos en disco añadiéndoles el sufijo `.MIGRADO` una vez completada la importación transaccional con éxito en la base de datos centralizada. Si el usuario intenta seleccionar el archivo de nuevo, es rechazado inmediatamente.
 
 ---
 
 ## 9. Sistema de Roles (RBAC) con Selección en Caliente
-
-Con la consolidación de la Fase 10, la intranet implementa una arquitectura basada en roles (Role-Based Access Control) que permite filtrar el acceso a los módulos operativos desde una única pantalla interactiva unificada:
-
-1.  **Comercial:** Acceso exclusivo a visualización y consulta de comerciales, rutas y rankings.
-2.  **Coordinador:** Acceso operativo diario (cuadrante, vacaciones, deudas, gastos e inventario) para su gestión personal.
-3.  **Jefe de Operaciones (Administrador):** Acceso global absoluto y herramientas de administración, base de datos relacional y configuración.
+La aplicación implementa una arquitectura basada en roles (Role-Based Access Control) que filtra el acceso a los módulos operativos desde una única pantalla interactiva unificada:
+1.  **Comercial**: Acceso exclusivo a visualización y consulta de comerciales, rutas y rankings.
+2.  **Coordinador**: Acceso operativo diario (cuadrante, vacaciones, deudas, gastos e inventario) para su gestión personal.
+3.  **Jefe de Operaciones (Administrador)**: Acceso global absoluto y herramientas de administración, base de datos relacional y configuración.
 
 ### A. Almacenamiento de Sesión y Redirección
-*   Al arrancar la aplicación, se despliega la pantalla de acceso ([index.html](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/src/index.html)) e inicia un proceso de consulta asíncrona a `window.databaseAPI.getUserConfig()`.
+*   Al arrancar la aplicación, se despliega la pantalla de acceso (`index.html`) e inicia un proceso de consulta asíncrona a `window.databaseAPI.getUserConfig()`.
 *   Si detecta en el archivo `config.json` un rol y coordinador válidos configurados, la pantalla de login los persiste en `sessionStorage` e inicia de forma inmediata una redirección al portal principal (`portal.html`) sin requerir selección ni confirmación interactiva.
 *   En caso contrario, se le permite al usuario elegir su rol interactivamente mediante tarjetas y, al pulsar "Entrar al Portal", se registran en `sessionStorage` y se realiza la redirección tradicional.
 
@@ -305,4 +353,3 @@ Con la consolidación de la Fase 10, la intranet implementa una arquitectura bas
 *   En `portal.html`, al cargarse el DOM, el proceso consulta prioritariamente la configuración de `config.json` para sobrescribir autoritativamente `userRole` y `userName` en `sessionStorage`.
 *   A continuación, se invoca de manera inmediata el filtrado mediante la función `applyRoleFiltering(role)`. Esta función recorre todos los elementos del menú (etiquetados con `.menu-item` o el atributo `data-roles`) y aplica un estilo imperativo de ocultación (`display: none !important`) a toda sección no permitida para el rol activo.
 *   Si el rol activo es `comercial`, se ocultan el resto de opciones de navegación del portal y se realiza una redirección asíncrona e instantánea abriendo directamente el módulo de Comerciales (`comercials.html`).
-
