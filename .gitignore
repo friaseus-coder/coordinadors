@@ -16,3 +16,15 @@ node_modules/
 # Ignorar ejecutables e instaladores compilados
 coordinadores-instalado/
 manuales.lnk
+
+# Archivos basura, backups y datos de usuario locales
+coordinadores-app/Backups/
+coordinadores-app/dades/dades Albert/
+coordinadores-app/dades/dades Laura/
+coordinadores-app/dades/temp/
+coordinadores-app/src/sac/sac.zip
+coordinadores-app/src/backup.json
+coordinadores-app/src/esborrall.json
+coordinadores-app/test_laura_parkings.js
+coordinadores-app/src/deutes/deutes.json
+coordinadores-app/src/ranking/js/data.json

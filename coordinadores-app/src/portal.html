@@ -1740,5 +1740,21 @@
             }
         }
     </script>
+
+<script>
+  document.addEventListener('DOMContentLoaded', async () => {
+      try {
+          const userRole = await window.databaseAPI.getUserRole();
+          document.querySelectorAll('[data-roles]').forEach(item => {
+              const rolesPermitidos = item.getAttribute('data-roles').split(',');
+              if (!rolesPermitidos.includes(userRole)) {
+                  item.style.display = 'none';
+              }
+          });
+      } catch (e) {
+          console.error("Error al aplicar roles:", e);
+      }
+  });
+</script>
 </body>
 </html>

@@ -521,7 +521,7 @@ const persistence = (() => {
       const combinedData = {};
 
       for (const coord of coordinadores) {
-        const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}.json`;
+        const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}`;
         let coordData = null;
 
         // Intentar leer de SQLite kv_store
