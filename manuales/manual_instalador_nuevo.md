@@ -10,7 +10,7 @@ Este manual detalla los pasos para crear, configurar y utilizar un instalador au
 *   **Distribución simplificada:** Un único archivo ejecutable (ej. `Coordinadores_Setup_v1.0.0.exe`) que el usuario descarga y ejecuta.
 *   **Sin privilegios de Administrador (Opcional):** Configurado para instalarse en el directorio de usuario (`LocalAppData`), evitando bloqueos de políticas de IT corporativas.
 *   **Accesos directos automáticos:** Crea automáticamente el acceso directo en el Escritorio del usuario con el nombre e icono correctos.
-*   **Desinstalación limpia:** Registra la aplicación en la lista de programas de Windows para que pueda desinstalarse completamente si es necesario.
+*   **Rendimiento en Red (Caché Local Híbrida):** La aplicación trabaja con una copia caché local de alto rendimiento y escribe en red de forma atómica y segura mediante Mutex. Esto previene bloqueos de red y pérdidas de datos.
 *   **Inyección del archivo de configuración:** Se puede preconfigurar la ruta del servidor de red compartida para que el usuario no deba editar manualmente el archivo [config.json](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/config.json).
 
 ---
@@ -132,7 +132,12 @@ Para conectar la base de datos centralizada de la red compartida (por ejemplo, e
       "ruta_compartida": "P:\\parkings\\db"
     }
     ```
-4.  Guarde y cierre el archivo. Al abrir la aplicación, el sistema cargará los cuadrantes y catálogos de SQLite directamente del servidor de red.
+4.  Guarde y cierre el archivo. Al abrir la aplicación, el sistema inicializará en la ruta compartida los 4 shards de base de datos si no existieran previamente:
+    *   `operativa_rrhh.db`: Turnos diarios, vacaciones y deudas de horas.
+    *   `finanzas_inventario.db`: Gastos mensuales e inventario de material.
+    *   `comercial.db`: Tarifas y precios de comerciales.
+    *   `catalogos_maestros.db`: Catálogos maestros (aparcamientos, sociedades, agentes y contratos).
+    La aplicación copiará estos archivos desde la red a la caché local temporal del usuario en su primer inicio, ejecutando todas las lecturas al instante y canalizando las escrituras a la red mediante un sistema de Mutex físico para evitar concurrencias.
 
 ---
 

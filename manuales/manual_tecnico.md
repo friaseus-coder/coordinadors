@@ -9,9 +9,8 @@ La aplicación se ha diseñado para funcionar sin servidores de backend ni bases
 *   **Runtime:** [Electron.js (v31)](https://www.electronjs.org/), que unifica el motor de renderizado Chromium de Google con el entorno de ejecución Node.js de escritorio.
 *   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS) y JavaScript nativo ES6.
 *   **Fuentes de Texto:** Carga de la tipografía premium **Outfit** desde Google Fonts.
-*   **Persistencia (Modelo Relacional):** Base de datos integrada **SQLite (v3)** que implementa un diseño relacional completo de 13 tablas (modelo multisociedad, contratos y reglas parametrizadas) y control de versiones del esquema (`dades.db` en la subcarpeta del coordinador), combinada con el `localStorage` de Chromium en la capa cliente.
-*   **Resiliencia y Fallback:** Los catálogos maestros (como `aparcamientos.json` y `coordinadores.json`) se leen e inicializan en red como copias de resiliencia secundaria y lectura base de semillas. Para todos los módulos dinámicos (Comerciales, Rutas, Cuadrante, Vacaciones, Gastos, Deudas y Rankings), la persistencia unificada se realiza en SQLite sin utilizar extensiones `.json` en el direccionamiento de las claves.
-*   **Concurrencia (Multi-usuario):** Sistema de exclusión mutua mediante archivos físicos de bloqueo de Windows (`.lock`) estructurados en formato JSON asociados a las claves dinámicas sin extensión `.json` de persistencia en red, con expiración temporal activa (TTL de 3 horas) y detección periódica de pérdida en caliente.
+*   **Persistencia y Triple Estrategia (Sharding Lógico + Caché Local):** La persistencia se divide en 4 bases de datos SQLite independientes según áreas de negocio: `operativa_rrhh.db`, `finanzas_inventario.db`, `comercial.db` y `catalogos_maestros.db`. En el arranque, Electron realiza una copia de caché en el almacenamiento local del usuario (`app.getPath('userData')/db_cache`). Todas las lecturas se resuelven exclusivamente sobre esta caché local, eliminando latencias de red y cuelgues por conectividad lenta.
+*   **Concurrencia (Mutex Atómico de Escritura):** Para evitar la corrupción de datos por concurrencia multi-usuario, las escrituras en red están controladas por un Candado Mutex de directorio físico (`_<dbKey>.lock`). Antes de modificar una base de datos en red, el proceso realiza un intento de creación de carpeta (`fs.mkdirSync`) con reintento automático (15 reintentos con 1 segundo de retraso). Una vez obtenido el candado, aplica la query (usando `PRAGMA journal_mode = DELETE;`), cierra la base de datos de red, libera el candado y actualiza la caché local del usuario que escribe.
 
 ---
 
@@ -20,27 +19,30 @@ La aplicación consta de los siguientes archivos y carpetas clave en su estructu
 
 ```
 coordinadores-app/
-├── main.js                 # Proceso principal de Electron (Main Process y Migraciones)
-├── preload.js              # Script puente de seguridad (databaseAPI expuesta en Context Isolation)
-├── package.json            # Metadatos del proyecto y scripts de compilación
-├── config.json             # Configuración dinámica de rutas de red y roles predefinidos
-├── schema.sql              # Definición canónica del esquema relacional (13 tablas + trigger)
-├── dades/                  # Carpeta de datos local (Fallback si no hay red)
+├── main.js                 # Proceso principal de Electron (Inicialización, Mutex e IPC)
+├── preload.js              # Script puente (window.dbAPI expuesta en Context Isolation)
+├── package.json            # Metadatos del proyecto y dependencias (sqlite3, electron)
+├── config.json             # Configuración dinámica (coordinador, rol, ruta_compartida)
+├── schema_operativa.sql    # Esquema relacional de operativa, turnos y vacaciones
+├── schema_finanzas.sql     # Esquema relacional de gastos e inventarios
+├── schema_comercial.sql    # Esquema relacional de kv_store comercial
+├── schema_catalogos.sql    # Esquema relacional de aparcamientos, sociedades y agentes
+├── dades/                  # Carpeta de datos local (Fallback de configuración)
 │   ├── coordinadores.json  # Registro de coordinadores creados dinámicamente
-│   └── aparcamientos.json  # Catálogo maestro de aparcamientos (JSON de resiliencia)
+│   └── aparcamientos.json  # Catálogo maestro de aparcamientos (Resiliencia)
 ├── dist/                   # Salida del empaquetado del ejecutable portable
 │   └── coordinadores-win32-x64/
 │       ├── coordinadores.exe # Ejecutable final de producción
 │       └── resources/
-│           └── app.asar    # Código fuente empaquetado inmutable
+│           └── app.asar    # Código fuente empaquetado
 └── src/                    # Carpeta de interfaz de usuario de desarrollo
-    ├── index.html          # Pantalla de acceso y login con autodetección de rol
-    ├── portal.html         # Panel general de navegación y control con filtrado inmediato
-    ├── css/                # Hoja de estilos compartida del login
+    ├── index.html          # Pantalla de acceso y login
+    ├── portal.html         # Panel general de navegación y control
+    ├── css/                # Hoja de estilos compartida
     ├── js/
     │   ├── calendari.js    # Base de datos del santoral y festivos
-    │   ├── i18n.js         # Soporte multi-idioma con traducción global en caliente
-    │   └── persistence.js  # Lógica de persistencia relacional y en kv_store sin .json
+    │   ├── i18n.js         # Soporte multi-idioma
+    │   └── persistence.js  # Lógica de persistencia relacional con window.dbAPI
     └── comercials/         # Submódulo dinámico de comerciales
         └── comercials.html
 ```
