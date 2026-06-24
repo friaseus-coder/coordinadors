@@ -487,16 +487,16 @@ const persistence = (() => {
 
       try {
         // Cargar agentes y aparcamientos para LLISTES.centres y LLISTES.plantilla
-        const agentes = await window.databaseAPI.consultar("SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+        const agentes = await window.dbAPI.read('catalogos', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
         const plantilla = agentes.map(a => a.nombre);
         originalSetItem.call(localStorage, 'nyn_plantilla', JSON.stringify(plantilla));
 
-        const parkings = await window.databaseAPI.consultar("SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+        const parkings = await window.dbAPI.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
         const centres = parkings.map(p => p.nombre);
         originalSetItem.call(localStorage, 'nyn_centres', JSON.stringify(centres));
 
         // Cargar vacaciones JSON estructuradas de kv_store
-        const rows = await window.databaseAPI.consultar("SELECT value FROM kv_store WHERE key = ?", [key]);
+        const rows = await window.dbAPI.read('operativa', "SELECT value FROM kv_store WHERE key = ?", [key]);
         if (rows && rows.length > 0 && rows[0].value) {
           combinedData[key] = JSON.parse(rows[0].value);
         } else {
@@ -533,7 +533,7 @@ const persistence = (() => {
 
         // Intentar leer de SQLite kv_store
         try {
-          const rows = await window.databaseAPI.consultar("SELECT value FROM kv_store WHERE key = ?", [filePath]);
+          const rows = await window.dbAPI.read('comercial', "SELECT value FROM kv_store WHERE key = ?", [filePath]);
           if (rows && rows.length > 0 && rows[0].value) {
             coordData = JSON.parse(rows[0].value);
           }
@@ -552,9 +552,10 @@ const persistence = (() => {
       return combinedData;
     }
 
-    // Caso general para otros módulos (Gastos, etc.) usando la tabla kv_store en dades.db única
+    // Caso general para otros módulos (Gastos, etc.) usando la tabla kv_store en el shard correspondiente
     try {
-      const rows = await window.databaseAPI.consultar("SELECT value FROM kv_store WHERE key = ?", [currentFilePath]);
+      const dbKey = activeModuleName === 'finanzas' || activeModuleName === 'despeses' || activeModuleName === 'inventari' ? 'finanzas' : 'operativa';
+      const rows = await window.dbAPI.read(dbKey, "SELECT value FROM kv_store WHERE key = ?", [currentFilePath]);
       if (rows && rows.length > 0 && rows[0].value) {
         return JSON.parse(rows[0].value);
       }
@@ -665,7 +666,7 @@ const persistence = (() => {
             rawVacances = [];
           }
         }
-        await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+        await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
           key, JSON.stringify(rawVacances)
         ]);
 
@@ -680,7 +681,8 @@ const persistence = (() => {
 
     // Caso general para otros módulos, guardando en la tabla kv_store
     try {
-      await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+      const dbKey = activeModuleName === 'finanzas' || activeModuleName === 'despeses' || activeModuleName === 'inventari' ? 'finanzas' : 'operativa';
+      await window.dbAPI.write(dbKey, "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
         currentFilePath, JSON.stringify(data)
       ]);
       return true;
@@ -857,7 +859,7 @@ const persistence = (() => {
         if (localStorage.getItem(targetKey) !== null || hasData) {
           const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}`;
           try {
-            await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+            await window.dbAPI.write('comercial', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
               filePath, JSON.stringify(coordData)
             ]);
             console.log(`[PERSISTENCE] Guardados comerciales de ${coord.nombre} en SQLite kv_store: ${filePath}`);
@@ -896,22 +898,32 @@ const persistence = (() => {
 // --- NUEVA CARGA DESDE SQLITE ---
 async function loadAparcamientos() {
     console.log("Cargando aparcamientos desde SQLite...");
-    const data = await window.databaseAPI.getAparcamientosRelacional();
-    return data || [];
+    try {
+        const data = await window.dbAPI.read('catalogos', "SELECT * FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+        return data || [];
+    } catch (e) {
+        console.error("Error al cargar aparcamientos:", e);
+        return [];
+    }
 }
 
 // --- NUEVA CARGA DE PERSONAL DESDE SQLITE ---
 async function loadCoordinadores() {
     console.log("Cargando personal (agentes) desde SQLite...");
-    const data = await window.databaseAPI.getAgentesRelacional();
-    return data.map(agente => ({
-        id: agente.id,
-        nombre: agente.nombre,
-        nom: agente.nombre.split(' ')[0],
-        cognoms: agente.nombre.split(' ').slice(1).join(' '),
-        ranking: agente.ranking_score,
-        es_empresa_externa: agente.es_empresa_externa
-    }));
+    try {
+        const data = await window.dbAPI.read('catalogos', "SELECT * FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+        return data.map(agente => ({
+            id: agente.id,
+            nombre: agente.nombre,
+            nom: agente.nombre.split(' ')[0],
+            cognoms: agente.nombre.split(' ').slice(1).join(' '),
+            ranking: agente.ranking_score,
+            es_empresa_externa: agente.es_empresa_externa
+        }));
+    } catch (e) {
+        console.error("Error al cargar personal:", e);
+        return [];
+    }
 }
 
 // Ahora loadComercials simplemente llama a loadCoordinadores para que todos usen la BD única
@@ -997,12 +1009,6 @@ async function saveQuadrant(coordinadorId, month, year, data) {
 }
 
 // --- ASISTENTE DE CUADRANTE ---
-/**
- * Llama al motor de inteligencia en SQLite para obtener los mejores agentes disponibles
- * para una fecha y un aparcamiento concretos.
- * @param {string} fecha Formato 'YYYY-MM-DD'
- * @param {number} aparcamientoId ID en SQLite del aparcamiento
- */
 async function obtenerAsistenteAsignacion(fecha, aparcamientoId) {
     try {
         console.log(`Consultando Asistente para ${fecha} en parking ${aparcamientoId}...`);
@@ -1015,11 +1021,17 @@ async function obtenerAsistenteAsignacion(fecha, aparcamientoId) {
     }
 }
 
-// --- NUEVAS FUNCIONES DE VACACIONES (SQLITE) ---
+// --- NUEAS FUNCIONES DE VACACIONES (SQLITE) ---
 async function loadVacacionesSQLite() {
     try {
         console.log("Cargando vacaciones desde SQLite...");
-        return await window.databaseAPI.getVacacionesRelacional();
+        const sql = `
+          SELECT v.id, v.agente_id, a.nombre as agente_nombre, v.fecha_inicio, v.fecha_fin
+          FROM vacances v
+          JOIN catalogos.agentes a ON v.agente_id = a.id
+          ORDER BY v.fecha_inicio ASC
+        `;
+        return await window.dbAPI.read('operativa', sql, []);
     } catch (error) {
         console.error("Error cargando vacaciones SQLite:", error);
         return [];
@@ -1028,7 +1040,8 @@ async function loadVacacionesSQLite() {
 
 async function saveVacacionSQLite(agenteId, fechaInicio, fechaFin) {
     try {
-        return await window.databaseAPI.saveVacacionRelacional({ agente_id: agenteId, fecha_inicio: fechaInicio, fecha_fin: fechaFin });
+        await window.dbAPI.write('operativa', "INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)", [agenteId, fechaInicio, fechaFin]);
+        return { success: true };
     } catch (error) {
         console.error("Error guardando vacación SQLite:", error);
         return { success: false };
@@ -1037,7 +1050,8 @@ async function saveVacacionSQLite(agenteId, fechaInicio, fechaFin) {
 
 async function deleteVacacionSQLite(id) {
     try {
-        return await window.databaseAPI.deleteVacacionRelacional({ id });
+        await window.dbAPI.write('operativa', "DELETE FROM vacances WHERE id = ?", [id]);
+        return { success: true };
     } catch (error) {
         console.error("Error borrando vacación SQLite:", error);
         return { success: false };
@@ -1046,47 +1060,84 @@ async function deleteVacacionSQLite(id) {
 
 // --- DEUDAS ---
 async function loadDeutes(coordinadorId) {
-    try { return await window.databaseAPI.getDeutes(); } 
-    catch (e) { console.error(e); return []; }
+    try {
+        return await window.dbAPI.read('operativa', "SELECT * FROM deutes WHERE activo = 1 ORDER BY fecha DESC", []);
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
 }
+
 async function saveDeutes(coordinadorId, data) {
     try {
-        if(Array.isArray(data)) {
-            await window.databaseAPI.ejecutar("DELETE FROM deutes"); 
-            for(let item of data) {
-                await window.databaseAPI.saveDeute(item);
+        if (Array.isArray(data)) {
+            await window.dbAPI.write('operativa', "DELETE FROM deutes", []);
+            for (let item of data) {
+                await window.dbAPI.write('operativa', `
+                  INSERT INTO deutes (comercial, cliente, import, fecha, activo)
+                  VALUES (?, ?, ?, ?, 1)
+                `, [item.comercial, item.cliente, item.import, item.fecha]);
             }
         }
         return true;
-    } catch (e) { return false; }
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
 }
 
 // --- GASTOS ---
 async function loadDespeses(coordinadorId) {
-    try { return await window.databaseAPI.getDespeses(); } 
-    catch (e) { console.error(e); return []; }
+    try {
+        return await window.dbAPI.read('finanzas', "SELECT * FROM despeses WHERE activo = 1 ORDER BY fecha DESC", []);
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
 }
+
 async function saveDespeses(coordinadorId, data) {
     try {
-        if(Array.isArray(data)) {
-            await window.databaseAPI.ejecutar("DELETE FROM despeses"); 
-            for(let item of data) await window.databaseAPI.saveDespesa(item);
+        if (Array.isArray(data)) {
+            await window.dbAPI.write('finanzas', "DELETE FROM despeses", []);
+            for (let item of data) {
+                await window.dbAPI.write('finanzas', `
+                  INSERT INTO despeses (fecha, comercial, concepto, importe, estado, coordinador, activo)
+                  VALUES (?, ?, ?, ?, ?, ?, 1)
+                `, [item.fecha, item.comercial, item.concepto, item.importe, item.estado, item.coordinador]);
+            }
         }
         return true;
-    } catch (e) { return false; }
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
 }
 
 // --- INVENTARIO ---
 async function loadInventari(coordinadorId) {
-    try { return await window.databaseAPI.getInventari(); } 
-    catch (e) { console.error(e); return []; }
+    try {
+        return await window.dbAPI.read('finanzas', "SELECT * FROM inventari WHERE activo = 1 ORDER BY fecha_entrega DESC", []);
+    } catch (e) {
+        console.error(e);
+        return [];
+    }
 }
+
 async function saveInventari(coordinadorId, data) {
     try {
-        if(Array.isArray(data)) {
-            await window.databaseAPI.ejecutar("DELETE FROM inventari"); 
-            for(let item of data) await window.databaseAPI.saveInventari(item);
+        if (Array.isArray(data)) {
+            await window.dbAPI.write('finanzas', "DELETE FROM inventari", []);
+            for (let item of data) {
+                await window.dbAPI.write('finanzas', `
+                  INSERT INTO inventari (comercial, articulo, fecha_entrega, estado, observaciones, activo)
+                  VALUES (?, ?, ?, ?, ?, 1)
+                `, [item.comercial, item.articulo, item.fecha_entrega, item.estado, item.observaciones]);
+            }
         }
         return true;
-    } catch (e) { return false; }
+    } catch (e) {
+        console.error(e);
+        return false;
+    }
 }

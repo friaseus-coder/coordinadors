@@ -61,15 +61,15 @@ La aplicación aprovecha la separación de procesos de Electron para ofrecer seg
 *   **Mapeo y Enrutamiento de Consultas (Compatibilidad):** El Proceso Principal redirige dinámicamente las peticiones legadas de `db-query` y `db-execute` al shard correspondiente analizando el texto de la consulta SQL (mediante `resolverDbKeyDesdeSql`), permitiendo que el software heredado funcione sin modificaciones.
 *   **Mapeo de Claves Foráneas (Joins Cruzados):** Al establecer la conexión local con `operativa`, `finanzas` o `comercial`, Electron ejecuta automáticamente la sentencia `ATTACH DATABASE '<ruta_de_catalogos>' AS catalogos;`. Esto hace que las tablas maestras de catálogos estén disponibles en los otros shards para consultas de unión (`JOIN`) transparentemente.
 *   **Canales IPC de Base de Datos y Exclusión Mutua:**
-    *   `db-read` (Consulta de Caché Local): Devuelve de forma instantánea el resultado de leer de la conexión SQLite local de la clave indicada (`dbKey`).
-    *   `db-write` (Escritura con Mutex): Recibe la query, adquiere un bloqueo exclusivo de carpeta en red (`acquireLock(dbKey)`), abre el archivo SQLite físico de red, ejecuta la query con `journal_mode = DELETE`, cierra el archivo de red, libera el bloqueo (`releaseLock`) y sincroniza la modificación a local para mantener la caché al día.
+    *   `read-db` (Consulta de Caché Local): Devuelve de forma instantánea el resultado de leer de la conexión SQLite local de la clave indicada (`dbKey`).
+    *   `write-db` (Escritura con Mutex): Recibe la query, adquiere un bloqueo exclusivo de carpeta en red (`acquireLock(dbKey)`), abre el archivo SQLite físico de red, ejecuta la query con `journal_mode = DELETE`, cierra el archivo de red, libera el bloqueo (`releaseLock`) y sincroniza la modificación a local para mantener la caché al día.
     *   Los handlers de base de datos específicos (`get-turnos-cuadrante`, `save-turno-cuadrante`, `delete-turno-cuadrante`, `save-vacacion-relacional`, etc.) fueron adaptados para operar sobre sus respectivos shards y aplicar el mutex de red de manera segura.
 
 ### B. Proceso de Renderizado (Renderer Process - Carpeta `src/`)
 *   Muestra la interfaz gráfica dentro del contenedor Chromium de forma aislada.
 *   No tiene acceso directo al sistema operativo ni a Node.js por motivos de seguridad informática (prevención de ataques XSS).
 *   Se comunica con el proceso principal mediante las funciones expuestas en el puente `preload.js` (`window.api` y `window.dbAPI`).
-*   **Puente del Motor de Persistencia Relacional (`window.dbAPI`):** En `preload.js` se definen y exponen los métodos `read(dbKey, query, params)` y `write(dbKey, query, params)` que permiten al frontend realizar consultas de selección (SELECT) en la caché local o sentencias de modificación (INSERT/UPDATE/DELETE) atómicas con Mutex en red de forma directa. Se conserva `window.databaseAPI` para mantener retrocompatibilidad.
+*   **Puente del Motor de Persistencia Relacional (`window.dbAPI`):** En `preload.js` se definen y exponen los métodos `read(dbKey, query, params)` y `write(dbKey, query, params)` que permiten al frontend realizar consultas de selección (SELECT) en la caché local o sentencias de modificación (INSERT/UPDATE/DELETE) atómicas con Mutex en red de forma directa. Toda la persistencia de `persistence.js` fue migrada a esta API, conservando `window.databaseAPI` únicamente para servicios lógicos (como el Asistente de Asignación) y obtener configuración de sesión (`getUserConfig`).
 
 ### C. Cargador Híbrido Dinámico (Modificaciones en Caliente)
 Para evitar tener que generar y distribuir un nuevo ejecutable `.exe` de 180MB cada vez que se hace un cambio estético de HTML o CSS, el método `createWindow()` en `main.js` realiza la siguiente validación:
@@ -133,7 +133,7 @@ Para mitigar la latencia de red de Windows (SMB) y evitar bloqueos en lecturas c
 1.  **Cargador Inicial**: Al arrancar la aplicación, el proceso principal (`main.js`) detecta la ruta del servidor compartida leyendo la clave `ruta_compartida` (o `NETWORK_DIR`) desde el archivo `config.json`.
 2.  **Inicialización de Archivos**: Si alguno de los 4 archivos SQLite shards no existe en la ruta de red, la aplicación lo crea de forma limpia en el servidor y ejecuta su correspondiente esquema SQL canónico (`schema_operativa.sql`, `schema_finanzas.sql`, `schema_comercial.sql` o `schema_catalogos.sql`).
 3.  **Copia en Caché Local (`syncAllToLocal()`)**: Tras verificar los archivos en red, la aplicación cierra cualquier conexión local abierta y copia los 4 archivos SQLite físicos a la caché local del usuario en `%LocalAppData%/IntranetCoordinadores/db_cache/` (obtenido vía `app.getPath('userData')/db_cache`).
-4.  **Lecturas Locales Integradas (`db-read`)**: El frontend realiza todas las consultas de lectura (`SELECT`) a través del canal `window.dbAPI.read(dbKey, query, params)`. Estas consultas se resuelven exclusivamente sobre las bases de datos de la caché local de forma instantánea, eliminando retrasos por fluctuaciones de red.
+4.  **Lecturas Locales Integradas (`read-db`)**: El frontend realiza todas las consultas de lectura (`SELECT`) a través del canal `window.dbAPI.read(dbKey, query, params)`. Estas consultas se resuelven exclusivamente sobre las bases de datos de la caché local de forma instantánea, eliminando retrasos por fluctuaciones de red.
 
 ### B. Joins Cruzados mediante ATTACH DATABASE
 Para mantener la compatibilidad con consultas complejas del frontend legado que realizan uniones (`JOIN`) entre tablas de operativa/finanzas y tablas maestras (como `agentes` o `aparcamientos`), el cargador de conexiones locales ejecuta la sentencia SQLite `ATTACH DATABASE` al abrir las conexiones locales:
@@ -142,10 +142,10 @@ Para mantener la compatibilidad con consultas complejas del frontend legado que 
 *   Esto mapea de forma transparente las tablas de catálogos dentro del mismo contexto de conexión, permitiendo resolver consultas con sintaxis del tipo `JOIN catalogos.agentes a ON q.agente_id = a.id` sin necesidad de reescribir la lógica de consultas de la interfaz de usuario.
 
 ### C. Exclusión Mutua Atómica (Mutex de Red en Escritura)
-Para evitar la corrupción de datos que ocurre cuando múltiples instancias de SQLite escriben de forma concurrente en un archivo compartido en red, el proceso principal canaliza todas las consultas de modificación (`INSERT`, `UPDATE`, `DELETE`) a través del canal `db-write` bajo un estricto patrón de exclusión mutua:
+Para evitar la corrupción de datos que ocurre cuando múltiples instancias de SQLite escriben de forma concurrente en un archivo compartido en red, el proceso principal canaliza todas las consultas de modificación (`INSERT`, `UPDATE`, `DELETE`) a través del canal `write-db` bajo un estricto patrón de exclusión mutua:
 1.  **Solicitud de Escritura**: El cliente solicita una escritura llamando a `window.dbAPI.write(dbKey, query, params)`.
 2.  **Adquisición de Candado Físico (`acquireLock`)**: El backend de Electron intenta crear un directorio físico llamado `_<dbKey>.lock` (por ejemplo, `_operativa.lock`) en la carpeta de red compartida (`NETWORK_DIR`) mediante `fs.mkdirSync(lockDir)`.
-    *   **Si la carpeta ya existe (`EEXIST`)**: Significa que otro coordinador está escribiendo en esa base de datos. El proceso entra en un bucle de reintento automático (hasta 15 intentos espaciados por 1 segundo de retraso).
+    *   **Si la carpeta ya existe (`EEXIST`)**: Significa que otro coordinador está escribiendo en esa base de datos. El proceso entra en un bucle de reintento automático (hasta 15 intentos espacedos por 1 segundo de retraso).
     *   **Si expira el reintento**: La petición falla, rechazando la escritura para proteger la integridad del archivo.
 3.  **Escritura Directa en Red**: Una vez adquirido el candado, Electron:
     *   Abre una conexión directa exclusiva a la base de datos correspondiente en red.

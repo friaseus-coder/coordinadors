@@ -1054,7 +1054,7 @@ ipcMain.handle('db-execute', async (event, { sql, params }) => {
 });
 
 // NUEVO: Canalización explícita para la API window.dbAPI (Tarea 4)
-ipcMain.handle('db-read', async (event, { dbKey, query, params }) => {
+ipcMain.handle('read-db', async (event, { dbKey, query, params }) => {
   return new Promise((resolve, reject) => {
     try {
       const localDb = obtenerConexionLocal(dbKey);
@@ -1072,7 +1072,7 @@ ipcMain.handle('db-read', async (event, { dbKey, query, params }) => {
   });
 });
 
-ipcMain.handle('db-write', async (event, { dbKey, query, params }) => {
+ipcMain.handle('write-db', async (event, { dbKey, query, params }) => {
   try {
     const result = await safeWriteCombined(dbKey, query, params);
     return result;
