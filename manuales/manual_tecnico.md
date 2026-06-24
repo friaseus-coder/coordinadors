@@ -344,10 +344,10 @@ La aplicación implementa una arquitectura basada en roles (Role-Based Access Co
 2.  **Coordinador**: Acceso operativo diario (cuadrante, vacaciones, deudas, gastos e inventario) para su gestión personal.
 3.  **Jefe de Operaciones (Administrador)**: Acceso global absoluto y herramientas de administración, base de datos relacional y configuración.
 
-### A. Almacenamiento de Sesión y Redirección
-*   Al arrancar la aplicación, se despliega la pantalla de acceso (`index.html`) e inicia un proceso de consulta asíncrona a `window.databaseAPI.getUserConfig()`.
-*   Si detecta en el archivo `config.json` un rol y coordinador válidos configurados, la pantalla de login los persiste en `sessionStorage` e inicia de forma inmediata una redirección al portal principal (`portal.html`) sin requerir selección ni confirmación interactiva.
-*   En caso contrario, se le permite al usuario elegir su rol interactivamente mediante tarjetas y, al pulsar "Entrar al Portal", se registran en `sessionStorage` y se realiza la redirección tradicional.
+### A. Almacenamiento de Sesión y Selección Interactiva Obligatoria
+*   Al arrancar la aplicación, se despliega la pantalla de acceso (`index.html`).
+*   **Selección Obligatoria**: Se ha inhabilitado cualquier redirección automática basada en `config.json` para garantizar que el usuario **siempre** deba seleccionar interactivamente su rol (Jefe de Operaciones, Coordinador o Comercial) y su nombre (en el caso de coordinadores) antes de ingresar.
+*   Al pulsar "Entrar al Portal", los datos elegidos por el usuario se registran en el almacenamiento de sesión (`sessionStorage`) y se realiza la redirección a `portal.html`.
 
 ### B. Ocultación Reactiva y Filtrado Visual
 *   En `portal.html`, al cargarse el DOM, el proceso consulta prioritariamente la configuración de `config.json` para sobrescribir autoritativamente `userRole` y `userName` en `sessionStorage`.

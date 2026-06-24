@@ -166,42 +166,8 @@
       }
     }
 
-    // Cargar coordinadores al abrir la página e intentar redirección automática según config.json
+    // Cargar coordinadores al abrir la página (se ha deshabilitado la redirección automática para obligar a seleccionar siempre)
     document.addEventListener('DOMContentLoaded', async () => {
-      let autoRedirect = false;
-      if (window.databaseAPI && window.databaseAPI.getUserConfig) {
-        try {
-          const config = await window.databaseAPI.getUserConfig();
-          if (config && config.role) {
-            let role = config.role;
-            if (role === 'jefe_operaciones') role = 'jefe operaciones';
-            
-            const validRoles = ['jefe operaciones', 'coordinador', 'comercial'];
-            if (validRoles.includes(role)) {
-              let userName = '';
-              if (role === 'jefe operaciones') {
-                userName = 'Administrador';
-                autoRedirect = true;
-              } else if (role === 'coordinador' && config.coordinador) {
-                userName = config.coordinador;
-                autoRedirect = true;
-              } else if (role === 'comercial') {
-                userName = config.coordinador || 'Invitado';
-                autoRedirect = true;
-              }
-              
-              if (autoRedirect) {
-                sessionStorage.setItem('userRole', role);
-                sessionStorage.setItem('userName', userName);
-                window.location.href = 'portal.html';
-                return;
-              }
-            }
-          }
-        } catch (e) {
-          console.error("Error al obtener la configuración de usuario para redirección automática:", e);
-        }
-      }
       loadCoordinadores();
     });
 
