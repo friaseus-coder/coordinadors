@@ -157,19 +157,25 @@
         }
     </style>
     <script src="../js/i18n.js"></script>
+    <script>
+        // Forzar traducción inmediata al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            if(typeof applyTranslations === 'function') applyTranslations();
+        });
+    </script>
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
 
     <div class="contenedor-app">
         <header class="capçalera-app">
-            <h2 class="capçalera-titol">Gestor d'incidències pàrkings (SAC)</h2>
+            <h2 class="capçalera-titol" data-i18n="sacTitle">Gestor d'incidències pàrkings (SAC)</h2>
             <img src="descarga.png" alt="Grup Núñez i Navarro" class="capçalera-logo">
         </header>
 
         <form class="formulari-app" id="formComunicacio">
-            <label for="ubicacio">Selecciona el centre:</label>
+            <label for="ubicacio" data-i18n="lblSacCentre">Selecciona el centre:</label>
             <select id="ubicacio" required>
-                <option value="" disabled selected>-- Escull el centre --</option>
+                <option value="" disabled selected data-i18n="optSacSelectCentre">-- Escull el centre --</option>
                 <option value="567 - N.N. ARAGO - Aragón, 182 (JOSEL, S.L.U.)">567 - N.N. ARAGO - Aragón, 182 (JOSEL, S.L.U.)</option>
                 <option value="427 - N.N. BONANOVA - Psg. Bonanova, 59-Escoles Pies, 10 (JOSEL, S.L.U.)">427 - N.N. BONANOVA - Psg. Bonanova, 59-Escoles Pies, 10 (JOSEL, S.L.U.)</option>
                 <option value="675 - N.N. BORRELL - Comte Borrell, 28 (JOSEL, S.L.U.)">675 - N.N. BORRELL - Comte Borrell, 28 (JOSEL, S.L.U.)</option>
@@ -204,26 +210,26 @@
                 <option value="566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641 (JOSEL, S.L.U.)">566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641 (JOSEL, S.L.U.)</option>
             </select>
 
-            <label for="zona_especifica">Zona específica de la incidència:</label>
-            <input type="text" id="zona_especifica" placeholder="Ex: Planta -2, rampa d'entrada, plaça 22..." required>
+            <label for="zona_especifica" data-i18n="lblSacZona">Zona específica de la incidència:</label>
+            <input type="text" id="zona_especifica" placeholder="Ex: Planta -2, rampa d'entrada, plaça 22..." data-i18n="placeholderSacZona" required>
 
-            <label for="assumpte_breu">Resum breu (per l'assumpte):</label>
-            <input type="text" id="assumpte_breu" placeholder="Ex: Enllumenat fos, Mirall trencat" required>
+            <label for="assumpte_breu" data-i18n="lblSacAssumpte">Resum breu (per l'assumpte):</label>
+            <input type="text" id="assumpte_breu" placeholder="Ex: Enllumenat fos, Mirall trencat" data-i18n="placeholderSacAssumpte" required>
 
-            <label for="motiu">Motiu detallat:</label>
-            <textarea id="motiu" placeholder="Descriviu aquí els detalls..." required></textarea>
+            <label for="motiu" data-i18n="lblSacMotiu">Motiu detallat:</label>
+            <textarea id="motiu" placeholder="Descriviu aquí els detalls..." data-i18n="placeholderSacMotiu" required></textarea>
 
-            <label for="urgencia">Nivell d'urgència:</label>
+            <label for="urgencia" data-i18n="lblSacUrgencia">Nivell d'urgència:</label>
             <select id="urgencia">
-                <option value="baixa">baixa</option>
-                <option value="mitjana" selected>mitjana</option>
-                <option value="alta">alta</option>
-                <option value="urgent">urgent</option>
-                <option value="CRÍTICA">CRÍTICA</option>
+                <option value="baixa" data-i18n="optUrgenciaBaixa">baixa</option>
+                <option value="mitjana" selected data-i18n="optUrgenciaMitjana">mitjana</option>
+                <option value="alta" data-i18n="optUrgenciaAlta">alta</option>
+                <option value="urgent" data-i18n="optUrgenciaUrgent">urgent</option>
+                <option value="CRÍTICA" data-i18n="optUrgenciaCritica">CRÍTICA</option>
             </select>
 
             <div class="opcionals">
-                <strong class="titol-opcionals">Còpia opcional a:</strong>
+                <strong class="titol-opcionals" data-i18n="lblSacCopia">Còpia opcional a:</strong>
                 <div class="checkbox-group">
                     <div class="checkbox-item">
                         <input type="checkbox" id="albert"> <label for="albert">Albert Campins</label>
@@ -239,7 +245,7 @@
         </form>
 
         <footer class="peu-app">
-            <button type="button" onclick="generarCorreu()">GENERAR CORREU</button>
+            <button type="button" onclick="generarCorreu()" data-i18n="btnSacGenerar">GENERAR CORREU</button>
             <div class="llegenda-beta">NN pàrkings 2026 v1.0 beta</div>
         </footer>
     </div>
@@ -248,7 +254,7 @@
         function generarCorreu() {
             const form = document.getElementById('formComunicacio');
             if (!form.checkValidity()) {
-                alert("Si us plau, omple tots els camps obligatoris.");
+                alert(i18n.t('sacAlertFields'));
                 return;
             }
 
@@ -331,7 +337,12 @@ generarCorreu = function() {
 
 // 3. Registre de visualització
 window.addEventListener('load', function() {
-    registrarLog("SISTEMA", "SAC: Obert formulari d'incidències");
+    registrarLog("SISTEMA", i18n.t('sacAlertObert'));
+});
+
+// 4. Traducció de continguts en calent en rebre canvis de llengua
+window.addEventListener('languageChanged', () => {
+    i18n.translatePage();
 });
 </script>
 

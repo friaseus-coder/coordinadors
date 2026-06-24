@@ -15,6 +15,12 @@
     </script>
     <script src="../js/persistence.js"></script>
     <script src="../js/i18n.js"></script>
+    <script>
+       // Forzar traducción inmediata al cargar
+       document.addEventListener('DOMContentLoaded', () => {
+           if(typeof applyTranslations === 'function') applyTranslations();
+       });
+    </script>
     
 <style>
     :root {

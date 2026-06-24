@@ -74,7 +74,7 @@ const persistence = (() => {
     ranking: (key) => key.startsWith('nyn_ranking') || key.startsWith('ranking')
   };
 
-  // Determinar la ruta exacta del archivo JSON del módulo según el usuario activo
+  // Determinar la ruta exacta del archivo del módulo según el usuario activo
   function getModuleFilePath(moduleName, user) {
     const userFolder = `dades ${user}`;
     const uLower = user.toLowerCase();
@@ -83,51 +83,51 @@ const persistence = (() => {
     switch (moduleName) {
       case 'quadrant':
         if (user === 'Albert') {
-          return `${userFolder}/quadrant_ALBERT.json`;
+          return `${userFolder}/quadrant_ALBERT`;
         }
-        return `${userFolder}/quadrant.json`;
+        return `${userFolder}/quadrant`;
         
       case 'vacances':
-        return `${userFolder}/Vacances_2026_07-04-2026.json`;
+        return `${userFolder}/Vacances_2026_07-04-2026`;
         
       case 'comercials': {
         const mesSelect = document.getElementById('mesActual');
         const anySelect = document.getElementById('anyActual');
         const mes = mesSelect ? mesSelect.value : 'marc';
         const any = anySelect ? anySelect.value : '2026';
-        return `${userFolder}/comercials_${uLower}_${mes}_${any}.json`;
+        return `${userFolder}/comercials_${uLower}_${mes}_${any}`;
       }
         
       case 'despeses':
         if (user === 'Albert') {
-          return `${userFolder}/despeses_2026-04-10.json`;
+          return `${userFolder}/despeses_2026-04-10`;
         }
-        return `${userFolder}/despeses.json`;
+        return `${userFolder}/despeses`;
         
       case 'deutes':
         if (user === 'Albert') {
-          return `${userFolder}/deutes_7-4-2026_ALBERT.json`;
+          return `${userFolder}/deutes_7-4-2026_ALBERT`;
         } else if (user === 'Laura') {
-          return `${userFolder}/deutes_7-4-2026_LAURA (1).json`;
+          return `${userFolder}/deutes_7-4-2026_LAURA (1)`;
         }
-        return `${userFolder}/deutes.json`;
+        return `${userFolder}/deutes`;
         
       case 'inventari':
-        return `${userFolder}/inventari.json`;
+        return `${userFolder}/inventari`;
         
       case 'ruta':
         if (user === 'Albert') {
-          return `${userFolder}/ruta_Albert_ALBERT.json`;
+          return `${userFolder}/ruta_Albert_ALBERT`;
         } else if (user === 'Laura') {
-          return `${userFolder}/ruta_Laura_LAURA.json`;
+          return `${userFolder}/ruta_Laura_LAURA`;
         }
-        return `${userFolder}/ruta_${user}_${uUpper}.json`;
+        return `${userFolder}/ruta_${user}_${uUpper}`;
         
       case 'ranking':
-        return `${userFolder}/ranking.json`;
+        return `${userFolder}/ranking`;
         
       default:
-        return `${userFolder}/${moduleName}.json`;
+        return `${userFolder}/${moduleName}`;
     }
   }
 
@@ -198,7 +198,7 @@ const persistence = (() => {
               ];
             }
             for (const coord of coordinadores) {
-              const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}.json`;
+              const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}`;
               await api.forceReleaseLock(filePath);
             }
           } else {
@@ -842,10 +842,9 @@ const persistence = (() => {
           }
         }
 
-        // Si tenemos datos activos en localstorage para la clave de mes/año de este coordinador, los guardamos en SQLite kv_store
         const targetKey = `${prefix}${mes}_${any}`;
         if (localStorage.getItem(targetKey) !== null || hasData) {
-          const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}.json`;
+          const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}`;
           try {
             await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
               filePath, JSON.stringify(coordData)

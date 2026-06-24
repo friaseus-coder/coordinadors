@@ -62,6 +62,12 @@
         .footer-logo { margin-top: auto; text-align: center; opacity: 0.2; padding-bottom: 5px; }
     </style>
     <script src="../js/i18n.js"></script>
+    <script>
+       // Forzar traducción inmediata al cargar
+       document.addEventListener('DOMContentLoaded', () => {
+           if(typeof applyTranslations === 'function') applyTranslations();
+       });
+    </script>
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
     <div class="chklst-layout">

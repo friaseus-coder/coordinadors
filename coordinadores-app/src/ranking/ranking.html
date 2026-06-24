@@ -28,7 +28,14 @@
         margin-bottom: 10px;
         gap: 8px;
     }
-    <script src="../js/i18n.js"></script>
+  </style>
+  <script src="../js/i18n.js"></script>
+  <script>
+     // Forzar traducción inmediata al cargar
+     document.addEventListener('DOMContentLoaded', () => {
+         if(typeof applyTranslations === 'function') applyTranslations();
+     });
+  </script>
 </head>
 <body data-required-roles="comercial,coordinador,jefe_operaciones">
   <header>

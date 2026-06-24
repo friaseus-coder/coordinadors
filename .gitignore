@@ -12,3 +12,7 @@ node_modules/
 
 # Permitir explícitamente la base de datos de plantilla
 !coordinadores-app/plantilla.db
+
+# Ignorar ejecutables e instaladores compilados
+coordinadores-instalado/
+manuales.lnk

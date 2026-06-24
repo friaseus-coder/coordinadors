@@ -6,6 +6,12 @@
     <title>Normes del Cuadrant | Intranet</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="../js/i18n.js"></script>
+    <script>
+        // Forzar traducción inmediata al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            if(typeof applyTranslations === 'function') applyTranslations();
+        });
+    </script>
     <style>
         :root {
             --nyn-pino: #063931;
@@ -327,17 +333,17 @@
 
         <!-- Listado de Coberturas Requeridas Temporales -->
         <div class="card">
-            <h2 class="card-title">📅 <span>Cobertures Obligatòries (Días Específicos)</span></h2>
-            <p style="font-size: 12px; color: var(--nyn-text-light); margin: -10px 0 10px 0;">Turnos presenciales requeridos para un día concreto del año. Se eliminarán automáticamente al Cerrar el Mes correspondiente.</p>
+            <h2 class="card-title">📅 <span data-i18n="reglesCobTitle">Cobertures Obligatòries (Días Específicos)</span></h2>
+            <p style="font-size: 12px; color: var(--nyn-text-light); margin: -10px 0 10px 0;" data-i18n="reglesCobSubtitle">Turnos presenciales requeridos para un día concreto del año. Se eliminarán automáticamente al Cerrar el Mes correspondiente.</p>
             <div class="table-responsive">
                 <table>
                     <thead>
                         <tr>
-                            <th style="width: 30%;">Aparcament</th>
-                            <th style="width: 20%;">Fecha</th>
-                            <th style="width: 15%;">Torn</th>
-                            <th style="width: 25%;">Horari</th>
-                            <th class="admin-only" style="width: 10%; text-align: center; display: none;">Accions</th>
+                            <th style="width: 30%;" data-i18n="colCobAparcamiento">Aparcament</th>
+                            <th style="width: 20%;" data-i18n="colCobFecha">Fecha</th>
+                            <th style="width: 15%;" data-i18n="colCobTurno">Torn</th>
+                            <th style="width: 25%;" data-i18n="colCobHorario">Horari</th>
+                            <th class="admin-only" style="width: 10%; text-align: center; display: none;" data-i18n="colCobAcciones">Accions</th>
                         </tr>
                     </thead>
                     <tbody id="coberturasTableBody">
@@ -349,21 +355,21 @@
 
         <!-- Formulario de Añadir Cobertura (Solo Jefe Operaciones) -->
         <div class="card" id="addCoberturaCard" style="display: none;">
-            <h2 class="card-title">➕ Afegir Cobertura Obligatòria Temporal</h2>
+            <h2 class="card-title" data-i18n="reglesAddCobTitle">➕ Afegir Cobertura Obligatòria Temporal</h2>
             <form id="addCoberturaForm" onsubmit="addCobertura(event)">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label for="cobAparcamiento">Aparcament</label>
+                        <label for="cobAparcamiento" data-i18n="lblCobAparcamiento">Aparcament</label>
                         <select id="cobAparcamiento" required>
-                            <option value="" disabled selected>-- Selecciona Aparcament --</option>
+                            <option value="" disabled selected data-i18n="optSelectAparcamiento">-- Selecciona Aparcament --</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="cobFecha">Fecha del Calendario</label>
+                        <label for="cobFecha" data-i18n="lblCobFecha">Fecha del Calendario</label>
                         <input type="date" id="cobFecha" required>
                     </div>
                     <div class="form-group">
-                        <label for="cobTurno">Torn</label>
+                        <label for="cobTurno" data-i18n="lblCobTurno">Torn</label>
                         <select id="cobTurno" onchange="adjustCoberturaHorario()" required>
                             <option value="MATÍ" selected>MATÍ</option>
                             <option value="TARDA">TARDA</option>
@@ -371,16 +377,16 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="cobHoraInicio">Hora Inici</label>
+                        <label for="cobHoraInicio" data-i18n="lblCobHoraInicio">Hora Inici</label>
                         <input type="time" id="cobHoraInicio" value="06:00" required>
                     </div>
                     <div class="form-group">
-                        <label for="cobHoraFin">Hora Fi</label>
+                        <label for="cobHoraFin" data-i18n="lblCobHoraFin">Hora Fi</label>
                         <input type="time" id="cobHoraFin" value="14:00" required>
                     </div>
                 </div>
                 <div class="btn-action-container" style="margin-top: 16px;">
-                    <button class="btn btn-primary" type="submit">
+                    <button class="btn btn-primary" type="submit" data-i18n="btnAddCob">
                         Afegir Cobertura
                     </button>
                 </div>

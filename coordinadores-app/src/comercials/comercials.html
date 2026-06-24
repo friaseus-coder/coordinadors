@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <title>NN Pàrkings 2026 v1.0 beta</title>
     <script src="../js/i18n.js"></script>
+    <script>
+       // Forzar traducción inmediata al cargar
+       document.addEventListener('DOMContentLoaded', () => {
+           if(typeof applyTranslations === 'function') applyTranslations();
+       });
+    </script>
     <script src="../js/persistence.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>

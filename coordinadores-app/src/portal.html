@@ -6,6 +6,12 @@
     <title>Portal NyN | Coordinadors</title>
     <script src="js/calendari.js"></script>
     <script src="js/i18n.js"></script>
+    <script>
+       // Forzar traducción inmediata al cargar
+       document.addEventListener('DOMContentLoaded', () => {
+           if(typeof applyTranslations === 'function') applyTranslations();
+       });
+    </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         .lang-nav-btn {
@@ -638,9 +644,76 @@
 
     <script>
         // Configurar los badges del usuario y bienvenida
-        document.addEventListener('DOMContentLoaded', () => {
-            const role = sessionStorage.getItem('userRole');
-            const user = sessionStorage.getItem('userName');
+        document.addEventListener('DOMContentLoaded', async () => {
+            let role = sessionStorage.getItem('userRole');
+            let user = sessionStorage.getItem('userName');
+
+            // Consultar config.json de forma prioritaria
+            if (window.databaseAPI && window.databaseAPI.getUserConfig) {
+                try {
+                    const config = await window.databaseAPI.getUserConfig();
+                    if (config && config.role) {
+                        role = config.role;
+                        if (role === 'jefe_operaciones') role = 'jefe operaciones';
+                        sessionStorage.setItem('userRole', role);
+                        
+                        if (role === 'jefe operaciones') {
+                            user = 'Administrador';
+                        } else if (role === 'coordinador' && config.coordinador) {
+                            user = config.coordinador;
+                        } else if (role === 'comercial') {
+                            user = config.coordinador || 'Invitado';
+                        }
+                        sessionStorage.setItem('userName', user);
+                    }
+                } catch (e) {
+                    console.error("Error al recuperar la configuración del usuario en portal.html:", e);
+                }
+            }
+            
+            // Si después de consultar config.json no hay sesión ni config válida, redirigir a index.html
+            if (!role || !user) {
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // Aplicar el filtrado de roles inmediatamente ocultando todos los elementos .menu-item no autorizados
+            function applyRoleFiltering(currentRole) {
+                document.querySelectorAll('.menu-item, [data-roles]').forEach(el => {
+                    const rolesAttr = el.getAttribute('data-roles');
+                    if (rolesAttr) {
+                        const allowedRoles = rolesAttr.split(',').map(r => r.trim());
+                        const mappedAllowed = allowedRoles.map(r => r === 'jefe_operaciones' ? 'jefe operaciones' : r);
+                        if (!mappedAllowed.includes(currentRole)) {
+                            el.style.setProperty('display', 'none', 'important');
+                        }
+                    }
+                });
+
+                if (currentRole === 'comercial') {
+                    // Ocultar todos los botones de pestañas que no sean Comercials
+                    document.querySelectorAll('.tab-button').forEach(btn => {
+                        const onclickAttr = btn.getAttribute('onclick');
+                        if (onclickAttr && !onclickAttr.includes('comercials')) {
+                            btn.style.display = 'none';
+                        }
+                    });
+                    
+                    // Abrir directamente la pestaña de Comerciales al iniciar
+                    const btnComercials = Array.from(document.querySelectorAll('.tab-button')).find(btn => {
+                        const onclickAttr = btn.getAttribute('onclick');
+                        return onclickAttr && onclickAttr.includes('comercials');
+                    });
+                    if (btnComercials) {
+                        setTimeout(() => {
+                            openTab('comercials', btnComercials);
+                        }, 50);
+                    }
+                }
+            }
+
+            applyRoleFiltering(role);
+
             const badge = document.getElementById('userDisplayBadge');
 
             // Propagar la API de Electron en caliente a todos los iframes al cargarse (redundancia de seguridad)
@@ -658,8 +731,6 @@
                                 }
                             }
                             console.log(`[PORTAL] Inicializando iframe: ${iframe.parentNode.id}, newlyInjected=${newlyInjected}`);
-                            // Solo relanzamos la carga si acabamos de inyectar la API manualmente
-                            // (para evitar dobles llamadas concurrentes si el preload ya la inyectó)
                             if (newlyInjected) {
                                 if (iframe.contentWindow.load) {
                                     iframe.contentWindow.load();
@@ -721,29 +792,6 @@
             if (role === 'otro' || role === 'comercial') {
                 const importSec = document.getElementById('importJsonSection');
                 if (importSec) importSec.style.display = 'none';
-            }
-
-            // Restricción de navegación para el perfil Comercial
-            if (role === 'comercial') {
-                // Ocultar todos los botones de pestañas que no sean Comercials
-                document.querySelectorAll('.tab-button').forEach(btn => {
-                    const onclickAttr = btn.getAttribute('onclick');
-                    if (onclickAttr && !onclickAttr.includes('comercials')) {
-                        btn.style.display = 'none';
-                    }
-                });
-                
-                // Abrir directamente la pestaña de Comerciales al iniciar
-                const btnComercials = Array.from(document.querySelectorAll('.tab-button')).find(btn => {
-                    const onclickAttr = btn.getAttribute('onclick');
-                    return onclickAttr && onclickAttr.includes('comercials');
-                });
-                if (btnComercials) {
-                    // Esperar un instante para que el render del DOM se complete antes de la redirección inicial
-                    setTimeout(() => {
-                        openTab('comercials', btnComercials);
-                    }, 50);
-                }
             }
         });
 

@@ -10,46 +10,40 @@ La aplicación se ha diseñado para funcionar sin servidores de backend ni bases
 *   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS) y JavaScript nativo ES6.
 *   **Fuentes de Texto:** Carga de la tipografía premium **Outfit** desde Google Fonts.
 *   **Persistencia (Modelo Relacional):** Base de datos integrada **SQLite (v3)** que implementa un diseño relacional completo de 13 tablas (modelo multisociedad, contratos y reglas parametrizadas) y control de versiones del esquema (`dades.db` en la subcarpeta del coordinador), combinada con el `localStorage` de Chromium en la capa cliente.
-*   **Resiliencia y Fallback:** Los catálogos maestros (como `aparcamientos.json`) se escriben y mantienen en JSON plano en el servidor de red como copias de resiliencia secundaria y lectura fallback durante inicializaciones. Sin embargo, la base de datos relacional SQLite es la fuente de verdad primaria.
-*   **Concurrencia (Multi-usuario):** Sistema de exclusión mutua mediante archivos físicos de bloqueo de Windows (`.lock`) estructurados en formato JSON con expiración temporal activa (TTL de 3 horas) y detección periódica de pérdida en caliente.
+*   **Resiliencia y Fallback:** Los catálogos maestros (como `aparcamientos.json` y `coordinadores.json`) se leen e inicializan en red como copias de resiliencia secundaria y lectura base de semillas. Para todos los módulos dinámicos (Comerciales, Rutas, Cuadrante, Vacaciones, Gastos, Deudas y Rankings), la persistencia unificada se realiza en SQLite sin utilizar extensiones `.json` en el direccionamiento de las claves.
+*   **Concurrencia (Multi-usuario):** Sistema de exclusión mutua mediante archivos físicos de bloqueo de Windows (`.lock`) estructurados en formato JSON asociados a las claves dinámicas sin extensión `.json` de persistencia en red, con expiración temporal activa (TTL de 3 horas) y detección periódica de pérdida en caliente.
 
 ---
 
 ## 2. Estructura de Directorios del Proyecto
-La aplicación consta de los siguientes archivos y carpetas clave en su estructura raíz:
+La aplicación consta de los siguientes archivos y carpetas clave en su estructura raíz (habiéndose purgado por completo todos los historiales y directorios temporales obsoletos):
 
 ```
 coordinadores-app/
 ├── main.js                 # Proceso principal de Electron (Main Process y Migraciones)
 ├── preload.js              # Script puente de seguridad (databaseAPI expuesta en Context Isolation)
 ├── package.json            # Metadatos del proyecto y scripts de compilación
-├── config.json             # Configuración dinámica de rutas de red (P:\, Z:\ o UNC)
+├── config.json             # Configuración dinámica de rutas de red y roles predefinidos
 ├── schema.sql              # Definición canónica del esquema relacional (13 tablas + trigger)
 ├── dades/                  # Carpeta de datos local (Fallback si no hay red)
 │   ├── coordinadores.json  # Registro de coordinadores creados dinámicamente
-│   ├── aparcamientos.json  # Catálogo maestro de aparcamientos (JSON de resiliencia)
-│   ├── temp/               # Logs temporales de auditoría activa
-│   │   └── cambios.jsonl
-│   └── dades [Nombre]/     # Subcarpetas creadas dinámicamente por coordinador
-│       └── dades.db        # Base de datos relacional SQLite individual
-├── scripts/                # Scripts de administración, migraciones y utilidades de base de datos
-│   ├── rebuild_plantilla.js # Regenera la plantilla de base de datos de inicio
-│   ├── run_migration_v2.js # Ejecuta la migración del esquema v1 al esquema v2 en producción
-│   └── verify_migration.js # Verifica la integridad y consistencia tras migrar
+│   └── aparcamientos.json  # Catálogo maestro de aparcamientos (JSON de resiliencia)
 ├── dist/                   # Salida del empaquetado del ejecutable portable
 │   └── coordinadores-win32-x64/
 │       ├── coordinadores.exe # Ejecutable final de producción
 │       └── resources/
 │           └── app.asar    # Código fuente empaquetado inmutable
 └── src/                    # Carpeta de interfaz de usuario de desarrollo
-    ├── index.html          # Pantalla de acceso y login
-    ├── portal.html         # Panel general de navegación y control
+    ├── index.html          # Pantalla de acceso y login con autodetección de rol
+    ├── portal.html         # Panel general de navegación y control con filtrado inmediato
     ├── css/                # Hoja de estilos compartida del login
     ├── js/
     │   ├── calendari.js    # Base de datos del santoral y festivos
-    │   └── persistence.js  # Lógica de sincronización local/red y bloqueos
+    │   ├── i18n.js         # Soporte multi-idioma con traducción global en caliente
+    │   └── persistence.js  # Lógica de persistencia relacional y en kv_store sin .json
     └── comercials/         # Submódulo dinámico de comerciales
         └── comercials.html
+```
 ```
 
 ---
@@ -122,8 +116,8 @@ El archivo `src/js/persistence.js` es el núcleo lógico que coordina la carga, 
 
 ### A. Ciclo de Vida de Lectura/Escritura y Control de Concurrencia
 Cuando un coordinador abre un módulo (por ejemplo, el Cuadrante de Albert):
-1.  **Bloqueo de Red y Registro de Tiempo (TTL de 3 horas):** `persistence.js` llama a `acquire-lock` sobre la ruta de red `dades Albert/quadrant_ALBERT.json`.
-    *   El proceso principal de Electron (`main.js`) comprueba si el archivo de bloqueo `dades Albert/~quadrant_ALBERT.json.lock` ya existe y lee su contenido (JSON stringificado).
+1.  **Bloqueo de Red y Registro de Tiempo (TTL de 3 horas):** `persistence.js` llama a `acquire-lock` sobre la ruta de red `dades Albert/quadrant_ALBERT` (sin la extensión `.json`).
+    *   El proceso principal de Electron (`main.js`) comprueba si el archivo de bloqueo `dades Albert/~quadrant_ALBERT.lock` ya existe y lee su contenido.
     *   **Si el bloqueo ha expirado (más de 3 horas transcurridas desde su marca de tiempo):** `main.js` lo elimina de forma automática y asíncrona, otorgando el nuevo bloqueo al usuario solicitante.
     *   **Si el bloqueo pertenece al usuario activo:** Se renueva la marca de tiempo (timestamp) del archivo de bloqueo concediéndole 3 horas más.
     *   **Si está activo por otro usuario:** Devuelve el estado de ocupado. La interfaz gráfica deshabilita todos los controles de edición de forma inmediata y muestra un banner rojo informativo.
@@ -137,7 +131,7 @@ Cuando un coordinador abre un módulo (por ejemplo, el Cuadrante de Albert):
 Cuando el Administrador crea un nuevo coordinador (por ejemplo, "Marc López"):
 1.  **Registro Central:** Se añade al archivo `coordinadores.json` en la raíz de la carpeta de datos compartida.
 2.  **Creación de Estructura:** Electron invoca a `fs.mkdirSync` y crea la subcarpeta `dades Marc/` en el servidor de red.
-3.  **Vinculación de Comerciales:** El módulo de Comerciales (`comercials.html`) carga en cada arranque el listado de `coordinadores.json`. Para cada uno genera dinámicamente una sección y apunta a su base de datos individualizada: `dades Marc/comercials_marc_[mes]_[año].json`.
+3.  **Vinculación de Comerciales:** El módulo de Comerciales (`comercials.html`) carga en cada arranque el listado de `coordinadores.json`. Para cada uno genera dinámicamente una sección y apunta a su clave de base de datos individualizada: `dades Marc/comercials_marc_[mes]_[año]` (sin extensión `.json`).
 
 ### C. Gestión Dinámica y Centralizada de Aparcamientos en SQLite
 Para evitar discrepancias, posibilitar la segmentación multisociedad y garantizar la consistencia relacional de la información, el catálogo de aparcamientos se ha trasladado enteramente a SQLite:
@@ -301,10 +295,12 @@ Con la consolidación de la Fase 10, la intranet implementa una arquitectura bas
 3.  **Jefe de Operaciones (Administrador):** Acceso global absoluto y herramientas de administración, base de datos relacional y configuración.
 
 ### A. Almacenamiento de Sesión y Redirección
-*   Al arrancar la aplicación, se despliega la pantalla de acceso ([index.html](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/src/index.html)) donde el usuario elige interactivamente su rol mediante tarjetas estéticas.
-*   Al pulsar "Entrar al Portal", la aplicación registra el rol y el nombre de usuario seleccionados en el almacenamiento de sesión activa de Chromium (`sessionStorage.setItem('userRole', ...)` y `sessionStorage.setItem('userName', ...)`), redirigiendo al portal.
+*   Al arrancar la aplicación, se despliega la pantalla de acceso ([index.html](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/src/index.html)) e inicia un proceso de consulta asíncrona a `window.databaseAPI.getUserConfig()`.
+*   Si detecta en el archivo `config.json` un rol y coordinador válidos configurados, la pantalla de login los persiste en `sessionStorage` e inicia de forma inmediata una redirección al portal principal (`portal.html`) sin requerir selección ni confirmación interactiva.
+*   En caso contrario, se le permite al usuario elegir su rol interactivamente mediante tarjetas y, al pulsar "Entrar al Portal", se registran en `sessionStorage` y se realiza la redirección tradicional.
 
 ### B. Ocultación Reactiva y Filtrado Visual
-*   En `portal.html`, los elementos del menú de navegación superior están etiquetados con el atributo HTML5 `data-roles`, el cual enumera los roles autorizados para ver dicha pestaña (ej. `data-roles="coordinador,jefe_operaciones"`).
-*   Durante el evento `DOMContentLoaded`, un script recorre recursivamente los botones del menú y aplica estilos de ocultación (`display: none`) a todas las secciones que no pertenezcan al rol activo recuperado del `sessionStorage`, garantizando la consistencia visual y previniendo el acceso no autorizado de manera sencilla y robusta.
+*   En `portal.html`, al cargarse el DOM, el proceso consulta prioritariamente la configuración de `config.json` para sobrescribir autoritativamente `userRole` y `userName` en `sessionStorage`.
+*   A continuación, se invoca de manera inmediata el filtrado mediante la función `applyRoleFiltering(role)`. Esta función recorre todos los elementos del menú (etiquetados con `.menu-item` o el atributo `data-roles`) y aplica un estilo imperativo de ocultación (`display: none !important`) a toda sección no permitida para el rol activo.
+*   Si el rol activo es `comercial`, se ocultan el resto de opciones de navegación del portal y se realiza una redirección asíncrona e instantánea abriendo directamente el módulo de Comerciales (`comercials.html`).
 
