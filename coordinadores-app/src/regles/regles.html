@@ -477,12 +477,13 @@
         // Cargar reglas desde la BD relacional
         async function loadRules() {
             try {
-                if (!window.parent.databaseAPI) {
-                    console.error("databaseAPI no disponible.");
+                const apiDB = window.parent.dbAPI || window.dbAPI;
+                if (!apiDB) {
+                    console.error("dbAPI no disponible.");
                     return;
                 }
                 const sql = "SELECT clave, value, tipo, categoria, descripcion FROM reglas_config ORDER BY clave ASC";
-                loadedRules = await window.parent.databaseAPI.consultar(sql);
+                loadedRules = await apiDB.read('catalogos', sql);
                 editedRules = {};
                 
                 // Deshabilitar botón de guardar
@@ -598,10 +599,11 @@
             btnSave.disabled = true;
 
             try {
+                const apiDB = window.parent.dbAPI || window.dbAPI;
                 for (const clave of keys) {
                     const value = editedRules[clave];
                     const sql = "UPDATE reglas_config SET value = ? WHERE clave = ?";
-                    await window.parent.databaseAPI.ejecutar(sql, [value, clave]);
+                    await apiDB.write('catalogos', sql, [value, clave]);
                 }
 
                 showToast(i18n.t('successSaveRules'), "success");
@@ -666,8 +668,9 @@
             }
 
             try {
+                const apiDB = window.parent.dbAPI || window.dbAPI;
                 const sql = "INSERT INTO reglas_config (clave, value, tipo, categoria, descripcion) VALUES (?, ?, ?, ?, ?)";
-                await window.parent.databaseAPI.ejecutar(sql, [clave, value, tipo, categoria, descripcion]);
+                await apiDB.write('catalogos', sql, [clave, value, tipo, categoria, descripcion]);
                 
                 showToast(i18n.t('successAddRule'), "success");
                 
@@ -731,7 +734,7 @@
             tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Carregant...</td></tr>';
             
             try {
-                const apiDB = window.parent.databaseAPI || window.databaseAPI;
+                const apiDB = window.parent.dbAPI || window.dbAPI;
                 if (!apiDB) return;
                 
                 const sql = `
@@ -741,7 +744,7 @@
                     WHERE c.activo = 1 AND c.dia_semana IS NULL AND c.fecha IS NOT NULL
                     ORDER BY c.fecha ASC, c.hora_inicio ASC
                 `;
-                const coberturas = await apiDB.consultar(sql);
+                const coberturas = await apiDB.read('catalogos', sql);
                 tbody.innerHTML = '';
                 
                 if (coberturas.length === 0) {
@@ -789,7 +792,7 @@
         async function addCobertura(e) {
             e.preventDefault();
             
-            const apiDB = window.parent.databaseAPI || window.databaseAPI;
+            const apiDB = window.parent.dbAPI || window.dbAPI;
             if (!apiDB) return;
             
             const aparcamientoId = document.getElementById('cobAparcamiento').value;
@@ -805,7 +808,7 @@
             
             try {
                 const checkSql = "SELECT id FROM coberturas_requeridas WHERE aparcamiento_id = ? AND fecha = ? AND turno = ? AND activo = 1";
-                const existing = await apiDB.consultar(checkSql, [aparcamientoId, fecha, turno]);
+                const existing = await apiDB.read('catalogos', checkSql, [aparcamientoId, fecha, turno]);
                 
                 if (existing && existing.length > 0) {
                     showToast("Ja existeix una cobertura per a aquest centre, fecha i torn.", "error");
@@ -816,7 +819,7 @@
                     INSERT INTO coberturas_requeridas (aparcamiento_id, dia_semana, fecha, turno, hora_inicio, hora_fin, activo)
                     VALUES (?, NULL, ?, ?, ?, ?, 1)
                 `;
-                await apiDB.ejecutar(sql, [aparcamientoId, fecha, turno, horaInicio, horaFin]);
+                await apiDB.write('catalogos', sql, [aparcamientoId, fecha, turno, horaInicio, horaFin]);
                 
                 showToast("✅ Cobertura obligatòria temporal afegida correctament.", "success");
                 
@@ -835,12 +838,12 @@
         async function deleteCobertura(id) {
             if (!confirm("⚠️ Estàs segur que vols eliminar aquesta cobertura obligatòria temporal?")) return;
             
-            const apiDB = window.parent.databaseAPI || window.databaseAPI;
+            const apiDB = window.parent.dbAPI || window.dbAPI;
             if (!apiDB) return;
             
             try {
                 const sql = "DELETE FROM coberturas_requeridas WHERE id = ?";
-                await apiDB.ejecutar(sql, [id]);
+                await apiDB.write('catalogos', sql, [id]);
                 showToast("✅ Cobertura obligatòria eliminada correctament.", "success");
                 await loadCoberturas();
             } catch (err) {

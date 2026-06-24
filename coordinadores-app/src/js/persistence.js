@@ -430,13 +430,13 @@ const persistence = (() => {
 
       try {
         // 1. Cargar agentes activos para LLISTES.personal
-        const agentes = await window.databaseAPI.consultar("SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+        const agentes = await window.dbAPI.read('operativa', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
         const personal = agentes.map(a => a.nombre);
         originalSetItem.call(localStorage, 'nyn_personal', JSON.stringify(["-", ...personal]));
 
         // 2. Cargar aparcamientos asignados para LLISTES.parkings (Todos los centros activos para visibilidad completa de coordinadores)
         const queryParkings = "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC";
-        const parkings = await window.databaseAPI.consultar(queryParkings, []);
+        const parkings = await window.dbAPI.read('operativa', queryParkings, []);
         const parkingsNames = parkings.map(p => p.nombre);
         originalSetItem.call(localStorage, 'nyn_parkings', JSON.stringify(["-", ...parkingsNames]));
 
@@ -444,7 +444,14 @@ const persistence = (() => {
         const fechaInicio = `${any}-${mesNum}-01`;
         const ultimoDia = new Date(any, mes + 1, 0).getDate();
         const fechaFin = `${any}-${mesNum}-${ultimoDia}`;
-        const turnos = await window.databaseAPI.getTurnosCuadrante(fechaInicio, fechaFin);
+        const queryTurnos = `
+          SELECT q.*, a.nombre as agente_nombre, ap.nombre as aparcamiento_nombre 
+          FROM quadrant q
+          JOIN agentes a ON q.agente_id = a.id
+          JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
+          WHERE q.fecha >= ? AND q.fecha <= ?
+        `;
+        const turnos = await window.dbAPI.read('operativa', queryTurnos, [fechaInicio, fechaFin]);
  
         turnos.forEach(row => {
           const dia = parseInt(row.fecha.split('-')[2]);
@@ -459,7 +466,7 @@ const persistence = (() => {
 
         // 4. Cargar marcadores de pendientes del mes desde kv_store
         const keyPendientesPattern = `nyn_pendent_${any}_${mes}_%`;
-        const pendientes = await window.databaseAPI.consultar("SELECT key, value FROM kv_store WHERE key LIKE ?", [keyPendientesPattern]);
+        const pendientes = await window.dbAPI.read('operativa', "SELECT key, value FROM kv_store WHERE key LIKE ?", [keyPendientesPattern]);
         pendientes.forEach(row => {
           combinedData[row.key] = JSON.parse(row.value);
         });
@@ -587,16 +594,16 @@ const persistence = (() => {
 
             if (trabajador === "-" || trabajador === "") {
               // Buscar ID del aparcamiento para poder eliminar por ID
-              const pRow = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
+              const pRow = await window.dbAPI.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
               if (pRow && pRow.length > 0) {
                 const parkingId = pRow[0].id;
                 // Eliminar turno si está vacío
-                await window.databaseAPI.deleteTurnoCuadrante(fechaStr, parkingId, turno);
+                await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
               }
             } else {
               // Buscar IDs
-              const pRow = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
-              const aRow = await window.databaseAPI.consultar("SELECT id FROM agentes WHERE nombre = ?", [trabajador]);
+              const pRow = await window.dbAPI.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
+              const aRow = await window.dbAPI.read('operativa', "SELECT id FROM agentes WHERE nombre = ?", [trabajador]);
 
               if (pRow && pRow.length > 0 && aRow && aRow.length > 0) {
                 const parkingId = pRow[0].id;
@@ -613,21 +620,25 @@ const persistence = (() => {
                 if (endHour < startHour) endHour += 24; // Turno nocturno
                 const horasTrabajadas = endHour - startHour;
 
-                // Guardar usando la nueva API relacional expuesta
-                await window.databaseAPI.saveTurnoCuadrante({
-                  fecha: fechaStr,
-                  aparcamiento_id: parkingId,
-                  agente_id: agenteId,
-                  turno: turno,
-                  hora_inicio: horaInicio,
-                  hora_fin: horaFin,
-                  horas_trabajadas: horasTrabajadas
-                });
+                // Guardar/Actualizar turno de forma atómica en red
+                const checkRow = await window.dbAPI.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
+                if (checkRow && checkRow.length > 0) {
+                  await window.dbAPI.write('operativa', `
+                    UPDATE quadrant 
+                    SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ? 
+                    WHERE id = ?
+                  `, [agenteId, horaInicio, horaFin, horasTrabajadas, checkRow[0].id]);
+                } else {
+                  await window.dbAPI.write('operativa', `
+                    INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                  `, [fechaStr, parkingId, agenteId, turno, horaInicio, horaFin, horasTrabajadas]);
+                }
               }
             }
           } else if (key.startsWith('nyn_pendent_')) {
             // Guardar marcador de pendientes del mes en kv_store
-            await window.databaseAPI.ejecutar("INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+            await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
               key, JSON.stringify(value)
             ]);
           }
@@ -916,7 +927,14 @@ async function loadQuadrant(coordinadorId, month, year) {
     const lastDay = new Date(year, month, 0).getDate();
     const endDate = `${year}-${mesStr}-${lastDay}`;
 
-    const turnosSQLite = await window.databaseAPI.getTurnosCuadrante(startDate, endDate);
+    const query = `
+      SELECT q.*, a.nombre as agente_nombre, ap.nombre as aparcamiento_nombre 
+      FROM quadrant q
+      JOIN agentes a ON q.agente_id = a.id
+      JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
+      WHERE q.fecha >= ? AND q.fecha <= ?
+    `;
+    const turnosSQLite = await window.dbAPI.read('operativa', query, [startDate, endDate]);
     const dataReconstruida = {};
     
     turnosSQLite.forEach(turno => {
@@ -956,17 +974,23 @@ async function saveQuadrant(coordinadorId, month, year, data) {
          if(parkingObj && agenteObj) {
               const [hIni, hFin] = (cellData.h || "06:00-14:00").split('-');
               
-              const turnoParaGuardar = {
-                  fecha: fechaSQL,
-                  aparcamiento_id: parkingObj.id,
-                  agente_id: agenteObj.id,
-                  turno: turnoTexto,
-                  hora_inicio: hIni,
-                  hora_fin: hFin,
-                  horas_trabajadas: 8
-              };
+              const parkingId = parkingObj.id;
+              const agenteId = agenteObj.id;
+              const horasTrabajadas = 8;
               
-              await window.databaseAPI.saveTurnoCuadrante(turnoParaGuardar);
+              const checkRow = await window.dbAPI.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaSQL, parkingId, turnoTexto]);
+              if (checkRow && checkRow.length > 0) {
+                await window.dbAPI.write('operativa', `
+                  UPDATE quadrant 
+                  SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ? 
+                  WHERE id = ?
+                `, [agenteId, hIni, hFin, horasTrabajadas, checkRow[0].id]);
+              } else {
+                await window.dbAPI.write('operativa', `
+                  INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)
+                `, [fechaSQL, parkingId, agenteId, turnoTexto, hIni, hFin, horasTrabajadas]);
+              }
          }
     }
     return true;

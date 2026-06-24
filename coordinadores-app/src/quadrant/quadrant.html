@@ -2568,7 +2568,7 @@ async function openAssistant(sId) {
         }
 
         // Obtenir ID de l'aparcament des de la DB única
-        const dbPark = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE nombre = ?", [park.toUpperCase()]);
+        const dbPark = await window.dbAPI.read('catalogos', "SELECT id FROM aparcamientos WHERE nombre = ?", [park.toUpperCase()]);
         if (!dbPark || dbPark.length === 0) {
             alert("No s'ha trobat el centre al catàleg de la base de dades única.");
             return;

@@ -5,14 +5,139 @@ const sqlite3 = require('sqlite3');
 
 let mainWindow;
 
-let db = null;
+const DBS = {
+  operativa: 'operativa_rrhh.db',
+  finanzas: 'finanzas_inventario.db',
+  comercial: 'comercial.db',
+  catalogos: 'catalogos_maestros.db'
+};
+
+let NETWORK_DIR = "";
+const localDir = path.join(app.getPath('userData'), 'db_cache');
+if (!fs.existsSync(localDir)) {
+  fs.mkdirSync(localDir, { recursive: true });
+}
+
+const localConnections = {};
 let currentDbPath = "";
 let coordinadorActivo = "General";
 
-// Funciones helpers para promisificar consultas de sqlite3
+function resolverDbKeyDesdeSql(sql) {
+  const sqlUpper = sql.toUpperCase();
+  if (sqlUpper.includes("QUADRANT") || sqlUpper.includes("VACANCES") || sqlUpper.includes("DEUTES") || sqlUpper.includes("DEUTES_RELACIONAL")) {
+    return "operativa";
+  }
+  if (sqlUpper.includes("DESPESES") || sqlUpper.includes("INVENTARI") || sqlUpper.includes("INVENTARI_RELACIONAL")) {
+    return "finanzas";
+  }
+  if (sqlUpper.includes("COMERCIALS")) {
+    return "comercial";
+  }
+  return "catalogos";
+}
+
+function obtenerConexionLocal(dbKey) {
+  if (localConnections[dbKey]) {
+    return localConnections[dbKey];
+  }
+
+  const dbFile = DBS[dbKey];
+  if (!dbFile) {
+    throw new Error(`Clave de base de datos no válida: ${dbKey}`);
+  }
+
+  const localDbPath = path.join(localDir, dbFile);
+  const dbConn = new sqlite3.Database(localDbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE);
+  
+  dbConn.run("PRAGMA foreign_keys = ON;");
+
+  // Si no es la de catálogos, adjuntar la base de datos de catálogos maestros para joins
+  if (dbKey !== 'catalogos') {
+    const catalogosPath = path.join(localDir, DBS.catalogos).replace(/\\/g, '/');
+    dbConn.run(`ATTACH DATABASE '${catalogosPath}' AS catalogos;`, (err) => {
+      if (err) {
+        console.error(`[DB LOCAL] Error al adjuntar catalogos en ${dbKey}:`, err.message);
+      } else {
+        console.log(`[DB LOCAL] Catalogos adjuntados con éxito a ${dbKey}.`);
+      }
+    });
+  }
+
+  localConnections[dbKey] = dbConn;
+  return dbConn;
+}
+
+// Objeto db legacy que actúa como Proxy a los shards para mantener compatibilidad
+const db = {
+  all: (sql, params, callback) => {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+    try {
+      const dbKey = resolverDbKeyDesdeSql(sql);
+      const localDb = obtenerConexionLocal(dbKey);
+      localDb.all(sql, params, callback);
+    } catch (e) {
+      if (callback) callback(e);
+    }
+  },
+  get: (sql, params, callback) => {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+    try {
+      const dbKey = resolverDbKeyDesdeSql(sql);
+      const localDb = obtenerConexionLocal(dbKey);
+      localDb.get(sql, params, callback);
+    } catch (e) {
+      if (callback) callback(e);
+    }
+  },
+  run: (sql, params, callback) => {
+    if (typeof params === 'function') {
+      callback = params;
+      params = [];
+    }
+    try {
+      const dbKey = resolverDbKeyDesdeSql(sql);
+      safeWriteCombined(dbKey, sql, params)
+        .then(res => {
+          if (callback) callback.call({ lastID: res.lastID, changes: res.changes }, null);
+        })
+        .catch(err => {
+          if (callback) callback(err);
+        });
+    } catch (e) {
+      if (callback) callback(e);
+    }
+  },
+  exec: (sql, callback) => {
+    try {
+      const dbKey = resolverDbKeyDesdeSql(sql);
+      const localDb = obtenerConexionLocal(dbKey);
+      localDb.exec(sql, callback);
+    } catch (e) {
+      if (callback) callback(e);
+    }
+  },
+  serialize: (callback) => {
+    callback();
+  },
+  close: (callback) => {
+    for (const [key, conn] of Object.entries(localConnections)) {
+      if (conn) {
+        try { conn.close(); } catch(e) {}
+      }
+    }
+    if (callback) callback(null);
+  }
+};
+
+// Funciones helpers para promisificar consultas de sqlite3 (redirigidas al proxy db)
 function dbGet(sql, params = []) {
   return new Promise((resolve, reject) => {
-    if (!db) return reject(new Error("Base de datos no inicializada."));
     db.get(sql, params, (err, row) => {
       if (err) reject(err);
       else resolve(row);
@@ -22,7 +147,6 @@ function dbGet(sql, params = []) {
 
 function dbAll(sql, params = []) {
   return new Promise((resolve, reject) => {
-    if (!db) return reject(new Error("Base de datos no inicializada."));
     db.all(sql, params, (err, rows) => {
       if (err) reject(err);
       else resolve(rows);
@@ -30,97 +154,222 @@ function dbAll(sql, params = []) {
   });
 }
 
-function dbRun(sql, params = []) {
-  return new Promise((resolve, reject) => {
-    if (!db) return reject(new Error("Base de datos no inicializada."));
-    db.run(sql, params, function(err) {
-      if (err) reject(err);
-      else resolve({ lastID: this.lastID, changes: this.changes });
-    });
-  });
-}
-
 function conectarBaseDatosUnica(rutaCompartida) {
-  const dbPath = path.join(rutaCompartida, 'dades.db');
-  currentDbPath = dbPath;
+  NETWORK_DIR = rutaCompartida;
+  currentDbPath = path.join(NETWORK_DIR, 'dades.db');
 
-  // Si no existe, copiamos la plantilla limpia de la aplicación
-  if (!fs.existsSync(dbPath)) {
-    const plantillaPath = path.join(__dirname, 'plantilla.db');
-    if (fs.existsSync(plantillaPath)) {
-      fs.mkdirSync(path.dirname(dbPath), { recursive: true });
-      try {
-        fs.copyFileSync(plantillaPath, dbPath);
-        console.log(`[DB] Base de datos única inicializada desde plantilla en: ${dbPath}`);
-      } catch (err) {
-        console.error(`[DB Error] Error al copiar plantilla.db a ${dbPath}:`, err);
-      }
-    } else {
-      console.warn("[DB] plantilla.db no encontrada en la raíz. Se creará una nueva.");
-    }
-  }
-
-  const necesitaInit = !fs.existsSync(dbPath);
-
-  db = new sqlite3.Database(dbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, (err) => {
-    if (err) {
-      console.error(`[DB Error] Error al abrir DB: ${err.message}`);
-    } else {
-      console.log(`[DB] Conectado en: ${dbPath}`);
-      db.run("PRAGMA foreign_keys = ON;");
-      
-      if (necesitaInit) {
-        const schemaPath = path.join(__dirname, 'schema.sql');
-        if (fs.existsSync(schemaPath)) {
-            const schema = fs.readFileSync(schemaPath, 'utf8');
-            db.exec(schema, (errSchema) => {
-               if(errSchema) console.error("Error aplicando schema", errSchema);
-               else {
-                 inicializarReglasDeNegocio(db);
-                 if (typeof sincronizarCatalogosIniciales === 'function') sincronizarCatalogosIniciales(db);
-                 if (typeof sincronizarAgentesIniciales === 'function') sincronizarAgentesIniciales(db);
-                 asegurarTablasSecundarias(db);
-               }
-            });
-        }
-      } else {
-        inicializarReglasDeNegocio(db);
-        if (typeof sincronizarCatalogosIniciales === 'function') sincronizarCatalogosIniciales(db);
-        if (typeof sincronizarAgentesIniciales === 'function') sincronizarAgentesIniciales(db);
-        asegurarTablasSecundarias(db);
-      }
-
-      // NUEVO: Verificar histórico mensual tras conectar
-      verificarCierreMensual(dbPath);
-    }
-  });
+  console.log(`[DB INIT] Inicializando Triple Estrategia en red: ${NETWORK_DIR}`);
+  syncAllToLocal();
 
   return db;
 }
 
-// --- ASEGURAR TABLAS SECUNDARIAS (FINANZAS E INVENTARIO) ---
-function asegurarTablasSecundarias(dbConnection) {
-  dbConnection.serialize(() => {
-    // Tabla Deudas
-    dbConnection.run(`CREATE TABLE IF NOT EXISTS deutes (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      comercial TEXT, cliente TEXT, import TEXT, fecha TEXT, activo INTEGER DEFAULT 1
-    )`);
-    // Tabla Gastos
-    dbConnection.run(`CREATE TABLE IF NOT EXISTS despeses (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      fecha TEXT, comercial TEXT, concepto TEXT, importe TEXT, estado TEXT, coordinador TEXT, activo INTEGER DEFAULT 1
-    )`);
-    // Tabla Inventario
-    dbConnection.run(`CREATE TABLE IF NOT EXISTS inventari (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      comercial TEXT, articulo TEXT, fecha_entrega TEXT, estado TEXT, observaciones TEXT, activo INTEGER DEFAULT 1
-    )`);
-    console.log("[DB] Tablas secundarias (Deudas, Gastos, Inventario) verificadas.");
+function inicializarBasesDeDatosEnRed() {
+  if (!fs.existsSync(NETWORK_DIR)) {
+    fs.mkdirSync(NETWORK_DIR, { recursive: true });
+  }
+
+  for (const [key, dbFile] of Object.entries(DBS)) {
+    const netDbPath = path.join(NETWORK_DIR, dbFile);
+    if (!fs.existsSync(netDbPath)) {
+      console.log(`[DB INIT] Creando base de datos vacía en red: ${dbFile}`);
+      const dbTemp = new sqlite3.Database(netDbPath);
+      const schemaFileName = `schema_${key}.sql`;
+      const schemaPath = path.join(__dirname, schemaFileName);
+      if (fs.existsSync(schemaPath)) {
+        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+        dbTemp.exec(schemaSql, (err) => {
+          if (err) {
+            console.error(`[DB INIT] Error aplicando esquema en red para ${dbFile}:`, err.message);
+          } else {
+            console.log(`[DB INIT] Esquema aplicado con éxito para ${dbFile}`);
+          }
+          dbTemp.close();
+        });
+      } else {
+        console.warn(`[DB INIT] Esquema no encontrado: ${schemaPath}`);
+        dbTemp.close();
+      }
+    }
+  }
+}
+
+function syncAllToLocal() {
+  console.log("[DB SYNC] Sincronizando bases de datos desde red a caché local...");
+  inicializarBasesDeDatosEnRed();
+
+  for (const [key, dbFile] of Object.entries(DBS)) {
+    const netDbPath = path.join(NETWORK_DIR, dbFile);
+    const localDbPath = path.join(localDir, dbFile);
+
+    if (localConnections[key]) {
+      try {
+        localConnections[key].close();
+        localConnections[key] = null;
+      } catch (e) {}
+    }
+
+    try {
+      if (fs.existsSync(netDbPath)) {
+        fs.copyFileSync(netDbPath, localDbPath);
+        console.log(`[DB SYNC] Copiado ${dbFile} a caché local.`);
+      }
+    } catch (err) {
+      console.error(`[DB SYNC] Error copiando ${dbFile} a local:`, err.message);
+    }
+
+    try {
+      obtenerConexionLocal(key);
+    } catch (e) {
+      console.error(`[DB SYNC] Error abriendo conexión local para ${key}:`, e.message);
+    }
+  }
+}
+
+function syncToLocal(dbKey) {
+  const dbFile = DBS[dbKey];
+  const netDbPath = path.join(NETWORK_DIR, dbFile);
+  const localDbPath = path.join(localDir, dbFile);
+
+  if (localConnections[dbKey]) {
+    try {
+      localConnections[dbKey].close();
+      localConnections[dbKey] = null;
+      console.log(`[DB SYNC] Cerrada conexión local de ${dbKey} para sincronización.`);
+    } catch (e) {
+      console.error(`[DB SYNC] Error cerrando conexión local para copiar:`, e.message);
+    }
+  }
+
+  try {
+    if (fs.existsSync(netDbPath)) {
+      fs.copyFileSync(netDbPath, localDbPath);
+      console.log(`[DB SYNC] Sincronizado ${dbFile} desde red a caché local.`);
+    }
+  } catch (err) {
+    console.error(`[DB SYNC] Error copiando ${dbFile} de red a local:`, err.message);
+  }
+
+  try {
+    obtenerConexionLocal(dbKey);
+  } catch (e) {
+    console.error(`[DB SYNC] Error reabriendo conexión local de ${dbKey}:`, e.message);
+  }
+}
+
+function acquireLock(dbKey) {
+  const lockDir = path.join(NETWORK_DIR, `_${dbKey}.lock`);
+  const maxRetries = 15;
+  const delayMs = 1000;
+
+  return new Promise((resolve, reject) => {
+    let attempt = 0;
+
+    const tryAcquire = () => {
+      try {
+        fs.mkdirSync(lockDir);
+        console.log(`[MUTEX] Candado adquirido con éxito: ${lockDir}`);
+        resolve(lockDir);
+      } catch (err) {
+        if (err.code === 'EEXIST') {
+          attempt++;
+          if (attempt >= maxRetries) {
+            reject(new Error(`[MUTEX Timeout] No se pudo adquirir el candado en red para ${dbKey} tras ${maxRetries} reintentos.`));
+          } else {
+            console.warn(`[MUTEX] Candado ocupado para ${dbKey}, reintentando en ${delayMs}ms (Intento ${attempt}/${maxRetries})...`);
+            setTimeout(tryAcquire, delayMs);
+          }
+        } else {
+          reject(err);
+        }
+      }
+    };
+
+    tryAcquire();
   });
 }
 
+function releaseLock(lockDir) {
+  return new Promise((resolve) => {
+    try {
+      if (fs.existsSync(lockDir)) {
+        fs.rmdirSync(lockDir);
+        console.log(`[MUTEX] Candado liberado: ${lockDir}`);
+      }
+      resolve();
+    } catch (err) {
+      console.error(`[MUTEX Error] Error al liberar el candado: ${lockDir}`, err.message);
+      resolve();
+    }
+  });
+}
+
+async function safeWriteCombined(dbKey, query, params) {
+  const dbFile = DBS[dbKey];
+  if (!dbFile) {
+    throw new Error(`Base de datos no válida: ${dbKey}`);
+  }
+
+  const netDbPath = path.join(NETWORK_DIR, dbFile);
+  let lockDir = null;
+  let netDb = null;
+
+  try {
+    lockDir = await acquireLock(dbKey);
+
+    netDb = await new Promise((resolve, reject) => {
+      const conn = new sqlite3.Database(netDbPath, sqlite3.OPEN_READWRITE, (err) => {
+        if (err) reject(err);
+        else resolve(conn);
+      });
+    });
+
+    await new Promise((resolve, reject) => {
+      netDb.run("PRAGMA journal_mode = DELETE;", (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    const result = await new Promise((resolve, reject) => {
+      netDb.run(query, params, function(err) {
+        if (err) reject(err);
+        else resolve({ lastID: this.lastID, changes: this.changes });
+      });
+    });
+
+    await new Promise((resolve, reject) => {
+      netDb.close((err) => {
+        if (err) reject(err);
+        else {
+          netDb = null;
+          resolve();
+        }
+      });
+    });
+
+    await releaseLock(lockDir);
+    lockDir = null;
+
+    syncToLocal(dbKey);
+
+    return result;
+
+  } catch (error) {
+    console.error(`[MUTEX safeWrite] Error en escritura atómica para ${dbKey}:`, error.message);
+    if (netDb) {
+      try { netDb.close(); } catch (e) {}
+    }
+    if (lockDir) {
+      await releaseLock(lockDir);
+    }
+    throw error;
+  }
+}
+
+
 // ============================================================
+
 // SISTEMA DE MIGRACIONES VERSIONADO
 // ============================================================
 
@@ -772,35 +1021,67 @@ function obtenerRutaLock() {
   return currentDbPath ? currentDbPath + '.lock' : null;
 }
 
-// 1. Ejecutar consultas directas parametrizadas (Relacional)
+// 1. Ejecutar consultas directas parametrizadas (Relacional) - Enrutamiento inteligente a Shards
 ipcMain.handle('db-query', async (event, { sql, params }) => {
   return new Promise((resolve, reject) => {
-    if (!db) return reject(new Error("Base de datos no inicializada."));
-    db.all(sql, params, (err, rows) => {
-      if (err) {
-        console.error(`[SQL Error] Consulta fallida: ${sql} | Error: ${err.message}`);
-        reject(err);
-      } else {
-        resolve(rows);
-      }
-    });
+    try {
+      const dbKey = resolverDbKeyDesdeSql(sql);
+      const localDb = obtenerConexionLocal(dbKey);
+      localDb.all(sql, params, (err, rows) => {
+        if (err) {
+          console.error(`[SQL Error] Consulta fallida: ${sql} | Error: ${err.message}`);
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    } catch (e) {
+      reject(e);
+    }
   });
 });
 
-// 2. Ejecutar sentencias de escritura parametrizadas (Relacional)
+// 2. Ejecutar sentencias de escritura parametrizadas (Relacional) - Escritura atómica con Mutex en red
 ipcMain.handle('db-execute', async (event, { sql, params }) => {
+  try {
+    const dbKey = resolverDbKeyDesdeSql(sql);
+    const result = await safeWriteCombined(dbKey, sql, params);
+    return result;
+  } catch (err) {
+    console.error(`[SQL Error] Escritura fallida: ${sql} | Error: ${err.message}`);
+    throw err;
+  }
+});
+
+// NUEVO: Canalización explícita para la API window.dbAPI (Tarea 4)
+ipcMain.handle('db-read', async (event, { dbKey, query, params }) => {
   return new Promise((resolve, reject) => {
-    if (!db) return reject(new Error("Base de datos no inicializada."));
-    db.run(sql, params, function(err) {
-      if (err) {
-        console.error(`[SQL Error] Escritura fallida: ${sql} | Error: ${err.message}`);
-        reject(err);
-      } else {
-        resolve({ lastID: this.lastID, changes: this.changes });
-      }
-    });
+    try {
+      const localDb = obtenerConexionLocal(dbKey);
+      localDb.all(query, params, (err, rows) => {
+        if (err) {
+          console.error(`[dbAPI Read Error] dbKey: ${dbKey} | Query: ${query} | Error: ${err.message}`);
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    } catch (e) {
+      reject(e);
+    }
   });
 });
+
+ipcMain.handle('db-write', async (event, { dbKey, query, params }) => {
+  try {
+    const result = await safeWriteCombined(dbKey, query, params);
+    return result;
+  } catch (err) {
+    console.error(`[dbAPI Write Error] dbKey: ${dbKey} | Query: ${query} | Error: ${err.message}`);
+    throw err;
+  }
+});
+
 
 // 3. Adquirir candado relacional cooperativo con TTL
 ipcMain.handle('lock-acquire', async (event, { userName, userRole }) => {

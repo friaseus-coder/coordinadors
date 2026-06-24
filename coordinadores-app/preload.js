@@ -82,3 +82,9 @@ contextBridge.exposeInMainWorld('databaseAPI', {
   getConfigCoordinador: () => ipcRenderer.invoke('get-config-coordinador'),
   getUserConfig: () => ipcRenderer.invoke('get-user-config')
 });
+
+contextBridge.exposeInMainWorld('dbAPI', {
+  read: (dbKey, query, params = []) => ipcRenderer.invoke('db-read', { dbKey, query, params }),
+  write: (dbKey, query, params = []) => ipcRenderer.invoke('db-write', { dbKey, query, params })
+});
+
