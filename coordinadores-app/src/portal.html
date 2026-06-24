@@ -813,13 +813,7 @@
                         await window.api.forceReleaseLock(`${folder}/comercials_${coord.id}_${mesActual}_${anyActual}.json`);
                     }
                     
-                    // Además de los archivos legacy, liberamos el bloqueo relacional en SQLite
-                    if (window.databaseAPI && window.databaseAPI.controlConcurrencia) {
-                        const role = sessionStorage.getItem('userRole') || 'jefe operaciones';
-                        const dbRole = (role === 'jefe operaciones') ? 'jefe_operaciones' : role;
-                        const user = sessionStorage.getItem('userName') || 'Administrador';
-                        await window.databaseAPI.controlConcurrencia.forzarLiberacion(dbRole, user);
-                    }
+
 
                     alert(i18n.t('successUnlockAll'));
                     const activeContent = document.querySelector('.tab-content.active');
@@ -857,14 +851,7 @@
                     }
                 }
 
-                // Para todos los perfiles (liberar candado relacional en SQLite)
-                if (window.databaseAPI && window.databaseAPI.controlConcurrencia && userName) {
-                    try {
-                        await window.databaseAPI.controlConcurrencia.liberarLock(userName);
-                    } catch (e) {
-                        console.error("Error al liberar candado relacional:", e);
-                    }
-                }
+
 
                 // Cerrar la aplicación mediante Electron
                 if (window.api && window.api.closeApp) {
@@ -1297,7 +1284,7 @@
                     }
                     
                     // Iniciar transacción en SQLite
-                    await window.databaseAPI.ejecutar("BEGIN TRANSACTION;");
+                    await window.dbAPI.write('catalogos', "BEGIN TRANSACTION;", []);
                     
                     let importados = 0;
                     let actualizados = 0;
@@ -1322,9 +1309,9 @@
                         if (!nombre) continue;
                         
                         if (id) {
-                            const check = await window.databaseAPI.consultar("SELECT id FROM aparcamientos WHERE id = ?", [id]);
+                            const check = await window.dbAPI.read('catalogos', "SELECT id FROM aparcamientos WHERE id = ?", [id]);
                             if (check && check.length > 0) {
-                                await window.databaseAPI.ejecutar(`
+                                await window.dbAPI.write('catalogos', `
                                     UPDATE aparcamientos SET 
                                         numero_obra = ?, nombre = ?, zona = ?, es_remotizado = ?, 
                                         tipo_gestion = ?, permitir_vacio_laborables = ?, sociedad_id = ?, 
@@ -1333,7 +1320,7 @@
                                 `, [numObra || `OB-${id}`, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable, id]);
                                 actualizados++;
                             } else {
-                                await window.databaseAPI.ejecutar(`
+                                await window.dbAPI.write('catalogos', `
                                     INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                                 `, [id, numObra || `OB-${id}`, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable]);
@@ -1341,7 +1328,7 @@
                             }
                         } else {
                             const generatedNumObra = numObra || `OB-${Date.now() + i}`;
-                            await window.databaseAPI.ejecutar(`
+                            await window.dbAPI.write('catalogos', `
                                 INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
                             `, [generatedNumObra, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable]);
@@ -1349,7 +1336,7 @@
                         }
                     }
                     
-                    await window.databaseAPI.ejecutar("COMMIT;");
+                    await window.dbAPI.write('catalogos', "COMMIT;", []);
                     
                     // Sincronizar catálogo maestro en red
                     const updatedAparcamientos = await window.api.getAparcamientos();
@@ -1368,7 +1355,7 @@
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
                     alert(`✅ Sincronització massiva d'Excel completada:\n- Nous inserits: ${importados}\n- Existents actualitzats: ${actualizados}`);
                 } catch (err) {
-                    await window.databaseAPI.ejecutar("ROLLBACK;");
+                    await window.dbAPI.write('catalogos', "ROLLBACK;", []);
                     input.value = "";
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
                     console.error("Error al importar aparcamientos CSV:", err);
@@ -1565,64 +1552,7 @@
             reader.readAsText(file);
         }
 
-        async function handleMigrarCuadrante(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!confirm("Vols migrar les dades d'aquest quadrant a la base de dades relacional SQLite?")) {
-                event.target.value = '';
-                return;
-            }
 
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const content = e.target.result;
-                    const result = await window.databaseAPI.migrarJsonCuadrante(content);
-                    if (result.success) {
-                        alert(`✅ Migració completada amb èxit! S'han migrat ${result.total} turnos.`);
-                        window.location.reload();
-                    } else {
-                        alert('❌ Error al migrar: ' + result.error);
-                    }
-                } catch (err) {
-                    alert('❌ Error al processar el fitxer: ' + err.message);
-                } finally {
-                    event.target.value = '';
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        async function handleMigrarDeudas(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (!confirm("Vols migrar les dades de deutes a la base de dades relacional SQLite?")) {
-                event.target.value = '';
-                return;
-            }
-
-            try {
-                const filePath = file.path;
-                if (!filePath) {
-                    alert('❌ No s\'ha pogut obtenir la ruta absoluta del fitxer.');
-                    return;
-                }
-
-                const result = await window.databaseAPI.migrarJsonDeutes(filePath);
-                if (result.success) {
-                    alert(`✅ Migració de deutes completada amb èxit! S'han importat ${result.total} deutes.`);
-                    window.location.reload();
-                } else {
-                    alert('❌ Error al migrar deutes: ' + result.error);
-                }
-            } catch (err) {
-                alert('❌ Error al migrar deutes: ' + err.message);
-            } finally {
-                event.target.value = '';
-            }
-        }
 
         // Funciones del Dropdown de Administración
         function toggleAdminDropdown(event) {
@@ -1697,11 +1627,7 @@
                 let userRole = sessionStorage.getItem('userRole');
                 if (userRole === 'jefe operaciones') userRole = 'jefe_operaciones';
                 
-                if (!userRole && window.databaseAPI && window.databaseAPI.getUserRole) {
-                    window.databaseAPI.getUserRole().then(dbRole => {
-                        applyRoleFiltering(dbRole);
-                    });
-                } else if (userRole) {
+                if (userRole) {
                     applyRoleFiltering(userRole);
                 }
             } catch (e) {
@@ -1741,20 +1667,6 @@
         }
     </script>
 
-<script>
-  document.addEventListener('DOMContentLoaded', async () => {
-      try {
-          const userRole = await window.databaseAPI.getUserRole();
-          document.querySelectorAll('[data-roles]').forEach(item => {
-              const rolesPermitidos = item.getAttribute('data-roles').split(',');
-              if (!rolesPermitidos.includes(userRole)) {
-                  item.style.display = 'none';
-              }
-          });
-      } catch (e) {
-          console.error("Error al aplicar roles:", e);
-      }
-  });
-</script>
+
 </body>
 </html>

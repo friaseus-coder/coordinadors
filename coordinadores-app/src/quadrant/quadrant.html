@@ -1353,12 +1353,12 @@ function exportToNextMonth() {
             updateLockVisuals(); 
             
             // Borrar coberturas requeridas específicas de este mes (coberturas extraordinarias de un día específico)
-            const apiDB = window.parent.databaseAPI || window.databaseAPI;
+            const apiDB = window.parent.dbAPI || window.dbAPI;
             if (apiDB) {
                 try {
                     const mesNum = (currentMonth + 1).toString().padStart(2, '0');
                     const patronFecha = `${currentYear}-${mesNum}-%`;
-                    await apiDB.ejecutar(
+                    await apiDB.write('catalogos',
                         "DELETE FROM coberturas_requeridas WHERE fecha LIKE ? AND dia_semana IS NULL",
                         [patronFecha]
                     );
@@ -2335,90 +2335,9 @@ changeMonth = function() {
 };
 
 async function actualitzarAlertes() {
-    try {
-        const mesNum = (currentMonth + 1).toString().padStart(2, '0');
-        const dias = new Date(currentYear, currentMonth + 1, 0).getDate();
-        const fechaInicio = `${currentYear}-${mesNum}-01`;
-        const fechaFin = `${currentYear}-${mesNum}-${String(dias).padStart(2, '0')}`;
-        
-        const res = await window.databaseAPI.calcularAlertasCuadrante(fechaInicio, fechaFin);
-        if (res && res.success) {
-            const alertas = res.alertas || [];
-            
-            // Actualitzar contador
-            const countEl = document.getElementById('alertCount');
-            if (countEl) countEl.innerText = alertas.length;
-            
-            const btnAlertes = document.getElementById('btnAlertes');
-            if (btnAlertes) {
-                btnAlertes.style.display = alertas.length > 0 ? 'inline-block' : 'none';
-            }
-            
-            // Emplenar llista d'alertes al panell superior
-            const listEl = document.getElementById('alertsList');
-            if (listEl) {
-                if (alertas.length === 0) {
-                    listEl.innerHTML = '<div style="grid-column: 1/-1; color: #15803d; font-weight: 600; font-size: 11px; padding: 4px 0;">✅ No s\'han detectat conflictes de quadrant en aquest mes.</div>';
-                } else {
-                    listEl.innerHTML = alertas.map(al => {
-                        const icon = al.gravedad === 'alta' ? '🔴' : '🟡';
-                        const bgColor = al.gravedad === 'alta' ? '#fff1f2' : '#fef9c3';
-                        const borderColor = al.gravedad === 'alta' ? '#fecdd3' : '#fef08a';
-                        const textColor = al.gravedad === 'alta' ? '#9f1239' : '#854d0e';
-                        
-                        return `
-                            <div style="background: ${bgColor}; border: 1px solid ${borderColor}; padding: 6px 10px; border-radius: 6px; color: ${textColor}; font-size: 10px; line-height: 1.3; font-weight: 500; display: flex; align-items: flex-start; gap: 6px;">
-                                <span style="font-size: 11px;">${icon}</span>
-                                <div>
-                                    <div style="font-weight: 700; font-size: 8.5px; text-transform: uppercase; margin-bottom: 2px;">${al.tipo.toUpperCase().replace(/_/g, ' ')}</div>
-                                    <div>${al.mensaje}</div>
-                                </div>
-                            </div>
-                        `;
-                    }).join('');
-                }
-            }
-            
-            // Netejar indicadors d'alertes previs de la taula
-            document.querySelectorAll('.cell-alert-highlight').forEach(el => {
-                el.classList.remove('cell-alert-highlight');
-                el.style.boxShadow = '';
-                const alertDot = el.querySelector('.alert-dot');
-                if (alertDot) alertDot.remove();
-            });
-            
-            // Col·locar indicadors vermells/taronja sobre les celdas afectades
-            alertas.forEach(al => {
-                if (al.fecha && al.parkingNombre && al.turno) {
-                    const dia = parseInt(al.fecha.split('-')[2]);
-                    const sId = `nyn_v12_${currentYear}_${currentMonth}_${al.parkingNombre}_${al.turno}_${dia}`;
-                    const td = document.getElementById("cell_" + sId);
-                    if (td) {
-                        td.classList.add('cell-alert-highlight');
-                        td.style.boxShadow = 'inset 0 0 0 2px rgba(239, 68, 68, 0.45)';
-                        
-                        const cont = td.querySelector('.cell-container');
-                        if (cont && !cont.querySelector('.alert-dot')) {
-                            const dot = document.createElement('div');
-                            dot.className = 'alert-dot';
-                            dot.style.position = 'absolute';
-                            dot.style.top = '2px';
-                            dot.style.left = '2px';
-                            dot.style.width = '6px';
-                            dot.style.height = '6px';
-                            dot.style.backgroundColor = al.gravedad === 'alta' ? 'red' : 'orange';
-                            dot.style.borderRadius = '50%';
-                            dot.style.zIndex = '30';
-                            dot.title = al.mensaje;
-                            cont.appendChild(dot);
-                        }
-                    }
-                }
-            });
-        }
-    } catch (e) {
-        console.error("Error en actualitzarAlertes:", e);
-    }
+    // Desactivado por limpieza completa de alertas
+    const btnAlertes = document.getElementById('btnAlertes');
+    if (btnAlertes) btnAlertes.style.display = 'none';
 }
 
 function toggleAlertsPanel() {

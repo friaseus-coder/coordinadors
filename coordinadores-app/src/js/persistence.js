@@ -181,8 +181,8 @@ const persistence = (() => {
       unlockBtn.onclick = async () => {
         if (confirm(`Estàs segur que vols forçar el desbloqueig de l'arxiu? Això pot causar pèrdua de dades si l'altre usuari està guardant.`)) {
           const isRelational = (activeModuleName === 'quadrant' || activeModuleName === 'vacances');
-          if (isRelational && window.databaseAPI) {
-            await window.databaseAPI.controlConcurrencia.forzarLiberacion('jefe_operaciones', userName);
+          if (isRelational) {
+            // Desactivado por limpieza completa
           } else if (activeModuleName === 'comercials') {
             const mesSelect = document.getElementById('mesActual');
             const anySelect = document.getElementById('anyActual');
@@ -263,32 +263,7 @@ const persistence = (() => {
   }
 
   function startHeartbeat(moduleName) {
-    if (heartbeatInterval) clearInterval(heartbeatInterval);
-    const isRelational = (moduleName === 'quadrant' || moduleName === 'vacances');
-    
-    heartbeatInterval = setInterval(async () => {
-      if (isReadOnlyMode) {
-        clearInterval(heartbeatInterval);
-        return;
-      }
-      
-      try {
-        if (isRelational) {
-          const dbRole = (userRole === 'jefe operaciones') ? 'jefe_operaciones' : 'coordinador';
-          const lockResult = await window.databaseAPI.controlConcurrencia.adquirirLock(userName, dbRole);
-          if (!lockResult.adquirido && !lockResult.success) {
-            handleLockLoss();
-          }
-        } else {
-          const checkResult = await api.checkLock(currentFilePath);
-          if (!checkResult.locked || checkResult.lockedBy !== userName) {
-            handleLockLoss();
-          }
-        }
-      } catch (e) {
-        console.warn('[PERSISTENCE] Error en verificación periódica de bloqueo:', e);
-      }
-    }, 30000); // Comprobar cada 30 segundos
+    // Desactivado por limpieza completa de concurrencia relacional
   }
 
   async function initModule(moduleName) {
@@ -312,9 +287,7 @@ const persistence = (() => {
         clearInterval(heartbeatInterval);
         heartbeatInterval = null;
       }
-      if (isRelational) {
-        await window.databaseAPI.controlConcurrencia.liberarLock(userName);
-      } else {
+      if (!isRelational) {
         const isJefeOps = (userRole === 'jefe operaciones');
         await api.releaseLock(currentFilePath, userName, isJefeOps);
       }
@@ -328,13 +301,12 @@ const persistence = (() => {
       return false;
     }
 
-    let lockResult;
     if (isRelational) {
-      const dbRole = (userRole === 'jefe operaciones') ? 'jefe_operaciones' : 'coordinador';
-      lockResult = await window.databaseAPI.controlConcurrencia.adquirirLock(userName, dbRole);
-    } else {
-      lockResult = await api.acquireLock(currentFilePath, userName);
+      injectStatusBanner('edit', `📝 Mode Edició Actiu | Usuari: ${userName}`);
+      return true;
     }
+
+    let lockResult = await api.acquireLock(currentFilePath, userName);
     
     if (lockResult.success || lockResult.adquirido) {
       injectStatusBanner('edit', `📝 Mode Edició Actiu | Usuari: ${userName}`);
@@ -344,12 +316,8 @@ const persistence = (() => {
 
       window.addEventListener('beforeunload', () => {
         if (heartbeatInterval) clearInterval(heartbeatInterval);
-        if (isRelational) {
-          window.databaseAPI.controlConcurrencia.liberarLock(userName);
-        } else {
-          const isJefeOps = (userRole === 'jefe operaciones');
-          api.releaseLock(currentFilePath, userName, isJefeOps);
-        }
+        const isJefeOps = (userRole === 'jefe operaciones');
+        api.releaseLock(currentFilePath, userName, isJefeOps);
       });
       return true;
     } else {
@@ -1010,15 +978,8 @@ async function saveQuadrant(coordinadorId, month, year, data) {
 
 // --- ASISTENTE DE CUADRANTE ---
 async function obtenerAsistenteAsignacion(fecha, aparcamientoId) {
-    try {
-        console.log(`Consultando Asistente para ${fecha} en parking ${aparcamientoId}...`);
-        const resultado = await window.databaseAPI.obtenerRecomendaciones(fecha, aparcamientoId);
-        console.log("Resultado del Asistente:", resultado);
-        return resultado;
-    } catch (error) {
-        console.error("Error al consultar el Asistente de Cuadrante:", error);
-        return { sugeridos: [], descartados: [] };
-    }
+    // Desactivado por limpieza completa de recomendación / asistente
+    return { sugeridos: [], descartados: [] };
 }
 
 // --- NUEAS FUNCIONES DE VACACIONES (SQLITE) ---

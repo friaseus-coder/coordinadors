@@ -427,14 +427,14 @@
     }
 
     // Obtener la API de Base de Datos de forma segura
-    let dbApi = window.databaseAPI;
+    let dbApi = window.dbAPI;
     if (!dbApi) {
         try {
-            if (window.parent && window.parent.databaseAPI) {
-                dbApi = window.parent.databaseAPI;
+            if (window.parent && window.parent.dbAPI) {
+                dbApi = window.parent.dbAPI;
             }
         } catch (e) {
-            console.warn('[COMERCIALS] No se puede acceder a window.parent.databaseAPI:', e);
+            console.warn('[COMERCIALS] No se puede acceder a window.parent.dbAPI:', e);
         }
     }
 
@@ -780,7 +780,7 @@
         
         let destExists = false;
         try {
-            const rows = await dbApi.consultar("SELECT value FROM kv_store WHERE key = ?", [pathDesti]);
+            const rows = await dbApi.read('comercial', "SELECT value FROM kv_store WHERE key = ?", [pathDesti]);
             if (rows && rows.length > 0 && rows[0].value) {
                 const destData = JSON.parse(rows[0].value);
                 if (destData && destData[clauDesti]) {
@@ -818,7 +818,7 @@
             // Guardar en la base de datos centralizada SQLite kv_store
             let writeSuccess = false;
             try {
-                await dbApi.ejecutar(
+                await dbApi.write('comercial',
                     "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
                     [pathDesti, JSON.stringify(payload)]
                 );

@@ -58,18 +58,7 @@
 
     <script>
         async function ejecutarMigracion(tipo) {
-            if(confirm(`¿Seleccionar archivo para migrar ${tipo} a la base de datos central?`)) {
-                try {
-                    const resultado = await window.databaseAPI.importacionCentralizada(tipo);
-                    if (resultado.success) {
-                        alert(`¡Éxito! Se han importado ${resultado.total} registros de ${tipo} correctamente.`);
-                    } else if (resultado.reason !== 'Cancelado') {
-                        alert(`Error en la importación: ${resultado.error}`);
-                    }
-                } catch (e) {
-                    alert("Fallo de conexión IPC: " + e.message);
-                }
-            }
+            alert(`La funcionalidad de migración para ${tipo} ha sido desactivada en esta versión (Limpieza Completa).`);
         }
     </script>
 </body>
