@@ -3,60 +3,76 @@
 <head>
     <meta charset="UTF-8">
     <style>
-        body, html { margin: 0; padding: 0; height: 100%; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; background: #f4f4f4; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        :root { 
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        * { font-family: 'Outfit', 'Segoe UI', Tahoma, sans-serif !important; }
+
+        body, html { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #f8fafc; }
         .chklst-layout { display: flex; height: 100vh; width: 100%; }
         
         /* MENÚ LATERAL MÉS ESTRET I POLÍT */
         .chklst-menu {
             width: 180px; 
-            background: #f0f2f0; border-right: 1px solid #ccc;
-            padding: 10px; display: flex; flex-direction: column; gap: 8px;
-            box-shadow: 2px 0 5px rgba(0,0,0,0.05); z-index: 10;
+            background: #ffffff; border-right: 1px solid #e2e8f0;
+            padding: 16px 12px; display: flex; flex-direction: column; gap: 12px;
+            box-shadow: 2px 0 8px rgba(0,0,0,0.05); z-index: 10;
         }
         
         /* Visor dreta amb fons corporatiu suau */
         .chklst-viewer { 
             flex-grow: 1; 
-            background: #e8f5e9; 
+            background: #f8fafc; 
             position: relative; 
             overflow: hidden;
         }
 
         /* Capa superior per amagar la ruta lletja del navegador */
         .viewer-overlay {
-            position: absolute; top: 0; left: 0; right: 0; height: 40px;
-            background: #008d36; color: white;
-            display: flex; align-items: center; padding-left: 15px;
-            font-size: 10px; font-weight: bold; text-transform: uppercase;
-            z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            position: absolute; top: 0; left: 0; right: 0; height: 48px;
+            background: var(--nyn-verd); color: white;
+            display: flex; align-items: center; padding-left: 24px;
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            z-index: 5; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
             letter-spacing: 1px;
+            border-bottom: 2px solid var(--nyn-verd-accent);
         }
 
         iframe#visor-contingut { 
-            width: 100%; height: calc(100% - 40px); 
-            border: none; margin-top: 40px;
+            width: 100%; height: calc(100% - 48px); 
+            border: none; margin-top: 48px;
             background: white;
         }
 
         /* Targetes i botons petits i VERDS */
         .card-coordinador {
-            background: white; padding: 6px; border: 1px solid #ddd;
-            border-left: 3px solid #008d36; border-radius: 0;
+            background: white; padding: 12px; border: 1px solid #e2e8f0;
+            border-left: 4px solid var(--nyn-verd); border-radius: 8px;
+            box-shadow: var(--shadow-sm);
         }
         
-        h3 { margin: 0 0 4px 0; font-size: 9px; color: #444; text-transform: uppercase; font-weight: 800; }
+        h3 { margin: 0 0 8px 0; font-size: 11px; color: var(--nyn-verd); text-transform: uppercase; font-weight: 700; }
 
         .btn-explorar {
             display: flex; align-items: center; justify-content: center;
-            padding: 5px; 
-            background: #008d36; 
+            padding: 6px 10px; 
+            background: var(--nyn-verd); 
             color: white; border: none;
-            font-weight: bold; font-size: 9px; cursor: pointer; text-transform: uppercase;
-            width: 100%; text-decoration: none; transition: 0.2s;
+            border-radius: 6px;
+            font-weight: 600; font-size: 10px; cursor: pointer; text-transform: uppercase;
+            width: 100%; text-decoration: none; transition: all 0.2s ease;
             box-sizing: border-box;
+            box-shadow: var(--shadow-sm);
         }
         
-        .btn-explorar:hover { background: #006b29; }
+        .btn-explorar:hover { background: #0b4e43; }
         .btn-explorar span { margin-right: 4px; font-size: 11px; }
 
         .footer-logo { margin-top: auto; text-align: center; opacity: 0.2; padding-bottom: 5px; }

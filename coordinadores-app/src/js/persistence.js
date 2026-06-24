@@ -295,7 +295,8 @@ const persistence = (() => {
     currentFilePath = newFilePath;
     console.log(`[PERSISTENCE] Inicialitzant mòdul: ${moduleName} -> RUTA: ${currentFilePath}`);
 
-    if (userRole === 'otro' || userRole === 'comercial') {
+    const esCoordinadorFisico = userName && (userName.toUpperCase() === 'ALBERT' || userName.toUpperCase() === 'LAURA');
+    if ((userRole === 'otro' || userRole === 'comercial') && !esCoordinadorFisico) {
       disableEditingControls();
       injectStatusBanner('readonly', '👁️ Mode Només Lectura: Perfil de visualització (no es poden desar canvis).');
       return false;

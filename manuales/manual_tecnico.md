@@ -340,9 +340,9 @@ Para evitar que se procese un mismo archivo legacy JSON varias veces y se dupliq
 
 ## 9. Sistema de Roles (RBAC) con Selección en Caliente
 La aplicación implementa una arquitectura basada en roles (Role-Based Access Control) que filtra el acceso a los módulos operativos desde una única pantalla interactiva unificada:
-1.  **Comercial**: Acceso exclusivo a visualización y consulta de comerciales, rutas y rankings.
-2.  **Coordinador**: Acceso operativo diario (cuadrante, vacaciones, deudas, gastos e inventario) para su gestión personal.
-3.  **Jefe de Operaciones (Administrador)**: Acceso global absoluto y herramientas de administración, base de datos relacional y configuración.
+1.  **Comercial**: Acceso a todas las pestañas operativas ordinarias (Inici, Quadrant, Rutes, Vacances, Comercials, Ranking, Deutes, Checklist, Despeses, Inventari, SAC, Notificador, Log y Normes) de igual forma que el rol Coordinador, pero sin acceso a las herramientas y menús de administración.
+2.  **Coordinador**: Acceso operativo diario (cuadrante, vacaciones, deudas, gastos e inventario) para su gestión personal, y acceso completo a los módulos de administración de coordinadores, aparcamientos y panel administrativo sin la opción de desbloqueo global de archivos.
+3.  **Jefe de Operaciones (Administrador)**: Acceso global absoluto, incluyendo todas las herramientas de administración y la opción de desbloqueo global de archivos.
 
 ### A. Almacenamiento de Sesión y Selección Interactiva Obligatoria
 *   Al arrancar la aplicación, se despliega la pantalla de acceso (`index.html`).
@@ -350,9 +350,8 @@ La aplicación implementa una arquitectura basada en roles (Role-Based Access Co
 *   Al pulsar "Entrar al Portal", los datos elegidos por el usuario se registran en el almacenamiento de sesión (`sessionStorage`) y se realiza la redirección a `portal.html`.
 
 ### B. Ocultación Reactiva y Filtrado Visual
-*   En `portal.html`, al cargarse el DOM, el proceso consulta prioritariamente la configuración de `config.json` para sobrescribir autoritativamente `userRole` y `userName` en `sessionStorage`.
-*   A continuación, se invoca de manera inmediata el filtrado mediante la función `applyRoleFiltering(role)`. Esta función recorre todos los elementos del menú (etiquetados con `.menu-item` o el atributo `data-roles`) y aplica un estilo imperativo de ocultación (`display: none !important`) a toda sección no permitida para el rol activo.
-*   Si el rol activo es `comercial`, se ocultan el resto de opciones de navegación del portal y se realiza una redirección asíncrona e instantánea abriendo directamente el módulo de Comerciales (`comercials.html`).
+*   En `portal.html`, al cargarse el DOM, el proceso consulta `config.json` únicamente si no existe una sesión previa en `sessionStorage` (respetando la selección manual interactiva del login). Además, se ha incorporado una regla de protección en el motor de persistencia (`persistence.js`) que excluye a los coordinadores físicos (Albert y Laura) del Modo Solo Lectura por rol de visualizador, manteniendo intacto el control de concurrencia (de forma que si el otro coordinador tiene el archivo bloqueado, se respetará el estado de solo lectura por bloqueo concurrente).
+*   A continuación, se invoca de manera inmediata el filtrado mediante la función `applyRoleFiltering(role)`. Esta función recorre todos los elementos del menú (etiquetados con `.menu-item` o el atributo `data-roles`) y aplica un estilo imperativo de ocultación (`display: none !important`) a toda sección no permitida para el rol activo. Esto oculta de forma dinámica la administración para comerciales y coordinadores (con sus respectivas exclusiones), mientras mantiene visibles el resto de pestañas operativas ordinarias.
 
 ---
 

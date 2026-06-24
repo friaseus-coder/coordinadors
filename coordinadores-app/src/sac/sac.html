@@ -5,18 +5,23 @@
     <title>SAC - incidències pàrkings</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛠️</text></svg>">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
         :root {
-            --verd-corporatiu: #004d00;
-            --verd-clar: #e6f2e6;
-            --fons: #ffffff;
-            --text-primari: #333333;
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --text-primari: #1e293b;
         }
         
+        * { font-family: 'Outfit', 'Segoe UI', Tahoma, sans-serif !important; }
+
         body { 
-            font-family: 'Segoe UI', Tahoma, sans-serif; 
             margin: 0;
-            padding: 10px;
-            background-color: #f4f4f4;
+            padding: 24px;
+            background-color: #f8fafc;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -25,61 +30,73 @@
         }
 
         .contenedor-app {
-            background-color: var(--fons);
+            background-color: #ffffff;
             width: 100%;
             max-width: 650px; 
-            border: 2px solid var(--verd-corporatiu);
+            border: 1px solid var(--border);
             border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            box-shadow: var(--shadow-md);
             display: flex;
             flex-direction: column;
             max-height: 98vh; 
+            overflow: hidden;
         }
 
         .capçalera-app {
-            background-color: var(--verd-corporatiu);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 10px 10px 0 0;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+            background-color: var(--nyn-verd) !important;
+            color: white !important;
+            padding: 12px 24px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: space-between !important;
+            border-bottom: 2px solid var(--nyn-verd-accent) !important;
+            box-sizing: border-box !important;
         }
 
         .capçalera-titol {
             margin: 0;
             text-transform: uppercase;
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 13px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         .capçalera-logo {
-            height: 33px; 
+            height: 28px; 
+            object-fit: contain;
         }
 
         .formulari-app {
-            padding: 10px 15px;
+            padding: 20px 24px;
             overflow-y: auto; 
             flex-grow: 1;
         }
 
         label { 
             display: block; 
-            margin-top: 8px; 
-            font-weight: bold; 
-            color: var(--verd-corporatiu);
-            font-size: 14px;
+            margin-top: 12px; 
+            font-weight: 700; 
+            color: var(--nyn-verd);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         input, textarea, select { 
             width: 100%; 
-            padding: 8px; 
-            margin-top: 4px; 
+            padding: 8px 12px; 
+            margin-top: 6px; 
             box-sizing: border-box; 
-            border: 1px solid var(--verd-corporatiu); 
-            border-radius: 4px; 
-            font-size: 14px;
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 13px;
             color: var(--text-primari);
+            background: #ffffff;
+            transition: border-color 0.2s;
+        }
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--nyn-verd-accent);
+            outline: none;
         }
 
         textarea { 
@@ -88,19 +105,21 @@
         }
 
         .opcionals { 
-            background: var(--verd-clar); 
-            padding: 10px 15px; 
-            margin-top: 15px; 
+            background: #f8fafc; 
+            padding: 16px; 
+            margin-top: 16px; 
             border-radius: 8px; 
-            border: 1px dashed var(--verd-corporatiu); 
+            border: 1px dashed #cbd5e1; 
         }
 
         .titol-opcionals {
-            color: var(--verd-corporatiu);
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 5px;
+            color: var(--nyn-verd);
+            font-weight: 700;
+            font-size: 11px;
+            margin-bottom: 8px;
             display: block;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .checkbox-group {
@@ -123,35 +142,40 @@
             margin: 0;
             font-weight: normal;
             font-size: 13px;
+            color: var(--text-primari);
         }
 
         .peu-app {
-            padding: 10px 15px;
-            border-top: 1px solid #eee;
+            padding: 16px 24px;
+            border-top: 1px solid #e2e8f0;
             display: flex;
             flex-direction: column;
             align-items: center;
+            background: #f8fafc;
         }
 
         button { 
             width: 100%; 
-            padding: 12px; 
-            background-color: var(--verd-corporatiu); 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            cursor: pointer; 
-            font-size: 16px; 
-            font-weight: bold;
+            padding: 10px 16px; 
+            background-color: var(--nyn-verd) !important; 
+            color: white !important; 
+            border: none !important; 
+            border-radius: 6px !important; 
+            cursor: pointer !important; 
+            font-size: 13px !important; 
+            font-weight: 700 !important;
+            text-transform: uppercase;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
         }
 
         button:hover { 
-            background-color: #003300; 
+            background-color: #0b4e43 !important; 
         }
 
         .llegenda-beta {
-            font-size: 11px;
-            color: #888;
+            font-size: 10px;
+            color: #64748b;
             margin-top: 8px;
             font-style: italic;
         }

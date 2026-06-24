@@ -48,24 +48,28 @@
         }
 
         /* HEADER */
-        header {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
+        header { 
+            background-color: var(--nyn-pino) !important; 
+            color: white !important; 
+            padding: 8px 24px !important; 
+            display: flex !important;        
+            justify-content: center !important; 
+            align-items: center !important; 
+            height: 48px !important; 
+            border-bottom: 2px solid var(--nyn-success) !important;
+            box-sizing: border-box !important;
+            margin-bottom: 0 !important;
+            text-align: center !important;
+            position: relative;
+            z-index: 1000;
         }
-
-        header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--nyn-azul);
-            margin: 0;
-            letter-spacing: -0.5px;
-        }
-
-        header p {
-            font-size: 14px;
-            color: var(--nyn-text-light);
-            margin: 0;
+        header h1 { 
+            font-size: 15px !important; 
+            font-weight: 700 !important; 
+            text-transform: uppercase !important; 
+            letter-spacing: 1px !important; 
+            color: white !important;
+            margin: 0 !important;
         }
 
         /* CARDS */
@@ -83,7 +87,7 @@
         .card-title {
             font-size: 18px;
             font-weight: 600;
-            color: var(--nyn-azul);
+            color: var(--nyn-pino);
             margin: 0;
             display: flex;
             align-items: center;
@@ -105,11 +109,11 @@
         }
 
         th {
-            background-color: #f1f5f9;
-            color: var(--nyn-azul);
+            background-color: #1e293b !important;
+            color: white !important;
             font-weight: 600;
             padding: 14px 16px;
-            border-bottom: 1px solid var(--nyn-border);
+            border: 1px solid #334155 !important;
             text-transform: uppercase;
             font-size: 11px;
             letter-spacing: 0.5px;
@@ -297,13 +301,12 @@
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
 
+    <header>
+        <h1 id="viewTitle" data-i18n="reglesTitle">📋 Normes del Quadrant</h1>
+    </header>
+
     <div class="container">
-        
-        <!-- Cabecera -->
-        <header>
-            <h1 id="viewTitle" data-i18n="reglesTitle">📋 Normes del Quadrant</h1>
-            <p id="viewSubtitle" data-i18n="reglesSubtitle">Configuració dels paràmetres operatius i regles de negoci.</p>
-        </header>
+        <p id="viewSubtitle" data-i18n="reglesSubtitle" style="font-size: 13px; color: var(--nyn-text-light); margin: 0 0 8px 0; font-weight: 500;">Configuració dels paràmetres operatius i regles de negoci.</p>
 
         <!-- Listado de Normas -->
         <div class="card">

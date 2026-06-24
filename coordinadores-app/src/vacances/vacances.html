@@ -18,47 +18,137 @@
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ca.js"></script>
 
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
         :root { 
-            --nyn-verd: #008d36; 
-            --nyn-lila: #8e24aa;     
-            --nyn-taronja: #ff9800;
-            --nyn-blau-apagat: #546e7a;
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --nyn-verd-light: #e6f4ea;
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
         
         html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
-        body { font-family: 'Segoe UI', Arial, sans-serif; background: white; font-size: 11px; }
+        body { font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; background: #f8fafc; font-size: 11px; color: #1e293b; }
         
-        .header { 
-            background: var(--nyn-verd); color: white; padding: 0 15px; 
-            display: flex; align-items: center; justify-content: space-between; 
-            flex-shrink: 0; height: 48px; box-sizing: border-box; z-index: 1000;
+        header { 
+            background-color: var(--nyn-verd); 
+            color: white; 
+            padding: 8px 24px; 
+            display: flex;        
+            justify-content: center; 
+            align-items: center; 
+            height: 48px; 
+            border-bottom: 2px solid var(--nyn-verd-accent);
+            box-sizing: border-box;
+            flex-shrink: 0;
             position: relative;
         }
 
-        .header-left { display: flex; gap: 6px; align-items: center; flex-grow: 1; }
-        
         .header-center { 
-            display: flex; align-items: center; gap: 15px;
-            position: absolute; left: 50%; transform: translateX(-50%);
+            font-size: 15px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            text-align: center; 
+            letter-spacing: 1px; 
         }
         
-        .header-center h1 { margin: 0; font-size: 14px; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
+        .admin-panel { 
+            padding: 10px 24px; 
+            display: flex; 
+            flex-wrap: wrap;
+            gap: 12px; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            background: #ffffff; 
+            flex-shrink: 0;
+        }
         
-        #lastExport { font-size: 9px; color: #e0e0e0; font-style: normal; margin-left: 10px; white-space: nowrap; }
-
-        .btn-nyn { 
-            padding: 3px 8px; border-radius: 2px; font-size: 9px; cursor: pointer; 
-            background: var(--nyn-verd); color: white; font-weight: bold; 
-            border: 1px solid rgba(255,255,255,0.4); text-transform: uppercase; height: 26px;
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .filter-label { 
+            font-weight: 700; 
+            color: var(--nyn-verd); 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
         }
 
-        #selectAny {
-            width: 80px; height: 26px; background: white; color: black; 
-            border: 1.5px solid black; border-radius: 2px; font-weight: bold;
-            appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="black"/></svg>');
-            background-repeat: no-repeat; background-position: right 8px center; padding-right: 20px;
-            text-align: center; cursor: pointer; font-size: 11px;
+        select, button { 
+            padding: 4px 10px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
+            font-size: 11px; 
+            font-weight: 500;
+            cursor: pointer; 
+            height: 28px; 
+            box-sizing: border-box; 
+            font-family: inherit; 
+            transition: all 0.2s ease;
+            background: #ffffff;
+            color: #334155;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        select:hover, select:focus {
+            border-color: var(--nyn-verd-accent);
+            outline: none;
+        }
+
+        .btn-action {
+            background: var(--nyn-verd);
+            color: #ffffff;
+            border: 1px solid var(--nyn-verd);
+            font-weight: 600;
+        }
+        
+        .btn-action:hover {
+            background: #0b4e43;
+            border-color: #0b4e43;
+        }
+        
+        .btn-action-sec {
+            background: #3b82f6;
+            color: white;
+            border: 1px solid #3b82f6;
+            font-weight: 600;
+        }
+        
+        .btn-action-sec:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .btn-archive {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+        
+        .btn-archive:hover {
+            background: #e2e8f0;
+        }
+        
+        .btn-danger-right {
+            background: #ef4444;
+            color: white;
+            font-weight: 600;
+            border: 1px solid #ef4444;
+        }
+        
+        .btn-danger-right:hover {
+            background: #dc2626;
+            border-color: #dc2626;
         }
 
         .table-container { flex-grow: 1; overflow: auto; padding: 0; }
@@ -120,21 +210,31 @@
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
 
-<div class="header">
-    <div class="header-left">
-        <button class="btn-nyn" onclick="afegirFila()" data-i18n="vacancesAddRow">➕ Afegir Fila</button>
-        <button class="btn-nyn" onclick="openDeleteModal()" style="background:var(--nyn-blau-apagat);" data-i18n="vacancesManageData">⚙️ Gestionar Dades</button>
-        <button class="btn-nyn" onclick="exportarExcel()" style="background:#2e7d32;" data-i18n="vacancesExportExcel">📥 Exportar Excel</button>
-        <button class="btn-nyn" onclick="exportarJSON()" style="background:var(--nyn-lila);" data-i18n="vacancesExportJSON">💾 Exportar</button>
-        <button class="btn-nyn" onclick="document.getElementById('inputImportar').click()" style="background:var(--nyn-taronja);" data-i18n="vacancesImportJSON">📂 Importar</button>
-        <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
-        <button class="btn-nyn" onclick="reiniciarTot()" style="background:#d32f2f;" data-i18n="vacancesClearData">🗑️ Esborrar dades</button>
-        <div id="lastExport" data-i18n="vacancesLastExportNone">Última exportació: Mai</div>
-    </div>
+<header>
+    <div class="header-center" data-i18n="vacancesTitle">Vacances Pàrkings</div>
+</header>
 
-    <div class="header-center">
-        <h1><span data-i18n="vacancesTitle">VACANCES PÀRKINGS</span></h1>
-        <select id="selectAny" onchange="inicialitzar()"></select>
+<div class="admin-panel">
+    <div class="toolbar-group">
+        <span class="filter-label" data-i18n="vacancesLabelAny">Any:</span>
+        <select id="selectAny" onchange="inicialitzar()" style="width: 80px;"></select>
+    </div>
+    
+    <div class="toolbar-group">
+        <button class="btn-action" onclick="afegirFila()" data-i18n="vacancesAddRow">➕ Afegir Fila</button>
+        <button class="btn-archive" onclick="openDeleteModal()" data-i18n="vacancesManageData">⚙️ Gestionar Dades</button>
+    </div>
+    
+    <div class="toolbar-group">
+        <button class="btn-action-sec" onclick="exportarExcel()" data-i18n="vacancesExportExcel">📥 Exportar Excel</button>
+        <button class="btn-archive" onclick="exportarJSON()" data-i18n="vacancesExportJSON">💾 Exportar</button>
+        <button class="btn-archive" onclick="document.getElementById('inputImportar').click()" data-i18n="vacancesImportJSON">📂 Importar</button>
+        <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
+    </div>
+    
+    <div class="toolbar-group" style="margin-left: auto;">
+        <div id="lastExport" style="font-size: 10px; color: #64748b; font-weight: 500; margin-right: 10px;" data-i18n="vacancesLastExportNone">Última exportació: Mai</div>
+        <button class="btn-danger-right" onclick="reiniciarTot()" data-i18n="vacancesClearData">🗑️ Esborrar dades</button>
     </div>
 </div>
 

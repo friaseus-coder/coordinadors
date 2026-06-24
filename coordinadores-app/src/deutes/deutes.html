@@ -5,62 +5,203 @@
     <title>NN Control Excés Jornada</title>
     <script src="../js/persistence.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Arial, sans-serif; background-color: white; margin: 0; color: #333; font-size: 11px; display: flex; flex-direction: column; height: 100vh; }
-        
-        .header-top { 
-            background: #008d36; color: white; padding: 0 15px; display: flex; align-items: center; 
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1); position: sticky; top: 0; height: 45px; box-sizing: border-box; z-index: 1000;
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        :root { 
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
 
-        .title-wrapper { flex-grow: 1; display: flex; justify-content: center; }
-        .header-top h1 { font-size: 13px; font-weight: 800; margin: 0; text-transform: uppercase; white-space: nowrap; }
-        
-        .controls-wrapper { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
-        
+        * { font-family: 'Outfit', 'Segoe UI', Arial, sans-serif !important; }
+
+        body { 
+            background-color: #f8fafc !important; 
+            margin: 0; 
+            color: #333; 
+            font-size: 11px; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+
+        /* --- HEADER ESTILO CUADRANTE --- */
+        header { 
+            background-color: var(--nyn-verd) !important; 
+            color: white !important; 
+            padding: 8px 24px !important; 
+            display: flex !important;        
+            justify-content: center !important; 
+            align-items: center !important; 
+            height: 48px !important; 
+            border-bottom: 2px solid var(--nyn-verd-accent) !important;
+            box-sizing: border-box !important;
+            margin-bottom: 0 !important;
+            text-align: center !important;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        header h1 { 
+            font-size: 15px !important; 
+            font-weight: 700 !important; 
+            text-transform: uppercase !important; 
+            letter-spacing: 1px !important; 
+            color: white !important;
+            margin: 0 !important;
+        }
+
+        /* --- BARRA DE HERRAMIENTAS Y CONTROL --- */
+        .admin-panel { 
+            padding: 10px 24px; 
+            display: flex; 
+            flex-wrap: wrap;
+            gap: 12px; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            background: #ffffff; 
+            margin-bottom: 12px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--shadow-sm);
+        }
+        .filter-label { 
+            font-weight: 700; 
+            color: var(--nyn-verd); 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+
+        /* DROPDOWNS Y BOTONES */
+        select, button, input[type="text"], input[type="number"] {
+            padding: 4px 10px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            font-size: 11px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+            transition: all 0.2s ease !important;
+            background: #ffffff !important;
+            color: #334155 !important;
+            box-shadow: var(--shadow-sm) !important;
+        }
+        input[type="text"], input[type="number"] {
+            cursor: text !important;
+        }
+        select:hover, select:focus, input[type="text"]:focus {
+            border-color: var(--nyn-verd-accent) !important;
+            outline: none !important;
+        }
+
+        .btn-action {
+            background: var(--nyn-verd) !important;
+            color: #ffffff !important;
+            border: 1px solid var(--nyn-verd) !important;
+            font-weight: 600 !important;
+        }
+        .btn-action:hover {
+            background: #0b4e43 !important;
+            border-color: #0b4e43 !important;
+        }
+        .btn-action-sec {
+            background: #3b82f6 !important;
+            color: white !important;
+            border: 1px solid #3b82f6 !important;
+            font-weight: 600 !important;
+        }
+        .btn-action-sec:hover {
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+        }
+        .btn-archive {
+            background: #f1f5f9 !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #475569 !important;
+        }
+        .btn-archive:hover {
+            background: #e2e8f0 !important;
+        }
+
+        /* --- STATS WRAPPER --- */
         .stats-wrapper { 
-            display: flex; align-items: center; gap: 1px; background: #444; padding: 2px; border-radius: 3px; 
-            font-weight: bold; font-size: 10px; flex-shrink: 0; margin-left: 15px;
+            display: flex; 
+            align-items: center; 
+            gap: 8px;
+            font-weight: bold; 
+            font-size: 11px;
         }
-        .stat-box { padding: 2px 6px; display: flex; flex-direction: row; gap: 4px; align-items: center; height: 24px; color: white; }
-        .stat-label { color: #ddd; font-size: 8.5px; text-transform: uppercase; }
-        .stat-val-red { background: #ff0000; color: white; min-width: 40px; text-align: center; padding: 0 4px; }
-        .stat-val-yellow { background: #ffff00; color: black; min-width: 40px; text-align: center; padding: 0 4px; }
-        .stat-val-black { background: #000000; color: #ffff00; min-width: 40px; text-align: center; padding: 0 4px; }
-        .stat-val-blue { background: #00b0f0; color: white; min-width: 40px; text-align: center; padding: 0 4px; }
-
+        .stat-box { 
+            display: flex; 
+            align-items: center; 
+            gap: 4px; 
+            height: 24px; 
+            background: #f8fafc;
+            padding: 2px 8px;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+        .stat-label { 
+            color: #64748b; 
+            font-size: 9px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+        .stat-val-red { 
+            color: #ef4444; 
+            font-weight: 800;
+        }
+        .stat-val-yellow { 
+            color: #d97706; 
+            font-weight: 800;
+        }
+        .stat-val-black { 
+            color: #1e293b; 
+            font-weight: 800;
+        }
+        .stat-val-blue { 
+            color: #2563eb; 
+            font-weight: 800;
+        }
         .stats-legend {
-            font-size: 7.5px; color: #bbb; line-height: 1; padding: 0 8px; border-left: 1px solid #555;
-            display: flex; flex-direction: column; justify-content: center; gap: 2px; text-transform: uppercase;
+            font-size: 9px; 
+            color: #64748b; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px; 
+            text-transform: uppercase;
         }
-
-        .btn-nyn { border: none; padding: 4px 8px; cursor: pointer; font-weight: bold; font-size: 10px; text-transform: uppercase; transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 5px; height: 24px; 
-			border-radius: 2px; color: white; }
-        .btn-import { background: #ef6c00 !important; }
-        .btn-export { background: #6a1b9a !important; }
-        .btn-manage { background: #0277bd !important; }
-        .btn-add { background: #ffffff !important; color: #008d36 !important; border: 1px solid #008d36; }
-        
-        .sel-any-header { background: #ffffff; color: #333333; border: 1px solid #ccc; font-weight: bold; padding: 2px 5px; cursor: pointer; border-radius: 2px; outline: none; height: 24px; }
         
         .main-container { display: flex; flex: 1; overflow: hidden; }
-        .table-container { flex: 1; overflow: auto; }
+        .table-container { flex: 1; overflow: auto; padding: 16px 24px; background: #f8fafc; }
 
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; border: none; }
+        table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--border) !important; border-radius: 12px; overflow: hidden; background: white; box-shadow: var(--shadow-md); }
         
         th { 
-            background-color: #f0f0f0; color: #444; padding: 2px; text-align: center; font-size: 11px; 
-            border: 1px solid #ddd; font-weight: 400; position: sticky; top: 0; z-index: 900;
+            background-color: #1e293b !important; color: #ffffff !important; padding: 6px 4px !important; text-align: center; font-size: 11px; 
+            border: 1px solid #334155 !important; font-weight: 600; position: sticky; top: 0; z-index: 900;
             text-transform: none; 
         }
         
         .thead-double th { top: 0; }
-        .thead-double tr:nth-child(2) th { top: 18px; }
+        .thead-double tr:nth-child(2) th { top: 29px; }
 
-        td { padding: 0 2px; border: 1px solid #eee; font-size: 11px; height: 18px; text-align: center; vertical-align: middle; background-color: white; }
+        td { padding: 4px; border: 1px solid #eee; font-size: 11px; height: 24px; text-align: center; vertical-align: middle; background-color: white; }
         
         .col-centre { width: 150px; text-align: left; padding-left: 5px; font-weight: bold !important; }
         .col-nom { width: 150px; text-align: left; padding-left: 5px; }
-        .col-jornada { width: 60px; text-align: center; }
+        .col-jornada { width: 70px; text-align: center; }
         .col-data { width: 115px; } 
         .col-obs { width: 300px; text-align: center; }
         .col-del { width: 30px; font-size: 12px; }
@@ -81,7 +222,7 @@
             background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="%23666"/></svg>');
             background-repeat: no-repeat; background-position: right 4px center; padding-right: 12px;
         }
-        .filter-select { text-align: center; font-size: 10px; font-weight: 400; }
+        .filter-select { text-align: center; font-size: 10px; font-weight: 600; color: white !important; }
         
         .text-tp { color: #9b59b6 !important; font-weight: normal !important; }
 
@@ -97,21 +238,21 @@
 
         .data-antiga { color: #8e44ad !important;  }
 
-        .header-conveni { background-color: #f1c40f !important; color: black !important; border-color: #d4ac0d !important; }
-        .header-vacances { background-color: #2ecc71 !important; color: white !important; border-color: #27ae60 !important; }
-        .header-nocturn { background-color: #0070c0 !important; color: white !important; border-color: #005fa3 !important; }
-        .header-reajust { background-color: #00b0f0 !important; color: white !important; border-color: #0096ce !important; }
+        .header-conveni { background-color: #d97706 !important; color: white !important; border-color: #b45309 !important; }
+        .header-vacances { background-color: #16a34a !important; color: white !important; border-color: #15803d !important; }
+        .header-nocturn { background-color: #1d4ed8 !important; color: white !important; border-color: #1e40af !important; }
+        .header-reajust { background-color: #0284c7 !important; color: white !important; border-color: #0369a1 !important; }
 
-        .side-charts { width: 260px; background: #f9f9f9; border-left: 1px solid #ddd; padding: 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
-        .chart-card-ranking { background: white; border: 1px solid #eee; border-radius: 4px; padding: 10px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
-        .chart-card-pie { background: white; border: 1px solid #eee; border-radius: 4px; padding: 10px; margin-top: 15px; flex-shrink: 0; }
-        .chart-title { font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: #008d36; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .side-charts { width: 260px; background: #ffffff; border-left: 1px solid #e2e8f0; padding: 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+        .chart-card-ranking { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; box-shadow: var(--shadow-sm); }
+        .chart-card-pie { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 15px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
+        .chart-title { font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: var(--nyn-verd); border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
         
         #rankingTreballadors { flex-grow: 1; }
         .bar-row { margin-bottom: 4px; }
         .bar-label { font-size: 8.5px; display: flex; justify-content: space-between; margin-bottom: 1px; }
         .bar-outer { background: #eee; height: 6px; border-radius: 3px; overflow: hidden; }
-        .bar-inner { height: 100%; background: #008d36; }
+        .bar-inner { height: 100%; background: var(--nyn-verd); }
 
         .pie-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px 0; }
         .pie-chart { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(#f1c40f 0% 0%, #eee 0% 100%); display: flex; align-items: center; justify-content: center; position: relative; }
@@ -121,7 +262,9 @@
         .legend-item { display: flex; align-items: center; gap: 4px; }
         .dot { width: 8px; height: 8px; border-radius: 2px; }
 
-        #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border:2px solid #008d36; padding:20px; z-index:2000; box-shadow: 0 0 20px rgba(0,0,0,0.5); width:500px; }
+        #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border:2px solid var(--nyn-verd); border-radius:12px; padding:20px; z-index:2000; box-shadow: var(--shadow-md); width:500px; }
+        #modalGestio h3 { color: var(--nyn-verd) !important; font-weight: 700; margin-top: 0; }
+        #modalGestio button { background: var(--nyn-verd) !important; color: white !important; font-weight: 600; }
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999; }
     </style>
     <script src="../js/i18n.js"></script>
@@ -134,26 +277,36 @@
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
 
-<div class="header-top">
-    <div class="controls-wrapper">
-        <select id="anyActual" class="sel-any-header" onchange="canviarAny()"></select>
-        <button class="btn-nyn btn-manage" onclick="obrirGestio()">⚙️ Gestionar Dades</button>
-        <button class="btn-nyn btn-add" onclick="afegirFila()">✚ Fila Nova</button>
+<header>
+    <h1 id="titolPrincipal">Control Excés Jornada</h1>
+</header>
+
+<div class="admin-panel">
+    <div class="toolbar-group">
+        <span class="filter-label">Any:</span>
+        <select id="anyActual" onchange="canviarAny()"></select>
+    </div>
+    
+    <div class="toolbar-group">
+        <button class="btn-action" onclick="afegirFila()">✚ Fila Nova</button>
+        <button class="btn-archive" onclick="obrirGestio()">⚙️ Gestionar Dades</button>
     </div>
 
-    <div class="stats-wrapper">
-        <div class="stat-box"><span class="stat-label">% pendent:</span><span id="statPendentPct" class="stat-val-red">0%</span></div>
-        <div class="stat-box"><span class="stat-label">% liquidat:</span><span id="statLiquidatPct" class="stat-val-yellow">0%</span></div>
-        <div class="stat-box"><span class="stat-label">totals:</span><span id="statTotals" class="stat-val-black">0</span></div>
-        <div class="stat-box"><span class="stat-label">pendents:</span><span id="statPendentAbs" class="stat-val-blue">0</span></div>
+    <div class="toolbar-group">
+        <span class="filter-label">Mètriques:</span>
+        <div class="stats-wrapper">
+            <div class="stat-box"><span class="stat-label">% pendent:</span><span id="statPendentPct" class="stat-val-red">0%</span></div>
+            <div class="stat-box"><span class="stat-label">% liquidat:</span><span id="statLiquidatPct" class="stat-val-yellow">0%</span></div>
+            <div class="stat-box"><span class="stat-label">totals:</span><span id="statTotals" class="stat-val-black">0</span></div>
+            <div class="stat-box"><span class="stat-label">pendents:</span><span id="statPendentAbs" class="stat-val-blue">0</span></div>
+        </div>
+    </div>
+
+    <div class="toolbar-group" style="margin-left: auto;">
         <div class="stats-legend">
             <span id="countFiles">nº files: 0</span>
             <span id="countCelles">nº cel·les: 0</span>
         </div>
-    </div>
-    
-    <div class="title-wrapper">
-        <h1 id="titolPrincipal">Control Excés Jornada</h1>
     </div>
 </div>
 

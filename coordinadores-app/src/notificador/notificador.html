@@ -5,33 +5,144 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestor de Comunicacions - NN Parkings</title>
     <style>
-        :root { --verd-notificador: #2d5a27; --groc-distintiu: #ffcc00; --fons: #ffffff; }
-        body { font-family: 'Verdana', sans-serif; font-size: 15px; margin: 0; padding: 10px; background-color: #f0f2f0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        .contenedor-app { background-color: var(--fons); width: 100%; max-width: 650px; border: 4px solid var(--groc-distintiu); border-radius: 12px; box-shadow: 0 8px 20px rgba(0,0,0,0.2); overflow: hidden; }
-        .capçalera-app { background-color: var(--verd-notificador); color: white; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid var(--groc-distintiu); }
-        .capçalera-titol { margin: 0; text-transform: uppercase; font-size: 16px; font-weight: bold; }
-        .capçalera-logo { height: 35px; }
-        .formulari-app { padding: 15px 20px; }
-        label { display: block; margin-top: 15px; font-weight: bold; color: var(--verd-notificador); font-size: 12px; text-transform: uppercase; }
-        input, select { width: 100%; padding: 10px; margin-top: 6px; box-sizing: border-box; border: 1px solid #ccc; border-left: 5px solid var(--verd-notificador); border-radius: 4px; font-size: 14px; }
-        .seccio-extra { background: #f9f9f9; padding: 10px; border-radius: 8px; margin-top: 15px; border: 1px dashed var(--verd-notificador); display: none; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        :root { 
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --text-primari: #1e293b;
+        }
+
+        * { font-family: 'Outfit', 'Segoe UI', Tahoma, sans-serif !important; }
+
+        body { 
+            margin: 0; 
+            padding: 24px; 
+            background-color: #f8fafc; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            min-height: 100vh; 
+        }
+
+        .contenedor-app { 
+            background-color: #ffffff; 
+            width: 100%; 
+            max-width: 650px; 
+            border: 1px solid var(--border); 
+            border-radius: 12px; 
+            box-shadow: var(--shadow-md); 
+            overflow: hidden; 
+        }
+
+        .capçalera-app { 
+            background-color: var(--nyn-verd); 
+            color: white; 
+            padding: 12px 24px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between; 
+            border-bottom: 2px solid var(--nyn-verd-accent); 
+        }
+
+        .capçalera-titol { 
+            margin: 0; 
+            text-transform: uppercase; 
+            font-size: 13px; 
+            font-weight: 700; 
+            letter-spacing: 0.5px;
+        }
+
+        .capçalera-logo { 
+            height: 28px; 
+            object-fit: contain;
+        }
+
+        .formulari-app { 
+            padding: 20px 24px; 
+        }
+
+        label { 
+            display: block; 
+            margin-top: 15px; 
+            font-weight: 700; 
+            color: var(--nyn-verd); 
+            font-size: 11px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 8px 12px; 
+            margin-top: 6px; 
+            box-sizing: border-box; 
+            border: 1px solid #cbd5e1; 
+            border-left: 4px solid var(--nyn-verd); 
+            border-radius: 6px; 
+            font-size: 13px; 
+            color: var(--text-primari);
+            background: #ffffff;
+            transition: border-color 0.2s;
+        }
+        input:focus, select:focus {
+            border-color: var(--nyn-verd-accent);
+            outline: none;
+        }
+
+        .seccio-extra { 
+            background: #f8fafc; 
+            padding: 16px; 
+            border-radius: 8px; 
+            margin-top: 15px; 
+            border: 1px dashed #cbd5e1; 
+            display: none; 
+        }
         
         .selector-tipus { display: flex; gap: 10px; margin-top: 10px; }
-        .opcio-tipus { flex: 1; padding: 10px; border: 2px solid #ccc; border-radius: 6px; text-align: center; cursor: pointer; font-weight: bold; background: #f9f9f9; font-size: 12px; }
-        .opcio-tipus.active { border-color: var(--verd-notificador); background-color: #e8f5e9; color: var(--verd-notificador); }
+        
+        .opcio-tipus { 
+            flex: 1; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; 
+            text-align: center; cursor: pointer; font-weight: 700; background: #ffffff; 
+            font-size: 11px; transition: all 0.2s ease;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .opcio-tipus.active { 
+            border-color: var(--nyn-verd-accent); 
+            background-color: #f0fdf4; 
+            color: var(--nyn-verd-accent); 
+        }
+ 
+        .btn-principal { 
+            width: 100%; padding: 12px 16px; background-color: var(--nyn-verd); 
+            color: white; border: none; border-radius: 6px; cursor: pointer; 
+            font-size: 13px; font-weight: 700; margin-top: 20px; text-transform: uppercase; 
+            display: flex; align-items: center; justify-content: center; gap: 10px; 
+            transition: background 0.2s;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-principal:hover {
+            background-color: #0b4e43;
+        }
 
-        .btn-principal { width: 100%; padding: 16px; background-color: var(--verd-notificador); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold; margin-top: 20px; text-transform: uppercase; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        #teclat-popover { display: none; background: #e1e4e8; padding: 8px; border-radius: 8px; margin-top: 8px; border: 2px solid #abb2b9; }
-        .teclat-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
-        .tecla { background: white; border: 1px solid #999; padding: 10px 0; text-align: center; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 14px; user-select: none; }
-        .tecla:hover { background: var(--groc-distintiu); }
-        .tecla.delete { background: #f8d7da; color: #721c24; }
-        .tecla.intro { background: #2d5a27; color: white; grid-column: span 2; font-size: 18px; }
+        #teclat-popover { display: none; background: #f1f5f9; padding: 12px; border-radius: 8px; margin-top: 8px; border: 1px solid #cbd5e1; box-shadow: var(--shadow-md); }
+        .teclat-grid { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; }
+        .tecla { background: white; border: 1px solid #cbd5e1; padding: 10px 0; text-align: center; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 14px; user-select: none; transition: all 0.15s ease; box-shadow: var(--shadow-sm); }
+        .tecla:hover { background: var(--nyn-verd-accent); color: white; border-color: var(--nyn-verd-accent); }
+        .tecla.delete { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+        .tecla.delete:hover { background: #ef4444; color: white; }
+        .tecla.intro { background: var(--nyn-verd); color: white; grid-column: span 2; font-size: 18px; border-color: var(--nyn-verd); }
+        .tecla.intro:hover { background: #0b4e43; }
+
         .checkbox-group { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: normal; text-transform: none; color: #333; }
+        .checkbox-item { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: normal; text-transform: none; color: var(--text-primari); }
         .checkbox-item input { width: auto; margin: 0; }
         .radio-group { display: flex; gap: 15px; margin-top: 10px; margin-bottom: 10px; }
-        .radio-item { display: flex; align-items: center; gap: 5px; font-size: 14px; font-weight: normal; text-transform: none; }
+        .radio-item { display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: normal; text-transform: none; }
         .radio-item input { width: auto; margin: 0; }
     </style>
     <script src="../js/i18n.js"></script>

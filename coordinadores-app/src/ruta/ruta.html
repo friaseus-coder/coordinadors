@@ -13,128 +13,334 @@
 </script>
 
 <style>
-/* --- EL TEU CSS ORIGINAL MANTINGUT INTEGRALMENT --- */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
 body {
-    font-family: Arial, sans-serif;
-    margin: 6px; 
+    font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 12px; 
     font-size: 12px;
     overflow-y: auto; 
     overflow-x: hidden;
     height: auto; 
     min-height: 100vh;
+    background-color: #f8fafc;
+    color: #1e293b;
 }
 
 .btn-nyn {
-    border: none; padding: 5px 10px; cursor: pointer; border-radius: 0;
-    font-weight: bold; font-size: 10px; text-transform: uppercase;
-    transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 5px;
-    background: #008d36; color: white;
-    height: 24px; 
+    border: none; padding: 4px 16px; cursor: pointer; border-radius: 9999px;
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;
+    background: #0f2d4a; color: white;
+    height: 26px; 
     box-sizing: border-box;
+    font-family: inherit;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
-.btn-nyn:hover { opacity: 0.8; }
-
-.btn-export { background: #6a1b9a !important; }
-.btn-import { background: #ef6c00 !important; }
+.btn-nyn:hover { background: #1e3a5f; transform: translateY(-0.5px); }
 
 .calendar-container {
-    background-color: rgba(0, 100, 0, 0.07);
-    padding: 5px 10px; 
-    border-radius: 6px;
-    border: 1px solid #bbb;
+    background-color: #ffffff;
+    padding: 16px; 
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
     flex: 1 1 48%;
     box-sizing: border-box;
     overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
 }
 
-.controls-add-month {
-    display: flex;
-    flex-wrap: nowrap; 
-    gap: 15px; 
-    align-items: center;
-    margin-bottom: 5px; 
+header { 
+    background-color: #063931; 
+    color: white; 
+    padding: 8px 24px; 
+    display: flex;        
+    justify-content: center; 
+    align-items: center; 
+    height: 48px; 
+    border-bottom: 2px solid #008d36;
+    box-sizing: border-box;
 }
 
-.controls-month {
+.header-center { 
+    font-size: 15px; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    text-align: center; 
+    letter-spacing: 1px; 
+}
+
+.admin-panel { 
+    padding: 10px 24px; 
+    display: flex; 
+    flex-wrap: wrap;
+    gap: 12px; 
+    align-items: center; 
+    border-bottom: 1px solid #e2e8f0; 
+    background: #ffffff; 
+    margin-bottom: 16px;
+}
+
+.toolbar-group {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 8px;
+    background: #ffffff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.filter-label { 
+    font-weight: 700; 
+    color: #063931; 
+    font-size: 10px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+}
+
+.admin-panel input[type="month"] {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: inherit;
+    font-weight: 500;
+    color: #0f2d4a;
+    outline: none;
+    height: 26px;
+    box-sizing: border-box;
+}
+
+.admin-panel input[type="month"]:focus {
+    border-color: #0f2d4a;
+    box-shadow: 0 0 0 2px rgba(15, 45, 74, 0.1);
+}
+
+.btn-action {
+    background: #063931;
+    color: #ffffff;
+    border: 1px solid #063931;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    height: 26px;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+
+.btn-action:hover {
+    background: #0b4e43;
+    border-color: #0b4e43;
 }
 
 .wrapper {
     display: flex;
-    gap: 10px;
+    gap: 16px;
     flex-wrap: wrap;
     margin-top: 5px; 
 }
 
-#container-albert { background-color: rgba(208, 231, 255, 0.5); }
-#container-laura { background-color: #fff0f5; }
+#container-albert {
+    border-top: 4px solid #007bff;
+    padding-top: 8px;
+}
+#container-albert h2 {
+    color: #007bff;
+}
 
-h2 { margin: 1px 0; font-size: 15px; text-align: center; }
+#container-laura {
+    border-top: 4px solid #ec4899;
+    padding-top: 8px;
+}
+#container-laura h2 {
+    color: #ec4899;
+}
 
-table { border-collapse: collapse; width: 100%; table-layout: fixed; }
-th, td { border: 1px solid #bbb; padding: 1px; vertical-align: top; }
-th { background: #f2f2f2; font-size: 11px; }
-td { height: 105px; }
+h2 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
 
-.day-number { font-weight: bold; color: black; font-size: 11px; line-height: 14px; height: 16px; }
-select { width: 100%; font-size: 10px; }
+table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+th, td {
+    border: 1px solid #e2e8f0;
+    padding: 3px;
+    vertical-align: top;
+}
+th {
+    background: #f1f5f9;
+    font-size: 11px;
+    color: #475569;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 6px 4px;
+}
+td {
+    height: 105px;
+    background: #ffffff;
+}
 
-.weekend { background: #f8d7da; }
-.national { background: #ff4d4d !important; }
-.local { background: #4da6ff !important; }
-.convenio { background: #b366ff !important; }
-.empresa { background: #4dff88 !important; }
-.vigilia { background: #fff066 !important; }
+.day-number {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 11px;
+    line-height: 14px;
+    height: 16px;
+    margin-bottom: 4px;
+}
 
-.chart-container { width: 100%; height: 175px; margin: 0 auto 5px; }
+.weekend { background: #f8fafc; }
+
+/* Festivos con colores pastel suaves */
+.national { background: #fee2e2 !important; }
+.national .day-number { color: #991b1b; }
+
+.local { background: #dbeafe !important; }
+.local .day-number { color: #1e40af; }
+
+.convenio { background: #f3e8ff !important; }
+.convenio .day-number { color: #6b21a8; }
+
+.empresa { background: #d1fae5 !important; }
+.empresa .day-number { color: #065f46; }
+
+.vigilia { background: #fef9c3 !important; }
+.vigilia .day-number { color: #854d0e; }
+
+.chart-container { width: 100%; height: 160px; margin: 0 auto 12px; }
 
 .legend-wrapper {
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
-  margin: 0 0 0 15px; 
+  margin-left: 20px; 
   flex-grow: 1;
 }
 
-.legend-item { display: flex; align-items: center; gap: 4px; }
-.legend-box { width: 12px; height: 12px; border: 1px solid #bbb; }
+.legend-item { display: flex; align-items: center; gap: 4px; font-weight: 500; color: #475569; }
+.legend-box { width: 12px; height: 12px; border-radius: 3px; border: 1px solid #cbd5e1; }
 
-.visit-row { position: relative; display: flex; align-items: center; width: 100%; }
+.visit-row { position: relative; display: flex; align-items: center; width: 100%; margin-bottom: 2px; }
 .visit-row select {
-    height: 16px; padding: 0 10px 0 2px; font-size: 8.5px;
-    appearance: none; -webkit-appearance: none;
-    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
-    background-repeat: no-repeat; background-position: right 2px center; background-size: 8px; background-color: white; 
+    height: 18px;
+    padding: 0 16px 0 4px;
+    font-size: 9px;
+    font-family: inherit;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    background-size: 8px;
+    background-color: #ffffff;
+    color: #334155;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.15s;
+}
+.visit-row select:focus {
+    border-color: #0f2d4a;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(15, 45, 74, 0.1);
 }
 
 .night-btn, .holiday-btn {
     position: absolute; top: 50%; transform: translateY(-50%);
-    width: 9px; height: 9px; border-radius: 50%; border: 1px solid #666;
-    background: transparent; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; z-index: 5;
+    width: 10px; height: 10px; border-radius: 50%; border: 1px solid #cbd5e1;
+    background: #ffffff; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; z-index: 5;
+    transition: all 0.15s;
 }
-.holiday-btn { right: 22px; } .night-btn { right: 13px; }
-.night-btn::after { content: ''; width: 3.5px; height: 3.5px; border-radius: 50%; background-color: #007bff; }
-.holiday-btn::after { content: ''; width: 3.5px; height: 3.5px; border-radius: 50%; background-color: #ff4d4d; }
-.night-btn.active, .holiday-btn.active { background-color: #fff; opacity: 1; border-width: 1.5px; }
+.holiday-btn { right: 24px; } .night-btn { right: 12px; }
+.night-btn::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background-color: #38bdf8; }
+.holiday-btn::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background-color: #f87171; }
+.night-btn.active { border-color: #0284c7; background-color: #0284c7; }
+.night-btn.active::after { background-color: #ffffff; }
+.holiday-btn.active { border-color: #ef4444; background-color: #ef4444; }
+.holiday-btn.active::after { background-color: #ffffff; }
 
-.night-select { background: #B0E0E6 !important; }
-.holiday-select { background: #ffcccc !important; }
+.night-select { background-color: #e0f2fe !important; border-color: #7dd3fc !important; color: #0369a1 !important; }
+.holiday-select { background-color: #ffe4e6 !important; border-color: #fca5a5 !important; color: #b91c1c !important; }
 
-.legend-box.night-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background-color: #007bff; }
-.legend-box.holiday-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background-color: #ff4d4d; }
+.legend-box.night-circle::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background-color: #0284c7; }
+.legend-box.holiday-circle::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background-color: #ef4444; }
 .legend-box.night-circle, .legend-box.holiday-circle { display: flex; justify-content: center; align-items: center; border-radius: 50%; }
 
 .foreign-select {
-    background-color: #ffe0b2 !important; /* Naranja muy suave */
-    border: 1.5px solid #ff9800 !important;
+    background-color: #ffedd5 !important;
+    border: 1px solid #fdba74 !important;
+    color: #c2410c !important;
 }
 
 #panelGestio {
-    display: none; position: absolute; top: 40px; left: 280px; background: #fff;
-    border: 2px solid #008d36; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 10000; width: 280px;
+    display: none; position: absolute; top: 50px; left: 20px; background: #ffffff;
+    border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 10000; width: 280px;
+}
+#panelGestio h3 {
+    margin-top: 0;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+    color: #0f2d4a;
+}
+
+.btn-reset {
+    border: 1px solid #fca5a5;
+    background: #ffffff;
+    color: #ef4444;
+    padding: 4px 14px;
+    cursor: pointer;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.btn-reset:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    transform: translateY(-0.5px);
+}
+
+.btn-auto {
+    border: none;
+    background: #0f2d4a;
+    color: #ffffff;
+    padding: 4px 14px;
+    cursor: pointer;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn-auto:hover {
+    background: #1e3a5f;
+    transform: translateY(-0.5px);
 }
 </style>
 
@@ -143,44 +349,46 @@ select { width: 100%; font-size: 10px; }
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
 
-<div class="controls-add-month">
-    <div class="controls-month">
-        <label for="monthPicker" data-i18n="rutaLabelMes">Mes:</label>
-        <input type="month" id="monthPicker" style="height:24px; box-sizing:border-box;" />
+<header>
+    <div class="header-center" data-i18n="rutaTitle">Fulla de Visites 2026</div>
+</header>
+
+<div class="admin-panel">
+    <div class="toolbar-group">
+        <label for="monthPicker" class="filter-label" data-i18n="rutaLabelMes">Mes:</label>
+        <input type="month" id="monthPicker" />
     </div>
 
-    <div style="display: flex; align-items: center; gap: 8px;">
-        <button class="btn-nyn" id="btnGestioCentres" onclick="obrirGestio()" data-i18n="rutaBtnManage">⚙️ Editar Centres / Backup</button>
+    <div class="toolbar-group">
+        <button class="btn-action" id="btnGestioCentres" onclick="obrirGestio()" data-i18n="rutaBtnManage">⚙️ Editar Centres / Backup</button>
         
         <div id="panelGestio">
-            <h3 style="margin-top:0; font-size:12px; text-transform:uppercase; border-bottom:2px solid #008d36; padding-bottom:5px; color: #008d36;" data-i18n="rutaManageTitle">Gestió de Centres</h3>
-            <div style="margin-bottom:10px">
-                <input type="text" id="nouNomInput" style="width:120px; border:1px solid #999; padding:3px; border-radius:4px;">
-                <button onclick="afegirC()" style="background:#008d36; color:white; border:none; padding:4px 10px; cursor:pointer; font-weight:bold; border-radius:4px;">+</button>
+            <h3 style="margin-top:0; font-size:12px; text-transform:uppercase; border-bottom:1px solid #e2e8f0; padding-bottom:5px; color: #0f2d4a;" data-i18n="rutaManageTitle">Gestió de Centres</h3>
+            <div style="margin-bottom:10px; display: flex; gap: 6px;">
+                <input type="text" id="nouNomInput" style="flex: 1; border:1px solid #cbd5e1; padding:4px 8px; border-radius:6px; font-family:inherit; font-size:11px;">
+                <button onclick="afegirC()" style="background:#0f2d4a; color:white; border:none; padding:4px 12px; cursor:pointer; font-weight:bold; border-radius:6px; font-family:inherit;">+</button>
             </div>
             <div style="margin-bottom:10px">
-                <select id="selGestio" style="width:140px; border:1px solid #999; padding:2px; border-radius:4px;"></select>
+                <select id="selGestio" style="width:100%; border:1px solid #cbd5e1; padding:4px; border-radius:6px; font-family:inherit; font-size:11px; height:24px;"></select>
             </div>
-            <div style="display:flex; gap:5px; margin-bottom:15px;">
-                <button onclick="editarC()" style="background:#e8f5e9; color:#2e7d32; border:1px solid #2e7d32; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;" data-i18n="rutaBtnEdit">📝 Editar</button>
-                <button onclick="borrarC()" style="background:#ffebee; color:#c62828; border:1px solid #c62828; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:4px;" data-i18n="rutaBtnDelete">🗑️ Eliminar</button>
+            <div style="display:flex; gap:6px; margin-bottom:12px;">
+                <button onclick="editarC()" style="background:#f1f5f9; color:#0f2d4a; border:1px solid #cbd5e1; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:6px; font-family:inherit; font-size:11px;" data-i18n="rutaBtnEdit">📝 Editar</button>
+                <button onclick="borrarC()" style="background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:6px; font-family:inherit; font-size:11px;" data-i18n="rutaBtnDelete">🗑️ Eliminar</button>
             </div>
-            <button onclick="document.getElementById('panelGestio').style.display='none'" style="display:block; width:100%; background:#008d36; color:white; border:none; padding:8px; cursor:pointer; font-weight:bold; text-transform:uppercase; border-radius:4px;" data-i18n="rutaBtnClose">Tancar</button>
+            <button onclick="document.getElementById('panelGestio').style.display='none'" style="display:block; width:100%; background:#0f2d4a; color:white; border:none; padding:8px; cursor:pointer; font-weight:bold; text-transform:uppercase; border-radius:6px; font-family:inherit; font-size:11px;" data-i18n="rutaBtnClose">Tancar</button>
         </div>
+    </div>
 
+    <div class="toolbar-group" style="flex-grow: 1;">
         <div class="legend-wrapper">
-          <div style="display: flex; gap: 10px; align-items: center;">
-             <div class="legend-item"><div class="legend-box national"></div><span data-i18n="rutaLegendNational">Festiu nacional</span></div>
+          <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; width: 100%;">
+            <div class="legend-item"><div class="legend-box national"></div><span data-i18n="rutaLegendNational">Festiu nacional</span></div>
             <div class="legend-item"><div class="legend-box local"></div><span data-i18n="rutaLegendLocal">Festiu local</span></div>
             <div class="legend-item"><div class="legend-box convenio"></div><span data-i18n="rutaLegendConvenio">Festiu conveni</span></div>
             <div class="legend-item"><div class="legend-box empresa"></div><span data-i18n="rutaLegendEmpresa">Festiu empresa</span></div>
             <div class="legend-item"><div class="legend-box vigilia"></div><span data-i18n="rutaLegendVigilia">Vigília</span></div>
             <div class="legend-item"><div class="legend-box night-circle"></div><span data-i18n="rutaLegendNight"> Visita nocturna</span></div>
             <div class="legend-item"><div class="legend-box holiday-circle"></div><span data-i18n="rutaLegendHoliday">Festiu</span></div>
-
-            <span id="llegendaExport" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #111; gap: 112px; text-transform: none; text-shadow: none; font-weight: normal; margin-left: 25px;" data-i18n="rutaLegendExportNone">
-                |  Darrera exportació rutes: Cap dada encara
-            </span>
           </div>
         </div>
     </div>
@@ -192,12 +400,9 @@ select { width: 100%; font-size: 10px; }
             <h2>ALBERT</h2>
             <div class="chart-container"><canvas id="chartAlbert"></canvas></div>
             <div id="calendar-albert"></div>
-            <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                <button id="resetAlbertBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;" data-i18n="rutaBtnResetAlbert">⚠️ Reset Albert</button>
-                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Albert')" data-i18n="rutaBtnExportAlbert">💾 Exportar Albert</button>
-                <button class="btn-nyn btn-import" onclick="document.getElementById('fileAlbert').click()" data-i18n="rutaBtnImportAlbert">📂 Importar Albert</button>
-                <button class="btn-nyn" style="background:#0284c7 !important;" onclick="obrirAutoRuta('Albert')">⚡ Auto Albert</button>
-                <input type="file" id="fileAlbert" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Albert')">
+            <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center; justify-content: flex-end;">
+                <button id="resetAlbertBtn" class="btn-reset" data-i18n="rutaBtnResetAlbert">⚠️ Reset Albert</button>
+                <button class="btn-auto" onclick="obrirAutoRuta('Albert')" data-i18n="rutaBtnAutoAlbert">⚡ Auto Albert</button>
             </div>
         </div>
     </div>
@@ -207,124 +412,19 @@ select { width: 100%; font-size: 10px; }
             <h2>LAURA</h2>
             <div class="chart-container"><canvas id="chartLaura"></canvas></div>
             <div id="calendar-laura"></div>
-            <div style="display: flex; gap: 5px; margin-top: 5px; align-items: center;">
-                <button id="resetLauraBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;" data-i18n="rutaBtnResetLaura">⚠️ Reset Laura</button>
-                <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Laura')" data-i18n="rutaBtnExportLaura">💾 Exportar Laura</button>
-                <button class="btn-nyn btn-import" onclick="document.getElementById('fileLaura').click()" data-i18n="rutaBtnImportLaura">📂 Importar Laura</button>
-                <button class="btn-nyn" style="background:#0284c7 !important;" onclick="obrirAutoRuta('Laura')">⚡ Auto Laura</button>
-                <input type="file" id="fileLaura" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Laura')">
+            <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center; justify-content: flex-end;">
+                <button id="resetLauraBtn" class="btn-reset" data-i18n="rutaBtnResetLaura">⚠️ Reset Laura</button>
+                <button class="btn-auto" onclick="obrirAutoRuta('Laura')" data-i18n="rutaBtnAutoLaura">⚡ Auto Laura</button>
             </div>
         </div>
     </div>
 </div>
 
 <script>
-// --- FUNCIONS DE LLEGENDA INDEPENDENTS PER A RUTA ---
-
-function refrescarLlegendaGlobal() {
-    // Utilitzem una clau única per a RUTA
-    const data = localStorage.getItem('nyn_ruta_export_data');
-    const autor = localStorage.getItem('nyn_ruta_export_autor');
-    const el = document.getElementById('llegendaExport');
-    
-    if (el) {
-        if (data && autor) {
-            el.innerHTML = i18n.t('rutaLegendExportPrefix') + `${data} (per ${autor})`;
-        } else {
-            el.innerHTML = i18n.t('rutaLegendExportNone');
-        }
-    }
-}
-
 function registrarLog(usuari, accio) {
     const logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
     logs.unshift({ data: new Date().toLocaleString('ca-ES'), usuari: usuari, fitxer: "ruta.html", accio: accio });
     localStorage.setItem('nyn_logs', JSON.stringify(logs));
-}
-
-function exportarDadesUsuari(nomUsuari) {
-    let dades = {};
-    for (let i = 0; i < localStorage.length; i++) {
-        let clau = localStorage.key(i);
-        if (clau.startsWith(nomUsuari)) {
-            dades[clau] = localStorage.getItem(clau);
-        }
-    }
-    
-    if (Object.keys(dades).length === 0) {
-        alert("No hi ha dades guardades de " + nomUsuari);
-        return;
-    }
-
-    const ara = new Date();
-    const dataFormatada = ara.toLocaleString('ca-ES', { 
-        day: '2-digit', month: '2-digit', year: 'numeric', 
-        hour: '2-digit', minute: '2-digit' 
-    });
-    
-    const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
-    let autorLog = "SISTEMA";
-    if (nomSencer.toUpperCase().includes("ALBERT")) autorLog = "ALBERT";
-    else if (nomSencer.toUpperCase().includes("LAURA")) autorLog = "LAURA";
-
-    // Afegim metadades al JSON d'exportació
-    dades["METADATA_EXPORT_DATA"] = dataFormatada;
-    dades["METADATA_EXPORT_AUTOR"] = autorLog;
-
-    const blob = new Blob([JSON.stringify(dades, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `ruta_${nomUsuari}_${autorLog}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-
-    // GUARDEM NOMÉS EN CLAUS DE RUTA PER NO BARREJAR AMB RANKING
-    localStorage.setItem('nyn_ruta_export_data', dataFormatada);
-    localStorage.setItem('nyn_ruta_export_autor', autorLog);
-    
-    refrescarLlegendaGlobal();
-    registrarLog(autorLog, `Ha exportat TOTES les rutes de ${nomUsuari}.`);
-}
-
-function importarDadesUsuari(event, nomUsuari) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const dades = JSON.parse(e.target.result);
-            
-            // Si el fitxer porta signatura, actualitzem la llegenda DE RUTA
-            if (dades.METADATA_EXPORT_DATA) {
-                localStorage.setItem('nyn_ruta_export_data', dades.METADATA_EXPORT_DATA);
-                localStorage.setItem('nyn_ruta_export_autor', dades.METADATA_EXPORT_AUTOR);
-            }
-
-            let comptador = 0;
-            Object.keys(dades).forEach(clau => {
-                if (clau.startsWith("Albert") || clau.startsWith("Laura")) {
-                    localStorage.setItem(clau, dades[clau]);
-                    comptador++;
-                }
-            });
-
-            await persistence.syncSave();
-
-            alert(`✅ S'han importat ${comptador} entrades de rutes.\nAutor: ${dades.METADATA_EXPORT_AUTOR || 'Desconegut'}`);
-            
-            refrescarLlegendaGlobal();
-            registrarLog("SISTEMA", `Importació de backup rutes (${nomUsuari}).`);
-            
-            generateCalendars(); 
-            updateCharts(); 
-            event.target.value = '';
-            
-        } catch (err) { 
-            alert("Error en llegir el fitxer JSON."); 
-        }
-    };
-    reader.readAsText(file);
 }
 
 // --- RESTA DE LÒGICA (CENTRES, CALENDARIS, CHARTS) SENSE CANVIS ---
@@ -389,7 +489,42 @@ function generateCalendar(containerId, person){
             const rowDiv = document.createElement("div"); rowDiv.className = "visit-row";
             const sel = document.createElement("select");
             sel.innerHTML = '<option value="">--- ></option>';
-            addresses.sort((a,b)=>a.localeCompare(b,'ca')).forEach(a => { if(a !== "--- >") sel.innerHTML += `<option value="${a}">${a}</option>`; });
+            
+            const aparcaments = [];
+            const especials = [];
+            addresses.forEach(a => {
+                if (a === "--- >" || !a) return;
+                if (fixedAuxiliary.includes(a)) {
+                    especials.push(a);
+                } else {
+                    aparcaments.push(a);
+                }
+            });
+            aparcaments.sort((a, b) => a.localeCompare(b, 'ca'));
+            especials.sort((a, b) => a.localeCompare(b, 'ca'));
+            
+            if (aparcaments.length > 0) {
+                const optGroupAp = document.createElement("optgroup");
+                optGroupAp.label = "Aparcaments";
+                aparcaments.forEach(ap => {
+                    const opt = document.createElement("option");
+                    opt.value = ap;
+                    opt.textContent = ap;
+                    optGroupAp.appendChild(opt);
+                });
+                sel.appendChild(optGroupAp);
+            }
+            if (especials.length > 0) {
+                const optGroupEsp = document.createElement("optgroup");
+                optGroupEsp.label = "Esdeveniments Especials";
+                especials.forEach(es => {
+                    const opt = document.createElement("option");
+                    opt.value = es;
+                    opt.textContent = es;
+                    optGroupEsp.appendChild(opt);
+                });
+                sel.appendChild(optGroupEsp);
+            }
             const val = localStorage.getItem(key) || "";
             sel.value = val;
             
@@ -530,7 +665,6 @@ async function initRuta() {
         if (btn) btn.style.display = 'none';
     }
     
-    refrescarLlegendaGlobal();
     generateCalendars();
 }
 initRuta();
@@ -709,50 +843,49 @@ async function ejecutarGeneracionAuto() {
 
 window.addEventListener('languageChanged', () => {
     i18n.translatePage();
-    refrescarLlegendaGlobal();
     generateCalendars();
 });
 </script>
 
 <!-- Modal de Ruta Automática con límites de visitas -->
-<div id="modalAutoRuta" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 20000; justify-content: center; align-items: center;">
-    <div style="background: white; padding: 20px; border-radius: 8px; width: 350px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #008d36; font-family: Arial, sans-serif;">
-        <h3 id="modalAutoTitle" style="margin-top: 0; color: #008d36; border-bottom: 2px solid #008d36; padding-bottom: 8px; text-transform: uppercase; font-size: 13px;">Generar Ruta Automàtica</h3>
+<div id="modalAutoRuta" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 20000; justify-content: center; align-items: center;">
+    <div style="background: #ffffff; padding: 24px; border-radius: 16px; width: 360px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; font-family: inherit;">
+        <h3 id="modalAutoTitle" style="margin-top: 0; color: #0f2d4a; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; text-transform: uppercase; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">Generar Ruta Automàtica</h3>
         
         <!-- Visitas por día -->
-        <h4 style="margin: 10px 0 5px; font-size: 11px;">Visites diàries per dia de la setmana (0-6):</h4>
-        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px;">
+        <h4 style="margin: 16px 0 8px; font-size: 11px; font-weight: 600; color: #475569;">Visites diàries per dia de la setmana:</h4>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px;">
             <div style="text-align: center;">
-                <label style="font-size: 9px; font-weight: bold; display: block;">Dl</label>
-                <input type="number" id="autoDl" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dl</label>
+                <input type="number" id="autoDl" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
             </div>
             <div style="text-align: center;">
-                <label style="font-size: 9px; font-weight: bold; display: block;">Dm</label>
-                <input type="number" id="autoDm" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dm</label>
+                <input type="number" id="autoDm" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
             </div>
             <div style="text-align: center;">
-                <label style="font-size: 9px; font-weight: bold; display: block;">Dc</label>
-                <input type="number" id="autoDc" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dc</label>
+                <input type="number" id="autoDc" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
             </div>
             <div style="text-align: center;">
-                <label style="font-size: 9px; font-weight: bold; display: block;">Dj</label>
-                <input type="number" id="autoDj" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dj</label>
+                <input type="number" id="autoDj" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
             </div>
             <div style="text-align: center;">
-                <label style="font-size: 9px; font-weight: bold; display: block;">Dv</label>
-                <input type="number" id="autoDv" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dv</label>
+                <input type="number" id="autoDv" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
             </div>
         </div>
 
         <!-- Fines de semana -->
-        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+        <div style="margin-bottom: 16px; display: flex; gap: 12px;">
             <div style="flex: 1;">
-                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px;">Fins de setmana (0-4):</label>
-                <input type="number" id="autoFinsSetmana" min="0" max="4" value="1" style="width: 100%; padding: 4px; box-sizing: border-box; font-size: 11px;">
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;">Fins de setmana (0-4):</label>
+                <input type="number" id="autoFinsSetmana" min="0" max="4" value="1" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-weight: 500;">
             </div>
             <div style="flex: 1;">
-                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px;">Torn WND:</label>
-                <select id="autoTornWeekend" style="width: 100%; padding: 4px; font-size: 11px; height: 23px;">
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;">Torn WND:</label>
+                <select id="autoTornWeekend" style="width: 100%; padding: 6px; font-size: 11px; height: 29px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; background-color: #fff;">
                     <option value="mati">Matí</option>
                     <option value="tarda">Tarda</option>
                     <option value="nit">Nit</option>
@@ -761,15 +894,15 @@ window.addEventListener('languageChanged', () => {
         </div>
 
         <!-- Veces máximas que se irá a cada aparcamiento en el mes -->
-        <div style="margin-bottom: 15px;">
-            <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px;">Visites màximes per centre al mes:</label>
-            <input type="number" id="autoMaxVisitasPorCentro" min="1" max="31" value="4" style="width: 100%; padding: 4px; box-sizing: border-box; font-size: 11px;">
-            <span style="font-size: 8px; color: #666;">(Prevé repetición excesiva de los mismos aparcamientos)</span>
+        <div style="margin-bottom: 20px;">
+            <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;">Visites màximes per centre al mes:</label>
+            <input type="number" id="autoMaxVisitasPorCentro" min="1" max="31" value="4" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-weight: 500; margin-bottom: 4px;">
+            <span style="font-size: 9px; color: #64748b; display: block; line-height: 1.2;">(Evita la repetició excessiva dels mateixos aparcaments)</span>
         </div>
 
-        <div style="display: flex; gap: 8px;">
-            <button onclick="ejecutarGeneracionAuto()" style="background: #008d36; color: white; border: none; padding: 8px; font-weight: bold; flex: 1; cursor: pointer; border-radius: 4px; font-size: 11px; text-transform: uppercase;">Generar</button>
-            <button onclick="cerrarAutoRutaModal()" style="background: #ccc; color: black; border: none; padding: 8px; font-weight: bold; flex: 1; cursor: pointer; border-radius: 4px; font-size: 11px; text-transform: uppercase;">Cancelar</button>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="ejecutarGeneracionAuto()" style="background: #0f2d4a; color: white; border: none; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: background 0.2s;">Generar</button>
+            <button onclick="cerrarAutoRutaModal()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: all 0.2s;">Cancelar</button>
         </div>
     </div>
 </div>

@@ -488,9 +488,9 @@
             <!-- Contenedor central de pestañas -->
             <div class="tabs-container" style="max-width: 100%; overflow-x: visible;">
                 <button class="tab-button active menu-item" onclick="openTab('home', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabHome">🏠 Inici</button>
-                <button class="tab-button menu-item" onclick="openTab('quadrant', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabQuadrant">📋 Quadrant</button>
-                <button class="tab-button menu-item" onclick="openTab('rutes', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRoutes">📍 Rutes</button>
-                <button class="tab-button menu-item" onclick="openTab('vacances', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabVacances">🏖️ Vacances</button>
+                <button class="tab-button menu-item" onclick="openTab('quadrant', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabQuadrant">📋 Quadrant</button>
+                <button class="tab-button menu-item" onclick="openTab('rutes', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabRoutes">📍 Rutes</button>
+                <button class="tab-button menu-item" onclick="openTab('vacances', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabVacances">🏖️ Vacances</button>
                 <button class="tab-button menu-item" onclick="openTab('comercials', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabComercials">💰 Comercials</button>
             </div>
             
@@ -501,14 +501,14 @@
                 </button>
                 <div class="dropdown-more-content" id="moreDropdownContent">
                     <button class="dropdown-more-item menu-item" onclick="selectMoreTab('ranking', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabRanking">⭐ Ranking</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('deutes', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabDeutes">⏳ Deutes</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('checklist', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabChecklist">✅ Chklst</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('gastos', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabGastos">💸 Despeses</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('inventari', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabInventari">📦 Inventari</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('sac_incidencies', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabSac">🛠️ SAC</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('notificador', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabNotificador">📩 Notificador</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('log', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabLog">📜 Log</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('regles', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRegles">📋 Normes</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('deutes', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabDeutes">⏳ Deutes</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('checklist', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabChecklist">✅ Chklst</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('gastos', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabGastos">💸 Despeses</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('inventari', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabInventari">📦 Inventari</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('sac_incidencies', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabSac">🛠️ SAC</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('notificador', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabNotificador">📩 Notificador</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('log', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabLog">📜 Log</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('regles', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabRegles">📋 Normes</button>
                 </div>
             </div>
         </div>
@@ -531,8 +531,8 @@
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
                     <button class="dropdown-admin-item" onclick="openAdminPanel(); closeAdminDropdown();">⚙️ Panel Admin y Migraciones</button>
-                    <div class="dropdown-divider"></div>
-                    <button class="dropdown-admin-item danger" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
+                    <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
+                    <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
                 </div>
             </div>
             
@@ -648,8 +648,8 @@
             let role = sessionStorage.getItem('userRole');
             let user = sessionStorage.getItem('userName');
 
-            // Consultar config.json de forma prioritaria
-            if (window.databaseAPI && window.databaseAPI.getUserConfig) {
+            // Consultar config.json SOLO si no hay sesión activa previa en sessionStorage
+            if ((!role || !user) && window.databaseAPI && window.databaseAPI.getUserConfig) {
                 try {
                     const config = await window.databaseAPI.getUserConfig();
                     if (config && config.role) {
@@ -689,27 +689,6 @@
                         }
                     }
                 });
-
-                if (currentRole === 'comercial') {
-                    // Ocultar todos los botones de pestañas que no sean Comercials
-                    document.querySelectorAll('.tab-button').forEach(btn => {
-                        const onclickAttr = btn.getAttribute('onclick');
-                        if (onclickAttr && !onclickAttr.includes('comercials')) {
-                            btn.style.display = 'none';
-                        }
-                    });
-                    
-                    // Abrir directamente la pestaña de Comerciales al iniciar
-                    const btnComercials = Array.from(document.querySelectorAll('.tab-button')).find(btn => {
-                        const onclickAttr = btn.getAttribute('onclick');
-                        return onclickAttr && onclickAttr.includes('comercials');
-                    });
-                    if (btnComercials) {
-                        setTimeout(() => {
-                            openTab('comercials', btnComercials);
-                        }, 50);
-                    }
-                }
             }
 
             applyRoleFiltering(role);

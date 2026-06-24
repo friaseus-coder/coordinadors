@@ -658,7 +658,14 @@ const i18n = (() => {
       
       // 4. Comprobar si el rol está permitido
       const allowedList = rolesPermitidos.split(',').map(r => r.trim());
-      if (!allowedList.includes(activeRole)) {
+      let accessGranted = allowedList.includes(activeRole);
+      
+      // El comercial tiene acceso a cualquier pantalla que permita al coordinador
+      if (!accessGranted && activeRole === 'comercial' && allowedList.includes('coordinador')) {
+        accessGranted = true;
+      }
+      
+      if (!accessGranted) {
         alert("Acceso denegado: no dispone de los permisos necesarios para ver esta pantalla.");
         // Determinar ruta de redirección al portal
         const path = window.location.pathname;

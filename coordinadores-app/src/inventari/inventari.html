@@ -5,34 +5,171 @@
     <title>INVENTARI - Logística</title>
     <script src="../js/persistence.js"></script>
     <style>
-        :root { --color-consumibles: #2196F3; --color-ofimatica: #4CAF50; --color-manteniment: #FF9800; --color-mobiliari: #9C27B0; --nn-green: #008d36; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; font-size: 11px; display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-        .header-top { background: var(--nn-green); color: white; padding: 0 10px; display: flex; align-items: center; height: 35px; gap: 8px; flex-shrink: 0; }
-        .btn-nyn { border: none; padding: 3px 8px; cursor: pointer; font-weight: bold; font-size: 10px; text-transform: uppercase; border-radius: 2px; color: white; }
-        .btn-import { background: #ef6c00; } .btn-export { background: #6a1b9a; } .btn-manage { background: #546e7a; } 
-        .btn-add { background: white; color: var(--nn-green); border: 1px solid var(--nn-green); }
-        .main-container { display: flex; flex: 1; overflow: hidden; padding: 3px; gap: 3px; }
-        .section { background: white; border: 1px solid #ccc; display: flex; flex-direction: column; border-radius: 3px; }
-        .section-magatzem { width: 550px; } .section-comandes { flex: 1; }
-        h2 { background: #eee; margin: 0; padding: 3px 8px; font-size: 10px; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; align-items: center; }
-        .table-wrapper { flex: 1; overflow-y: auto; }
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+        :root { 
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --color-consumibles: #3b82f6; 
+            --color-ofimatica: #22c55e; 
+            --color-manteniment: #eab308; 
+            --color-mobiliari: #a855f7;
+        }
+
+        * { font-family: 'Outfit', sans-serif !important; }
+
+        body { 
+            background: #f8fafc; margin: 0; font-size: 11px; 
+            display: flex; flex-direction: column; height: 100vh; overflow: hidden; 
+        }
+
+        /* --- HEADER ESTILO CUADRANTE --- */
+        header { 
+            background-color: var(--nyn-verd) !important; 
+            color: white !important; 
+            padding: 8px 24px !important; 
+            display: flex !important;        
+            justify-content: center !important; 
+            align-items: center !important; 
+            height: 48px !important; 
+            border-bottom: 2px solid var(--nyn-verd-accent) !important;
+            box-sizing: border-box !important;
+            margin-bottom: 0 !important;
+            text-align: center !important;
+            position: relative;
+            z-index: 1000;
+        }
+        header h1 { 
+            font-size: 15px !important; 
+            font-weight: 700 !important; 
+            text-transform: uppercase !important; 
+            letter-spacing: 1px !important; 
+            color: white !important;
+            margin: 0 !important;
+        }
+
+        /* --- BARRA DE HERRAMIENTAS Y CONTROL --- */
+        .admin-panel { 
+            padding: 10px 24px; 
+            display: flex; 
+            flex-wrap: wrap;
+            gap: 12px; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            background: #ffffff; 
+            margin-bottom: 12px;
+        }
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--shadow-sm);
+        }
+        .filter-label { 
+            font-weight: 700; 
+            color: var(--nyn-verd); 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+
+        /* DROPDOWNS Y BOTONES */
+        select, button, input[type="text"], input[type="number"] {
+            padding: 4px 10px !important;
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 6px !important;
+            font-size: 11px !important;
+            font-weight: 500 !important;
+            cursor: pointer !important;
+            height: 28px !important;
+            box-sizing: border-box !important;
+            transition: all 0.2s ease !important;
+            background: #ffffff !important;
+            color: #334155 !important;
+            box-shadow: var(--shadow-sm) !important;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        input[type="text"], input[type="number"] {
+            cursor: text !important;
+        }
+        select:hover, select:focus, input[type="text"]:focus {
+            border-color: var(--nyn-verd-accent) !important;
+            outline: none !important;
+        }
+
+        .btn-action {
+            background: var(--nyn-verd) !important;
+            color: #ffffff !important;
+            border: 1px solid var(--nyn-verd) !important;
+            font-weight: 600 !important;
+        }
+        .btn-action:hover {
+            background: #0b4e43 !important;
+            border-color: #0b4e43 !important;
+        }
+        .btn-action-sec {
+            background: #3b82f6 !important;
+            color: white !important;
+            border: 1px solid #3b82f6 !important;
+            font-weight: 600 !important;
+        }
+        .btn-action-sec:hover {
+            background: #2563eb !important;
+            border-color: #2563eb !important;
+        }
+        .btn-archive {
+            background: #f1f5f9 !important;
+            border: 1px solid #e2e8f0 !important;
+            color: #475569 !important;
+        }
+        .btn-archive:hover {
+            background: #e2e8f0 !important;
+        }
+
+        .main-container { display: flex; flex: 1; overflow: hidden; padding: 16px 24px; gap: 16px; background: #f8fafc; }
+        .section { background: white; border: 1px solid var(--border); display: flex; flex-direction: column; border-radius: 12px; box-shadow: var(--shadow-md); overflow: hidden; }
+        .section-magatzem { width: 550px; } 
+        .section-comandes { flex: 1; }
+        
+        h2 { 
+            background: #f8fafc; margin: 0; padding: 12px 16px; font-size: 12px; font-weight: 700;
+            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
+            color: var(--nyn-verd); text-transform: uppercase;
+        }
+        
+        .table-wrapper { flex: 1; overflow-y: auto; padding: 8px; }
         table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th { background: #f9f9f9; padding: 2px; border-bottom: 2px solid #ddd; font-size: 9px; position: sticky; top: 0; z-index: 10; }
-        td { padding: 1px 2px; border-bottom: 1px solid #eee; text-align: center; height: 22px; }
-        .row-box { border-left: 3px solid #ccc; }
+        th { background: #1e293b; color: white; padding: 8px 4px; border: 1px solid #334155; font-size: 10px; font-weight: 600; text-transform: uppercase; position: sticky; top: 0; z-index: 10; }
+        td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; height: 28px; }
+        
+        .row-box { border-left: 4px solid #ccc; }
         .row-consumibles { border-left-color: var(--color-consumibles); }
         .row-ofimatica { border-left-color: var(--color-ofimatica); }
         .row-manteniment { border-left-color: var(--color-manteniment); }
         .row-mobiliari { border-left-color: var(--color-mobiliari); }
-        .no-stock-row { background-color: #ffebee !important; border-right: 3px solid #f44336; }
-        input, select { font-size: 10px; padding: 1px; border: 1px solid #ccc; border-radius: 2px; width: 100%; height: 19px; }
-        .btn-qty { width: 18px; height: 18px; cursor: pointer; border: 1px solid #ccc; background: white; font-weight: bold; line-height: 1; }
-        .status-btn { padding: 0; border-radius: 2px; font-weight: bold; font-size: 8px; width: 100%; cursor: pointer; height: 18px; border: 1px solid transparent; }
-        .pendent { background: #fff3e0; color: #ef6c00; border-color: #ffe0b2; }
-        .entregat { background: #e8f5e9; color: #2e7d32; border-color: #c8e6c9; }
-        .delete-btn { cursor: pointer; color: #ccc; font-size: 14px; background: none; border: none; font-weight: bold; }
-        .delete-btn:hover { color: red; }
-        #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:10px; z-index:2000; box-shadow: 0 0 15px rgba(0,0,0,0.5); width:700px; max-height: 90vh; border-radius: 4px; flex-direction: column; }
+        .no-stock-row { background-color: #fef2f2 !important; border-right: 4px solid #ef4444; }
+        
+        input, select { font-size: 11px; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; height: 24px; box-sizing: border-box; }
+        .btn-qty { width: 22px; height: 22px; cursor: pointer; border: 1px solid #cbd5e1; background: white; font-weight: bold; line-height: 1; border-radius: 4px; }
+        .btn-qty:hover { border-color: var(--nyn-verd-accent); color: var(--nyn-verd-accent); }
+        
+        .status-btn { padding: 0 4px; border-radius: 6px; font-weight: bold; font-size: 9px; width: 100%; cursor: pointer; height: 22px; border: 1px solid transparent; }
+        .pendent { background: #fffbeb; color: #d97706; border-color: #fef3c7; }
+        .entregat { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+        .delete-btn { cursor: pointer; color: #cbd5e1; font-size: 14px; background: none; border: none; font-weight: bold; transition: color 0.2s; }
+        .delete-btn:hover { color: #ef4444; }
+        
+        #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; z-index:2000; box-shadow: var(--shadow-md); width:700px; max-height: 90vh; border-radius: 12px; border: 2px solid var(--nyn-verd); flex-direction: column; }
+        #modalGestio h3 { color: var(--nyn-verd); margin: 0; font-weight: 700; }
         .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999; }
     </style>
     <script src="../js/i18n.js"></script>
@@ -45,12 +182,21 @@
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
 
-<div class="header-top">
-    <button class="btn-nyn btn-import" onclick="document.getElementById('importFile').click()">📂 Importar</button>
-    <button class="btn-nyn btn-export" onclick="exportarJSON()">💾 Exportar</button>
-    <button class="btn-nyn btn-manage" onclick="obrirGestio()">⚙️ GESTIONAR DADES</button>
-    <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarJSON(event)">
-    <div style="flex-grow: 1; text-align: center; font-weight: bold; font-size: 12px;">INVENTARI - LOGÍSTICA NN</div>
+<header>
+    <h1>Inventari i Logística</h1>
+</header>
+
+<div class="admin-panel">
+    <div class="toolbar-group">
+        <span class="filter-label">Dades:</span>
+        <button class="btn-archive" onclick="document.getElementById('importFile').click()">📂 Importar</button>
+        <button class="btn-archive" onclick="exportarJSON()">💾 Exportar</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarJSON(event)">
+    </div>
+    
+    <div class="toolbar-group">
+        <button class="btn-action" onclick="obrirGestio()">⚙️ GESTIONAR CATÀLEG</button>
+    </div>
 </div>
 
 <div class="main-container">

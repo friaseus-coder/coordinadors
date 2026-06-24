@@ -8,25 +8,179 @@
   <link rel="stylesheet" href="css/style.css">
 
   <style>
-    /* --- ESTILS BOTONS IMPORT/EXPORT (COLORS QUADRANT) --- */
-    .btn-nyn {
-        border: none; padding: 5px 10px; cursor: pointer; border-radius: 0;
-        font-weight: bold; font-size: 10px; text-transform: uppercase;
-        transition: opacity 0.2s; display: inline-flex; align-items: center; gap: 5px;
-        color: white; height: 24px; box-sizing: border-box;
-        vertical-align: middle;
-    }
-    .btn-nyn:hover { opacity: 0.8; }
-    
-    .btn-export { background: #6a1b9a !important; } /* LILA */
-    .btn-import { background: #ef6c00 !important; } /* TARONJA */
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-    /* Ajust de la barra de botons de vista per encabir els nous botons */
-    .botons-vista {
+    :root { 
+        --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+        --nyn-verd-accent: #008d36; /* Verde acento */
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    * { font-family: 'Outfit', 'Segoe UI', Arial, sans-serif !important; }
+
+    body {
+        background-color: #f8fafc !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        color: #1e293b;
+    }
+
+    /* --- HEADER ESTILO CUADRANTE --- */
+    header { 
+        background-color: var(--nyn-verd) !important; 
+        color: white !important; 
+        padding: 8px 24px !important; 
+        display: flex !important;        
+        justify-content: center !important; 
+        align-items: center !important; 
+        height: 48px !important; 
+        border-bottom: 2px solid var(--nyn-verd-accent) !important;
+        box-sizing: border-box !important;
+        margin-bottom: 0 !important;
+        text-align: center !important;
+    }
+    header h1 { 
+        font-size: 15px !important; 
+        font-weight: 700 !important; 
+        text-transform: uppercase !important; 
+        letter-spacing: 1px !important; 
+        color: white !important;
+        margin: 0 !important;
+    }
+
+    /* --- BARRA DE HERRAMIENTAS Y CONTROL --- */
+    .admin-panel { 
+        padding: 10px 24px; 
+        display: flex; 
+        flex-wrap: wrap;
+        gap: 12px; 
+        align-items: center; 
+        border-bottom: 1px solid var(--border); 
+        background: #ffffff; 
+        margin-bottom: 16px;
+    }
+    .toolbar-group {
         display: flex;
         align-items: center;
-        margin-bottom: 10px;
         gap: 8px;
+        background: #ffffff;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: var(--shadow-sm);
+    }
+    .filter-label { 
+        font-weight: 700; 
+        color: var(--nyn-verd); 
+        font-size: 10px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+    }
+
+    /* --- DROPDOWNS Y BOTONES --- */
+    select, button, input[type="text"] {
+        padding: 4px 10px !important;
+        border: 1px solid #cbd5e1 !important;
+        border-radius: 6px !important;
+        font-size: 11px !important;
+        font-weight: 500 !important;
+        cursor: pointer !important;
+        height: 28px !important;
+        box-sizing: border-box !important;
+        transition: all 0.2s ease !important;
+        background: #ffffff !important;
+        color: #334155 !important;
+        box-shadow: var(--shadow-sm) !important;
+    }
+    
+    input[type="text"] {
+        cursor: text !important;
+    }
+
+    select:hover, select:focus, input[type="text"]:focus {
+        border-color: var(--nyn-verd-accent) !important;
+        outline: none !important;
+    }
+
+    /* BOTONES ACCION Y VISTA */
+    .btn-action {
+        background: var(--nyn-verd) !important;
+        color: #ffffff !important;
+        border: 1px solid var(--nyn-verd) !important;
+        font-weight: 600 !important;
+    }
+    .btn-action:hover {
+        background: #0b4e43 !important;
+        border-color: #0b4e43 !important;
+    }
+    .btn-action-sec {
+        background: #3b82f6 !important;
+        color: white !important;
+        border: 1px solid #3b82f6 !important;
+        font-weight: 600 !important;
+    }
+    .btn-action-sec:hover {
+        background: #2563eb !important;
+        border-color: #2563eb !important;
+    }
+    .btn-archive {
+        background: #f1f5f9 !important;
+        border: 1px solid #e2e8f0 !important;
+        color: #475569 !important;
+    }
+    .btn-archive:hover {
+        background: #e2e8f0;
+    }
+
+    .charts-container {
+        padding: 16px 24px;
+        background: #f8fafc;
+    }
+
+    .chart-box {
+        background: #ffffff;
+        border-radius: 12px;
+        border: 1px solid #e2e8f0;
+        box-shadow: var(--shadow-md);
+        padding: 16px;
+    }
+    .chart-box h2 {
+        font-size: 12px;
+        color: var(--nyn-verd);
+        text-transform: uppercase;
+        font-weight: 700;
+        margin-bottom: 12px;
+        border-bottom: 1px solid #e2e8f0;
+        padding-bottom: 6px;
+    }
+
+    #tableContainer {
+        padding: 16px 24px;
+        background: #f8fafc;
+    }
+
+    #tableView {
+        border-collapse: collapse;
+        border: 1px solid var(--border) !important;
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+        overflow: hidden;
+        background: #ffffff;
+    }
+    #tableView th {
+        background-color: #1e293b !important;
+        color: #ffffff !important;
+        height: 36px;
+        font-size: 11px;
+        font-weight: 600;
+        border: none !important;
+        border-bottom: 2px solid #0f172a !important;
+        border-right: 1px solid #334155 !important;
+        vertical-align: middle;
+        padding: 6px 12px !important;
+        letter-spacing: 0.5px;
     }
   </style>
   <script src="../js/i18n.js"></script>
@@ -42,78 +196,81 @@
     <h1>Valoració Agents (RANKING)</h1>
   </header>
 
-<div class="charts-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-  
-  <div class="chart-box">
-    <h2>Mitjana per centre</h2>
-    <canvas id="centreChart"></canvas>
+  <div class="admin-panel">
+    <div class="toolbar-group">
+      <span class="filter-label">Filtres:</span>
+      <select id="filterZona">
+        <option value="">Totes les zones</option>
+        <option value="Zona 1">Zona 1</option>
+        <option value="Zona 2">Zona 2</option>
+        <option value="Zona 3">Zona 3</option>
+      </select>
+
+      <select id="filterCentre">
+        <option value="">Tots els centres</option>
+      </select>
+
+      <select id="filterTorn">
+        <option value="">Tots els torns</option>
+      </select>
+
+      <select id="filterNota">
+        <option value="">Totes les notes</option>
+      </select>
+
+      <input type="text" id="search" placeholder="Cerca per agent...">
+    </div>
+
+    <div class="toolbar-group">
+      <span class="filter-label">Vista:</span>
+      <button id="btnTableView" class="btn-action">Mostrar Taula</button>
+      <button id="btnCardView" class="btn-action-sec">Mostrar Targetes</button>
+    </div>
+
+    <div class="toolbar-group">
+      <span class="filter-label">Dades:</span>
+      <button class="btn-archive" onclick="exportarDadesRanking()">💾 Exportar</button>
+      <button class="btn-archive" onclick="document.getElementById('importFileRanking').click()">📂 Importar</button>
+      <input type="file" id="importFileRanking" style="display:none" accept=".json" onchange="importarDadesRanking(this)">
+    </div>
+
+    <div class="toolbar-group">
+      <span class="filter-label">Llegenda:</span>
+      <div style="display: flex; gap: 4px; font-size: 10px; font-weight: bold; align-items: center;">
+        <span style="background: rgba(255, 215, 0, 0.3); color: #856404; padding: 2px 6px; border: 1px solid rgba(255, 215, 0, 0.5);">9-10</span>
+        <span style="background: rgba(200, 230, 201, 0.5); color: #2e7d32; padding: 2px 6px; border: 1px solid #a5d6a7;">7-8</span>
+        <span style="background: rgba(255, 205, 210, 0.5); color: #c62828; padding: 2px 6px; border: 1px solid #ef9a9a;">5-6</span>
+        <span style="background: rgba(0, 0, 0, 0.1); color: #333; padding: 2px 6px; border: 1px solid rgba(0, 0, 0, 0.2);">&lt; 5</span>
+      </div>
+    </div>
+
+    <div class="toolbar-group" style="margin-left: auto; display: flex; align-items: center; gap: 15px;">
+      <span id="workerCount" style="font-weight:bold; font-size:11px; color:#23631f;">
+        Nº Treballadors: 0
+      </span>
+      <span id="llegendaExport" style="font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #64748b; font-weight: 500;">
+        | Darrera exportació: Cap dada encara
+      </span>
+      <img src="logo.png" alt="Logo Empresa" id="logoVista" style="height:35px; object-fit: contain;">
+    </div>
   </div>
 
-  <div class="chart-box">
-    <h2>Volum aptituds</h2>
-    <canvas id="scatterChart"></canvas>
+  <div class="charts-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
+    <div class="chart-box">
+      <h2>Mitjana per centre</h2>
+      <canvas id="centreChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+      <h2>Volum aptituds</h2>
+      <canvas id="scatterChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+      <h2>Comparativa rendiment</h2>
+      <div id="sunburstChart" style="width:100%; height:500px;"></div>
+    </div>
   </div>
-
-  <div class="chart-box">
-  <h2>Comparativa rendiment</h2>
-  <div id="sunburstChart" style="width:100%; height:500px;"></div>
-</div>
-
-</div>
-
-
-  <div class="controls">
-    <select id="filterZona">
-      <option value="">Totes les zones</option>
-      <option value="Zona 1">Zona 1</option>
-      <option value="Zona 2">Zona 2</option>
-      <option value="Zona 3">Zona 3</option>
-    </select>
-
-    <select id="filterCentre">
-      <option value="">Tots els centres</option>
-    </select>
-
-    <select id="filterTorn">
-      <option value="">Tots els torns</option>
-    </select>
-
-    <select id="filterNota">
-      <option value="">Totes les notes</option>
-    </select>
-
-    <input type="text" id="search" placeholder="Cerca per agent...">
-  </div>
-
-<div class="botons-vista">
-
-  <button id="btnTableView" class="boton-accio">Mostrar Taula</button>
-  <button id="btnCardView" class="boton-accio">Mostrar Targetes</button>
-
-  <span style="border-left: 1px solid #ccc; height: 20px; margin: 0 5px;"></span>
-
-  <button class="btn-nyn btn-export" onclick="exportarDadesRanking()">💾 Exportar</button>
-  <button class="btn-nyn btn-import" onclick="document.getElementById('importFileRanking').click()">📂 Importar</button>
-  <input type="file" id="importFileRanking" style="display:none" accept=".json" onchange="importarDadesRanking(this)">
-
-  <div style="display: flex; gap: 4px; margin-left: 10px; font-size: 10px; font-weight: bold;">
-    <span style="background: rgba(255, 215, 0, 0.3); color: #856404; padding: 2px 6px; border: 1px solid rgba(255, 215, 0, 0.5);">9-10</span>
-    <span style="background: rgba(200, 230, 201, 0.5); color: #2e7d32; padding: 2px 6px; border: 1px solid #a5d6a7;">7-8</span>
-    <span style="background: rgba(255, 205, 210, 0.5); color: #c62828; padding: 2px 6px; border: 1px solid #ef9a9a;">5-6</span>
-    <span style="background: rgba(0, 0, 0, 0.1); color: #333; padding: 2px 6px; border: 1px solid rgba(0, 0, 0, 0.2);"> < 5</span>
-  </div>
-
-  <span id="workerCount" style="margin-left:15px; font-weight:bold; font-size:0.9em; color:#23631f;">
-    Nº Treballadors: 0
-  </span>
-
-<span id="llegendaExport" style="font-family: 'Segoe UI', Arial, sans-serif; font-size: 13px; color: #111; text-transform: none; text-shadow: none; font-weight: normal; margin-left: 15px;">
-    | Darrera exportació: Cap dada encara
-</span>
-  <img src="logo.png" alt="Logo Empresa" id="logoVista" 
-       style="height:50px; margin-left:auto; position: relative; top: -10px;">
-  
-</div>
 
 
 

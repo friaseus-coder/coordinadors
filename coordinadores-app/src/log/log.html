@@ -4,96 +4,151 @@
     <meta charset="UTF-8">
     <title>NyN Pàrquings | Control de Logs</title>
     
-<style>
-    body {
-        font-family: 'Segoe UI', Arial, sans-serif;
-        margin: 10px; 
-        font-size: 12px;
-        background: #f4f4f4;
-        color: #333;
-    }
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-    /* BARRA TÍTOL INTERNA (SENSE BOTONS) */
-    .internal-header {
-        display: flex;
-        align-items: center;
-        padding: 8px 15px;
-        background: white;
-        border: 1px solid #bbb;
-        border-radius: 6px;
-        margin-bottom: 10px;
-    }
+        :root { 
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --text-primari: #1e293b;
+        }
 
-    .header-title-nyn {
-        font-weight: bold;
-        text-transform: uppercase;
-        color: #008d36;
-        font-size: 13px;
-    }
+        * { font-family: 'Outfit', 'Segoe UI', Arial, sans-serif !important; }
 
-    .main-layout {
-        display: flex;
-        gap: 10px;
-        height: calc(100vh - 60px); /* Ajustat per l'espai del portal */
-    }
+        body {
+            margin: 0; 
+            font-size: 12px;
+            background: #f8fafc;
+            color: var(--text-primari);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
 
-    /* FILTRES LATERALS */
-    .sidebar {
-        flex: 0 0 240px;
-        background: white;
-        border: 1px solid #bbb;
-        padding: 15px;
-        border-radius: 6px;
-        height: fit-content;
-    }
+        /* --- HEADER ESTILO CUADRANTE --- */
+        header { 
+            background-color: var(--nyn-verd) !important; 
+            color: white !important; 
+            padding: 8px 24px !important; 
+            display: flex !important;        
+            justify-content: center !important; 
+            align-items: center !important; 
+            height: 48px !important; 
+            border-bottom: 2px solid var(--nyn-verd-accent) !important;
+            box-sizing: border-box !important;
+            margin-bottom: 0 !important;
+            text-align: center !important;
+            position: relative;
+            z-index: 1000;
+        }
+        header h1 { 
+            font-size: 15px !important; 
+            font-weight: 700 !important; 
+            text-transform: uppercase !important; 
+            letter-spacing: 1px !important; 
+            color: white !important;
+            margin: 0 !important;
+        }
 
-    /* VISTA DE CONTINGUT */
-    .content-view {
-        flex: 1;
-        background: white;
-        border: 1px solid #bbb;
-        border-radius: 6px;
-        overflow-y: auto;
-        padding: 0; /* Taula neta */
-    }
+        .main-layout {
+            display: flex;
+            gap: 16px;
+            padding: 16px 24px;
+            height: calc(100vh - 48px);
+            box-sizing: border-box;
+            background: #f8fafc;
+        }
 
-    h2 { margin-top: 0; font-size: 13px; color: #008d36; border-bottom: 2px solid #008d36; padding-bottom: 5px; text-transform: uppercase; }
+        /* FILTRES LATERALS */
+        .sidebar {
+            flex: 0 0 240px;
+            background: white;
+            border: 1px solid var(--border);
+            padding: 20px;
+            border-radius: 12px;
+            height: fit-content;
+            box-shadow: var(--shadow-md);
+        }
 
-    label { display: block; font-weight: bold; margin-bottom: 4px; font-size: 10px; text-transform: uppercase; color: #666; }
-    
-    input[type="date"] {
-        width: 100%;
-        padding: 5px;
-        border: 1px solid #ccc;
-        margin-bottom: 10px;
-        box-sizing: border-box;
-        font-family: inherit;
-    }
+        /* VISTA DE CONTINGUT */
+        .content-view {
+            flex: 1;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow-y: auto;
+            padding: 0; 
+            box-shadow: var(--shadow-md);
+        }
 
-    .btn-nyn {
-        border: none; padding: 6px 12px; cursor: pointer;
-        font-weight: bold; font-size: 10px; text-transform: uppercase;
-        background: #008d36; color: white;
-        transition: background 0.2s;
-        display: flex; align-items: center; justify-content: center; gap: 5px;
-    }
-    .btn-nyn:hover { background: #005a22; }
+        h2 { 
+            margin-top: 0; 
+            font-size: 12px; 
+            font-weight: 700;
+            color: var(--nyn-verd); 
+            border-bottom: 2px solid var(--nyn-verd-accent); 
+            padding-bottom: 6px; 
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
 
-    /* TAULA DE LOGS */
-    table { width: 100%; border-collapse: collapse; font-size: 11px; }
-    th { 
-        background: #f8f8f8; padding: 10px; border-bottom: 2px solid #008d36; 
-        text-align: left; text-transform: uppercase; position: sticky; top: 0;
-    }
-    td { padding: 10px; border-bottom: 1px solid #eee; }
-    tr:nth-child(even) { background: #fafafa; }
-    tr:hover { background: #f1f1f1; }
+        label { 
+            display: block; 
+            font-weight: 700; 
+            margin-bottom: 6px; 
+            font-size: 10px; 
+            text-transform: uppercase; 
+            color: #64748b; 
+            letter-spacing: 0.5px;
+        }
+        
+        input[type="date"] {
+            width: 100%;
+            padding: 6px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s;
+            height: 28px;
+        }
+        input[type="date"]:focus {
+            border-color: var(--nyn-verd-accent);
+        }
 
-    .timestamp { font-weight: bold; color: #008d36; width: 150px; white-space: nowrap; }
-    .btn-delete { background: #dc3545 !important; width: 100%; margin-top: 5px; }
-    .btn-delete:hover { background: #a71d2a !important; }
+        .btn-nyn {
+            border: none; padding: 4px 10px !important; cursor: pointer;
+            font-weight: 700 !important; font-size: 11px !important; text-transform: uppercase;
+            background: var(--nyn-verd) !important; color: white !important;
+            transition: all 0.2s ease;
+            display: inline-flex; align-items: center; justify-content: center; gap: 5px;
+            border-radius: 6px !important;
+            height: 28px !important;
+            box-sizing: border-box;
+            box-shadow: var(--shadow-sm);
+        }
+        .btn-nyn:hover { background: #0b4e43 !important; }
 
-</style>
+        /* TAULA DE LOGS */
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { 
+            background: #1e293b !important; color: white !important; padding: 10px 12px; border-bottom: 2px solid #0f172a !important; 
+            text-align: left; text-transform: uppercase; position: sticky; top: 0; font-weight: 600;
+        }
+        td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+        tr:nth-child(even) { background: #fafafa; }
+        tr:hover { background: #f1f5f9; }
+
+        .timestamp { font-weight: bold; color: var(--nyn-verd); width: 150px; white-space: nowrap; }
+        .btn-delete { background: #fee2e2 !important; border: 1px solid #fecaca !important; color: #ef4444 !important; width: 100%; margin-top: 5px; }
+        .btn-delete:hover { background: #fca5a5 !important; }
+
+    </style>
     <script src="../js/i18n.js"></script>
     <script>
        // Forzar traducción inmediata al cargar
@@ -104,9 +159,9 @@
 </head>
 <body data-required-roles="coordinador,jefe_operaciones">
 
-    <div class="internal-header">
-        <div class="header-title-nyn">📜 Registre d'activitat del sistema (Logs)</div>
-    </div>
+    <header>
+        <h1>Registre d'activitat del sistema (Logs)</h1>
+    </header>
 
     <div class="main-layout">
         <div class="sidebar">

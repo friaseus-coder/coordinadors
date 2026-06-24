@@ -13,80 +13,127 @@
     <script src="../js/persistence.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+        :root { 
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
         body { 
             font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
-            background-color: #ffffff; 
+            background-color: #f8fafc; 
             margin: 0; 
-            color: #334155; 
+            color: #1e293b; 
             overflow-x: hidden; 
         }
         
-        .header-top { 
-            background: #ffffff; 
-            color: #0f2d4a; 
-            padding: 12px 24px; 
-            display: flex; 
-            justify-content: space-between; 
+        header { 
+            background-color: var(--nyn-verd); 
+            color: white; 
+            padding: 8px 24px; 
+            display: flex;        
+            justify-content: center; 
             align-items: center; 
-            border-bottom: 1px solid #e2e8f0;
+            height: 48px; 
+            border-bottom: 2px solid var(--nyn-verd-accent);
+            box-sizing: border-box;
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .header-center { 
+            font-size: 15px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            text-align: center; 
+            letter-spacing: 1px; 
         }
         
-        .header-top h1 { 
-            font-size: 16px; 
+        .admin-panel { 
+            padding: 10px 24px; 
+            display: flex; 
+            flex-wrap: wrap;
+            gap: 12px; 
+            align-items: center; 
+            border-bottom: 1px solid var(--border); 
+            background: #ffffff; 
+            flex-shrink: 0;
+        }
+        
+        .toolbar-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ffffff;
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .filter-label { 
             font-weight: 700; 
-            margin: 0; 
+            color: var(--nyn-verd); 
+            font-size: 10px; 
             text-transform: uppercase; 
             letter-spacing: 0.5px;
-            color: #0f2d4a;
         }
-        
-        .controls-wrapper { 
-            display: flex; 
-            align-items: center; 
-            gap: 12px; 
-        }
-        
-        .month-selector { 
-            background: #f1f5f9; 
-            color: #334155; 
-            border: 1px solid #e2e8f0; 
-            border-radius: 9999px; 
-            font-size: 12px; 
-            font-weight: 600; 
-            padding: 6px 16px; 
-            cursor: pointer; 
-            outline: none; 
-            font-family: inherit;
-            transition: all 0.2s;
-        }
-        
-        .month-selector:focus {
-            border-color: #063931;
-            background: #ffffff;
-            box-shadow: 0 0 0 2px rgba(6, 57, 49, 0.1);
-        }
-        
-        .month-selector option { 
-            color: #334155; 
-            background: #ffffff;
-        }
-        
-        .btn-nyn { 
-            border: none; 
-            padding: 6px 16px; 
-            cursor: pointer; 
-            border-radius: 9999px; 
-            font-weight: 600; 
+
+        select, button { 
+            padding: 4px 16px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 6px; 
             font-size: 11px; 
-            text-transform: uppercase; 
-            transition: all 0.2s; 
-            display: inline-flex; 
-            align-items: center; 
-            gap: 6px; 
-            background: #ffffff; 
-            color: #063931; 
+            font-weight: 500;
+            cursor: pointer; 
             height: 28px; 
             box-sizing: border-box; 
+            font-family: inherit; 
+            transition: all 0.2s ease;
+            background: #ffffff;
+            color: #334155;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        select:hover, select:focus {
+            border-color: var(--nyn-verd-accent);
+            outline: none;
+        }
+
+        .btn-action {
+            background: var(--nyn-verd);
+            color: #ffffff;
+            border: 1px solid var(--nyn-verd);
+            font-weight: 600;
+        }
+        
+        .btn-action:hover {
+            background: #0b4e43;
+            border-color: #0b4e43;
+        }
+        
+        .btn-action-sec {
+            background: #3b82f6;
+            color: white;
+            border: 1px solid #3b82f6;
+            font-weight: 600;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .btn-action-sec:hover {
+            background: #2563eb;
+            border-color: #2563eb;
+        }
+        
+        .btn-archive {
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+        
+        .btn-archive:hover {
+            background: #e2e8f0;
         }
         
         .btn-nyn:hover { 
@@ -149,9 +196,9 @@
         .table-wrapper { 
             width: 100%; 
             overflow-x: auto; 
-            padding: 24px; 
+            padding: 16px 24px; 
             box-sizing: border-box; 
-            background: #ffffff; 
+            background: #f8fafc; 
         }
         
         table { 
@@ -159,17 +206,22 @@
             border-collapse: collapse; 
             min-width: 1100px; 
             table-layout: fixed; 
-            border: none; 
+            border: 1px solid var(--border); 
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
         }
         
         th { 
-            background-color: #f8fafc; 
-            color: #475569; 
+            background-color: #1e293b !important; 
+            color: #ffffff !important; 
             padding: 14px 16px; 
             text-align: center; 
-            font-size: 12px; 
+            font-size: 11px; 
             text-transform: uppercase; 
-            border-bottom: 1px solid #e2e8f0; 
+            border-bottom: 2px solid #0f172a; 
+            border-right: 1px solid #334155;
             font-weight: 700; 
             letter-spacing: 0.5px;
         }
@@ -344,10 +396,14 @@
 </head>
 <body data-required-roles="comercial,coordinador,jefe_operaciones">
 
-    <div class="header-top">
-        <div class="controls-wrapper">
-            <h1 data-i18n="comercialsTitle">Disponibilitat i Preus</h1>
-            <select id="mesActual" class="month-selector" onchange="canviarMes()">
+    <header>
+        <div class="header-center" data-i18n="comercialsHeader">Comercials Pàrkings</div>
+    </header>
+
+    <div class="admin-panel">
+        <div class="toolbar-group">
+            <span class="filter-label" data-i18n="rutaLabelMes">Mes:</span>
+            <select id="mesActual" onchange="canviarMes()" style="height:26px;">
                 <option value="gener" data-i18n="optGener">GENER</option>
                 <option value="febrer" data-i18n="optFebrer">FEBRER</option>
                 <option value="marc" data-i18n="optMarc">MARÇ</option>
@@ -361,7 +417,7 @@
                 <option value="novembre" data-i18n="optNovembre">NOVEMBRE</option>
                 <option value="desembre" data-i18n="optDesembre">DESEMBRE</option>
             </select>
-            <select id="anyActual" class="month-selector" onchange="canviarMes()">
+            <select id="anyActual" onchange="canviarMes()" style="height:26px;">
                 <option value="2026" selected>2026</option>
                 <option value="2027">2027</option>
                 <option value="2028">2028</option>
@@ -370,9 +426,11 @@
             </select>
         </div>
         <!-- Buscador premium de aparcamientos -->
-        <div class="search-wrapper">
-            <span class="search-icon">🔍</span>
-            <input type="text" id="searchAparcament" class="search-input" placeholder="🔍 Cercar aparcament..." data-i18n="placeholderSearch" oninput="filtrarTaula()">
+        <div class="toolbar-group">
+            <div class="search-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchAparcament" class="search-input" placeholder="🔍 Cercar aparcament..." data-i18n="placeholderSearch" oninput="filtrarTaula()" style="padding-left: 28px; width: 200px;">
+            </div>
         </div>
     </div>
 
