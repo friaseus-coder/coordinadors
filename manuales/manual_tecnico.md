@@ -69,7 +69,7 @@ La aplicación aprovecha la separación de procesos de Electron para ofrecer seg
 *   Muestra la interfaz gráfica dentro del contenedor Chromium de forma aislada.
 *   No tiene acceso directo al sistema operativo ni a Node.js por motivos de seguridad informática (prevención de ataques XSS).
 *   Se comunica con el proceso principal mediante las funciones expuestas en el puente `preload.js` (`window.api` y `window.dbAPI`).
-*   **Puente del Motor de Persistencia Relacional (`window.dbAPI`):** En `preload.js` se definen y exponen los métodos `read(dbKey, query, params)` y `write(dbKey, query, params)` que permiten al frontend realizar consultas de selección (SELECT) en la caché local o sentencias de modificación (INSERT/UPDATE/DELETE) atómicas con Mutex en red de forma directa. Toda la persistencia de `persistence.js` fue migrada a esta API, conservando `window.databaseAPI` únicamente para servicios lógicos (como el Asistente de Asignación) y obtener configuración de sesión (`getUserConfig`).
+*   **Puente del Motor de Persistencia Relacional (`window.dbAPI`):** En `preload.js` se definen y exponen los métodos `read(dbKey, query, params)` y `write(dbKey, query, params)` que permiten al frontend realizar consultas de selección (SELECT) en la caché local o sentencias de modificación (INSERT/UPDATE/DELETE) atómicas con Mutex en red de forma directa. Toda la persistencia de `persistence.js` fue migrada a esta API, conservando `window.databaseAPI` únicamente para obtener configuración de sesión (`getUserConfig`), habiéndose removido por completo lógicas auxiliares del frontend como el Asistente de Asignación y el control de concurrencia cooperativo a nivel relacional de la UI para mayor simplicidad y rendimiento.
 
 ### C. Cargador Híbrido Dinámico (Modificaciones en Caliente)
 Para evitar tener que generar y distribuir un nuevo ejecutable `.exe` de 180MB cada vez que se hace un cambio estético de HTML o CSS, el método `createWindow()` en `main.js` realiza la siguiente validación:
@@ -156,9 +156,9 @@ Para evitar la corrupción de datos que ocurre cuando múltiples instancias de S
 5.  **Refresco de Caché Local**: Inmediatamente después de liberar el candado en red, Electron ejecuta `syncToLocal(dbKey)` para cerrar la conexión local, copiar el archivo modificado de red a la caché local de `%LocalAppData%` y reabrir la conexión de lectura. Esto asegura que el coordinador que acaba de escribir tenga su caché actualizada al 100%.
 
 > [!IMPORTANT]
-> **Diferencia entre Lock Cooperativo y Mutex de Red**:
+> **Bloqueos y Concurrencia**:
 > *   **Mutex de Red (`_<dbKey>.lock`)**: Control físico de bajo nivel a nivel de archivo SQLite para evitar corrupción de base de datos durante operaciones de escritura rápidas (`INSERT/UPDATE/DELETE`). Es de corta duración (milisegundos) y se gestiona automáticamente en `main.js`.
-> *   **Lock Cooperativo (`~quadrant_[coord].lock`)**: Lógica de negocio a nivel de interfaz de usuario. Al entrar a editar el cuadrante de un coordinador, se crea este archivo `.lock` en red con un TTL de 3 horas. Su objetivo es impedir que dos personas editen concurrentemente la cuadrícula visual de turnos de un mismo coordinador. Si está ocupado, la interfaz del segundo usuario se carga en modo "Solo lectura".
+> *   **Concurrencia Cooperativa Relacional**: Las funciones heredadas de bloqueo relacional cooperativo visual (`~quadrant_[coord].lock`) y cálculo de alertas/recomendaciones han sido inhabilitadas en esta versión. Esto permite una edición libre y concurrente sin restricciones a nivel de interfaz de usuario, confiando la integridad de los datos exclusivamente al Mutex físico de escritura en red.
 
 ---
 
@@ -353,3 +353,32 @@ La aplicación implementa una arquitectura basada en roles (Role-Based Access Co
 *   En `portal.html`, al cargarse el DOM, el proceso consulta prioritariamente la configuración de `config.json` para sobrescribir autoritativamente `userRole` y `userName` en `sessionStorage`.
 *   A continuación, se invoca de manera inmediata el filtrado mediante la función `applyRoleFiltering(role)`. Esta función recorre todos los elementos del menú (etiquetados con `.menu-item` o el atributo `data-roles`) y aplica un estilo imperativo de ocultación (`display: none !important`) a toda sección no permitida para el rol activo.
 *   Si el rol activo es `comercial`, se ocultan el resto de opciones de navegación del portal y se realiza una redirección asíncrona e instantánea abriendo directamente el módulo de Comerciales (`comercials.html`).
+
+---
+
+## 10. Módulo de Planificación de Rutas y Validación de Propietario
+
+En la pantalla de visitas (`src/ruta/ruta.html`), se ha implementado un sistema inteligente para facilitar la planificación mensual de rutas de los coordinadores Albert y Laura.
+
+### A. Validación de Propietario de Aparcamientos (Resaltado Visual)
+*   **Origen de Datos**: Al iniciar el módulo, se invoca `loadAddresses()`, la cual realiza una consulta SQL al shard de catálogos (`catalogos_maestros.db`) mediante `window.dbAPI.read` para obtener la relación completa de aparcamientos y sus coordinadores responsables (`coordinador_responsable` = 'Albert', 'Laura' o 'Ambos').
+*   **Control de Coincidencia**: Durante el renderizado de los selectores en `generateCalendar()` y en su evento `onchange`, se valida si el centro seleccionado pertenece al coordinador responsable del calendario.
+*   **Estilo Visual de Advertencia**: Si se selecciona manualmente un aparcamiento que pertenece al otro coordinador, se aplica de forma dinámica la clase CSS `.foreign-select` (que tiñe el fondo del desplegable de color naranja/amarillo suave y le añade un borde naranja de advertencia). Esto permite realizar la asignación pero emite una alerta visual clara al usuario.
+
+### B. Algoritmo de Generación Automática de Rutas (`ejecutarGeneracionAuto()`)
+Permite generar de manera automática y optimizada la propuesta de visitas para todo el mes en base a parámetros introducidos en un modal flotante.
+
+1.  **Parámetros de Entrada**:
+    *   **Visitas Diarias Laborables**: Cantidad de aparcamientos a visitar de lunes a viernes (Dl, Dm, Dc, Dj, Dv), con un rango de 0 a 6.
+    *   **Fines de Semana**: Número de fines de semana (de 0 a 4) a planificar de manera aleatoria en el mes.
+    *   **Turno de Fin de Semana**: Opción de seleccionar el turno de visitas de sábado y domingo (Mañana, Tarde o Noche). Si se selecciona "Noche" (`nit`), se marca la visita como nocturna activando el flag `-night` en `localStorage` y el estilo visual correspondiente.
+    *   **Visitas Máximas por Centro**: Límite mensual del número de veces que se puede planificar un mismo aparcamiento para evitar repeticiones excesivas.
+2.  **Filtrado de Centros**: El algoritmo únicamente selecciona aquellos aparcamientos cuyo responsable sea el propio coordinador (Albert o Laura) o figuren asignados a "Ambos".
+3.  **Selección Inteligente y Balanceo (`getSiguienteAparcamientoInteligente()`)**:
+    *   Filtra los aparcamientos propios que se encuentren por debajo del límite mensual de visitas máximas configuradas.
+    *   Si todos los aparcamientos han alcanzado el límite (debido a una configuración muy restrictiva o alta densidad de visitas), el algoritmo selecciona dinámicamente aquellos con el menor número de visitas registradas en el mes para mantener el equilibrio.
+    *   Para evitar la repetición del mismo centro en días contiguos, utiliza un sistema de selección secuencial rotativo.
+4.  **Limpieza y Persistencia en Red**:
+    *   Antes de escribir los nuevos datos, se limpia de forma segura el mes seleccionado del coordinador en el `localStorage` (sin alterar el resto de meses).
+    *   Se distribuyen los aparcamientos en los días laborales (excluyendo festivos nacionales, locales, convenios o días de empresa) y en los fines de semana seleccionados.
+    *   Por último, se invoca `persistence.syncSave()`, lo que asegura la escritura atómica y segura de todos los turnos generados en la base de datos centralizada en red a través de la API `write-db` con Mutex de Electron.

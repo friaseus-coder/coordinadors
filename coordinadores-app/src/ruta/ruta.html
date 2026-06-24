@@ -127,6 +127,11 @@ select { width: 100%; font-size: 10px; }
 .legend-box.holiday-circle::after { content: ''; width: 6px; height: 6px; border-radius: 50%; background-color: #ff4d4d; }
 .legend-box.night-circle, .legend-box.holiday-circle { display: flex; justify-content: center; align-items: center; border-radius: 50%; }
 
+.foreign-select {
+    background-color: #ffe0b2 !important; /* Naranja muy suave */
+    border: 1.5px solid #ff9800 !important;
+}
+
 #panelGestio {
     display: none; position: absolute; top: 40px; left: 280px; background: #fff;
     border: 2px solid #008d36; padding: 15px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 10000; width: 280px;
@@ -191,6 +196,7 @@ select { width: 100%; font-size: 10px; }
                 <button id="resetAlbertBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;" data-i18n="rutaBtnResetAlbert">⚠️ Reset Albert</button>
                 <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Albert')" data-i18n="rutaBtnExportAlbert">💾 Exportar Albert</button>
                 <button class="btn-nyn btn-import" onclick="document.getElementById('fileAlbert').click()" data-i18n="rutaBtnImportAlbert">📂 Importar Albert</button>
+                <button class="btn-nyn" style="background:#0284c7 !important;" onclick="obrirAutoRuta('Albert')">⚡ Auto Albert</button>
                 <input type="file" id="fileAlbert" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Albert')">
             </div>
         </div>
@@ -205,6 +211,7 @@ select { width: 100%; font-size: 10px; }
                 <button id="resetLauraBtn" style="color: darkred; font-weight: bold; border:1px solid darkred; background:white; padding: 3px 8px; font-size: 11px;" data-i18n="rutaBtnResetLaura">⚠️ Reset Laura</button>
                 <button class="btn-nyn btn-export" onclick="exportarDadesUsuari('Laura')" data-i18n="rutaBtnExportLaura">💾 Exportar Laura</button>
                 <button class="btn-nyn btn-import" onclick="document.getElementById('fileLaura').click()" data-i18n="rutaBtnImportLaura">📂 Importar Laura</button>
+                <button class="btn-nyn" style="background:#0284c7 !important;" onclick="obrirAutoRuta('Laura')">⚡ Auto Laura</button>
                 <input type="file" id="fileLaura" style="display:none" accept=".json" onchange="importarDadesUsuari(event, 'Laura')">
             </div>
         </div>
@@ -326,15 +333,17 @@ const baseAddresses = ["--- >", "ARAGÓ 182", "ARIBAU 225", "AV. ROMA 120", "AV.
 let addresses = [];
 const fixedAuxiliary = ["CAP DE SETMANA", "CURSO PRL", "DIA CONVENI", "FESTIU", "ASPY", "LLIURE", "OFICINES", "VACANCES"];
 
+let aparcamientosInfo = []; // Array de { nombre, coordinador_responsable }
+
 async function loadAddresses() {
     try {
-        let api = window.api;
-        if (!api && window.parent && window.parent.api) {
-            api = window.parent.api;
+        let dbApi = window.dbAPI;
+        if (!dbApi && window.parent && window.parent.dbAPI) {
+            dbApi = window.parent.dbAPI;
         }
-        if (api && api.getAparcamientos) {
-            const aparcamientos = await api.getAparcamientos();
-            const nombresAparcamientos = aparcamientos.map(ap => ap.nombre);
+        if (dbApi) {
+            aparcamientosInfo = await dbApi.read('catalogos', "SELECT nombre, coordinador_responsable FROM aparcamientos WHERE activo = 1", []);
+            const nombresAparcamientos = aparcamientosInfo.map(ap => ap.nombre);
             addresses = ["--- >", ...Array.from(new Set([...nombresAparcamientos, ...fixedAuxiliary]))].sort((a, b) => {
                 if (a === "--- >") return -1;
                 if (b === "--- >") return 1;
@@ -381,14 +390,31 @@ function generateCalendar(containerId, person){
             const sel = document.createElement("select");
             sel.innerHTML = '<option value="">--- ></option>';
             addresses.sort((a,b)=>a.localeCompare(b,'ca')).forEach(a => { if(a !== "--- >") sel.innerHTML += `<option value="${a}">${a}</option>`; });
-            sel.value = localStorage.getItem(key) || "";
+            const val = localStorage.getItem(key) || "";
+            sel.value = val;
+            
+            // Pintar si es ajeno en carga inicial
+            const apInfoCarga = (aparcamientosInfo || []).find(ap => ap.nombre === val);
+            if (apInfoCarga && apInfoCarga.coordinador_responsable && apInfoCarga.coordinador_responsable !== person && apInfoCarga.coordinador_responsable !== 'Ambos') {
+                sel.classList.add('foreign-select');
+            }
             
             const nBtn = document.createElement("button"); nBtn.className = "night-btn";
             if(localStorage.getItem(nKey)){ nBtn.classList.add("active"); sel.classList.add("night-select"); }
             const hBtn = document.createElement("button"); hBtn.className = "holiday-btn";
             if(localStorage.getItem(hKey)){ hBtn.classList.add("active"); sel.classList.add("holiday-select"); }
 
-            sel.onchange = () => { localStorage.setItem(key, sel.value); updateCharts(); };
+            sel.onchange = () => {
+                localStorage.setItem(key, sel.value);
+                // Pintar si es ajeno en cambio manual
+                const apInfo = (aparcamientosInfo || []).find(ap => ap.nombre === sel.value);
+                if (apInfo && apInfo.coordinador_responsable && apInfo.coordinador_responsable !== person && apInfo.coordinador_responsable !== 'Ambos') {
+                    sel.classList.add('foreign-select');
+                } else {
+                    sel.classList.remove('foreign-select');
+                }
+                updateCharts();
+            };
             nBtn.onclick = () => {
                 if(localStorage.getItem(nKey)){ localStorage.removeItem(nKey); nBtn.classList.remove("active"); sel.classList.remove("night-select"); }
                 else { localStorage.setItem(nKey, "1"); nBtn.classList.add("active"); sel.classList.add("night-select"); }
@@ -509,11 +535,243 @@ async function initRuta() {
 }
 initRuta();
 
+// --- LOGICA DE RUTA AUTOMATICA CON LIMITE DE VISITAS ---
+let personaAutoRuta = '';
+
+function obrirAutoRuta(person) {
+    personaAutoRuta = person;
+    document.getElementById('modalAutoTitle').innerText = `Generar Ruta Automàtica (${person.toUpperCase()})`;
+    document.getElementById('modalAutoRuta').style.display = 'flex';
+}
+
+function cerrarAutoRutaModal() {
+    document.getElementById('modalAutoRuta').style.display = 'none';
+}
+
+async function ejecutarGeneracionAuto() {
+    const person = personaAutoRuta;
+    const dateStr = monthPicker.value;
+    const [year, monthPart] = dateStr.split("-");
+    const yearNum = parseInt(year);
+    const monthIdx = parseInt(monthPart) - 1;
+    
+    // Obtener parámetros
+    const dlVis = parseInt(document.getElementById('autoDl').value) || 0;
+    const dmVis = parseInt(document.getElementById('autoDm').value) || 0;
+    const dcVis = parseInt(document.getElementById('autoDc').value) || 0;
+    const djVis = parseInt(document.getElementById('autoDj').value) || 0;
+    const dvVis = parseInt(document.getElementById('autoDv').value) || 0;
+    const wndCount = parseInt(document.getElementById('autoFinsSetmana').value) || 0;
+    const wndTorn = document.getElementById('autoTornWeekend').value;
+    const maxVisitas = parseInt(document.getElementById('autoMaxVisitasPorCentro').value) || 4;
+
+    const visitasDia = [0, dlVis, dmVis, dcVis, djVis, dvVis, 0]; // 0=Dom, 1=Lun... 6=Sab
+
+    // Obtener aparcamientos propios
+    const propios = (aparcamientosInfo || []).filter(ap => 
+        ap.coordinador_responsable === person || ap.coordinador_responsable === 'Ambos'
+    ).map(ap => ap.nombre);
+
+    if (propios.length === 0) {
+        alert("⚠️ No s'han trobat aparcaments propis d'aquest coordinador per planificar.");
+        cerrarAutoRutaModal();
+        return;
+    }
+
+    // Inicializar contadores de visitas
+    const visitasCount = {};
+    propios.forEach(p => visitasCount[p] = 0);
+
+    // Función inteligente de selección con límite y balanceo
+    let lastSelectedIndex = -1;
+    const getSiguienteAparcamientoInteligente = () => {
+        // Filtrar cuáles están por debajo del límite
+        let candidatos = propios.filter(p => visitasCount[p] < maxVisitas);
+        
+        // Si no quedan candidatos por debajo del límite, seleccionamos los que tengan el menor número de visitas registradas
+        if (candidatos.length === 0) {
+            let minVisits = Infinity;
+            propios.forEach(p => {
+                if (visitasCount[p] < minVisits) minVisits = visitasCount[p];
+            });
+            candidatos = propios.filter(p => visitasCount[p] === minVisits);
+        }
+
+        // De los candidatos elegibles, seleccionamos secuencialmente (rotativo) para no repetir de forma inmediata si es posible
+        let chosen = candidatos[0];
+        // Intentar que no sea el mismo que el anterior si hay más opciones
+        if (candidatos.length > 1) {
+            let nextIndex = (lastSelectedIndex + 1) % propios.length;
+            let found = false;
+            for (let i = 0; i < propios.length; i++) {
+                let idx = (nextIndex + i) % propios.length;
+                let name = propios[idx];
+                if (candidatos.includes(name)) {
+                    chosen = name;
+                    lastSelectedIndex = idx;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                chosen = candidatos[0];
+                lastSelectedIndex = propios.indexOf(chosen);
+            }
+        } else {
+            chosen = candidatos[0];
+            lastSelectedIndex = propios.indexOf(chosen);
+        }
+
+        visitasCount[chosen]++;
+        return chosen;
+    };
+
+    const daysInMonth = new Date(yearNum, monthIdx + 1, 0).getDate();
+
+    // Identificar fines de semana
+    const finesDeSemana = [];
+    let sabadoActivo = null;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayOfWeek = new Date(yearNum, monthIdx, day).getDay();
+        if (dayOfWeek === 6) {
+            sabadoActivo = day;
+        } else if (dayOfWeek === 0 && sabadoActivo !== null) {
+            finesDeSemana.push({ sabado: sabadoActivo, domingo: day });
+            sabadoActivo = null;
+        }
+    }
+
+    const wndSeleccionados = [];
+    const wndDisponibles = [...finesDeSemana];
+    for (let k = 0; k < wndCount && wndDisponibles.length > 0; k++) {
+        const randIndex = Math.floor(Math.random() * wndDisponibles.length);
+        wndSeleccionados.push(wndDisponibles.splice(randIndex, 1)[0]);
+    }
+
+    // Confirmación
+    if (!confirm(`⚠️ S'esborraran les dades actuals de la ruta de ${person} per al mes ${monthPart}/${year} i es generarà una nova ruta automàtica.\n\nVols continuar?`)) {
+        return;
+    }
+
+    // 1. Limpiar datos del mes
+    const prefixMes = `${person}-${yearNum}-${monthIdx}-`;
+    Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(prefixMes)) {
+            localStorage.removeItem(k);
+        }
+    });
+
+    // 2. Planificar diario
+    for (let day = 1; day <= daysInMonth; day++) {
+        const isoDate = `${yearNum}-${String(monthIdx+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        const esFestivo = holidays.national.includes(isoDate) || 
+                          holidays.local.includes(isoDate) || 
+                          holidays.convenio.includes(isoDate) || 
+                          holidays.empresa.includes(isoDate);
+
+        if (esFestivo) continue;
+
+        const dayOfWeek = new Date(yearNum, monthIdx, day).getDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            const numVisitas = visitasDia[dayOfWeek];
+            for (let i = 0; i < numVisitas; i++) {
+                const key = `${person}-${yearNum}-${monthIdx}-${day}-${i}`;
+                const ap = getSiguienteAparcamientoInteligente();
+                localStorage.setItem(key, ap);
+            }
+        }
+    }
+
+    // Planificar fines de semana
+    wndSeleccionados.forEach(wnd => {
+        [wnd.sabado, wnd.domingo].forEach(day => {
+            const numVisitas = 3; // Por defecto 3 visitas por día de fin de semana
+            for (let i = 0; i < numVisitas; i++) {
+                const key = `${person}-${yearNum}-${monthIdx}-${day}-${i}`;
+                const ap = getSiguienteAparcamientoInteligente();
+                localStorage.setItem(key, ap);
+                
+                if (wndTorn === 'nit') {
+                    localStorage.setItem(`${key}-night`, "1");
+                }
+            }
+        });
+    });
+
+    // Sincronizar en red
+    await persistence.syncSave();
+
+    alert(`✅ Ruta automàtica per a ${person} generada amb èxit!`);
+    cerrarAutoRutaModal();
+    generateCalendars();
+    updateCharts();
+}
+
 window.addEventListener('languageChanged', () => {
     i18n.translatePage();
     refrescarLlegendaGlobal();
     generateCalendars();
 });
 </script>
+
+<!-- Modal de Ruta Automática con límites de visitas -->
+<div id="modalAutoRuta" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 20000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 20px; border-radius: 8px; width: 350px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); border: 2px solid #008d36; font-family: Arial, sans-serif;">
+        <h3 id="modalAutoTitle" style="margin-top: 0; color: #008d36; border-bottom: 2px solid #008d36; padding-bottom: 8px; text-transform: uppercase; font-size: 13px;">Generar Ruta Automàtica</h3>
+        
+        <!-- Visitas por día -->
+        <h4 style="margin: 10px 0 5px; font-size: 11px;">Visites diàries per dia de la setmana (0-6):</h4>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-bottom: 12px;">
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block;">Dl</label>
+                <input type="number" id="autoDl" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block;">Dm</label>
+                <input type="number" id="autoDm" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block;">Dc</label>
+                <input type="number" id="autoDc" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block;">Dj</label>
+                <input type="number" id="autoDj" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block;">Dv</label>
+                <input type="number" id="autoDv" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px;">
+            </div>
+        </div>
+
+        <!-- Fines de semana -->
+        <div style="margin-bottom: 10px; display: flex; gap: 10px;">
+            <div style="flex: 1;">
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px;">Fins de setmana (0-4):</label>
+                <input type="number" id="autoFinsSetmana" min="0" max="4" value="1" style="width: 100%; padding: 4px; box-sizing: border-box; font-size: 11px;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px;">Torn WND:</label>
+                <select id="autoTornWeekend" style="width: 100%; padding: 4px; font-size: 11px; height: 23px;">
+                    <option value="mati">Matí</option>
+                    <option value="tarda">Tarda</option>
+                    <option value="nit">Nit</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Veces máximas que se irá a cada aparcamiento en el mes -->
+        <div style="margin-bottom: 15px;">
+            <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 4px;">Visites màximes per centre al mes:</label>
+            <input type="number" id="autoMaxVisitasPorCentro" min="1" max="31" value="4" style="width: 100%; padding: 4px; box-sizing: border-box; font-size: 11px;">
+            <span style="font-size: 8px; color: #666;">(Prevé repetición excesiva de los mismos aparcamientos)</span>
+        </div>
+
+        <div style="display: flex; gap: 8px;">
+            <button onclick="ejecutarGeneracionAuto()" style="background: #008d36; color: white; border: none; padding: 8px; font-weight: bold; flex: 1; cursor: pointer; border-radius: 4px; font-size: 11px; text-transform: uppercase;">Generar</button>
+            <button onclick="cerrarAutoRutaModal()" style="background: #ccc; color: black; border: none; padding: 8px; font-weight: bold; flex: 1; cursor: pointer; border-radius: 4px; font-size: 11px; text-transform: uppercase;">Cancelar</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>

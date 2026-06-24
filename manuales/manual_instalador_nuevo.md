@@ -137,7 +137,7 @@ Para conectar la base de datos centralizada de la red compartida (por ejemplo, e
     *   `finanzas_inventario.db`: Gastos mensuales e inventario de material.
     *   `comercial.db`: Tarifas y precios de comerciales.
     *   `catalogos_maestros.db`: Catálogos maestros (aparcamientos, sociedades, agentes y contratos).
-    La aplicación copiará estos archivos desde la red a la caché local temporal del usuario en su primer inicio, ejecutando todas las lecturas al instante y canalizando las escrituras a la red mediante un sistema de Mutex físico para evitar concurrencias.
+    La aplicación copiará estos archivos desde la red a la caché local temporal del usuario en su primer inicio, ejecutando todas las lecturas al instante y canalizando las escrituras a la red mediante un sistema de Mutex físico para evitar concurrencias. Cabe destacar que el bloqueo cooperativo visual relacional y el cálculo de alertas de cuadrante han sido desactivados para una mayor libertad de edición concurrente.
 
 ---
 
