@@ -191,32 +191,29 @@ Contiene la información diaria de turnos, vacaciones y control de ausencias o d
     *   `horas_trabajadas` (INTEGER - por defecto 8)
     *   `es_substitucio` (INTEGER - 0 o 1)
     *   `nota` (TEXT - observaciones libres)
-*   **`vacances`**: Registro de vacaciones anuales y bajas de agentes.
+*   **`incidencias_horarias`**: Registro unificado de excepciones al horario normal (vacaciones, bajas y deudas de horas).
     *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
-    *   `agente_id` (INTEGER)
-    *   `fecha_inicio` (TEXT - YYYY-MM-DD)
-    *   `fecha_fin` (TEXT - YYYY-MM-DD)
-*   **`deutes`**: Deudas o excesos de jornada por coordinador.
-    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
-    *   `comercial` (TEXT)
-    *   `cliente` (TEXT)
-    *   `import` (REAL)
-    *   `fecha` (TEXT - YYYY-MM-DD)
-    *   `activo` (INTEGER - 0 o 1)
+    *   `id_trabajador` (TEXT - identificador o nombre del empleado)
+    *   `fecha_inicio` (DATE - fecha de inicio de la incidencia)
+    *   `fecha_fin` (DATE - fecha de fin de la incidencia)
+    *   `tipo_incidencia` (TEXT - 'Vacaciones', 'Baja Médica', 'Deuda Horas (-)', 'Bolsa Horas (+)')
+    *   `impacto_horas` (REAL - cantidad de horas que suma o resta)
+    *   `coordinador` (TEXT - coordinador responsable)
+    *   `estado` (TEXT - estado de la incidencia, por defecto 'Aprobado')
+    *   `comentarios` (TEXT - observaciones y detalles libres)
 *   **`kv_store`**: Almacén clave-valor heredado operativo.
 *   **`schema_version`**: Control de versión de estructura del shard operativo.
 
 #### 2. `finanzas_inventario.db`
 Centraliza el registro contable de caja chica (gastos) y el control de materiales entregados (uniformes).
-*   **`despeses`**: Registro de gastos y tickets mensuales.
+*   **`movimientos_economicos`**: Registro unificado de todo el flujo económico (rutas, tickets y compras).
     *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
-    *   `fecha` (TEXT - YYYY-MM-DD)
-    *   `comercial` (TEXT)
-    *   `concepto` (TEXT)
-    *   `importe` (TEXT)
-    *   `estado` (TEXT)
-    *   `coordinador` (TEXT)
-    *   `activo` (INTEGER - 0 o 1)
+    *   `id_usuario` (TEXT - identificador del usuario que origina el movimiento)
+    *   `fecha` (DATE - fecha del movimiento)
+    *   `tipo_movimiento` (TEXT - 'Gasto Material', 'Ruta Comercial', 'Ticket Parking')
+    *   `concepto` (TEXT - concepto o descripción del gasto)
+    *   `importe` (REAL - importe económico del movimiento)
+    *   `json_detalles` (TEXT - metadatos estructurados en formato JSON: origen, destino, kms, estado, etc.)
 *   **`inventari`**: Control de uniformes y materiales entregados a trabajadores.
     *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
     *   `comercial` (TEXT)
@@ -249,6 +246,7 @@ Contiene la parametrización global del grupo (sociedades, parkings, contratos y
     *   `activo` (INTEGER - 0 o 1)
 *   **`coberturas_requeridas`**: Turnos obligatorios por aparcamiento (recurrente o extraordinario).
 *   **`agentes`**: Catálogo de personal de plantilla y empresas externas.
+*   **`empleados`**: Tabla unificada de todo el personal de la empresa (coordinadores, administradores, comerciales y trabajadores), incluyendo sus preferencias y configuraciones (`json_preferencias` en formato JSON).
 *   **`contratos_agentes`**: Vinculación temporal de trabajadores con sociedades para control de cruces.
 *   **`reglas_config`**: Reglas de negocio globales (horas_maximas_semanales, descanso_minimo_horas, etc.).
 *   **`historico_aparcamientos`**: Tabla de auditoría interna de cambios en los centros.

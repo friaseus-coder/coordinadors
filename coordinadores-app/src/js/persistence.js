@@ -878,16 +878,16 @@ async function loadAparcamientos() {
 
 // --- NUEVA CARGA DE PERSONAL DESDE SQLITE ---
 async function loadCoordinadores() {
-    console.log("Cargando personal (agentes) desde SQLite...");
+    console.log("Cargando personal (empleados) desde SQLite...");
     try {
-        const data = await window.dbAPI.read('catalogos', "SELECT * FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
-        return data.map(agente => ({
-            id: agente.id,
-            nombre: agente.nombre,
-            nom: agente.nombre.split(' ')[0],
-            cognoms: agente.nombre.split(' ').slice(1).join(' '),
-            ranking: agente.ranking_score,
-            es_empresa_externa: agente.es_empresa_externa
+        const data = await window.dbAPI.read('catalogos', "SELECT * FROM empleados WHERE activo = 1 ORDER BY nombre ASC", []);
+        return data.map(emp => ({
+            id: emp.id,
+            nombre: emp.nombre,
+            nom: emp.nombre.split(' ')[0],
+            cognoms: emp.nombre.split(' ').slice(1).join(' '),
+            ranking: 50,
+            es_empresa_externa: emp.rol === 'Comercial' ? 1 : 0
         }));
     } catch (e) {
         console.error("Error al cargar personal:", e);
@@ -983,15 +983,16 @@ async function obtenerAsistenteAsignacion(fecha, aparcamientoId) {
     return { sugeridos: [], descartados: [] };
 }
 
-// --- NUEAS FUNCIONES DE VACACIONES (SQLITE) ---
+// --- NUEVAS FUNCIONES DE VACACIONES (SQLITE) ---
 async function loadVacacionesSQLite() {
     try {
         console.log("Cargando vacaciones desde SQLite...");
         const sql = `
-          SELECT v.id, v.agente_id, a.nombre as agente_nombre, v.fecha_inicio, v.fecha_fin
-          FROM vacances v
-          JOIN catalogos.agentes a ON v.agente_id = a.id
-          ORDER BY v.fecha_inicio ASC
+          SELECT i.id, CAST(i.id_trabajador AS INTEGER) as agente_id, a.nombre as agente_nombre, i.fecha_inicio, i.fecha_fin
+          FROM incidencias_horarias i
+          JOIN catalogos.agentes a ON CAST(i.id_trabajador AS INTEGER) = a.id
+          WHERE i.tipo_incidencia = 'Vacaciones'
+          ORDER BY i.fecha_inicio ASC
         `;
         return await window.dbAPI.read('operativa', sql, []);
     } catch (error) {
@@ -1002,8 +1003,11 @@ async function loadVacacionesSQLite() {
 
 async function saveVacacionSQLite(agenteId, fechaInicio, fechaFin) {
     try {
-        await window.dbAPI.write('operativa', "INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin) VALUES (?, ?, ?)", [agenteId, fechaInicio, fechaFin]);
-        return { success: true };
+        const res = await window.dbAPI.write('operativa', `
+            INSERT INTO incidencias_horarias (id_trabajador, fecha_inicio, fecha_fin, tipo_incidencia, estado) 
+            VALUES (?, ?, ?, 'Vacaciones', 'Aprobado')
+        `, [String(agenteId), fechaInicio, fechaFin]);
+        return { success: true, id: res ? res.lastID : null };
     } catch (error) {
         console.error("Error guardando vacación SQLite:", error);
         return { success: false };
@@ -1012,7 +1016,7 @@ async function saveVacacionSQLite(agenteId, fechaInicio, fechaFin) {
 
 async function deleteVacacionSQLite(id) {
     try {
-        await window.dbAPI.write('operativa', "DELETE FROM vacances WHERE id = ?", [id]);
+        await window.dbAPI.write('operativa', "DELETE FROM incidencias_horarias WHERE id = ?", [id]);
         return { success: true };
     } catch (error) {
         console.error("Error borrando vacación SQLite:", error);
@@ -1023,7 +1027,13 @@ async function deleteVacacionSQLite(id) {
 // --- DEUDAS ---
 async function loadDeutes(coordinadorId) {
     try {
-        return await window.dbAPI.read('operativa', "SELECT * FROM deutes WHERE activo = 1 ORDER BY fecha DESC", []);
+        const query = `
+          SELECT id, id_trabajador as comercial, comentarios as cliente, impacto_horas as import, fecha_inicio as fecha, 1 as activo
+          FROM incidencias_horarias
+          WHERE tipo_incidencia = 'Deuda Horas (-)'
+          ORDER BY fecha_inicio DESC
+        `;
+        return await window.dbAPI.read('operativa', query, []);
     } catch (e) {
         console.error(e);
         return [];
@@ -1033,11 +1043,11 @@ async function loadDeutes(coordinadorId) {
 async function saveDeutes(coordinadorId, data) {
     try {
         if (Array.isArray(data)) {
-            await window.dbAPI.write('operativa', "DELETE FROM deutes", []);
+            await window.dbAPI.write('operativa', "DELETE FROM incidencias_horarias WHERE tipo_incidencia = 'Deuda Horas (-)'", []);
             for (let item of data) {
                 await window.dbAPI.write('operativa', `
-                  INSERT INTO deutes (comercial, cliente, import, fecha, activo)
-                  VALUES (?, ?, ?, ?, 1)
+                  INSERT INTO incidencias_horarias (id_trabajador, comentarios, impacto_horas, fecha_inicio, tipo_incidencia, estado)
+                  VALUES (?, ?, ?, ?, 'Deuda Horas (-)', 'Aprobado')
                 `, [item.comercial, item.cliente, item.import, item.fecha]);
             }
         }
@@ -1051,7 +1061,29 @@ async function saveDeutes(coordinadorId, data) {
 // --- GASTOS ---
 async function loadDespeses(coordinadorId) {
     try {
-        return await window.dbAPI.read('finanzas', "SELECT * FROM despeses WHERE activo = 1 ORDER BY fecha DESC", []);
+        const rows = await window.dbAPI.read('finanzas', `
+            SELECT id, fecha, id_usuario as comercial, concepto, importe, json_detalles
+            FROM movimientos_economicos
+            WHERE tipo_movimiento = 'Gasto Material'
+            ORDER BY fecha DESC
+        `, []);
+        
+        return rows.map(row => {
+            let detalles = {};
+            try {
+                detalles = JSON.parse(row.json_detalles || '{}');
+            } catch (e) {}
+            return {
+                id: row.id,
+                fecha: row.fecha,
+                comercial: row.comercial,
+                concepto: row.concepto,
+                importe: String(row.importe),
+                estado: detalles.estado || 'Aprobado',
+                coordinador: detalles.coordinador || '',
+                activo: 1
+            };
+        });
     } catch (e) {
         console.error(e);
         return [];
@@ -1061,12 +1093,16 @@ async function loadDespeses(coordinadorId) {
 async function saveDespeses(coordinadorId, data) {
     try {
         if (Array.isArray(data)) {
-            await window.dbAPI.write('finanzas', "DELETE FROM despeses", []);
+            await window.dbAPI.write('finanzas', "DELETE FROM movimientos_economicos WHERE tipo_movimiento = 'Gasto Material'", []);
             for (let item of data) {
+                const detalles = JSON.stringify({
+                    estado: item.estado,
+                    coordinador: item.coordinador
+                });
                 await window.dbAPI.write('finanzas', `
-                  INSERT INTO despeses (fecha, comercial, concepto, importe, estado, coordinador, activo)
-                  VALUES (?, ?, ?, ?, ?, ?, 1)
-                `, [item.fecha, item.comercial, item.concepto, item.importe, item.estado, item.coordinador]);
+                  INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
+                  VALUES (?, ?, 'Gasto Material', ?, ?, ?)
+                `, [item.comercial, item.fecha, item.concepto, parseFloat(item.importe) || 0, detalles]);
             }
         }
         return true;
