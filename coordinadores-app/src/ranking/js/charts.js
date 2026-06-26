@@ -32,7 +32,7 @@ function renderCentreChart(arr) {
   const dataChart = {
     labels,
     datasets: [{
-      label: 'Mitjana',
+      label: i18n.t('rankingChartAverage'),
       data: dataValues,
       backgroundColor: gradient,
       borderColor: 'green',
@@ -132,6 +132,14 @@ function renderSunburstChart(arr) {
   const firstColumn = centres.slice(0, 15);
   const secondColumn = centres.slice(15, 30);
 
+  const categoryLabels = {
+    coneixements: i18n.t('rankingThConeixements'),
+    atencio: i18n.t('rankingThAtencio'),
+    disponibilitat: i18n.t('rankingThDisponibilitat'),
+    actitud: i18n.t('rankingThActitud'),
+    valoracio: i18n.t('rankingThValoracio')
+  };
+
  const option = {
   tooltip: { trigger: 'item' },
   legend: [
@@ -156,12 +164,11 @@ function renderSunburstChart(arr) {
       itemGap: 6
     }
   ],
-
- radar: {
-  indicator: categories.map(cat => ({ name: cat, max: 10 })),
+  radar: {
+  indicator: categories.map(cat => ({ name: categoryLabels[cat] || cat, max: 10 })),
   shape: 'hexagon',
-  center: ['70%', '50%'], // més a l’esquerra per fer lloc a llegenda
-  radius: '63%',           // lleugerament més petit
+  center: ['70%', '50%'],
+  radius: '63%',
   splitNumber: 5,
   axisLine: { lineStyle: { color: '#c0e5c0' } },
   splitLine: { lineStyle: { color: '#c0e5c0' } },

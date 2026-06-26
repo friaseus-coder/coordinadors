@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
     <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ca.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
@@ -530,7 +531,7 @@ function esDiaFestiu(data, centre) {
         const tr = btn.closest('tr');
         if (!tr) return;
 
-        if (confirm("Estàs segur que vols eliminar aquesta fila i totes les seves vacances associades en SQLite?")) {
+        if (confirm(i18n.t('vacancesConfirmDeleteRow'))) {
             const inputsPeriode = tr.querySelectorAll('.input-periode');
             for (const input of inputsPeriode) {
                 const dbId = input.getAttribute('data-db-id');
@@ -606,9 +607,10 @@ function configurarCalendari(tr) {
     };
 
     // Vinculació amb els calendaris
+    const flatpickrLocale = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? 'es' : 'ca';
     tr.querySelectorAll(".input-periode").forEach(input => {
         flatpickr(input, { 
-            mode: "range", dateFormat: "d/m/Y", locale: "ca", allowInput: true,
+            mode: "range", dateFormat: "d/m/Y", locale: flatpickrLocale, allowInput: true,
             onClose: (selectedDates, dateStr, instance) => { 
                 actualitzarTotAut(); 
                 sincronizarPeriodoSQLite(instance.element);
@@ -618,7 +620,7 @@ function configurarCalendari(tr) {
 
     tr.querySelectorAll(".input-festius-multi").forEach(input => {
         flatpickr(input, { 
-            mode: "multiple", dateFormat: "d/m/Y", locale: "ca", conjunction: ", ",
+            mode: "multiple", dateFormat: "d/m/Y", locale: flatpickrLocale, conjunction: ", ",
             onClose: (dates) => {
                 const inputNum = tr.querySelector('td.bg-festius input');
                 if (inputNum) { inputNum.value = dates.length; aplicarColorFestius(inputNum); }

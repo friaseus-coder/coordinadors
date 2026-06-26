@@ -61,6 +61,8 @@ const persistence = (() => {
   let isSyncing = false; // Evita bucles infinitos y escrituras durante la carga inicial
   let saveTimeout = null;
   let heartbeatInterval = null;
+  let lastBannerType = '';
+  let lastBannerLockedBy = '';
 
   // Filtros de claves específicas para cada módulo en localStorage
   const moduleFilters = {
@@ -133,6 +135,9 @@ const persistence = (() => {
 
   // Inyectar banner informativo de estado arriba de la interfaz
   function injectStatusBanner(type, message, lockedBy = '') {
+    lastBannerType = type;
+    lastBannerLockedBy = lockedBy;
+
     const existing = document.getElementById('nyn-persistence-banner');
     if (existing) existing.remove();
 
@@ -167,7 +172,7 @@ const persistence = (() => {
 
     if (type === 'locked' && userRole === 'jefe operaciones') {
       const unlockBtn = document.createElement('button');
-      unlockBtn.innerText = 'Forçar Desbloqueig';
+      unlockBtn.innerText = window.i18n ? window.i18n.t('persistenceForceUnlockBtn') : 'Forçar Desbloqueig';
       unlockBtn.style.marginLeft = '12px';
       unlockBtn.style.padding = '2px 8px';
       unlockBtn.style.backgroundColor = '#ffffff';
@@ -179,7 +184,8 @@ const persistence = (() => {
       unlockBtn.style.fontWeight = 'bold';
       
       unlockBtn.onclick = async () => {
-        if (confirm(`Estàs segur que vols forçar el desbloqueig de l'arxiu? Això pot causar pèrdua de dades si l'altre usuari està guardant.`)) {
+        const confirmMsg = window.i18n ? window.i18n.t('persistenceForceUnlockConfirm') : "Estàs segur que vols forçar el desbloqueig de l'arxiu? Això pot causar pèrdua de dades si l'altre usuari està guardant.";
+        if (confirm(confirmMsg)) {
           const isRelational = (activeModuleName === 'quadrant' || activeModuleName === 'vacances');
           if (isRelational) {
             // Desactivado por limpieza completa
@@ -212,6 +218,30 @@ const persistence = (() => {
 
     document.body.insertBefore(banner, document.body.firstChild);
   }
+
+  function translateBanner() {
+    if (!lastBannerType) return;
+    let msg = '';
+    if (lastBannerType === 'readonly') {
+      msg = window.i18n ? window.i18n.t('persistenceReadOnlyBanner') : '👁️ Mode Només Lectura: Perfil de visualització (no es poden desar canvis).';
+    } else if (lastBannerType === 'locked') {
+      const ocupadoPor = lastBannerLockedBy || 'otro usuario';
+      msg = window.i18n ? window.i18n.t('persistenceLockedBanner', { ocupadoPor }) : `🔒 Només Lectura: Aquest mòdul està sent editat per ${ocupadoPor}.`;
+    } else if (lastBannerType === 'edit') {
+      msg = window.i18n ? window.i18n.t('persistenceEditActiveBanner', { userName }) : `📝 Mode Edició Actiu | Usuari: ${userName}`;
+    }
+    
+    const existing = document.getElementById('nyn-persistence-banner');
+    if (existing && existing.querySelector('span') && (existing.querySelector('span').innerText.includes('Perdut') || existing.querySelector('span').innerText.includes('Perdido'))) {
+      msg = window.i18n ? window.i18n.t('persistenceLockLostBanner') : `🔒 Bloqueig Perdut: Aquest fitxer ja no està bloquejat per tu.`;
+    }
+    
+    if (msg) {
+      injectStatusBanner(lastBannerType, msg, lastBannerLockedBy);
+    }
+  }
+
+  window.addEventListener('languageChanged', translateBanner);
 
   // Deshabilitar todos los controles de edición en la página
   function disableEditingControls() {
@@ -256,10 +286,10 @@ const persistence = (() => {
     disableEditingControls();
     
     // Actualizar banner
-    injectStatusBanner('locked', `🔒 Bloqueig Perdut: Aquest fitxer ja no està bloquejat por tu (ha expirat o ha estat alliberat). No es poden desar canvis.`);
+    injectStatusBanner('locked', window.i18n ? window.i18n.t('persistenceLockLostBanner') : `🔒 Bloqueig Perdut: Aquest fitxer ja no està bloquejat per tu (ha expirat o ha estat alliberat). No es poden desar canvis.`);
     
-    // Alerta emergente en catalán
-    alert("S'ha perdut el bloqueig d'edició d'aquest fitxer (ha expirat o un administrador l'ha forçat). No es podran desar més canvis. Si us plau, copia els teus canvis manualment i recarrega la pàgina.");
+    // Alerta emergente
+    alert(window.i18n ? window.i18n.t('persistenceLockLostAlert') : "S'ha perdut el bloqueig d'edició d'aquest fitxer (ha expirat o un administrador l'ha forçat). No es podran desar més canvis. Si us plau, copia els teus canvis manualment i recarrega la pàgina.");
   }
 
   function startHeartbeat(moduleName) {
@@ -273,7 +303,7 @@ const persistence = (() => {
     }
 
     if (!userRole || !userName) {
-      alert('Error de sessió: Rol o Usuari no definits.');
+      alert(window.i18n ? window.i18n.t('persistenceSessionError') : 'Error de sessió: Rol o Usuari no definits.');
       return false;
     }
 
@@ -298,19 +328,19 @@ const persistence = (() => {
     const esCoordinadorFisico = userName && (userName.toUpperCase() === 'ALBERT' || userName.toUpperCase() === 'LAURA');
     if ((userRole === 'otro' || userRole === 'comercial') && !esCoordinadorFisico) {
       disableEditingControls();
-      injectStatusBanner('readonly', '👁️ Mode Només Lectura: Perfil de visualització (no es poden desar canvis).');
+      injectStatusBanner('readonly', window.i18n ? window.i18n.t('persistenceReadOnlyBanner') : '👁️ Mode Només Lectura: Perfil de visualització (no es poden desar canvis).');
       return false;
     }
 
     if (isRelational) {
-      injectStatusBanner('edit', `📝 Mode Edició Actiu | Usuari: ${userName}`);
+      injectStatusBanner('edit', window.i18n ? window.i18n.t('persistenceEditActiveBanner', { userName }) : `📝 Mode Edició Actiu | Usuari: ${userName}`);
       return true;
     }
 
     let lockResult = await api.acquireLock(currentFilePath, userName);
     
     if (lockResult.success || lockResult.adquirido) {
-      injectStatusBanner('edit', `📝 Mode Edició Actiu | Usuari: ${userName}`);
+      injectStatusBanner('edit', window.i18n ? window.i18n.t('persistenceEditActiveBanner', { userName }) : `📝 Mode Edició Actiu | Usuari: ${userName}`);
       
       // Iniciar el chequeo de latido periódico del lock
       startHeartbeat(moduleName);
@@ -324,7 +354,7 @@ const persistence = (() => {
     } else {
       disableEditingControls();
       const ocupadoPor = lockResult.usuarioActivo || lockResult.lockedBy || 'otro usuario';
-      injectStatusBanner('locked', `🔒 Només Lectura: Aquest mòdul està sent editat per ${ocupadoPor}.`, ocupadoPor);
+      injectStatusBanner('locked', window.i18n ? window.i18n.t('persistenceLockedBanner', { ocupadoPor }) : `🔒 Només Lectura: Aquest mòdul està sen editat per ${ocupadoPor}.`, ocupadoPor);
       return false;
     }
   }

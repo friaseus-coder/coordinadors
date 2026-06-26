@@ -91,21 +91,21 @@
             <div class="card-coordinador">
                 <h3>Albert Campins</h3>
                 <a href="file:///P:/Parkings/COMERCIAL/OPERACIONES/Informes PKS-Checklist/Albert Campins/" target="visor-contingut" class="btn-explorar">
-                    <span>📂</span> Explorar
+                    <span>📂</span> <span data-i18n="chklstExplorar">Explorar</span>
                 </a>
             </div>
             
             <div class="card-coordinador">
                 <h3>Laura Navarro</h3>
                 <a href="file:///P:/Parkings/COMERCIAL/OPERACIONES/Informes PKS-Checklist/Laura Navarro/" target="visor-contingut" class="btn-explorar">
-                    <span>📂</span> Explorar
+                    <span>📂</span> <span data-i18n="chklstExplorar">Explorar</span>
                 </a>
             </div>
             
             <div class="card-coordinador">
                 <h3>Miguel Arroyo</h3>
                 <a href="file:///P:/Parkings/COMERCIAL/OPERACIONES/Informes PKS-Checklist/Miguel Arroyo/" target="visor-contingut" class="btn-explorar">
-                    <span>📂</span> Explorar
+                    <span>📂</span> <span data-i18n="chklstExplorar">Explorar</span>
                 </a>
             </div>
 
@@ -115,7 +115,7 @@
         </div>
         
         <div class="chklst-viewer">
-            <div class="viewer-overlay">Explorador de Checklists | Unitat P:</div>
+            <div class="viewer-overlay" data-i18n="chklstTitleOverlay">Explorador de Checklists | Unitat P:</div>
             
             <iframe id="visor-contingut" name="visor-contingut" src="about:blank"></iframe>
         </div>
@@ -139,7 +139,8 @@
   // 1. PRIMER DEFINIM LA FUNCIÓ (Sempre a dalt)
   function registrarLog(usuari, accio) {
     const ara = new Date();
-    const dataFormatada = ara.toLocaleString('ca-ES', { 
+    const locale = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? 'es-ES' : 'ca-ES';
+    const dataFormatada = ara.toLocaleString(locale, { 
         day: '2-digit', month: '2-digit', year: 'numeric', 
         hour: '2-digit', minute: '2-digit', second: '2-digit' 
     });
@@ -157,7 +158,8 @@
 
   // 2. AVISAR EN ENTRAR
   window.addEventListener('load', function() {
-    registrarLog("SISTEMA", "CHECKLIST: Obert l'explorador de Checklists");
+    const msg = (typeof i18n !== 'undefined') ? i18n.t("chklstLogOpen") : "CHECKLIST: Obert l'explorador de Checklists";
+    registrarLog("SISTEMA", msg);
   });
 
   // 3. REGISTRAR QUIN COORDINADOR ES CONSULTA
@@ -167,7 +169,8 @@
     if (btn) {
         // Agafem el nom del coordinador que hi ha a l'H3 de la seva targeta
         const nomCoordinador = btn.closest('.card-coordinador').querySelector('h3').innerText;
-        registrarLog("SISTEMA", `CHECKLIST: Consultant carpetes de -> ${nomCoordinador}`);
+        const msg = (typeof i18n !== 'undefined') ? i18n.t("chklstLogView", { name: nomCoordinador }) : `CHECKLIST: Consultant carpetes de -> ${nomCoordinador}`;
+        registrarLog("SISTEMA", msg);
     }
   });
 

@@ -423,7 +423,8 @@ td {
 <script>
 function registrarLog(usuari, accio) {
     const logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
-    logs.unshift({ data: new Date().toLocaleString('ca-ES'), usuari: usuari, fitxer: "ruta.html", accio: accio });
+    const locale = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? 'es-ES' : 'ca-ES';
+    logs.unshift({ data: new Date().toLocaleString(locale), usuari: usuari, fitxer: "ruta.html", accio: accio });
     localStorage.setItem('nyn_logs', JSON.stringify(logs));
 }
 
@@ -465,9 +466,11 @@ function generateCalendar(containerId, person){
     const container = document.getElementById(containerId); container.innerHTML = "";
     const date = new Date(monthPicker.value); const year = date.getFullYear(), month = date.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const table = document.createElement("table");
     const headerRow = document.createElement("tr");
-    ["Dl","Dm","Dc","Dj","Dv","Ds","Dg"].forEach(d=>{ const th = document.createElement("th"); th.textContent = d; headerRow.appendChild(th); });
+    const diesSetmana = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') 
+        ? ["Lu","Ma","Mi","Ju","Vi","Sá","Do"] 
+        : ["Dl","Dm","Dc","Dj","Dv","Ds","Dg"];
+    diesSetmana.forEach(d=>{ const th = document.createElement("th"); th.textContent = d; headerRow.appendChild(th); });
     table.appendChild(headerRow);
     let row = document.createElement("tr");
     let firstDay = new Date(year, month, 1).getDay() || 7;
@@ -505,7 +508,7 @@ function generateCalendar(containerId, person){
             
             if (aparcaments.length > 0) {
                 const optGroupAp = document.createElement("optgroup");
-                optGroupAp.label = "Aparcaments";
+                optGroupAp.label = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? "Aparcamientos" : "Aparcaments";
                 aparcaments.forEach(ap => {
                     const opt = document.createElement("option");
                     opt.value = ap;
@@ -516,7 +519,7 @@ function generateCalendar(containerId, person){
             }
             if (especials.length > 0) {
                 const optGroupEsp = document.createElement("optgroup");
-                optGroupEsp.label = "Esdeveniments Especials";
+                optGroupEsp.label = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? "Eventos Especiales" : "Esdeveniments Especials";
                 especials.forEach(es => {
                     const opt = document.createElement("option");
                     opt.value = es;
@@ -581,7 +584,8 @@ function afegirC() {
 }
 function borrarC() {
     const sel = document.getElementById("selGestio").value;
-    if(sel && confirm(`Eliminar ${sel}?`)) {
+    const confirmMsg = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? `¿Eliminar ${sel}?` : `Eliminar ${sel}?`;
+    if(sel && confirm(confirmMsg)) {
         let custom = JSON.parse(localStorage.getItem("customCenters") || "[]").filter(c => c !== sel);
         localStorage.setItem("customCenters", JSON.stringify(custom));
         addresses = [...new Set([...baseAddresses, ...custom])]; omplirGestio(); generateCalendars();
@@ -642,11 +646,14 @@ function resetMesUsuari(person) {
     const monthIdx = parseInt(selMonth) - 1;
     const prefixMes = `${person}-${selYear}-${monthIdx}-`;
     
-    if(confirm(`⚠️ ATENCIÓ: Es perdran només les dades de ${person} del mes ${selMonth}/${selYear}.\n(La resta de mesos es mantindran).\n\nVols continuar?`)){ 
+    const confirmMsg = i18n.t('rutaConfirmReset', { person: person, mes: selMonth, any: selYear });
+    
+    if(confirm(confirmMsg)){ 
         Object.keys(localStorage).forEach(k => {
             if(k.startsWith(prefixMes)) localStorage.removeItem(k);
         }); 
-        registrarLog(person.toUpperCase(), `⚠️ RESET del mes ${selMonth}/${selYear}`);
+        const logMsg = i18n.t('rutaLogReset', { mes: selMonth, any: selYear });
+        registrarLog(person.toUpperCase(), logMsg);
         generateCalendars(); updateCharts(); 
     } 
 }
@@ -674,7 +681,8 @@ let personaAutoRuta = '';
 
 function obrirAutoRuta(person) {
     personaAutoRuta = person;
-    document.getElementById('modalAutoTitle').innerText = `Generar Ruta Automàtica (${person.toUpperCase()})`;
+    const titleText = i18n.t('rutaModalAutoTitle', { coordinador: person.toUpperCase() });
+    document.getElementById('modalAutoTitle').innerText = titleText;
     document.getElementById('modalAutoRuta').style.display = 'flex';
 }
 
@@ -707,7 +715,8 @@ async function ejecutarGeneracionAuto() {
     ).map(ap => ap.nombre);
 
     if (propios.length === 0) {
-        alert("⚠️ No s'han trobat aparcaments propis d'aquest coordinador per planificar.");
+        const errorMsg = i18n.t('rutaErrorNoAparcamientos');
+        alert(errorMsg);
         cerrarAutoRutaModal();
         return;
     }
@@ -783,7 +792,8 @@ async function ejecutarGeneracionAuto() {
     }
 
     // Confirmación
-    if (!confirm(`⚠️ S'esborraran les dades actuals de la ruta de ${person} per al mes ${monthPart}/${year} i es generarà una nova ruta automàtica.\n\nVols continuar?`)) {
+    const confirmMsg = i18n.t("confirmGenAuto", { person, monthPart, year });
+    if (!confirm(confirmMsg)) {
         return;
     }
 
@@ -835,7 +845,8 @@ async function ejecutarGeneracionAuto() {
     // Sincronizar en red
     await persistence.syncSave();
 
-    alert(`✅ Ruta automàtica per a ${person} generada amb èxit!`);
+    const successMsg = i18n.t('rutaSuccessAuto', { person: person });
+    alert(successMsg);
     cerrarAutoRutaModal();
     generateCalendars();
     updateCharts();
@@ -853,7 +864,7 @@ window.addEventListener('languageChanged', () => {
         <h3 id="modalAutoTitle" style="margin-top: 0; color: #0f2d4a; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; text-transform: uppercase; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">Generar Ruta Automàtica</h3>
         
         <!-- Visitas por día -->
-        <h4 style="margin: 16px 0 8px; font-size: 11px; font-weight: 600; color: #475569;">Visites diàries per dia de la setmana:</h4>
+        <h4 style="margin: 16px 0 8px; font-size: 11px; font-weight: 600; color: #475569;" data-i18n="rutaVisitasDiariasLabel">Visites diàries per dia de la setmana:</h4>
         <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px;">
             <div style="text-align: center;">
                 <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dl</label>
@@ -880,29 +891,29 @@ window.addEventListener('languageChanged', () => {
         <!-- Fines de semana -->
         <div style="margin-bottom: 16px; display: flex; gap: 12px;">
             <div style="flex: 1;">
-                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;">Fins de setmana (0-4):</label>
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;" data-i18n="rutaFinsSetmanaLabel">Fins de setmana (0-4):</label>
                 <input type="number" id="autoFinsSetmana" min="0" max="4" value="1" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-weight: 500;">
             </div>
             <div style="flex: 1;">
-                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;">Torn WND:</label>
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;" data-i18n="rutaTornWndLabel">Torn WND:</label>
                 <select id="autoTornWeekend" style="width: 100%; padding: 6px; font-size: 11px; height: 29px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; background-color: #fff;">
-                    <option value="mati">Matí</option>
-                    <option value="tarda">Tarda</option>
-                    <option value="nit">Nit</option>
+                    <option value="mati" data-i18n="rutaOptMati">Matí</option>
+                    <option value="tarda" data-i18n="rutaOptTarda">Tarda</option>
+                    <option value="nit" data-i18n="rutaOptNit">Nit</option>
                 </select>
             </div>
         </div>
 
         <!-- Veces máximas que se irá a cada aparcamiento en el mes -->
         <div style="margin-bottom: 20px;">
-            <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;">Visites màximes per centre al mes:</label>
+            <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;" data-i18n="rutaMaxVisitasCentroLabel">Visites màximes per centre al mes:</label>
             <input type="number" id="autoMaxVisitasPorCentro" min="1" max="31" value="4" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-weight: 500; margin-bottom: 4px;">
-            <span style="font-size: 9px; color: #64748b; display: block; line-height: 1.2;">(Evita la repetició excessiva dels mateixos aparcaments)</span>
+            <span style="font-size: 9px; color: #64748b; display: block; line-height: 1.2;" data-i18n="rutaMaxVisitasCentroHelp">(Evita la repetició excessiva dels mateixos aparcaments)</span>
         </div>
 
         <div style="display: flex; gap: 10px;">
-            <button onclick="ejecutarGeneracionAuto()" style="background: #0f2d4a; color: white; border: none; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: background 0.2s;">Generar</button>
-            <button onclick="cerrarAutoRutaModal()" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: all 0.2s;">Cancelar</button>
+            <button onclick="ejecutarGeneracionAuto()" data-i18n="btnAutoRutaGenerate" style="background: #0f2d4a; color: white; border: none; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: background 0.2s;">Generar</button>
+            <button onclick="cerrarAutoRutaModal()" data-i18n="btnAutoRutaCancel" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: all 0.2s;">Cancelar</button>
         </div>
     </div>
 </div>

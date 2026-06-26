@@ -282,15 +282,16 @@
                 return;
             }
 
+            const ara = new Date();
             const centreFull = document.getElementById('ubicacio').value;
             const zona = document.getElementById('zona_especifica').value;
             const resum = document.getElementById('assumpte_breu').value;
             const motiu = document.getElementById('motiu').value;
             const urgencia = document.getElementById('urgencia').value;
 
-            const ara = new Date();
-            const data = ara.toLocaleDateString('ca-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-            const hora = ara.toLocaleTimeString('ca-ES', { hour: '2-digit', minute: '2-digit' }) + "h";
+            const locale = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? 'es-ES' : 'ca-ES';
+            const data = ara.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const hora = ara.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) + "h";
 
             const parts = centreFull.split(' - ');
             const adreçaYSocietat = parts[parts.length - 1];
@@ -305,13 +306,25 @@
             const subject = `nº ${centreFull} - ${resum}`;
             
             // Capçalera en minúscules per semblar font més petita amb || i espais extra
-            let header = "*** gestor d'incidències pàrkings - sac  ||  " + data + " - " + hora + " ***\n\n\n";
+            const isCa = i18n.getLanguage() === 'ca';
+            const headerText = isCa 
+                ? "*** gestor d'incidències pàrkings - sac  ||  " 
+                : "*** gestor de incidencias parkings - sac  ||  ";
+            let header = headerText + data + " - " + hora + " ***\n\n\n";
 
-            let body = header + "Bon dia,\n\n";
-            body += "UBICACIÓ: " + adreçaYSocietat + " - " + zona + "\n";
-            body += "MOTIU:    " + motiu + "\n";
-            body += "URGÈNCIA: " + (urgencia === "CRÍTICA" ? "!!! CRÍTICA !!!" : urgencia) + "\n\n";
-            body += "Gràcies.";
+            let urgenciaTraduida = urgencia;
+            if (urgencia === "CRÍTICA") {
+                urgenciaTraduida = "!!! CRÍTICA !!!";
+            } else {
+                const key = "optUrgencia" + (urgencia === "mitjana" ? "Mitjana" : (urgencia === "baixa" ? "Baixa" : (urgencia === "alta" ? "Alta" : "Urgent")));
+                urgenciaTraduida = i18n.t(key);
+            }
+
+            let body = header + i18n.t("sacEmailGreeting");
+            body += i18n.t("sacEmailLocation") + adreçaYSocietat + " - " + zona + "\n";
+            body += i18n.t("sacEmailReason") + motiu + "\n";
+            body += i18n.t("sacEmailUrgency") + urgenciaTraduida + "\n\n";
+            body += i18n.t("sacEmailThanks");
 
             window.location.href = `mailto:${to}?cc=${cc}&subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
         }
@@ -323,7 +336,8 @@
 // 1. Funció de Log (imprescindible en cada fitxer)
 function registrarLog(usuari, accio) {
     const ara = new Date();
-    const dataFormatada = ara.toLocaleString('ca-ES', { 
+    const locale = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? 'es-ES' : 'ca-ES';
+    const dataFormatada = ara.toLocaleString(locale, { 
         day: '2-digit', month: '2-digit', year: 'numeric', 
         hour: '2-digit', minute: '2-digit', second: '2-digit' 
     });
@@ -352,7 +366,11 @@ generarCorreu = function() {
         const urgencia = document.getElementById('urgencia').value.toUpperCase();
 
         // Enregistrem l'acció abans d'obrir el mailto
-        registrarLog("SISTEMA", `SAC: Generada incidència centre ${centre} [Urgència: ${urgencia}] -> ${resum}`);
+        const isCa = i18n.getLanguage() === 'ca';
+        const logAccio = isCa 
+            ? `SAC: Generada incidència centre ${centre} [Urgència: ${urgencia}] -> ${resum}`
+            : `SAC: Generada incidencia centro ${centre} [Urgencia: ${urgencia}] -> ${resum}`;
+        registrarLog("SISTEMA", logAccio);
     }
     
     // Cridem a la funció original perquè obri el correu

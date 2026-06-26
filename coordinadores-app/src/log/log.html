@@ -160,26 +160,26 @@
 <body data-required-roles="coordinador,jefe_operaciones">
 
     <header>
-        <h1>Registre d'activitat del sistema (Logs)</h1>
+        <h1 data-i18n="logHeader">Registre d'activitat del sistema (Logs)</h1>
     </header>
 
     <div class="main-layout">
         <div class="sidebar">
-            <h2>Filtres de cerca</h2>
-            <label>Data d'inici:</label>
+            <h2 data-i18n="logSearchFilters">Filtres de cerca</h2>
+            <label data-i18n="logStartDate">Data d'inici:</label>
             <input type="date" id="dateStart">
             
-            <label>Data final:</label>
+            <label data-i18n="logEndDate">Data final:</label>
             <input type="date" id="dateEnd">
 
             <div style="display: flex; gap: 5px;">
-                <button class="btn-nyn" style="flex:1;" onclick="renderLogs()">Cercar</button>
-                <button class="btn-nyn" style="flex:1; background:#666;" onclick="resetFilters()">Tots</button>
+                <button class="btn-nyn" style="flex:1;" onclick="renderLogs()" data-i18n="logSearchBtn">Cercar</button>
+                <button class="btn-nyn" style="flex:1; background:#666;" onclick="resetFilters()" data-i18n="logAllBtn">Tots</button>
             </div>
 
             <div style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 15px;">
-                <label>Administració:</label>
-                <button class="btn-nyn btn-delete" onclick="autoritzarEsborrat()">🗑️ Netejar Període</button>
+                <label data-i18n="logAdminTitle">Administració:</label>
+                <button class="btn-nyn btn-delete" onclick="autoritzarEsborrat()" data-i18n="logClearPeriodBtn">🗑️ Netejar Període</button>
             </div>
         </div>
 
@@ -187,10 +187,10 @@
             <table id="logTable">
                 <thead>
                     <tr>
-                        <th>Data i Hora</th>
-			<th>USUARI</th> 
-			<th>FITXER</th>
-                        <th>Descripció de l'Acció</th>
+                        <th data-i18n="logThDateTime">Data i Hora</th>
+                        <th data-i18n="logThUser">USUARI</th> 
+                        <th data-i18n="logThFile">FITXER</th>
+                        <th data-i18n="logThDescription">Descripció de l'Acció</th>
                     </tr>
                 </thead>
                 <tbody id="logBody"></tbody>
@@ -242,7 +242,7 @@ function renderLogs() {
     });
 
     if (body.innerHTML === "") {
-        body.innerHTML = "<tr><td colspan='4' style='text-align:center; padding:50px; color:#999; font-style:italic;'>No s'han trobat registres per aquestes dates o filtres.</td></tr>";
+        body.innerHTML = `<tr><td colspan='4' style='text-align:center; padding:50px; color:#999; font-style:italic;'>${i18n.t("logNoRecords")}</td></tr>`;
     }
 }
 
@@ -251,10 +251,10 @@ function renderLogs() {
     function autoritzarEsborrat() {
         const start = document.getElementById('dateStart').value;
         const end = document.getElementById('dateEnd').value;
-        if (!start || !end) { alert("Si us plau, selecciona un rang de dates per esborrar."); return; }
+        if (!start || !end) { alert(i18n.t("logSelectRangeAlert")); return; }
 
-        if (confirm("Atenció: Estàs a punt d'esborrar registres del sistema. Vols continuar?")) {
-            const pw = prompt("Introdueix la clau de seguretat:");
+        if (confirm(i18n.t("logClearConfirm"))) {
+            const pw = prompt(i18n.t("logSecurityKeyPrompt"));
             if (pw === "1234") {
                 let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
                 const startDate = new Date(start); startDate.setHours(0,0,0,0);
@@ -267,7 +267,7 @@ function renderLogs() {
 
                 localStorage.setItem('nyn_logs', JSON.stringify(filtrats));
                 renderLogs();
-            } else { alert("Clau incorrecta."); }
+            } else { alert(i18n.t("logIncorrectKeyAlert")); }
         }
     }
 
@@ -289,6 +289,9 @@ function renderLogs() {
     // --------------------------
 
     window.onload = renderLogs;
+    window.addEventListener('languageChanged', () => {
+        renderLogs();
+    });
 </script>
 </body>
 </html>

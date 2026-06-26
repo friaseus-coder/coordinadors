@@ -33,25 +33,25 @@ let scatterChart;
   // --- FILTRES ---
   [filterCentre, filterTorn, filterNota, filterZona].forEach(f => f.classList.add('centre-select'));
 
-  filterCentre.innerHTML = '<option value="">Tots els centres</option>';
+  filterCentre.innerHTML = `<option value="">${i18n.t('rankingAllCentres')}</option>`;
   Array.from(new Set(currentData.map(d=>d.centre).filter(Boolean))).forEach(c => {
     const o = document.createElement('option'); o.value=c; o.textContent=c;
     filterCentre.appendChild(o);
   });
 
-  filterTorn.innerHTML = '<option value="">Tots els torns</option>';
+  filterTorn.innerHTML = `<option value="">${i18n.t('rankingAllTorns')}</option>`;
   opcionsTorn.forEach(t=>{ 
     const o=document.createElement('option'); o.value=t; o.textContent=t; 
     filterTorn.appendChild(o); 
   });
 
-  filterZona.innerHTML = '<option value="">Totes les zones</option>';
+  filterZona.innerHTML = `<option value="">${i18n.t('rankingAllZones')}</option>`;
   opcionsZona.forEach(z=>{
     const o=document.createElement('option'); o.value=z; o.textContent=z;
     filterZona.appendChild(o);
   });
 
-  filterNota.innerHTML = '<option value="">Totes les notes</option>';
+  filterNota.innerHTML = `<option value="">${i18n.t('rankingAllNotes')}</option>`;
   notesOptions.forEach(opt=>{
     const o=document.createElement('option'); o.value=opt.value; o.textContent=opt.label;
     filterNota.appendChild(o);
@@ -75,7 +75,7 @@ function saveRankingOrder(arr){
 function updateWorkerCount(arr) {
   const counter = document.getElementById('workerCount');
   if(counter) {
-    counter.textContent = `Treballadors: ${arr.length}`;
+    counter.textContent = i18n.t('rankingWorkerCount', { count: arr.length });
   }
 }
 
@@ -106,16 +106,16 @@ function updateWorkerCount(arr) {
       card.style.background = getRowColor(d.valoracio);
       card.innerHTML=`
         <h3>${d.agent}</h3>
-        <p><strong>Centre:</strong> ${d.centre}</p>
-        <p><strong>Societat:</strong> ${d.societat}</p>
-        <p><strong>Torn:</strong> ${d.torn}</p>
-        <p><strong>Zona:</strong> ${d.zona}</p>
-        <p><strong>Coneixements:</strong> ${d.coneixements}</p>
-        <p><strong>Atenció:</strong> ${d.atencio}</p>
-        <p><strong>Disponibilitat:</strong> ${d.disponibilitat}</p>
-        <p><strong>Actitud:</strong> ${d.actitud}</p>
-        <p data-key="valoracio"><strong>Valoració:</strong> ${d.valoracio}</p>
-        <p><strong>Observacions:</strong> ${d.observacions}</p>
+        <p><strong>${i18n.t('rankingThCentre')}:</strong> ${d.centre}</p>
+        <p><strong>${i18n.t('rankingThSocietat')}:</strong> ${d.societat}</p>
+        <p><strong>${i18n.t('rankingThTorn')}:</strong> ${d.torn}</p>
+        <p><strong>${i18n.t('rankingThZona')}:</strong> ${d.zona}</p>
+        <p><strong>${i18n.t('rankingThConeixements')}:</strong> ${d.coneixements}</p>
+        <p><strong>${i18n.t('rankingThAtencio')}:</strong> ${d.atencio}</p>
+        <p><strong>${i18n.t('rankingThDisponibilitat')}:</strong> ${d.disponibilitat}</p>
+        <p><strong>${i18n.t('rankingThActitud')}:</strong> ${d.actitud}</p>
+        <p data-key="valoracio"><strong>${i18n.t('rankingThValoracio')}:</strong> ${d.valoracio}</p>
+        <p><strong>${i18n.t('rankingThObservacions')}:</strong> ${d.observacions}</p>
       `;
       cardsContainer.appendChild(card);
     });
@@ -170,18 +170,18 @@ function updateWorkerCount(arr) {
       <tr>
         <th>🗑</th>
         <th>💾</th>
-        <th>Posició</th>
-        <th>Agent</th>
-        <th>Centre</th>
-        <th>Societat</th>
-        <th>Torn</th>
-        <th>Zona</th>
-        <th>Coneixements</th>
-        <th>Atenció</th>
-        <th>Disponibilitat</th>
-        <th>Actitud</th>
-        <th>Valoració</th>
-        <th>Observacions</th>
+        <th>${i18n.t('rankingThPosicio')}</th>
+        <th>${i18n.t('rankingThAgent')}</th>
+        <th>${i18n.t('rankingThCentre')}</th>
+        <th>${i18n.t('rankingThSocietat')}</th>
+        <th>${i18n.t('rankingThTorn')}</th>
+        <th>${i18n.t('rankingThZona')}</th>
+        <th>${i18n.t('rankingThConeixements')}</th>
+        <th>${i18n.t('rankingThAtencio')}</th>
+        <th>${i18n.t('rankingThDisponibilitat')}</th>
+        <th>${i18n.t('rankingThActitud')}</th>
+        <th>${i18n.t('rankingThValoracio')}</th>
+        <th>${i18n.t('rankingThObservacions')}</th>
       </tr>
     `;
 
@@ -262,7 +262,7 @@ selectCentre.style.width='140px';
 // Opció inicial buida
 const emptyOption = document.createElement('option');
 emptyOption.value = "";
-emptyOption.textContent = "-- Selecciona centre --";
+emptyOption.textContent = i18n.t('rankingSelectCentre');
 selectCentre.appendChild(emptyOption);
 
 
@@ -281,13 +281,13 @@ Array.from(new Set(currentData.map(x => x.centre).filter(Boolean)))
 // Afegir opció "Altres..." per escriure manualment un Centre
 const otherOption = document.createElement('option');
 otherOption.value = "Altres...";
-otherOption.textContent = "Nou Centre...";
+otherOption.textContent = i18n.t('rankingNewCentreOption');
 selectCentre.appendChild(otherOption);
 
 // Quan canviïs el select
 selectCentre.addEventListener('change', ()=>{
   if(selectCentre.value === "Altres..."){
-    const nouCentre = prompt("Introdueix el nom del nou centre:");
+    const nouCentre = prompt(i18n.t('rankingPromptNewCentre'));
     if(nouCentre){
       // Actualitzar dades
       d.centre = nouCentre;
@@ -393,7 +393,7 @@ const finalRowColor = (i%2===0) ? shadeColor(baseColor, 0.05) : shadeColor(baseC
     tfoot.innerHTML = `
       <tr>
         <td colspan="14" style="text-align:left; padding:10px 0;">
-          <button id="addRowBtn">+ Afegir fila</button>
+          <button id="addRowBtn">${i18n.t('rankingAddRow')}</button>
         </td>
       </tr>
       <tr>
@@ -455,10 +455,10 @@ function renderScatterChart(arr) {
       let xPixel = chartArea.left + 10;
 
       const legendItems = [
-        { color: 'rgba(218,165,32,0.8)', label: 'Actitud ≥ 8' },
-        { color: 'rgba(0,128,0,0.7)', label: 'Actitud 5–7' },
-        { color: 'rgba(255,0,0,0.6)', label: 'Actitud 2–4' },
-        { color: 'rgba(0,0,0,0.5)', label: 'Actitud < 2' }
+        { color: 'rgba(218,165,32,0.8)', label: i18n.t('rankingLegendActitud8') },
+        { color: 'rgba(0,128,0,0.7)', label: i18n.t('rankingLegendActitud5') },
+        { color: 'rgba(255,0,0,0.6)', label: i18n.t('rankingLegendActitud2') },
+        { color: 'rgba(0,0,0,0.5)', label: i18n.t('rankingLegendActitud0') }
       ];
 
       legendItems.forEach(item => {
@@ -480,7 +480,7 @@ function renderScatterChart(arr) {
 
       // Text final de la mida
       ctx.font = '13px Arial italic';
-      ctx.fillText('Mida = Disponibilitat', xPixel, yPixel);
+      ctx.fillText(i18n.t('rankingLegendMidaDispo'), xPixel, yPixel);
 
       ctx.restore();
     }
@@ -507,8 +507,8 @@ function renderScatterChart(arr) {
     maintainAspectRatio: false,
     layout: { padding: { top: 10, bottom: 40 } },
     scales: {
-      x: { min: 0, max: 10, title: { display: true, text: 'Coneixements' }, ticks: { padding: 10 } },
-      y: { min: 0, max: 10, title: { display: true, text: 'Atenció' } }
+      x: { min: 0, max: 10, title: { display: true, text: i18n.t('rankingThConeixements') }, ticks: { padding: 10 } },
+      y: { min: 0, max: 10, title: { display: true, text: i18n.t('rankingThAtencio') } }
     },
 plugins: {
   legend: {

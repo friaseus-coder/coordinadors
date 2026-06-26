@@ -183,37 +183,37 @@
 <body data-required-roles="coordinador,jefe_operaciones">
 
 <header>
-    <h1>Inventari i Logística</h1>
+    <h1 data-i18n="inventariHeader">Inventari i Logística</h1>
 </header>
 
 <div class="admin-panel">
     <div class="toolbar-group">
-        <span class="filter-label">Dades:</span>
-        <button class="btn-archive" onclick="document.getElementById('importFile').click()">📂 Importar</button>
-        <button class="btn-archive" onclick="exportarJSON()">💾 Exportar</button>
+        <span class="filter-label" data-i18n="inventariDadesLabel">Dades:</span>
+        <button class="btn-archive" onclick="document.getElementById('importFile').click()" data-i18n="vacancesImportJSON">📂 Importar</button>
+        <button class="btn-archive" onclick="exportarJSON()" data-i18n="vacancesExportJSON">💾 Exportar</button>
         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarJSON(event)">
     </div>
     
     <div class="toolbar-group">
-        <button class="btn-action" onclick="obrirGestio()">⚙️ GESTIONAR CATÀLEG</button>
+        <button class="btn-action" onclick="obrirGestio()" data-i18n="inventariBtnCatalog">⚙️ GESTIONAR CATÀLEG</button>
     </div>
 </div>
 
 <div class="main-container">
     <div class="section section-magatzem">
-        <h2>📦 STOCK <button class="btn-nyn btn-add" onclick="afegirFilaStock()">+ Entrada</button></h2>
+        <h2><span data-i18n="inventariStockTitle">📦 STOCK</span> <button class="btn-nyn btn-add" onclick="afegirFilaStock()" data-i18n="inventariStockEntryBtn">+ Entrada</button></h2>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th width="90">Ubicació</th><th>Material</th><th width="70">Stock</th><th width="25"></th></tr></thead>
+                <thead><tr><th width="90" data-i18n="inventariThLocation">Ubicació</th><th data-i18n="inventariThMaterial">Material</th><th width="70" data-i18n="inventariThStock">Stock</th><th width="25"></th></tr></thead>
                 <tbody id="bodyMagatzem"></tbody>
             </table>
         </div>
     </div>
     <div class="section section-comandes">
-        <h2>🚚 COMANDES <button class="btn-nyn btn-add" onclick="novaComanda()">✚ Nova</button></h2>
+        <h2><span data-i18n="inventariOrdersTitle">🚚 COMANDES</span> <button class="btn-nyn btn-add" onclick="novaComanda()" data-i18n="inventariNewOrderBtn">✚ Nova</button></h2>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th width="75">Data</th><th width="120">Centre</th><th>Material</th><th width="35">Uds.</th><th width="65">Estat</th><th width="75">Rec.</th><th width="25"></th></tr></thead>
+                <thead><tr><th width="75" data-i18n="inventariThDate">Data</th><th width="120" data-i18n="inventariThCenter">Centre</th><th data-i18n="inventariThMaterial">Material</th><th width="35" data-i18n="inventariThUds">Uds.</th><th width="65" data-i18n="inventariThStatus">Estat</th><th width="75" data-i18n="inventariThRec">Rec.</th><th width="25"></th></tr></thead>
                 <tbody id="bodyComandes"></tbody>
             </table>
         </div>
@@ -222,20 +222,20 @@
 
 <div class="modal-overlay" id="overlay" onclick="tancarGestio()"></div>
 <div id="modalGestio">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><h3>⚙️ Catàleg</h3><button onclick="tancarGestio()" class="delete-btn">✖</button></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><h3 data-i18n="inventariCatalogTitle">⚙️ Catàleg</h3><button onclick="tancarGestio()" class="delete-btn">✖</button></div>
     <div style="background:#f9f9f9; padding:8px; border:1px solid #ddd; display:flex; gap:4px; margin-bottom:8px;">
-        <input type="text" id="newRef" placeholder="Ref. 0000" style="width:70px;">
-        <input type="text" id="newNom" placeholder="NOM MATERIAL" style="flex:1;">
+        <input type="text" id="newRef" placeholder="Ref. 0000" data-i18n="inventariNewRefPlaceholder" style="width:70px;">
+        <input type="text" id="newNom" placeholder="NOM MATERIAL" data-i18n="inventariNewNomPlaceholder" style="flex:1;">
         <select id="newCat" style="width:150px;" onchange="comprovarNovaCat(this)">
-            <option value="CONSUMIBLES IMPRESSORA">CONSUMIBLES</option>
-            <option value="MATERIAL OFIMÀTIC">OFIMÀTICA</option>
-            <option value="MANTENIMENT I VARIS">MANTENIMENT</option>
-            <option value="MOBILIARI I ERGONOMIA">MOBILIARI</option>
-            <option value="ADD_CAT">+ Nova temàtica...</option>
+            <option value="CONSUMIBLES IMPRESSORA" data-i18n="inventariOptConsumibles">CONSUMIBLES</option>
+            <option value="MATERIAL OFIMÀTIC" data-i18n="inventariOptOfimatica">OFIMÀTICA</option>
+            <option value="MANTENIMENT I VARIS" data-i18n="inventariOptMantenimiento">MANTENIMENT</option>
+            <option value="MOBILIARI I ERGONOMIA" data-i18n="inventariOptMobiliario">MOBILIARI</option>
+            <option value="ADD_CAT" data-i18n="inventariOptNewTheme">+ Nova temàtica...</option>
         </select>
-        <button class="btn-nyn btn-add" style="background:var(--nn-green); color:white;" onclick="afegirAlCataleg()">Afegir</button>
+        <button class="btn-nyn btn-add" style="background:var(--nn-green); color:white;" onclick="afegirAlCataleg()" data-i18n="inventariAddBtn">Afegir</button>
     </div>
-    <div class="table-wrapper"><table><thead><tr><th width="80">REF</th><th>NOM</th><th width="150">TEMÀTICA</th><th width="30"></th></tr></thead><tbody id="bodyGestio"></tbody></table></div>
+    <div class="table-wrapper"><table><thead><tr><th width="80" data-i18n="inventariThRef">REF</th><th data-i18n="inventariThNom">NOM</th><th width="150" data-i18n="inventariThTheme">TEMÀTICA</th><th width="30"></th></tr></thead><tbody id="bodyGestio"></tbody></table></div>
 </div>
 
 <script>
@@ -284,7 +284,7 @@
         
         // Render Stock
         document.getElementById('bodyMagatzem').innerHTML = dades.stock.map(s => {
-            let opts = `<option value="">-- Tria --</option>`;
+            let opts = `<option value="">${i18n.t("inventariSelectDefault")}</option>`;
             dades.categories.forEach(c => {
                 const items = dades.cataleg.filter(m => m.cat === c && (!refsEnStock.includes(m.ref) || m.ref === s.ref));
                 if(items.length) {
@@ -292,7 +292,7 @@
                 }
             });
             return `<tr class="row-box ${getCatClass(s.ref)}">
-                <td><select onchange="canviarMag(${s.id}, this)"><option value="ADD">+ Nou</option>${dades.magatzems.map(m=>`<option value="${m}" ${s.magatzem===m?'selected':''}>${m}</option>`).join('')}</select></td>
+                <td><select onchange="canviarMag(${s.id}, this)"><option value="ADD">${i18n.t("inventariSelectWarehouseNew")}</option>${dades.magatzems.map(m=>`<option value="${m}" ${s.magatzem===m?'selected':''}>${m}</option>`).join('')}</select></td>
                 <td><select onchange="canviarItemStock(${s.id}, this.value)">${opts}</select></td>
                 <td><button class="btn-qty" onclick="modQty(${s.id},-1)">-</button> <b>${s.stock}</b> <button class="btn-qty" onclick="modQty(${s.id},1)">+</button></td>
                 <td><button class="delete-btn" onclick="borrarStock(${s.id})">✖</button></td></tr>`;
@@ -310,10 +310,10 @@
             
             return `<tr class="row-box ${getCatClass(c.ref)} ${faltaEstoc ? 'no-stock-row' : ''}" style="${isE?'opacity:0.5':''}">
                 <td><input type="date" value="${c.data}" onchange="dades.comandes[${idxOriginal}].data=this.value; guardar()"></td>
-                <td><select onchange="dades.comandes[${idxOriginal}].centre=this.value; render(); guardar()"><option value="">Tria Centre...</option>${centresLlista.map(p=>`<option value="${p}" ${c.centre===p?'selected':''}>${p}</option>`).join('')}</select></td>
-                <td><select onchange="dades.comandes[${idxOriginal}].ref=this.value; render(); guardar()"><option value="">Tria Material...</option>${dades.cataleg.map(m=>`<option value="${m.ref}" ${c.ref===m.ref?'selected':''}>${m.ref} - ${m.nom}</option>`).join('')}</select></td>
+                <td><select onchange="dades.comandes[${idxOriginal}].centre=this.value; render(); guardar()"><option value="">${i18n.t("inventariChooseCenter")}</option>${centresLlista.map(p=>`<option value="${p}" ${c.centre===p?'selected':''}>${p}</option>`).join('')}</select></td>
+                <td><select onchange="dades.comandes[${idxOriginal}].ref=this.value; render(); guardar()"><option value="">${i18n.t("inventariChooseMaterial")}</option>${dades.cataleg.map(m=>`<option value="${m.ref}" ${c.ref===m.ref?'selected':''}>${m.ref} - ${m.nom}</option>`).join('')}</select></td>
                 <td><input type="number" min="1" value="${c.uds}" onchange="dades.comandes[${idxOriginal}].uds=Math.max(1,parseInt(this.value)); render(); guardar()"></td>
-                <td><button class="status-btn ${isE?'entregat':'pendent'}" onclick="canviarEstat(${idxOriginal})">${isE?'ENTREGAT':'PENDENT'}</button></td>
+                <td><button class="status-btn ${isE?'entregat':'pendent'}" onclick="canviarEstat(${idxOriginal})">${isE ? i18n.t("inventariEntregat") : i18n.t("inventariPendent")}</button></td>
                 <td><input type="date" value="${c.rec||''}" onchange="dades.comandes[${idxOriginal}].rec=this.value; guardar()"></td>
                 <td><button class="delete-btn" onclick="borrarCom(${idxOriginal})">✖</button></td></tr>`;
         }).join('');
@@ -321,9 +321,9 @@
 
     function canviarEstat(i) {
         const c = dades.comandes[i], s = dades.stock.find(x=>x.ref===c.ref);
-        if(!c.ref || !c.centre) return alert("Falta centre o material!");
+        if(!c.ref || !c.centre) return alert(i18n.t("inventariMissingFields"));
         if(c.estat==='pendent') {
-            if(!s || s.stock < c.uds) return alert("ATENCIÓ: No hi ha prou estoc.");
+            if(!s || s.stock < c.uds) return alert(i18n.t("inventariNoStockAlert"));
             s.stock -= c.uds; c.estat='entregat'; c.rec=new Date().toISOString().split('T')[0];
         } else { if(s) s.stock += c.uds; c.estat='pendent'; }
         render(); guardar();
@@ -335,13 +335,13 @@
     }
 
     function canviarItemStock(id, val) {
-        if(val && dades.stock.find(x => x.ref === val && x.id !== id)) return alert("Ítem ja en stock!");
+        if(val && dades.stock.find(x => x.ref === val && x.id !== id)) return alert(i18n.t("inventariItemInStock"));
         dades.stock.find(x => x.id === id).ref = val; render(); guardar();
     }
 
     function comprovarNovaCat(el) {
         if(el.value === "ADD_CAT") {
-            const n = prompt("Nova temàtica:").toUpperCase();
+            const n = prompt(i18n.t("inventariPromptNewTheme")).toUpperCase();
             if(n && !dades.categories.includes(n)) { dades.categories.push(n); actualitzarSelectorsCat(); el.value = n; }
             else { el.value = dades.categories[0]; }
         }
@@ -350,7 +350,7 @@
     function actualitzarSelectorsCat() {
         const sel = document.getElementById('newCat');
         const curr = sel.value;
-        sel.innerHTML = dades.categories.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="ADD_CAT">+ Nova temàtica...</option>`;
+        sel.innerHTML = dades.categories.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="ADD_CAT">${i18n.t("inventariOptNewTheme")}</option>`;
         sel.value = curr;
     }
 
@@ -359,7 +359,7 @@
     
     function canviarMag(id, el) {
         if(el.value==="ADD") {
-            const n = prompt("Nom magatzem:").toUpperCase();
+            const n = prompt(i18n.t("inventariPromptNewWarehouse")).toUpperCase();
             if(n) { dades.magatzems.push(n); dades.stock.find(x=>x.id===id).magatzem=n; guardar(); render(); }
         } else { dades.stock.find(x=>x.id===id).magatzem=el.value; guardar(); }
     }
@@ -390,6 +390,9 @@
         const r = new FileReader(); r.onload= async (ev)=>{ dades=JSON.parse(ev.target.result); render(); await guardar(); }; r.readAsText(f);
     }
     window.onload = carregar;
+    window.addEventListener('languageChanged', () => {
+        render();
+    });
 </script>
 </body>
 </html>

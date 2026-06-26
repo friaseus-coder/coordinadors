@@ -193,49 +193,49 @@
 </head>
 <body data-required-roles="comercial,coordinador,jefe_operaciones">
   <header>
-    <h1>Valoració Agents (RANKING)</h1>
+    <h1 data-i18n="rankingTitle">Valoració Agents (RANKING)</h1>
   </header>
 
   <div class="admin-panel">
     <div class="toolbar-group">
-      <span class="filter-label">Filtres:</span>
+      <span class="filter-label" data-i18n="rankingLabelFiltres">Filtres:</span>
       <select id="filterZona">
-        <option value="">Totes les zones</option>
+        <option value="" data-i18n="rankingAllZones">Totes les zones</option>
         <option value="Zona 1">Zona 1</option>
         <option value="Zona 2">Zona 2</option>
         <option value="Zona 3">Zona 3</option>
       </select>
 
       <select id="filterCentre">
-        <option value="">Tots els centres</option>
+        <option value="" data-i18n="rankingAllCentres">Tots els centres</option>
       </select>
 
       <select id="filterTorn">
-        <option value="">Tots els torns</option>
+        <option value="" data-i18n="rankingAllTorns">Tots els torns</option>
       </select>
 
       <select id="filterNota">
-        <option value="">Totes les notes</option>
+        <option value="" data-i18n="rankingAllNotes">Totes les notes</option>
       </select>
 
-      <input type="text" id="search" placeholder="Cerca per agent...">
+      <input type="text" id="search" placeholder="Cerca per agent..." data-i18n="rankingSearchPlaceholder">
     </div>
 
     <div class="toolbar-group">
-      <span class="filter-label">Vista:</span>
-      <button id="btnTableView" class="btn-action">Mostrar Taula</button>
-      <button id="btnCardView" class="btn-action-sec">Mostrar Targetes</button>
+      <span class="filter-label" data-i18n="rankingLabelVista">Vista:</span>
+      <button id="btnTableView" class="btn-action" data-i18n="rankingBtnShowTable">Mostrar Taula</button>
+      <button id="btnCardView" class="btn-action-sec" data-i18n="rankingBtnShowCards">Mostrar Targetes</button>
     </div>
 
     <div class="toolbar-group">
-      <span class="filter-label">Dades:</span>
+      <span class="filter-label" data-i18n="rankingLabelDades">Dades:</span>
       <button class="btn-archive" onclick="exportarDadesRanking()">💾 Exportar</button>
       <button class="btn-archive" onclick="document.getElementById('importFileRanking').click()">📂 Importar</button>
       <input type="file" id="importFileRanking" style="display:none" accept=".json" onchange="importarDadesRanking(this)">
     </div>
 
     <div class="toolbar-group">
-      <span class="filter-label">Llegenda:</span>
+      <span class="filter-label" data-i18n="rankingLabelLegend">Llegenda:</span>
       <div style="display: flex; gap: 4px; font-size: 10px; font-weight: bold; align-items: center;">
         <span style="background: rgba(255, 215, 0, 0.3); color: #856404; padding: 2px 6px; border: 1px solid rgba(255, 215, 0, 0.5);">9-10</span>
         <span style="background: rgba(200, 230, 201, 0.5); color: #2e7d32; padding: 2px 6px; border: 1px solid #a5d6a7;">7-8</span>
@@ -246,10 +246,10 @@
 
     <div class="toolbar-group" style="margin-left: auto; display: flex; align-items: center; gap: 15px;">
       <span id="workerCount" style="font-weight:bold; font-size:11px; color:#23631f;">
-        Nº Treballadors: 0
+        <span data-i18n="rankingWorkerCountLabel">Nº Treballadors</span>: 0
       </span>
       <span id="llegendaExport" style="font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #64748b; font-weight: 500;">
-        | Darrera exportació: Cap dada encara
+        <span data-i18n="rankingExportLegendNone">| Darrera exportació: Cap dada encara</span>
       </span>
       <img src="logo.png" alt="Logo Empresa" id="logoVista" style="height:35px; object-fit: contain;">
     </div>
@@ -257,17 +257,17 @@
 
   <div class="charts-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
     <div class="chart-box">
-      <h2>Mitjana per centre</h2>
+      <h2 data-i18n="rankingChartAverageCentre">Mitjana per centre</h2>
       <canvas id="centreChart"></canvas>
     </div>
 
     <div class="chart-box">
-      <h2>Volum aptituds</h2>
+      <h2 data-i18n="rankingChartAptitudeVolume">Volum aptituds</h2>
       <canvas id="scatterChart"></canvas>
     </div>
 
     <div class="chart-box">
-      <h2>Comparativa rendiment</h2>
+      <h2 data-i18n="rankingChartPerformanceCompare">Comparativa rendiment</h2>
       <div id="sunburstChart" style="width:100%; height:500px;"></div>
     </div>
   </div>
@@ -280,17 +280,17 @@
       <thead>
         <tr>
           <th></th>
-          <th>Agent</th>
-          <th>Centre</th>
-          <th>Societat</th>
-          <th>Torn</th>
-          <th>Zona</th>
-          <th>Coneixements</th>
-          <th>Atenció</th>
-          <th>Disponibilitat</th>
-          <th>Actitud</th>
-          <th>Valoració</th>
-          <th>Observacions</th>
+          <th data-i18n="rankingThAgent">Agent</th>
+          <th data-i18n="rankingThCentre">Centre</th>
+          <th data-i18n="rankingThSocietat">Societat</th>
+          <th data-i18n="rankingThTorn">Torn</th>
+          <th data-i18n="rankingThZona">Zona</th>
+          <th data-i18n="rankingThConeixements">Coneixements</th>
+          <th data-i18n="rankingThAtencio">Atenció</th>
+          <th data-i18n="rankingThDisponibilitat">Disponibilitat</th>
+          <th data-i18n="rankingThActitud">Actitud</th>
+          <th data-i18n="rankingThValoracio">Valoració</th>
+          <th data-i18n="rankingThObservacions">Observacions</th>
         </tr>
       </thead>
 
@@ -300,7 +300,7 @@
       <tfoot>
       <tr>
         <td colspan="13" style="text-align:left; padding:10px 0;">
-          <button id="addRowBtn">+ Afegir fila</button>
+          <button id="addRowBtn" data-i18n="rankingAddRow">+ Afegir fila</button>
         </td>
       </tr>
       <tr>
@@ -332,9 +332,13 @@ function refrescarLlegendaGlobal() {
     
     if (el) {
         if (data && autor) {
-            el.innerHTML = ` | Darrera exportació rànquing: ${data} (per ${autor})`;
+            const lang = (typeof i18n !== 'undefined') ? i18n.getLanguage() : 'ca';
+            const prefix = lang === 'es' ? '| Última exportación ranking: ' : '| Darrera exportació rànquing: ';
+            const byLabel = lang === 'es' ? 'por' : 'per';
+            el.innerHTML = ` ${prefix}${data} (${byLabel} ${autor})`;
         } else {
-            el.innerHTML = " | Darrera exportació rànquing: Cap dada encara";
+            const lang = (typeof i18n !== 'undefined') ? i18n.getLanguage() : 'ca';
+            el.innerHTML = lang === 'es' ? '| Última exportación ranking: Sin datos aún' : '| Darrera exportació rànquing: Cap dada encara';
         }
     }
 }
@@ -390,7 +394,7 @@ function exportarDadesRanking() {
     }
 
     if (!trobat) {
-        alert("Atenció: No s'han trobat dades de rànquing per exportar.");
+        alert(i18n.t("rankingNoDataAlert"));
         return;
     }
 
@@ -445,11 +449,11 @@ function importarDadesRanking(input) {
             });
             
             await persistence.syncSave();
-            alert("✅ Rànquing importat correctament.");
+            alert(i18n.t('rankingImportSuccess'));
             location.reload();
         } catch (err) { 
             console.error("Error en importar dades"); 
-            alert("❌ Fitxer de rànquing no vàlid.");
+            alert(i18n.t('rankingImportError'));
         }
     };
     reader.readAsText(file);
@@ -537,7 +541,7 @@ document.addEventListener('click', function(e) {
     const workerCountSpan = document.getElementById('workerCount');
     if (tableBody && workerCountSpan) {
       const visibles = Array.from(tableBody.querySelectorAll('tr')).filter(tr => tr.style.display !== 'none').length;
-      workerCountSpan.textContent = `Nº Treballadors: ${visibles}`;
+      workerCountSpan.textContent = i18n.t('rankingWorkerCount', { count: visibles });
     }
     netejarSelectorsTaula();
   }
@@ -565,6 +569,12 @@ document.addEventListener('click', function(e) {
       }, 100);
     });
   }
+  // Listener para cambio de idioma en caliente
+  window.addEventListener('languageChanged', () => {
+    refrescarLlegendaGlobal();
+    actualitzarComptadorTreballadors();
+    if (typeof applyTranslations === 'function') applyTranslations();
+  });
 </script>
 
 </body>

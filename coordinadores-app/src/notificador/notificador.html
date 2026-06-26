@@ -157,12 +157,12 @@
 
 <div class="contenedor-app">
     <header class="capçalera-app">
-        <h2 class="capçalera-titol">Gestor de Comunicacions Client</h2>
+        <h2 class="capçalera-titol" data-i18n="notificadorHeader">Gestor de Comunicacions Client</h2>
         <img src="descarga.png" alt="Logo" class="capçalera-logo">
     </header>
 
     <div class="formulari-app">
-        <label>1. Centre de Treball:</label>
+        <label data-i18n="notificadorWorkCenterLabel">1. Centre de Treball:</label>
         <select id="notif-parking">
             <option value="567 - N.N. ARAGO - Aragón, 182">567 - N.N. ARAGO - Aragón, 182</option>
             <option value="427 - N.N. BONANOVA - Pg. Bonanova, 59-Escoles Pies, 102">427 - N.N. BONANOVA - Pg. Bonanova, 59-Escoles Pies, 102</option>
@@ -198,14 +198,14 @@
             <option value="566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641">566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641</option>
         </select>
 
-        <label>2. Tipus de Contracte:</label>
+        <label data-i18n="notificadorContractTypeLabel">2. Tipus de Contracte:</label>
         <div class="selector-tipus">
-            <div id="btn-vehiculo" class="opcio-tipus active" onclick="seleccionarTipus('vehicle')">VEHICLE</div>
-            <div id="btn-trastero" class="opcio-tipus" onclick="seleccionarTipus('trastero')">TRASTER</div>
+            <div id="btn-vehiculo" class="opcio-tipus active" onclick="seleccionarTipus('vehicle')" data-i18n="notificadorTypeVehicle">VEHICLE</div>
+            <div id="btn-trastero" class="opcio-tipus" onclick="seleccionarTipus('trastero')" data-i18n="notificadorTypeTraster">TRASTER</div>
         </div>
         <input type="hidden" id="tipus-contracte" value="vehicle">
 
-        <label>3. Motiu del Comunicat:</label>
+        <label data-i18n="notificadorReasonLabel">3. Motiu del Comunicat:</label>
         <select id="notif-reason" onchange="comprovarMotiu()">
             <optgroup label="Avisos Generales y Normativa">
                 <option value="bienvenida">Bienvenida y normativa</option>
@@ -233,106 +233,106 @@
         </select>
 
         <div id="seccio-llums" class="seccio-extra">
-            <label>Incidència Detectada:</label>
+            <label data-i18n="notifIncidenciaDetectada">Incidència Detectada:</label>
             <div class="checkbox-group">
-                <label class="checkbox-item"><input type="checkbox" class="chk-llum" value="luces"> Luces encendidas</label>
-                <label class="checkbox-item"><input type="checkbox" class="chk-llum" value="ventanas"> Ventanas abiertas</label>
-                <label class="checkbox-item"><input type="checkbox" class="chk-llum" value="aceite"> Pérdida de aceite</label>
+                <label class="checkbox-item"><input type="checkbox" class="chk-llum" value="luces"> <span data-i18n="notifLucesEncendidas">Luces encendidas</span></label>
+                <label class="checkbox-item"><input type="checkbox" class="chk-llum" value="ventanas"> <span data-i18n="notifVentanasAbiertas">Ventanas abiertas</span></label>
+                <label class="checkbox-item"><input type="checkbox" class="chk-llum" value="aceite"> <span data-i18n="notifPerdidaAceite">Pérdida de aceite</span></label>
             </div>
         </div>
 
         <div id="seccio-equipament" class="seccio-extra">
-            <label>3. Equipamiento del Aparcamiento:</label>
+            <label data-i18n="notifEquipamientoAparcamiento">3. Equipamiento del Aparcamiento:</label>
             <div class="checkbox-group">
-                <label class="checkbox-item"><input type="checkbox" id="chk-lector-matricula"> Tiene Lector de Matrículas</label>
+                <label class="checkbox-item"><input type="checkbox" id="chk-lector-matricula"> <span data-i18n="notifTieneLector">Tiene Lector de Matrículas</span></label>
             </div>
         </div>
 
         <div id="seccio-robo" class="seccio-extra">
-            <label>3. Detalles de la Queja:</label>
+            <label data-i18n="notifDetallesQueja">3. Detalles de la Queja:</label>
             <div class="checkbox-group">
-                <label class="checkbox-item"><input type="checkbox" id="chk-queja-robo"> Se queja de Robo (incluir necesidad de denuncia)</label>
+                <label class="checkbox-item"><input type="checkbox" id="chk-queja-robo"> <span data-i18n="notifSeQuejaRobo">Se queja de Robo (incluir necesidad de denuncia)</span></label>
             </div>
         </div>
 
         <div id="seccio-acces" class="seccio-extra">
-            <label>Tipo de Incidencia de Acceso:</label>
+            <label data-i18n="notifTipoIncidenciaAcceso">Tipo de Incidencia de Acceso:</label>
             <select id="acces-tipus">
-                <option value="diferente">Acceso con un vehicle diferente</option>
-                <option value="sin_tarjeta">Acceso sense targeta</option>
+                <option value="diferente" data-i18n="notifAccesoVehiculoDiferente">Acceso con un vehicle diferente</option>
+                <option value="sin_tarjeta" data-i18n="notifAccesoSinTarjeta">Acceso sense targeta</option>
             </select>
         </div>
 
         <div id="seccio-velocitat" class="seccio-extra">
-            <label>Día detectado:</label>
+            <label data-i18n="notifDiaDetectado">Día detectado:</label>
             <input type="date" id="vel-dia">
-            <label>Tipo de Infracción:</label>
+            <label data-i18n="notifTipoInfraccion">Tipo de Infracción:</label>
             <select id="vel-tipus">
-                <option value="Velocidad excesiva">Velocidad excesiva</option>
-                <option value="Contra dirección">Contra dirección</option>
+                <option value="Velocidad excesiva" data-i18n="notifVelocidadExcesiva">Velocidad excesiva</option>
+                <option value="Contra dirección" data-i18n="notifContraDireccion">Contra dirección</option>
             </select>
-            <label>Frecuencia detectada:</label>
+            <label data-i18n="notifFrecuenciaDetectada">Frecuencia detectada:</label>
             <select id="vel-frecuencia">
-                <option value="Hecho puntual">Hecho puntual</option>
-                <option value="Hecho recurrente">Hecho recurrente</option>
+                <option value="Hecho puntual" data-i18n="notifHechoPuntual">Hecho puntual</option>
+                <option value="Hecho recurrente" data-i18n="notifHechoRecurrente">Hecho recurrente</option>
             </select>
         </div>
 
         <div id="seccio-comportament" class="seccio-extra">
-            <label>Detalles del Incidente de Comportamiento:</label>
-            <label style="margin-top:10px;">Fecha del suceso:</label>
+            <label data-i18n="notifDetallesIncidenteComportamiento">Detalles del Incidente de Comportamiento:</label>
+            <label style="margin-top:10px;" data-i18n="notifFechaSuceso">Fecha del suceso:</label>
             <input type="date" id="comp-data">
             
-            <label style="margin-top:10px;">Destinatario de la falta:</label>
+            <label style="margin-top:10px;" data-i18n="notifDestinatarioFalta">Destinatario de la falta:</label>
             <div class="radio-group">
-                <label class="radio-item"><input type="radio" name="comp-destinatari" value="personal" checked> Personal</label>
-                <label class="radio-item"><input type="radio" name="comp-destinatari" value="altres"> Otros clientes</label>
+                <label class="radio-item"><input type="radio" name="comp-destinatari" value="personal" checked> <span data-i18n="notifPersonal">Personal</span></label>
+                <label class="radio-item"><input type="radio" name="comp-destinatari" value="altres"> <span data-i18n="notifOtrosClientes">Otros clientes</span></label>
             </div>
 
-            <label style="margin-top:10px;">Tipo de falta detectada:</label>
+            <label style="margin-top:10px;" data-i18n="notifTipoFaltaDetectada">Tipo de falta detectada:</label>
             <div class="checkbox-group">
-                <label class="checkbox-item"><input type="checkbox" class="chk-falta" value="insults"> Insultos</label>
-                <label class="checkbox-item"><input type="checkbox" class="chk-falta" value="respecte"> Falta de respeto</label>
-                <label class="checkbox-item"><input type="checkbox" class="chk-falta" value="agressio"> Agresión</label>
+                <label class="checkbox-item"><input type="checkbox" class="chk-falta" value="insults"> <span data-i18n="notifInsultos">Insultos</span></label>
+                <label class="checkbox-item"><input type="checkbox" class="chk-falta" value="respecte"> <span data-i18n="notifFaltaRespeto">Falta de respeto</span></label>
+                <label class="checkbox-item"><input type="checkbox" class="chk-falta" value="agressio"> <span data-i18n="notifAgresion">Agresión</span></label>
             </div>
         </div>
 
         <div id="seccio-tarifas" class="seccio-extra">
-            <label>Import Tarifa Mensual (€):</label>
+            <label data-i18n="notifImporteTarifaMensual">Import Tarifa Mensual (€):</label>
             <input type="number" id="tarifa-preu" placeholder="0.00">
             
-            <label style="margin-top:15px;">Tipo de Contrato:</label>
+            <label style="margin-top:15px;" data-i18n="notificadorContractTypeLabel">Tipo de Contrato:</label>
             <div class="radio-group">
-                <label class="radio-item"><input type="radio" name="tarifa-tipus" value="vehiculo" checked> Vehículo</label>
-                <label class="radio-item"><input type="radio" name="tarifa-tipus" value="trastero"> Trastero</label>
+                <label class="radio-item"><input type="radio" name="tarifa-tipus" value="vehiculo" checked> <span data-i18n="notifPersonal">Vehículo</span></label>
+                <label class="radio-item"><input type="radio" name="tarifa-tipus" value="trastero"> <span data-i18n="notifOtrosClientes">Trastero</span></label>
             </div>
 
-            <label style="margin-top:10px;">Requisitos y Depósitos a incluir:</label>
+            <label style="margin-top:10px;" data-i18n="notifRequisitosDepositos">Requisitos y Depósitos a incluir:</label>
             <div class="checkbox-group">
-                <label class="checkbox-item"><input type="checkbox" id="chk-fianza"> Fianza</label>
-                <label class="checkbox-item"><input type="checkbox" id="chk-mando"> Mando (60€)</label>
-                <label class="checkbox-item"><input type="checkbox" id="chk-llave"> Llave (20€)</label>
+                <label class="checkbox-item"><input type="checkbox" id="chk-fianza"> <span data-i18n="notifFianza">Fianza</span></label>
+                <label class="checkbox-item"><input type="checkbox" id="chk-mando"> <span data-i18n="notifMando">Mando (60€)</span></label>
+                <label class="checkbox-item"><input type="checkbox" id="chk-llave"> <span data-i18n="notifLlave">Llave (20€)</span></label>
             </div>
         </div>
 
         <div id="seccio-cobro" class="seccio-extra">
-            <label>Import pendent (€):</label>
+            <label data-i18n="notifImportePendiente">Import pendent (€):</label>
             <input type="number" id="cobro-import" placeholder="0.00">
         </div>
 
         <div id="seccio-baja-plazo" class="seccio-extra">
-            <label>Data efectiva de baixa:</label>
+            <label data-i18n="notifFechaEfectivaBaja">Data efectiva de baixa:</label>
             <input type="date" id="baja-fecha-efectiva">
         </div>
 
-        <label>Matrícula o nº de Traster:</label>
-        <input type="text" id="extra-info" placeholder="Clica per obrir el teclat..." onclick="obrirTeclat()" readonly>
+        <label data-i18n="notifMatriculaOTrastero">Matrícula o nº de Traster:</label>
+        <input type="text" id="extra-info" placeholder="Clica per obrir el teclat..." data-i18n="notificadorTextPlaceholder" onclick="obrirTeclat()" readonly>
         
         <div id="teclat-popover">
             <div class="teclat-grid" id="grid-keys"></div>
         </div>
 
-        <button class="btn-principal" onclick="generarEmail()">✉️ GENERAR CORREU ELECTRÒNIC</button>
+        <button class="btn-principal" onclick="generarEmail()" data-i18n="notificadorEmailBtn">✉️ GENERAR CORREU ELECTRÒNIC</button>
     </div>
 </div>
 
@@ -432,13 +432,13 @@ peticion_facturas: {
 
         if (t === 'trastero') {
             selectorMotiu.value = "bienvenida";
-            inputExtra.placeholder = "Nº de Traster...";
+            inputExtra.placeholder = typeof i18n !== 'undefined' ? (i18n.getLanguage() === 'es' ? "Nº de Trastero..." : "Nº de Traster...") : "Nº de Traster...";
             Array.from(selectorMotiu.options).forEach(opt => {
                 if(opt.value !== "bienvenida") opt.disabled = true;
             });
             comprovarMotiu();
         } else {
-            inputExtra.placeholder = "Matrícula...";
+            inputExtra.placeholder = typeof i18n !== 'undefined' ? (i18n.getLanguage() === 'es' ? "Matrícula..." : "Matrícula...") : "Matrícula...";
             Array.from(selectorMotiu.options).forEach(opt => opt.disabled = false);
         }
     }
@@ -462,7 +462,7 @@ peticion_facturas: {
         const dadaExtra = document.getElementById('extra-info').value.trim();
         const tipusC = document.getElementById('tipus-contracte').value;
         
-        if (!centre) return alert("Selecciona centre.");
+        if (!centre) return alert(typeof i18n !== 'undefined' ? i18n.t("notifSelectCentreAlert") : "Selecciona centre.");
 
         let textObj = { ca:"", es:"", en:"" };
 
@@ -592,7 +592,7 @@ peticion_facturas: {
             textObj.en = `Good morning,\n\nDear customer,\n\nWe are contacting you regarding your subscription at [PARKING] Car Park.\n\nAs a follow-up to the cancellation notice you have already received, we wish to emphasize that this measure is a direct consequence of the events that occurred on [FECHA], involving ${formatList(chks, 'en')}towards ${destText.en}. NN Parkings maintains a zero-tolerance policy against such behavior to ensure the well-being and safety within our premises.\nThank you for your cooperation.\n\nSincerely,`;
         } else if (motiuClau === 'luces_encendidas') {
             const chks = Array.from(document.querySelectorAll('.chk-llum:checked')).map(c => c.value);
-            if(chks.length === 0) return alert("Marca almenys una opció.");
+            if(chks.length === 0) return alert(typeof i18n !== 'undefined' ? i18n.t("notifMarcaOpcionAlert") : "Marca almenys una opció.");
             let fragCA = [], fragES = [], fragEN = [];
             if(chks.includes('luces')) { fragCA.push("els llums encesos"); fragES.push("las luces encendidas"); fragEN.push("its lights on"); }
             if(chks.includes('ventanas')) { fragCA.push("una o més finestres obertes"); fragES.push("una o más ventanillas abiertas"); fragEN.push("one or more windows open"); }
@@ -639,7 +639,10 @@ peticion_facturas: {
     bDel.onclick = () => { inputField.value = inputField.value.slice(0, -1); }; document.getElementById('grid-keys').appendChild(bDel);
     const bClose = document.createElement('div'); bClose.className = 'tecla intro'; bClose.innerText = '↵';
     bClose.onclick = () => document.getElementById('teclat-popover').style.display = 'none'; document.getElementById('grid-keys').appendChild(bClose);
-    function obrirTeclat() { document.getElementById('teclat-popover').style.display = 'block'; }
+    window.addEventListener('languageChanged', () => {
+        i18n.translatePage();
+        seleccionarTipus(document.getElementById('tipus-contracte').value);
+    });
 </script>
 </body>
 </html>

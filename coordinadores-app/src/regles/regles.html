@@ -495,7 +495,7 @@
 
                 renderTable();
             } catch (err) {
-                showToast("Error al cargar reglas: " + err.message, "error");
+                showToast(i18n.t('reglesErrorCarga', { error: err.message }), "error");
             }
         }
 
@@ -734,7 +734,7 @@
             const tbody = document.getElementById('coberturasTableBody');
             if (!tbody) return;
             
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">Carregant...</td></tr>';
+            tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#999;">${i18n.t("loadingCoords")}</td></tr>`;
             
             try {
                 const apiDB = window.parent.dbAPI || window.dbAPI;
@@ -751,7 +751,7 @@
                 tbody.innerHTML = '';
                 
                 if (coberturas.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#999;">No hi ha cobertures programades per a dies específics.</td></tr>';
+                    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:#999;">${i18n.t("reglesNoCoberturas")}</td></tr>`;
                     return;
                 }
                 
@@ -787,7 +787,7 @@
                 }
             } catch (err) {
                 console.error("Error al cargar coberturas:", err);
-                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--nyn-error);">Error al carregar: ${err.message}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;color:var(--nyn-error);">${i18n.t("reglesErrorCarga", { error: err.message })}</td></tr>`;
             }
         }
 
@@ -805,7 +805,7 @@
             const horaFin = document.getElementById('cobHoraFin').value;
             
             if (!aparcamientoId || !fecha || !turno || !horaInicio || !horaFin) {
-                showToast("Tots els camps són obligatoris", "error");
+                showToast(i18n.t("reglesFieldsRequired"), "error");
                 return;
             }
             
@@ -814,7 +814,7 @@
                 const existing = await apiDB.read('catalogos', checkSql, [aparcamientoId, fecha, turno]);
                 
                 if (existing && existing.length > 0) {
-                    showToast("Ja existeix una cobertura per a aquest centre, fecha i torn.", "error");
+                    showToast(i18n.t("reglesExistingCobertura"), "error");
                     return;
                 }
                 
@@ -824,7 +824,7 @@
                 `;
                 await apiDB.write('catalogos', sql, [aparcamientoId, fecha, turno, horaInicio, horaFin]);
                 
-                showToast("✅ Cobertura obligatòria temporal afegida correctament.", "success");
+                showToast(i18n.t("reglesSuccessAddCobertura"), "success");
                 
                 document.getElementById('cobFecha').value = '';
                 document.getElementById('cobTurno').value = 'MATÍ';
@@ -833,13 +833,13 @@
                 
                 await loadCoberturas();
             } catch (err) {
-                showToast("Error al afegir cobertura: " + err.message, "error");
+                showToast(i18n.t("reglesErrorAddCobertura", { error: err.message }), "error");
             }
         }
 
         // Eliminar una cobertura de la base de datos
         async function deleteCobertura(id) {
-            if (!confirm("⚠️ Estàs segur que vols eliminar aquesta cobertura obligatòria temporal?")) return;
+            if (!confirm(i18n.t("reglesDeleteCoberturaConfirm"))) return;
             
             const apiDB = window.parent.dbAPI || window.dbAPI;
             if (!apiDB) return;
@@ -847,10 +847,10 @@
             try {
                 const sql = "DELETE FROM coberturas_requeridas WHERE id = ?";
                 await apiDB.write('catalogos', sql, [id]);
-                showToast("✅ Cobertura obligatòria eliminada correctament.", "success");
+                showToast(i18n.t("reglesSuccessDeleteCobertura"), "success");
                 await loadCoberturas();
             } catch (err) {
-                showToast("Error al eliminar cobertura: " + err.message, "error");
+                showToast(i18n.t("reglesErrorDeleteCobertura", { error: err.message }), "error");
             }
         }
 

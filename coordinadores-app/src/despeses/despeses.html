@@ -200,50 +200,50 @@
 <body data-required-roles="coordinador,jefe_operaciones">
 
 <header class="no-print">
-    <h1>Despeses de Desplaçament</h1>
+    <h1 data-i18n="despesesTitle">Despeses de Desplaçament</h1>
 </header>
 
 <div id="loginOverlay">
     <div id="loginBox">
-        <h3>ACCÉS PROTEGIT</h3>
+        <h3 data-i18n="despesesAccessTitle">ACCÉS PROTEGIT</h3>
         <input type="password" id="passInput" onkeypress="if(event.key==='Enter') verificarPass()">
-        <button class="btn-action" style="width: 100%;" onclick="verificarPass()">ENTRAR</button>
-        <p id="errorMsg" style="color:red; font-size:10px; display:none; margin-top:10px;">Password incorrecte</p>
+        <button class="btn-action" style="width: 100%;" onclick="verificarPass()" data-i18n="despesesEnterBtn">ENTRAR</button>
+        <p id="errorMsg" style="color:red; font-size:10px; display:none; margin-top:10px;" data-i18n="despesesPassError">Password incorrecte</p>
     </div>
 </div>
 
 <div class="card" id="mainContent">
     <div class="header-flex">
         <div>
-            <h2>FULLA RESUM DESPESES / DESPLAÇAMENTS</h2>
+            <h2 data-i18n="despesesResumeTitle">FULLA RESUM DESPESES / DESPLAÇAMENTS</h2>
             <div style="display: flex; align-items: center; gap: 8px; margin-top: 8px;" class="no-print">
                 <select id="mesActual" style="font-weight: bold; width: auto;" onchange="carregarMes()"></select>
-                <button class="btn-action" onclick="afegirAny()">+ Any</button>
-                <button class="btn-danger" onclick="gestionarAnys()">Esborrar Anys</button>
+                <button class="btn-action" onclick="afegirAny()" data-i18n="despesesAddYear">+ Any</button>
+                <button class="btn-danger" onclick="gestionarAnys()" data-i18n="despesesClearYears">Esborrar Anys</button>
             </div>
         </div>
         <div class="info-header">
-            EMPLEAT: <input type="text" id="nomEmpleat" class="input-empleat" value="ALBERT CAMPINS LLONGUERAS" oninput="guardarInfoEmpleat()"><br>
-            DEP: <input type="text" id="depEmpleat" class="input-empleat" value="OPERACIONES (PARKINGS)" oninput="guardarInfoEmpleat()">
+            <span data-i18n="despesesEmployeeLabel">EMPLEAT:</span> <input type="text" id="nomEmpleat" class="input-empleat" value="ALBERT CAMPINS LLONGUERAS" oninput="guardarInfoEmpleat()"><br>
+            <span data-i18n="despesesDepartmentLabel">DEP:</span> <input type="text" id="depEmpleat" class="input-empleat" value="OPERACIONES (PARKINGS)" oninput="guardarInfoEmpleat()">
         </div>
     </div>
 
     <div class="tarifa-config">
-        <b>TARIFES (€/KM):</b>
-        <label>MOTO: <input type="number" id="tarifa_1" step="0.01" min="0" onclick="desbloquejarTarifa(this)" oninput="actualitzarTarifaManual('tarifa_1')"></label>
-        <label>COTXE: <input type="number" id="tarifa_2" step="0.01" min="0" onclick="desbloquejarTarifa(this)" oninput="actualitzarTarifaManual('tarifa_2')"></label>
+        <b data-i18n="despesesRatesTitle">TARIFES (€/KM):</b>
+        <label><span data-i18n="despesesRateMoto">MOTO:</span> <input type="number" id="tarifa_1" step="0.01" min="0" onclick="desbloquejarTarifa(this)" oninput="actualitzarTarifaManual('tarifa_1')"></label>
+        <label><span data-i18n="despesesRateCoche">COTXE:</span> <input type="number" id="tarifa_2" step="0.01" min="0" onclick="desbloquejarTarifa(this)" oninput="actualitzarTarifaManual('tarifa_2')"></label>
     </div>
 
     <table>
         <thead>
             <tr>
-                <th style="width: 125px;">FECHA</th>
-                <th>CONCEPTO / DESTINO</th>
-                <th style="width: 60px;">KM</th>
-                <th style="width: 110px;">VEHÍCULO</th>
-                <th style="width: 90px;">IMP. KM</th>
-                <th style="width: 80px;">OTROS</th>
-                <th style="width: 90px;">IMPORTE</th>
+                <th style="width: 125px;" data-i18n="despesesThDate">FECHA</th>
+                <th data-i18n="despesesThConcept">CONCEPTO / DESTINO</th>
+                <th style="width: 60px;" data-i18n="despesesThKm">KM</th>
+                <th style="width: 110px;" data-i18n="despesesThVehicle">VEHÍCULO</th>
+                <th style="width: 90px;" data-i18n="despesesThImpKm">IMP. KM</th>
+                <th style="width: 80px;" data-i18n="despesesThOthers">OTROS</th>
+                <th style="width: 90px;" data-i18n="despesesThImport">IMPORTE</th>
                 <th style="width: 30px;" class="no-print"></th>
             </tr>
         </thead>
@@ -259,19 +259,19 @@
 
     <div class="no-print" style="display: flex; justify-content: space-between; align-items: center;">
         <div>
-            <button class="btn-action" onclick="afegirFila()">+ afegir línia</button>
-            <button class="btn-archive" onclick="document.getElementById('importRutaFile').click()">🔄 IMPORTAR RUTA</button>
+            <button class="btn-action" onclick="afegirFila()" data-i18n="despesesAddLine">+ afegir línia</button>
+            <button class="btn-archive" onclick="document.getElementById('importRutaFile').click()" data-i18n="despesesImportRoute">🔄 IMPORTAR RUTA</button>
             <input type="file" id="importRutaFile" style="display:none" accept=".json" onchange="processarRutaPerADespeses(this)">
-            <button class="btn-action-sec" onclick="prepararImprimir()">🖨️ IMPRIMIR / PDF</button>
-            <button class="btn-action-sec" onclick="exportarExcel()" style="background: #16a34a !important; border-color: #16a34a !important;">📊 EXCEL</button>
+            <button class="btn-action-sec" onclick="prepararImprimir()" data-i18n="despesesPrintPdf">🖨️ IMPRIMIR / PDF</button>
+            <button class="btn-action-sec" onclick="exportarExcel()" style="background: #16a34a !important; border-color: #16a34a !important;" data-i18n="despesesExcel">📊 EXCEL</button>
         </div>
-        <button class="btn-archive" onclick="cambiarPassword()">🔑 CANVIAR PASSWORD</button>
+        <button class="btn-archive" onclick="cambiarPassword()" data-i18n="despesesChangePass">🔑 CANVIAR PASSWORD</button>
     </div>
 
     <table id="signatureTable">
         <tr>
-            <td>Firma<div id="dataSignatura" class="date-bottom"></div></td>
-            <td>Firma Dir. Dpto.</td>
+            <td><span data-i18n="despesesSign">Firma</span><div id="dataSignatura" class="date-bottom"></div></td>
+            <td><span data-i18n="despesesSignDept">Firma Dir. Dpto.</span></td>
         </tr>
     </table>
 </div>
@@ -280,20 +280,21 @@
     // Tota la teva lògica es manté intacta
     function getPassword() { return localStorage.getItem('nyn_password') || "1234"; }
     function cambiarPassword() {
-        const actual = prompt("Escriu el password ACTUAL:");
+        const actual = prompt(i18n.t("despesesPromptCurrentPass"));
         if (actual === getPassword()) {
-            const nou = prompt("Escriu el NOU password:");
+            const nou = prompt(i18n.t("despesesPromptNewPass"));
             if (nou && nou.trim().length > 0) {
                 localStorage.setItem('nyn_password', nou.trim());
-                alert("Password actualitzat correctament.");
+                alert(i18n.t("despesesPassUpdatedAlert"));
             }
-        } else { alert("Password incorrecte."); }
+        } else { alert(i18n.t("despesesPassError")); }
     }
     function verificarPass() {
         if (document.getElementById('passInput').value === getPassword()) {
             document.getElementById('loginOverlay').style.display = 'none';
             document.getElementById('mainContent').style.display = 'block';
-            document.getElementById('dataSignatura').innerText = new Date().toLocaleDateString();
+            const locale = i18n.getLanguage() === 'es' ? 'es-ES' : 'ca-ES';
+            document.getElementById('dataSignatura').innerText = new Date().toLocaleDateString(locale);
             carregarTarifes();
             carregarInfoEmpleat();
             inicialitzarSelector();
@@ -340,7 +341,8 @@
         select.innerHTML = "";
         dadesAnys.sort((a,b) => b-a).forEach(any => {
             MESOS_ID.forEach((id, index) => {
-                let opt = new Option(`${MESOS_NOM[index]} ${any}`, `${id}_${any}`);
+                const mesTraduido = i18n.t("opt" + id.charAt(0).toUpperCase() + id.slice(1));
+                let opt = new Option(`${mesTraduido} ${any}`, `${id}_${any}`);
                 select.add(opt);
             });
         });
@@ -361,7 +363,7 @@
     }
     function afegirFila(v = ["", "", "0", "2", "0"]) {
         const tr = document.createElement('tr');
-        let opcions = `<option value="">-- triar centre --</option>`;
+        let opcions = `<option value="">${i18n.t("despesesChooseCenterDefault")}</option>`;
         LLISTA_CENTRES.forEach(c => opcions += `<option value="${c}">${c}</option>`);
         tr.innerHTML = `
             <td><input type="date" class="in-data" value="${v[0]}" onchange="validarDataFila(this)"></td>
@@ -376,8 +378,8 @@
             </td>
             <td><input type="number" class="in-km" value="${v[2]}" min="0" oninput="validarPositiu(this); calcularFila(this)"></td>
             <td><select class="in-veh" onchange="calcularFila(this)">
-                <option value="1" ${v[3]=="1"?'selected':''}>MOTO</option>
-                <option value="2" ${v[3]=="2"?'selected':''}>COCHE</option>
+                <option value="1" ${v[3]=="1"?'selected':''}>${i18n.t("despesesOptMoto")}</option>
+                <option value="2" ${v[3]=="2"?'selected':''}>${i18n.t("despesesOptCoche")}</option>
             </select></td>
             <td class="out-km" style="text-align:right">0,00 €</td>
             <td><input type="number" class="in-alt" value="${v[4]}" min="0" oninput="validarPositiu(this); calcularFila(this)"></td>
@@ -397,7 +399,7 @@
             if (dataVal) { dataAnterior = dataVal; break; }
         }
         if (dataAnterior && input.value && input.value < dataAnterior) {
-            alert(`⚠️ DATA BLOQUEJADA: No pots posar una data repetida o anterior.`);
+            alert(i18n.t("despesesDateBlockedAlert"));
             input.value = ""; input.focus();
         } else { guardarDades(); }
     }
@@ -433,7 +435,7 @@
         localStorage.setItem('nyn_despeses_' + mes, JSON.stringify(files));
     }
     function afegirAny() {
-        let nou = prompt("Quin any vols afegir?");
+        let nou = prompt(i18n.t("despesesPromptAddYear"));
         if (nou && !isNaN(nou)) {
             let llista = JSON.parse(localStorage.getItem('nyn_anys_llista') || "[2026]");
             if (!llista.includes(parseInt(nou))) {
@@ -445,7 +447,7 @@
     }
     function gestionarAnys() {
         let llista = JSON.parse(localStorage.getItem('nyn_anys_llista') || "[2026]");
-        let borrar = prompt("Any a ESBORRAR:\nActuals: " + llista.join(", "));
+        let borrar = prompt(i18n.t("despesesPromptClearYear", { list: llista.join(", ") }));
         if (borrar && !isNaN(borrar)) {
             let novaLlista = llista.filter(a => a != parseInt(borrar));
             localStorage.setItem('nyn_anys_llista', JSON.stringify(novaLlista.length ? novaLlista : [2026]));
@@ -454,7 +456,7 @@
     }
     function desbloquejarTarifa(el) {
         if (el.style.background === "white") return;
-        if (prompt("Password tarifes:") === getPassword()) {
+        if (prompt(i18n.t("despesesPromptPassRates")) === getPassword()) {
             el.readOnly = false; el.style.background = "white"; el.style.border = "2px solid #008d36"; el.select();
         }
     }
@@ -481,6 +483,11 @@
             document.getElementById('passInput').value = getPassword();
             verificarPass();
         }
+    });
+
+    window.addEventListener('languageChanged', () => {
+        inicialitzarSelector();
+        carregarMes();
     });
 
     function exportarExcel() {
@@ -514,7 +521,7 @@
                     if (rutes.length) afegirFila([`${anyStr}-${String(MESOS_ID.indexOf(mesId)+1).padStart(2,'0')}-${String(dia).padStart(2,'0')}`, rutes.join("  ➤  "), "0", "2", "0"]);
                 }
                 guardarDades();
-            } catch (err) { alert("Error Ruta"); }
+            } catch (err) { alert(i18n.t("despesesErrorRoute")); }
         };
         reader.readAsText(input.files[0]);
     }
