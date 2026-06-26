@@ -116,6 +116,16 @@ BEGIN
     WHERE COALESCE(OLD.sociedad_id, 0) <> COALESCE(NEW.sociedad_id, 0);
 END;
 
+-- Tabla unificada de todo el personal de la empresa
+CREATE TABLE IF NOT EXISTS empleados (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    email TEXT,
+    rol TEXT NOT NULL, -- Ej: 'Admin', 'Coordinador', 'Comercial', 'Trabajador'
+    activo INTEGER DEFAULT 1, -- 1 para activo, 0 para inactivo/baja
+    json_preferencias TEXT -- Para guardar tema claro/oscuro, idioma, etc.
+);
+
 -- 13. SCHEMA_VERSION — Control de versiones del esquema
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,

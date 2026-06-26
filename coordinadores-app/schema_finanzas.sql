@@ -4,16 +4,15 @@
 
 PRAGMA foreign_keys = ON;
 
--- Tabla Gastos
-CREATE TABLE IF NOT EXISTS despeses (
+-- Tabla unificada para todo el flujo económico (Rutas, Tickets, Compras)
+CREATE TABLE IF NOT EXISTS movimientos_economicos (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    fecha TEXT,
-    comercial TEXT,
-    concepto TEXT,
-    importe TEXT,
-    estado TEXT,
-    coordinador TEXT,
-    activo INTEGER DEFAULT 1
+    id_usuario TEXT NOT NULL,
+    fecha DATE NOT NULL,
+    tipo_movimiento TEXT NOT NULL, -- Ej: 'Gasto Material', 'Ruta Comercial', 'Ticket Parking'
+    concepto TEXT NOT NULL,
+    importe REAL NOT NULL,
+    json_detalles TEXT -- Almacena meta-datos flexibles: {"km": 120, "origen": "BCN"} o {"ticket_url": "123.jpg"}
 );
 
 -- Tabla Inventario

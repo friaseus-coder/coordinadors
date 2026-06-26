@@ -278,27 +278,27 @@
 <body data-required-roles="coordinador,jefe_operaciones">
 
 <header>
-    <h1 id="titolPrincipal">Control Excés Jornada</h1>
+    <h1 id="titolPrincipal" data-i18n="deutesTitle">Control Excés Jornada</h1>
 </header>
 
 <div class="admin-panel">
     <div class="toolbar-group">
-        <span class="filter-label">Any:</span>
+        <span class="filter-label" data-i18n="deutesLabelAny">Any:</span>
         <select id="anyActual" onchange="canviarAny()"></select>
     </div>
     
     <div class="toolbar-group">
-        <button class="btn-action" onclick="afegirFila()">✚ Fila Nova</button>
-        <button class="btn-archive" onclick="obrirGestio()">⚙️ Gestionar Dades</button>
+        <button class="btn-action" onclick="afegirFila()" data-i18n="deutesBtnFilaNova">✚ Fila Nova</button>
+        <button class="btn-archive" onclick="obrirGestio()" data-i18n="deutesBtnGestionarDades">⚙️ Gestionar Dades</button>
     </div>
 
     <div class="toolbar-group">
-        <span class="filter-label">Mètriques:</span>
+        <span class="filter-label" data-i18n="deutesLabelMetriques">Mètriques:</span>
         <div class="stats-wrapper">
-            <div class="stat-box"><span class="stat-label">% pendent:</span><span id="statPendentPct" class="stat-val-red">0%</span></div>
-            <div class="stat-box"><span class="stat-label">% liquidat:</span><span id="statLiquidatPct" class="stat-val-yellow">0%</span></div>
-            <div class="stat-box"><span class="stat-label">totals:</span><span id="statTotals" class="stat-val-black">0</span></div>
-            <div class="stat-box"><span class="stat-label">pendents:</span><span id="statPendentAbs" class="stat-val-blue">0</span></div>
+            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelPendentPct">% pendent:</span><span id="statPendentPct" class="stat-val-red">0%</span></div>
+            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelLiquidatPct">% liquidat:</span><span id="statLiquidatPct" class="stat-val-yellow">0%</span></div>
+            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelTotals">totals:</span><span id="statTotals" class="stat-val-black">0</span></div>
+            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelPendents">pendents:</span><span id="statPendentAbs" class="stat-val-blue">0</span></div>
         </div>
     </div>
 
@@ -320,16 +320,16 @@
 
     <div class="side-charts">
         <div class="chart-card-ranking">
-            <div class="chart-title">rànquing gaudits (%)</div>
+            <div class="chart-title" data-i18n="deutesChartRankingTitle">rànquing gaudits (%)</div>
             <div id="rankingTreballadors"></div>
         </div>
         <div class="chart-card-pie">
-            <div class="chart-title">estat global anual</div>
+            <div class="chart-title" data-i18n="deutesChartPieTitle">estat global anual</div>
             <div class="pie-container">
                 <div class="pie-chart" id="pieChart"><span class="pie-percentage" id="piePctText">0%</span></div>
                 <div class="pie-legend">
-                    <div class="legend-item"><div class="dot" style="background:#f1c40f"></div><span>Liquidat</span></div>
-                    <div class="legend-item"><div class="dot" style="background:#eee"></div><span>Pendent</span></div>
+                    <div class="legend-item"><div class="dot" style="background:#f1c40f"></div><span data-i18n="deutesLegendLiquidat">Liquidat</span></div>
+                    <div class="legend-item"><div class="dot" style="background:#eee"></div><span data-i18n="deutesLegendPendent">Pendent</span></div>
                 </div>
             </div>
         </div>
@@ -338,24 +338,24 @@
 
 <div class="modal-overlay" id="overlay" onclick="tancarGestio()"></div>
 <div id="modalGestio">
-    <h3 style="margin-top:0; color:#008d36;">Configuració</h3>
+    <h3 style="margin-top:0; color:#008d36;" data-i18n="deutesModalConfigTitle">Configuració</h3>
     <div style="display:flex; gap:20px;">
         <div style="flex:1;">
-            <strong>Centres:</strong>
+            <strong><span data-i18n="deutesModalCentres">Centres:</span></strong>
             <div id="llistaCentresModal" style="max-height:100px; overflow-y:auto; border:1px solid #eee; margin-bottom:5px;"></div>
             <div style="display:flex; gap:3px;"><input type="text" id="nouCentre" style="width:70%"><button onclick="afegirMestre('centres', 'nouCentre')">+</button></div>
         </div>
         <div style="flex:1;">
-            <strong>Treballadors:</strong>
+            <strong><span data-i18n="deutesModalTreballadors">Treballadors:</span></strong>
             <div id="llistaNomsModal" style="max-height:100px; overflow-y:auto; border:1px solid #eee; margin-bottom:5px;"></div>
             <div style="display:flex; gap:3px;"><input type="text" id="nouNom" style="width:70%"><button onclick="afegirMestre('noms', 'nouNom')">+</button></div>
         </div>
     </div>
     <hr>
-    <strong>Anys i Dies d'Excés:</strong>
+    <strong><span data-i18n="deutesModalAnysTitle">Anys i Dies d'Excés:</span></strong>
     <div id="llistaAnysModal" style="max-height:80px; overflow-y:auto; margin-bottom:5px;"></div>
-    <div style="display:flex; gap:5px;"><input type="number" id="nouAnyVal" placeholder="2028" style="width:80px"><input type="number" id="nousDiesVal" placeholder="Dies" style="width:60px"><button onclick="afegirAnyConfig()">Afegir Any</button></div>
-    <button onclick="tancarGestio()" style="width:100%; padding:10px; background:#008d36; color:white; border:none; font-weight:bold; cursor:pointer; margin-top:10px;">TANCAR I APLICAR</button>
+    <div style="display:flex; gap:5px;"><input type="number" id="nouAnyVal" placeholder="2028" data-i18n="deutesModalPlaceholderAny" style="width:80px"><input type="number" id="nousDiesVal" placeholder="Dies" data-i18n="deutesModalPlaceholderDies" style="width:60px"><button onclick="afegirAnyConfig()" data-i18n="deutesModalBtnAfegirAny">Afegir Any</button></div>
+    <button onclick="tancarGestio()" style="width:100%; padding:10px; background:#008d36; color:white; border:none; font-weight:bold; cursor:pointer; margin-top:10px;" data-i18n="deutesModalBtnTancarAplicar">TANCAR I APLICAR</button>
 </div>
 
 <script>
@@ -425,8 +425,8 @@
         document.getElementById('statLiquidatPct').innerText = liquidatPct.toFixed(1) + "%";
         document.getElementById('statPendentPct').innerText = (100 - liquidatPct).toFixed(1) + "%";
         
-        document.getElementById('countFiles').innerText = "nº files: " + llistaActual.length;
-        document.getElementById('countCelles').innerText = "nº cel·les: " + totalCellesGlobals;
+        document.getElementById('countFiles').innerText = i18n.t('deutesCountFiles', { count: llistaActual.length });
+        document.getElementById('countCelles').innerText = i18n.t('deutesCountCelles', { count: totalCellesGlobals });
 
         const pieChart = document.getElementById('pieChart');
         if (pieChart) {
@@ -452,27 +452,27 @@
     function renderCapcalera() {
         const numExces = parseInt(configAnys[anySeleccionat]) || 5;
         const cap = document.getElementById('capTaula');
-        document.getElementById('titolPrincipal').innerText = `Control Excés Jornada ${anySeleccionat}`;
+        document.getElementById('titolPrincipal').innerText = `${i18n.t('deutesTitle')} ${anySeleccionat}`;
         
         cap.innerHTML = `
             <tr>
                 <th rowspan="2" class="col-centre"><select id="selCentre" class="filter-select" onchange="renderTable()"></select></th>
                 <th rowspan="2" class="col-nom"><select id="selNom" class="filter-select" onchange="renderTable()"></select></th>
                 <th rowspan="2" class="col-jornada"><select id="selJornada" class="filter-select" onchange="renderTable()">
-                    <option value="">Jornada</option>
+                    <option value="">${i18n.t('deutesThJornada')}</option>
                     <option value="T.C.">T.C.</option>
                     <option value="T.P.">T.P.</option>
                 </select></th>
-                <th colspan="${numExces + 1}">dies d'excés</th>
-                <th colspan="4" class="header-reajust">reajust</th>
-                <th rowspan="2" class="col-obs">observacions</th>
+                <th colspan="${numExces + 1}">${i18n.t('deutesThDiesExces')}</th>
+                <th colspan="4" class="header-reajust">${i18n.t('deutesThReajust')}</th>
+                <th rowspan="2" class="col-obs">${i18n.t('deutesThObservacions')}</th>
                 <th rowspan="2" class="col-del">🗑️</th>
             </tr>
             <tr>
                 ${Array.from({length: numExces}, (_, i) => `<th class="col-data">e${i+1}</th>`).join('')}
-                <th class="header-conveni">conveni</th>
-                <th class="header-vacances">vacances</th>
-                <th colspan="3" class="header-nocturn">nocturn</th>
+                <th class="header-conveni">${i18n.t('deutesThConveni')}</th>
+                <th class="header-vacances">${i18n.t('deutesThVacances')}</th>
+                <th colspan="3" class="header-nocturn">${i18n.t('deutesThNocturn')}</th>
             </tr>`;
         poblarFiltres();
     }
@@ -530,7 +530,7 @@
 
                     html += `<td class="col-data ${colorCls}" style="${estilGris}">
                         <div class="cell-wrapper">
-                            <button class="btn-nc-trigger" onclick="marcarNC(${idx}, ${i})" title="No Correspon">x</button>
+                            <button class="btn-nc-trigger" onclick="marcarNC(${idx}, ${i})" title="${i18n.t('deutesBtnNcTitle')}">x</button>
                             <input type="date" class="${estilDataCls}" value="${inputVal}" onchange="guardarDiaInstant(${idx}, ${i}, this.value)">
                         </div>
                     </td>`;
@@ -587,7 +587,7 @@
     }
 
     function esborrarFila(idx) { 
-        if(confirm("eliminar fila?")) { dadesGlobals[anySeleccionat].splice(idx, 1); guardarAlLocal(); renderTable(); } 
+        if(confirm(i18n.t('deutesConfirmEliminarFila'))) { dadesGlobals[anySeleccionat].splice(idx, 1); guardarAlLocal(); renderTable(); } 
     }
 
     function actualitzarSelectorsAny() {
@@ -620,14 +620,14 @@
         ['centres', 'noms'].forEach(t => {
             document.getElementById(`llista${t.charAt(0).toUpperCase()+t.slice(1)}Modal`).innerHTML = (mestres[t] || []).map(v => `<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;"><span>${v}</span>${v!=='-' ? `<span style="color:red;cursor:pointer" onclick="borrarMestre('${t}','${v}')">✖</span>`:''}</div>`).join('');
         });
-        document.getElementById('llistaAnysModal').innerHTML = Object.keys(configAnys).sort().map(a => `<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;"><span>any ${a} (${configAnys[a]} dies)</span></div>`).join('');
+        document.getElementById('llistaAnysModal').innerHTML = Object.keys(configAnys).sort().map(a => `<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;"><span>${i18n.t('deutesLlistaAnysModalLabel', { any: a, dies: configAnys[a] })}</span></div>`).join('');
     }
     
     function poblarFiltres() {
         const selC = document.getElementById('selCentre');
         const selN = document.getElementById('selNom');
-        if(selC) selC.innerHTML = '<option value="">centre</option>' + (mestres.centres || []).filter(c=>c!=="-").map(c => `<option value="${c}">${c}</option>`).join('');
-        if(selN) selN.innerHTML = '<option value="">nom treballador</option>' + (mestres.noms || []).filter(n=>n!=="-").map(n => `<option value="${n}">${n}</option>`).join('');
+        if(selC) selC.innerHTML = `<option value="">${i18n.t('deutesFiltreCentre')}</option>` + (mestres.centres || []).filter(c=>c!=="-").map(c => `<option value="${c}">${c}</option>`).join('');
+        if(selN) selN.innerHTML = `<option value="">${i18n.t('deutesFiltreNom')}</option>` + (mestres.noms || []).filter(n=>n!=="-").map(n => `<option value="${n}">${n}</option>`).join('');
     }
 
     window.onload = async () => { 
@@ -637,6 +637,12 @@
         renderCapcalera(); 
         renderTable(); 
     };
+
+    window.addEventListener('languageChanged', () => {
+        if(typeof applyTranslations === 'function') applyTranslations();
+        renderCapcalera();
+        renderTable();
+    });
 </script>
 </body>
 </html>

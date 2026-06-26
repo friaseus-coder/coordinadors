@@ -19,22 +19,17 @@ CREATE TABLE IF NOT EXISTS quadrant (
     nota TEXT                                   -- Observaciones libres
 );
 
--- Periodos de ausencia (vacaciones/bajas)
-CREATE TABLE IF NOT EXISTS vacances (
+-- Tabla unificada para todo tipo de excepciones al horario normal
+CREATE TABLE IF NOT EXISTS incidencias_horarias (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    agente_id INTEGER NOT NULL,
-    fecha_inicio TEXT NOT NULL,  -- YYYY-MM-DD
-    fecha_fin TEXT NOT NULL     -- YYYY-MM-DD
-);
-
--- Deudas / horas extra pendientes
-CREATE TABLE IF NOT EXISTS deutes (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    comercial TEXT NOT NULL,
-    cliente TEXT NOT NULL,
-    import REAL NOT NULL,
-    fecha TEXT NOT NULL,
-    activo INTEGER DEFAULT 1
+    id_trabajador TEXT NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE,
+    tipo_incidencia TEXT NOT NULL, -- Ej: 'Vacaciones', 'Baja Médica', 'Deuda Horas (-)', 'Bolsa Horas (+)'
+    impacto_horas REAL DEFAULT 0,  -- Cuántas horas suma o resta esta incidencia
+    coordinador TEXT,
+    estado TEXT DEFAULT 'Aprobado',
+    comentarios TEXT
 );
 
 -- Almacenamiento clave-valor legacy
