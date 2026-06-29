@@ -17,6 +17,11 @@ contextBridge.exposeInMainWorld('api', {
   renameAparcamiento: (oldName, newName) => ipcRenderer.invoke('rename-aparcamiento', oldName, newName),
   // Importación manual de JSONs
   importJsonData: (coordFolder, fileName, jsonContent) => ipcRenderer.invoke('import-json-data', coordFolder, fileName, jsonContent),
+  migrarJsonCuadrante: (dataJSON) => ipcRenderer.invoke('migrar-json-cuadrante', { dataJSON }),
+  migrarJsonDeutes: (dataJSON) => ipcRenderer.invoke('migrar-json-deutes', { dataJSON }),
+  migrarJsonComercials: (dataJSON) => ipcRenderer.invoke('migrar-json-comercials', { dataJSON }),
+  seleccionarArchivosMigracion: () => ipcRenderer.invoke('seleccionar-archivos-migracion'),
+  crearBackupMigracion: (tipo) => ipcRenderer.invoke('crear-backup-migracion', { tipo }),
   // Cerrar aplicación
   closeApp: () => ipcRenderer.invoke('app-close')
 });

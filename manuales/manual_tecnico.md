@@ -319,20 +319,26 @@ Durante la sincronización de archivos de configuración (`coordinadores.json`),
 
 ---
 
-## 8. Panel de Administración y Depuración del Legacy JSON
-Con la implantación de la **Fase 10**, SQLite es la fuente de verdad única absoluta en la aplicación, habiéndose eliminado los antiguos fallbacks locales y archivos JSON en la edición diaria.
+## 8. Panel de Administración y Asistente Guiado de Carga de Históricos
+Con la implantación de la **Fase 10**, SQLite es la fuente de verdad única absoluta en la aplicación, habiéndose eliminado los antiguos fallbacks locales y archivos JSON en la edición diaria. Las migraciones de datos legados se canalizan a través de un asistente premium interactivo y seguro.
 
-### A. Panel de Administración Centralizado (`admin.html`)
-*   Se ha diseñado un panel reservado para operaciones administrativas.
-*   Permite ejecutar las migraciones heredadas en un entorno seguro e inyectar registros en la base de datos sin contaminar las pantallas operativas ordinarias.
-*   **Vías de Importación Integradas**:
-    1.  **Cuadrante**: Importación y mapeo de turnos desde el JSON de cuadrante legado.
-    2.  **Vacaciones**: Importación y normalización relacional de períodos de descanso.
-    3.  **Deudas**: Importación directa de la lista de deudas legadas.
-    4.  **Gastos**: Importación directa de los archivos de gastos legados.
+### A. Asistente Guiado de Carga de Históricos (`migrador.html`)
+Se ha diseñado una interfaz de asistente guiada por pasos (`src/migrador/migrador.html`) que permite importar históricos de manera segura para los módulos de **Cuadrantes**, **Vacaciones**, **Deudas** y **Precios Comerciales**. El flujo de trabajo consta de 5 pasos consecutivos:
 
-### B. Salvaguarda Antiduplicidad (`.MIGRADO`)
-Para evitar que se procese un mismo archivo legacy JSON varias veces y se dupliquen registros en SQLite, el proceso principal de Electron renombra los archivos en disco añadiéndoles el sufijo `.MIGRADO` una vez completada la importación transaccional con éxito en la base de datos centralizada. Si el usuario intenta seleccionar el archivo de nuevo, es rechazado inmediatamente.
+1.  **Configuración de la Carga (Paso 1):** El usuario selecciona la base de datos a modificar y la estrategia de carga:
+    *   *Afegir i Combinar Dades:* Conserva los datos existentes e inyecta los nuevos registros.
+    *   *Sobrescriure / Netejar anterior:* Elimina los registros anteriores del rango de fechas del JSON (en el caso de cuadrantes) o limpia la tabla por completo antes de realizar la inserción.
+2.  **Copia de Seguridad Obligatoria y Preventiva (Paso 2):** Para mitigar riesgos de corrupción o error humano, el sistema obliga al usuario a realizar un backup físico del archivo SQLite afectado (ej: `operativa_rrhh.db` o `comercial.db`). Electron abre un diálogo interactivo de guardado (`dialog.showSaveDialog`) para que el usuario elija dónde guardar la copia. El asistente bloquea el avance al siguiente paso hasta que el backup se haya creado con éxito en el sistema.
+3.  **Chequeo de Catálogos y Matching Manual (Paso 3):** El asistente analiza los nombres de aparcamientos y personas (agentes) contenidos en el archivo JSON legado y los contrasta contra los registrados en `catalogos_maestros.db`. Si detecta nombres que no coinciden exactamente, despliega una interfaz para que el usuario resuelva cada discrepancia:
+    *   Vincular el nombre legado a un elemento existente de la base de datos (mediante menús desplegables ordenados por similitud).
+    *   Crear de forma automática el elemento como un registro nuevo en el catálogo.
+    *   Omitir selectivamente los registros que contengan dicha referencia.
+4.  **Previsualización y Escritura Atómica (Paso 4):** Muestra una cuadrícula de control con los primeros 100 registros formateados tras aplicar los mapeos de catálogos y resolver los IDs de claves foráneas. Si el usuario confirma, Electron ejecuta una transacción relacional en bloque (`BEGIN TRANSACTION` y `COMMIT`) de forma segura.
+5.  **Descarga de Datos Excluidos (Paso 5):** Notifica del resultado numérico de la migración. Si el usuario decidió omitir registros en el Paso 3 o había filas erróneas, habilita un botón para descargar dichos datos en un archivo JSON independiente para su corrección y posterior reintento.
+
+### B. Salvaguarda Antiduplicidad y Mapeo en Comerciales Legacy
+*   **Comerciales:** La migración toma los datos legacy del tipo `nn_A_...` o `nn_L_...` y los transforma automáticamente a las claves modernas tipo `dades Albert/comercials_albert_...` estructurando la matriz de tarifas e inyectándola de forma consolidada en `comercial.db`.
+*   **Importaciones Manuales KV:** Se mantiene un botón alternativo en la pantalla de inicio para la carga directa de JSONs a la base de datos clave-valor simple sin validación de catálogos relacionales, reservado para soporte técnico.
 
 ---
 

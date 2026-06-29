@@ -488,27 +488,27 @@
             <!-- Contenedor central de pestañas -->
             <div class="tabs-container" style="max-width: 100%; overflow-x: visible;">
                 <button class="tab-button active menu-item" onclick="openTab('home', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabHome">🏠 Inici</button>
-                <button class="tab-button menu-item" onclick="openTab('quadrant', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabQuadrant">📋 Quadrant</button>
-                <button class="tab-button menu-item" onclick="openTab('rutes', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabRoutes">📍 Rutes</button>
-                <button class="tab-button menu-item" onclick="openTab('vacances', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabVacances">🏖️ Vacances</button>
+                <button class="tab-button menu-item" onclick="openTab('quadrant', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabQuadrant">📋 Quadrant</button>
+                <button class="tab-button menu-item" onclick="openTab('rutes', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRoutes">📍 Rutes</button>
+                <button class="tab-button menu-item" onclick="openTab('vacances', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabVacances">🏖️ Vacances</button>
                 <button class="tab-button menu-item" onclick="openTab('comercials', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabComercials">💰 Comercials</button>
             </div>
             
             <!-- Desplegable para pestañas secundarias (fuera del contenedor overflow) -->
-            <div class="dropdown-more" id="moreDropdown" style="flex-shrink: 0;">
+            <div class="dropdown-more" id="moreDropdown" data-roles="coordinador,jefe_operaciones" style="flex-shrink: 0;">
                 <button class="tab-button" id="moreTabBtn" onclick="toggleMoreDropdown(event)">
                     <span id="moreTabLabel" data-i18n="tabMore">➕ Més</span> ▾
                 </button>
                 <div class="dropdown-more-content" id="moreDropdownContent">
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('ranking', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabRanking">⭐ Ranking</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('deutes', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabDeutes">⏳ Deutes</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('checklist', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabChecklist">✅ Chklst</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('gastos', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabGastos">💸 Despeses</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('inventari', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabInventari">📦 Inventari</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('sac_incidencies', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabSac">🛠️ SAC</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('notificador', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabNotificador">📩 Notificador</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('log', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabLog">📜 Log</button>
-                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('regles', this)" data-roles="comercial,coordinador,jefe_operaciones" data-i18n="tabRegles">📋 Normes</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('ranking', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRanking">⭐ Ranking</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('deutes', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabDeutes">⏳ Deutes</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('checklist', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabChecklist">✅ Chklst</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('gastos', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabGastos">💸 Despeses</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('inventari', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabInventari">📦 Inventari</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('sac_incidencies', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabSac">🛠️ SAC</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('notificador', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabNotificador">📩 Notificador</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('log', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabLog">📜 Log</button>
+                    <button class="dropdown-more-item menu-item" onclick="selectMoreTab('regles', this)" data-roles="coordinador,jefe_operaciones" data-i18n="tabRegles">📋 Normes</button>
                 </div>
             </div>
         </div>
@@ -531,6 +531,7 @@
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
                     <button class="dropdown-admin-item" onclick="openAdminPanel(); closeAdminDropdown();">⚙️ Panel Admin y Migraciones</button>
+                    <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();">📊 Assistent de Càrrega d'Històrics</button>
                     <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
                     <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
                 </div>
@@ -608,16 +609,13 @@
                 <div id="celebration-msg">🙁</div>
 
                 <!-- Sección de Importación Manual de JSONs legados y Migración Relacional -->
-                <div id="importJsonSection" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div id="importJsonSection" data-roles="coordinador,jefe_operaciones" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
                     <span style="font-size: 10px; color: #64748b; font-weight: 700; letter-spacing: 0.5px;" data-i18n="importSectionTitle">MIGRACIÓ E IMPORTACIÓ DE DADES</span>
-                    <div style="display: flex; gap: 8px;">
-                        <button class="btn-manage-coord" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;" onclick="document.getElementById('importFileSelector').click();" data-i18n="btnImportJson">📥 Importar JSON a KV</button>
-                        <button class="btn-manage-coord" style="background: #e8f5e9; color: #2e7d32; border-color: #a5d6a7;" onclick="document.getElementById('migrarCuadranteSelector').click();">📊 Migrar Quadrant Relacional</button>
-                        <button class="btn-manage-coord" style="background: #fff8e1; color: #f57f17; border-color: #ffe082;" onclick="document.getElementById('migrarDeudasSelector').click();">⏳ Migrar Deutes Relacional</button>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
+                        <button class="btn-manage-coord" style="background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; font-weight: 700; padding: 8px 16px;" onclick="openTab('migrador', this)">📊 OBRIR ASSISTENT DE CÀRREGA D'HISTÒRICS</button>
+                        <button class="btn-manage-coord" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;" onclick="document.getElementById('importFileSelector').click();" data-i18n="btnImportJson">📥 Importar JSON a KV Directe</button>
                     </div>
                     <input type="file" id="importFileSelector" accept=".json" style="display: none;" onchange="handleImportJsonFile(event)">
-                    <input type="file" id="migrarCuadranteSelector" accept=".json" style="display: none;" onchange="handleMigrarCuadrante(event)">
-                    <input type="file" id="migrarDeudasSelector" accept=".json" style="display: none;" onchange="handleMigrarDeudas(event)">
                 </div>
                 
                 <div class="footer-nyn">Núñez i Navarro Pàrkings © 2026</div>
@@ -641,6 +639,7 @@
     <div id="log" class="tab-content"><iframe data-src="log/log.html"></iframe></div>
     <div id="regles" class="tab-content"><iframe data-src="regles/regles.html"></iframe></div>
     <div id="adminPanel" class="tab-content"><iframe data-src="admin/admin.html"></iframe></div>
+    <div id="migrador" class="tab-content"><iframe data-src="migrador/migrador.html"></iframe></div>
 
     <script>
         // Configurar los badges del usuario y bienvenida
@@ -1526,6 +1525,114 @@
                     alert('❌ Error al processar el fitxer JSON: ' + err.message);
                 } finally {
                     event.target.value = ''; // Limpiar selector
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function handleMigrarCuadrante(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.json')) {
+                alert('⚠️ Només s\'admeten fitxers .json');
+                return;
+            }
+            
+            if (!confirm('⚠️ Segur que vols migrar les dades de quadrant relacional des de l\'arxiu?')) {
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const content = e.target.result;
+                    const parsed = JSON.parse(content);
+                    
+                    const result = await window.api.migrarJsonCuadrante(parsed);
+                    if (result.success) {
+                        alert(`✅ Migració de quadrant completada amb èxit! Turnos migrats: ${result.total}`);
+                        window.location.reload();
+                    } else {
+                        alert('❌ Error al migrar: ' + result.error);
+                    }
+                } catch (err) {
+                    alert('❌ Error al processar el fitxer: ' + err.message);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function handleMigrarDeudas(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.json')) {
+                alert('⚠️ Només s\'admeten fitxers .json');
+                return;
+            }
+            
+            if (!confirm('⚠️ Segur que vols migrar les deutes relacional des de l\'arxiu?')) {
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const content = e.target.result;
+                    const parsed = JSON.parse(content);
+                    
+                    const result = await window.api.migrarJsonDeutes(parsed);
+                    if (result.success) {
+                        alert(`✅ Migració de deutes completada amb èxit! Registres migrats: ${result.total}`);
+                        window.location.reload();
+                    } else {
+                        alert('❌ Error al migrar: ' + result.error);
+                    }
+                } catch (err) {
+                    alert('❌ Error al processar el fitxer: ' + err.message);
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function handleMigrarPrecios(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.json')) {
+                alert('⚠️ Només s\'admeten fitxers .json');
+                return;
+            }
+            
+            if (!confirm('⚠️ Segur que vols migrar els preus de comercials des de l\'arxiu?')) {
+                event.target.value = '';
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const content = e.target.result;
+                    const parsed = JSON.parse(content);
+                    
+                    const result = await window.api.migrarJsonComercials(parsed);
+                    if (result.success) {
+                        alert(`✅ Migració de preus comercials completada amb èxit! Mesos migrats: ${result.total}`);
+                        window.location.reload();
+                    } else {
+                        alert('❌ Error al migrar: ' + result.error);
+                    }
+                } catch (err) {
+                    alert('❌ Error al processar el fitxer: ' + err.message);
+                } finally {
+                    event.target.value = '';
                 }
             };
             reader.readAsText(file);

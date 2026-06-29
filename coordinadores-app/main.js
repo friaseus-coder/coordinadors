@@ -2016,10 +2016,9 @@ ipcMain.handle('app-close', async () => {
 });
 
 // 14. Handler de Migración de Deudas legacy a SQLite relacional
-ipcMain.handle('migrar-json-deutes', async (event, { filePath }) => {
+ipcMain.handle('migrar-json-deutes', async (event, { dataJSON }) => {
   try {
-    const raw = fs.readFileSync(filePath, 'utf8');
-    const deudasOld = JSON.parse(raw);
+    const deudasOld = typeof dataJSON === 'string' ? JSON.parse(dataJSON) : dataJSON;
 
     return new Promise((resolve) => {
       db.serialize(() => {
@@ -2031,7 +2030,6 @@ ipcMain.handle('migrar-json-deutes', async (event, { filePath }) => {
         `);
 
         deudasOld.forEach(d => {
-          // El importe puede venir formateado con coma en España, lo normalizamos
           let valorImport = typeof d.import === 'string' 
             ? Number(d.import.replace(',', '.')) 
             : Number(d.import);
@@ -2044,11 +2042,6 @@ ipcMain.handle('migrar-json-deutes', async (event, { filePath }) => {
             db.run("ROLLBACK;");
             resolve({ success: false, error: err.message });
           } else {
-            try {
-              fs.renameSync(filePath, filePath + '.MIGRADO');
-            } catch (renameErr) {
-              console.warn("No se pudo renombrar el archivo legacy, pero los datos se migraron.");
-            }
             resolve({ success: true, total: deudasOld.length });
           }
         });
@@ -2057,6 +2050,88 @@ ipcMain.handle('migrar-json-deutes', async (event, { filePath }) => {
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+// 14.1. Handler de Migración de Comerciales (Precios de Aparcamientos) legacy a SQLite
+ipcMain.handle('migrar-json-comercials', async (event, { dataJSON }) => {
+  return new Promise(async (resolve) => {
+    try {
+      const data = typeof dataJSON === 'string' ? JSON.parse(dataJSON) : dataJSON;
+      const dbComercial = obtenerConexionLocal('comercial');
+      
+      dbComercial.serialize(() => {
+        dbComercial.run("BEGIN TRANSACTION;");
+        
+        const stmt = dbComercial.prepare(`
+          INSERT OR REPLACE INTO kv_store (key, value, updated_at)
+          VALUES (?, ?, CURRENT_TIMESTAMP)
+        `);
+        
+        let insertados = 0;
+        
+        for (const [key, value] of Object.entries(data)) {
+          const isLegacyA = key.startsWith('nn_A_');
+          const isLegacyL = key.startsWith('nn_L_');
+          const isModernAlbert = key.startsWith('comercials_albert_');
+          const isModernLaura = key.startsWith('comercials_laura_');
+          
+          if (!isLegacyA && !isLegacyL && !isModernAlbert && !isModernLaura) {
+            continue;
+          }
+          
+          let coordId = '';
+          let coordNombre = '';
+          let mes = '';
+          let año = '2026';
+          
+          if (isLegacyA) {
+            coordId = 'albert';
+            coordNombre = 'Albert';
+            const parts = key.split('_');
+            mes = parts[2];
+            if (parts.length > 3) año = parts[3];
+          } else if (isLegacyL) {
+            coordId = 'laura';
+            coordNombre = 'Laura';
+            const parts = key.split('_');
+            mes = parts[2];
+            if (parts.length > 3) año = parts[3];
+          } else if (isModernAlbert) {
+            coordId = 'albert';
+            coordNombre = 'Albert';
+            const parts = key.split('_');
+            mes = parts[2];
+            if (parts.length > 3) año = parts[3];
+          } else if (isModernLaura) {
+            coordId = 'laura';
+            coordNombre = 'Laura';
+            const parts = key.split('_');
+            mes = parts[2];
+            if (parts.length > 3) año = parts[3];
+          }
+          
+          if (!mes) continue;
+          
+          const targetKey = `dades ${coordNombre}/comercials_${coordId}_${mes}_${año}`;
+          stmt.run(targetKey, JSON.stringify(value));
+          insertados++;
+        }
+        
+        stmt.finalize();
+        
+        dbComercial.run("COMMIT;", (err) => {
+          if (err) {
+            dbComercial.run("ROLLBACK;");
+            resolve({ success: false, error: err.message });
+          } else {
+            resolve({ success: true, total: insertados });
+          }
+        });
+      });
+    } catch (err) {
+      resolve({ success: false, error: err.message });
+    }
+  });
 });
 
 // 15. Handler de Migración de Cuadrante legacy a SQLite relacional
@@ -2175,6 +2250,76 @@ ipcMain.handle('migrar-json-cuadrante', async (event, { dataJSON }) => {
       resolve({ success: false, error: err.message });
     }
   });
+});
+
+// 15.1. Handler para seleccionar múltiples archivos JSON desde diálogos del sistema
+ipcMain.handle('seleccionar-archivos-migracion', async () => {
+  try {
+    const { canceled, filePaths } = await dialog.showOpenDialog(mainWindow, {
+      title: 'Seleccionar archivos JSON legados',
+      filters: [{ name: 'JSON Files', extensions: ['json'] }],
+      properties: ['openFile', 'multiSelections']
+    });
+    
+    if (canceled || filePaths.length === 0) {
+      return { success: false, reason: 'Cancelado por el usuario' };
+    }
+    
+    const files = filePaths.map(filePath => {
+      const name = path.basename(filePath);
+      const raw = fs.readFileSync(filePath, 'utf8');
+      return { name, content: JSON.parse(raw) };
+    });
+    
+    return { success: true, files };
+  } catch (error) {
+    console.error('[SELECT-MIGRACION] Error al seleccionar archivos:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 15.2. Handler para forzar la copia de seguridad interactiva pre-migración de la base de datos
+ipcMain.handle('crear-backup-migracion', async (event, { tipo }) => {
+  try {
+    let dbKey = 'operativa';
+    if (tipo === 'comerciales' || tipo === 'precios') {
+      dbKey = 'comercial';
+    } else if (tipo === 'deudas') {
+      dbKey = 'operativa';
+    } else if (tipo === 'gastos') {
+      dbKey = 'finanzas';
+    }
+    
+    const dbFile = DBS[dbKey];
+    if (!dbFile) {
+      return { success: false, error: 'Tipo de datos no asociado a una base de datos válida.' };
+    }
+    
+    const localDbPath = path.join(localDir, dbFile);
+    if (!fs.existsSync(localDbPath)) {
+      return { success: false, error: `El archivo local de base de datos no existe: ${dbFile}` };
+    }
+    
+    const fecha = new Date().toISOString().split('T')[0];
+    const defaultName = `Backup_PreMigracion_${tipo}_${fecha}.db`;
+    
+    const { canceled, filePath } = await dialog.showSaveDialog(mainWindow, {
+      title: 'Guardar copia de seguridad de base de datos',
+      defaultPath: defaultName,
+      filters: [{ name: 'SQLite Database', extensions: ['db'] }]
+    });
+    
+    if (canceled || !filePath) {
+      return { success: false, reason: 'Cancelado por el usuario' };
+    }
+    
+    fs.copyFileSync(localDbPath, filePath);
+    console.log(`[BACKUP-MIGRACION] Copia de seguridad guardada con éxito en: ${filePath}`);
+    return { success: true, filePath };
+  } catch (error) {
+    console.error('[BACKUP-MIGRACION] Error al crear la copia de seguridad:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // 16. Asistente para proponer agentes en el cuadrante inteligente
