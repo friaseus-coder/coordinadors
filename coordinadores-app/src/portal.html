@@ -523,14 +523,11 @@
                 </select>
             </div>
             <div id="userDisplayBadge" class="user-badge"></div>
-            
-            <!-- Menú Desplegable de Administración -->
-            <div class="dropdown-admin menu-item" id="adminDropdown" data-roles="coordinador,jefe_operaciones" style="display: none;">
+                   <div class="dropdown-admin menu-item" id="adminDropdown" data-roles="coordinador,jefe_operaciones" style="display: none;">
                 <button class="btn-manage-coord" onclick="toggleAdminDropdown(event)" data-i18n="btnAdministration">⚙️ Administració</button>
                 <div class="dropdown-admin-content" id="adminDropdownContent">
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
-                    <button class="dropdown-admin-item" onclick="openAdminPanel(); closeAdminDropdown();" data-i18n="adminMenuTitle">⚙️ Panel Admin y Migraciones</button>
                     <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();" data-i18n="adminMigratorTitle">📊 Assistent de Càrrega d'Històrics</button>
                     <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
                     <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
@@ -638,8 +635,8 @@
     <div id="notificador" class="tab-content"><iframe data-src="notificador/notificador.html"></iframe></div>
     <div id="log" class="tab-content"><iframe data-src="log/log.html"></iframe></div>
     <div id="regles" class="tab-content"><iframe data-src="regles/regles.html"></iframe></div>
-    <div id="adminPanel" class="tab-content"><iframe data-src="admin/admin.html"></iframe></div>
     <div id="migrador" class="tab-content"><iframe data-src="migrador/migrador.html"></iframe></div>
+
 
     <script>
         // Configurar los badges del usuario y bienvenida
@@ -1425,9 +1422,7 @@
             }
         }
 
-        function openAdminPanel() {
-            openTab('adminPanel', document.querySelector('.btn-manage-coord'));
-        }
+
 
         function autoNetejaLogs() {
             const ARA = new Date().getTime();

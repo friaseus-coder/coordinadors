@@ -1181,22 +1181,48 @@
                 }
                 else if (tipo === 'cuadrante') {
                     for (const [key, value] of Object.entries(content)) {
-                        if (key.startsWith('nyn_v12_')) {
+                        // Expresión regular robusta para detectar claves de cuadrante:
+                        // Debe terminar en _MATÍ_dia, _MATI_dia, _TARDA_dia o _NIT_dia
+                        if (/_(MATÍ|MATI|TARDA|NIT)_\d+$/i.test(key)) {
                             const parts = key.split('_');
-                            if (parts.length < 7) continue;
+                            if (parts.length < 5) continue;
                             
-                            const nombreParking = parts.slice(4, parts.length - 2).join(' ').toUpperCase().trim();
+                            // Extraer datos de atrás hacia adelante (Split Inverso)
+                            const dia = parts[parts.length - 1];
+                            const turno = parts[parts.length - 2].toUpperCase();
+                            const nombreParking = parts[parts.length - 3].toUpperCase().trim();
+                            const mesJS = parts[parts.length - 4];
+                            const año = parts[parts.length - 5];
+                            
                             parkingsEnJson.add(nombreParking);
                             
-                            let cellData = value;
+                            let cellData = {};
                             if (typeof value === 'string') {
-                                try { cellData = JSON.parse(value); } catch(e) { continue; }
+                                try { 
+                                    cellData = JSON.parse(value); 
+                                } catch(e) { 
+                                    console.error("Error al parsear celda de cuadrante:", e, value);
+                                    continue; 
+                                }
+                            } else if (value && typeof value === 'object') {
+                                cellData = value;
                             }
                             
                             const wName = (cellData.w || '').trim();
                             if (wName && wName !== '-' && wName !== '') {
                                 agentesEnJson.add(wName);
                             }
+                            
+                            // Estandarizar rawParts para mantener total compatibilidad con previsualizarImportacion y ejecutarMigracionFinal
+                            const rawPartsNormalized = [
+                                null, 
+                                null, 
+                                año, 
+                                mesJS, 
+                                null, 
+                                turno, 
+                                dia
+                            ];
                             
                             registrosProcesados.push({
                                 key: key,
@@ -1205,7 +1231,7 @@
                                 horas: cellData.h || '06:00-14:00',
                                 es_sub: cellData.s ? 1 : 0,
                                 nota: cellData.n || '',
-                                rawParts: parts
+                                rawParts: rawPartsNormalized
                             });
                         }
                     }
