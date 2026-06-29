@@ -385,3 +385,36 @@ Permite generar de manera automática y optimizada la propuesta de visitas para 
     *   Antes de escribir los nuevos datos, se limpia de forma segura el mes seleccionado del coordinador en el `localStorage` (sin alterar el resto de meses).
     *   Se distribuyen los aparcamientos en los días laborales (excluyendo festivos nacionales, locales, convenios o días de empresa) y en los fines de semana seleccionados.
     *   Por último, se invoca `persistence.syncSave()`, lo que asegura la escritura atómica y segura de todos los turnos generados en la base de datos centralizada en red a través de la API `write-db` con Mutex de Electron.
+
+---
+
+## 11. Compilación y Empaquetado del Ejecutable Portable (.exe)
+
+Para generar el ejecutable portable de la aplicación de Windows, se utiliza la herramienta `electron-packager`. El proceso empaqueta todo el código de la aplicación y sus dependencias de Node.js en un archivo ejecutable optimizado.
+
+### Requisitos Previos
+- Tener instalado [Node.js](https://nodejs.org/) y `npm` en el sistema.
+- Haber instalado las dependencias de desarrollo y producción ejecutando:
+  ```bash
+  npm install
+  ```
+
+### Comando de Compilación
+El comando para iniciar la compilación y empaquetado está definido en el script `package-win` de [package.json](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/package.json):
+```bash
+npm run package-win
+```
+
+### Flujo de Compilación
+Al ejecutar el comando, se realizan las siguientes acciones de forma automática:
+1. **Empaquetado de Electron**: `electron-packager` compila los recursos en la plataforma de destino de 64 bits para Windows (`--platform=win32 --arch=x64`) y genera la salida en el directorio compartimentado `dist/coordinadores-win32-x64/`.
+2. **Copia de Directorios de Datos**: Copia de manera recursiva la carpeta de datos estructurados de configuración (`dades/`) mediante `xcopy`.
+3. **Copia del Archivo de Configuración**: Copia del archivo `config.json` de sesión y red compartida en el directorio raíz del ejecutable.
+
+### Estructura de Salida
+Una vez completado el proceso con éxito, la carpeta resultante [dist/coordinadores-win32-x64/](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/dist/coordinadores-win32-x64) contiene:
+*   `coordinadores.exe`: El archivo ejecutable portable principal que inicia la intranet.
+*   `config.json`: Archivo de configuración en caliente (que contiene la ruta a las bases de datos SQLite en red y el rol por defecto).
+*   `dades/`: Carpeta que almacena las copias locales de contingencia para coordinadores y aparcamientos.
+*   `resources/app.asar`: Archivo comprimido ASAR que contiene todo el código fuente empaquetado y protegido de la aplicación (`src/`, `main.js`, `preload.js`, etc.).
+

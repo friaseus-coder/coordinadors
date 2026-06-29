@@ -438,7 +438,7 @@
         <header>
             <div>
                 <h1 data-i18n="migratorHeader">Assistent de Càrrega d'Històrics</h1>
-                <div class="subtitle">Migració intel·ligent i segura de dades llegades a SQLite</div>
+                <div class="subtitle" data-i18n="migratorSubtitle">Migració intel·ligent i segura de dades llegades a SQLite</div>
             </div>
             <div>
                 <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.5px;">PRO</span>
@@ -473,50 +473,54 @@
         <div class="step-content active" id="stepContent-1">
             <div class="alert alert-info">
                 <div class="alert-icon">💡</div>
-                <div>Selecciona el tipus de dades que vols migrar, indica si vols fusionar o sobrescriure les dades i tria els fitxers JSON a importar.</div>
+                <div data-i18n="alertStep1">Selecciona el tipus de dades que vols migrar, indica si vols fusionar o sobrescriure les dades i tria els fitxers JSON a importar.</div>
             </div>
 
             <div class="form-group">
-                <label>Tipus de Dades</label>
+                <label data-i18n="lblTipoDatos">Tipus de Dades</label>
                 <select id="tipoMigracion" onchange="actualizarInterfazTipo()">
-                    <option value="cuadrante" selected>📋 Quadrant de Torns</option>
-                    <option value="vacaciones">🏖️ Sol·licituds de Vacances</option>
-                    <option value="deudas">⏳ Deutes i Pagarés</option>
-                    <option value="comerciales">💰 Preus Comercials i Tarifes</option>
+                    <option value="cuadrante" selected data-i18n="optCuadrante">📋 Quadrant de Torns</option>
+                    <option value="vacaciones" data-i18n="optVacaciones">🏖️ Sol·licituds de Vacances</option>
+                    <option value="deudas" data-i18n="optDeudas">⏳ Deutes i Pagarés</option>
+                    <option value="comerciales" data-i18n="optComerciales">💰 Preus Comercials i Tarifes</option>
                 </select>
             </div>
 
             <div class="form-group">
-                <label>Estratègia de Càrrega</label>
+                <label data-i18n="lblEstrategia">Estratègia de Càrrega</label>
                 <div class="radio-group">
                     <div class="radio-option selected" id="optAdd" onclick="seleccionarEstrategia('add')">
                         <input type="radio" name="estrategia" value="add" checked style="pointer-events:none">
                         <div>
-                            <div class="radio-title">Afegir i Combinar Dades</div>
-                            <div class="radio-desc">Uneix les noves dades amb les existents. No elimina informació prèvia.</div>
+                            <div class="radio-title" data-i18n="optAddTitle">Afegir i Combinar Dades</div>
+                            <div class="radio-desc" data-i18n="optAddDesc">Uneix les noves dades amb les existents. No elimina informació prèvia.</div>
                         </div>
                     </div>
                     <div class="radio-option" id="optOverwrite" onclick="seleccionarEstrategia('overwrite')">
                         <input type="radio" name="estrategia" value="overwrite" style="pointer-events:none">
                         <div>
-                            <div class="radio-title">Sobrescriure / Netejar anterior</div>
-                            <div class="radio-desc">Esborra la informació del mòdul/dates coincidents abans d'inserir el nou històric.</div>
+                            <div class="radio-title" data-i18n="optOverwriteTitle">Sobrescriure / Netejar anterior</div>
+                            <div class="radio-desc" data-i18n="optOverwriteDesc">Esborra la informació del mòdul/dates coincidents abans d'inserir el nou històric.</div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <div class="form-group" style="margin-top: 24px;">
-                <label>Fitxers JSON Llegats</label>
-                <button class="btn btn-secondary" onclick="seleccionarArchivosJson()">
+                <label id="lblFitxersJson" data-i18n="lblFitxersJson">Fitxers JSON Llegats</label>
+                <button class="btn btn-secondary" id="btnSelectElectron" onclick="seleccionarArchivosJson()" data-i18n="btnSeleccionar">
                     📂 Seleccionar fitxers...
                 </button>
+                <button class="btn btn-secondary" id="btnSelectHtml5" style="display: none;" onclick="document.getElementById('inputArchivoJson').click()" data-i18n="btnSeleccionar">
+                    📂 Seleccionar fitxers...
+                </button>
+                <input type="file" id="inputArchivoJson" accept=".json" style="display: none;" onchange="manejarArchivoSeleccionado(event)">
                 <div id="fileListContainer" class="file-list" style="display: none;"></div>
             </div>
 
             <div class="btn-group">
                 <span></span>
-                <button class="btn btn-primary" id="btnGoToStep2" disabled onclick="avanzarPaso(2)">
+                <button class="btn btn-primary" id="btnGoToStep2" disabled onclick="avanzarPaso(2)" data-i18n="btnSeguent">
                     Següent Pas ➔
                 </button>
             </div>
@@ -527,26 +531,26 @@
             <div class="alert alert-warning">
                 <div class="alert-icon">⚠️</div>
                 <div>
-                    <strong>Copia de Seguretat Obligatòria Preventiva</strong><br>
-                    Abans de modificar qualsevol base de dades relacional, el sistema requereix generar una còpia de seguretat. Guarda el fitxer en una ubicació segura per poder restaurar en cas d'error.
+                    <strong data-i18n="backupTitle">Copia de Seguretat Obligatòria Preventiva</strong><br>
+                    <span data-i18n="backupDesc">Abans de modificar qualsevol base de dades relacional, el sistema requereix generar una còpia de seguretat. Guarda el fitxer en una ubicació segura per poder restaurar en cas d'error.</span>
                 </div>
             </div>
 
             <div style="text-align: center; padding: 30px 20px; border: 1px dashed var(--border); border-radius: 12px; background: #fafafa; margin-bottom: 20px;">
                 <div style="font-size: 32px; margin-bottom: 12px;">🔒</div>
-                <h3 style="margin: 0 0 8px 0; font-size: 15px; color: var(--primary);">Bases de dades a protegir:</h3>
+                <h3 style="margin: 0 0 8px 0; font-size: 15px; color: var(--primary);" data-i18n="lblBdsProteger">Bases de dades a protegir:</h3>
                 <p id="txtBdsAfectadas" style="font-size: 12px; color: var(--text-muted); margin: 0 0 20px 0;">operativa_rrhh.db</p>
-                <button class="btn btn-primary" id="btnHacerBackup" onclick="crearCopiaSeguridad()">
+                <button class="btn btn-primary" id="btnHacerBackup" onclick="crearCopiaSeguridad()" data-i18n="btnHacerBackup">
                     🛡️ Generar Còpia de Seguretat...
                 </button>
                 <div id="txtStatusBackup" style="margin-top: 12px; font-size: 12px; font-weight: 600; display: none;"></div>
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-secondary" onclick="retrocederPaso(1)">
+                <button class="btn btn-secondary" onclick="retrocederPaso(1)" data-i18n="btnEnrere">
                     ⬅ Enrere
                 </button>
-                <button class="btn btn-primary" id="btnGoToStep3" disabled onclick="analizarDatosYProceder()">
+                <button class="btn btn-primary" id="btnGoToStep3" disabled onclick="analizarDatosYProceder()" data-i18n="btnAnalitzar">
                     Analitzar Dades ➔
                 </button>
             </div>
@@ -557,28 +561,33 @@
             <div class="alert alert-warning" id="alertDiscrepancias">
                 <div class="alert-icon">🔗</div>
                 <div>
-                    <strong>Chequeig de Catàlegs: S'han trobat discrepàncies.</strong><br>
-                    Hi ha noms d'aparcaments o persones al JSON que no consten exactament a la base de datos de catàlegs. Associa'ls de forma manual per no perdre les relacions, o tria crear-los de nou.
+                    <strong data-i18n="alertDiscrepanciasTitle">Chequeig de Catàlegs: S'han trobat discrepàncies.</strong><br>
+                    <span data-i18n="alertDiscrepanciasDesc">Hi ha noms d'aparcaments o persones al JSON que no consten exactament a la base de datos de catàlegs. Associa'ls de forma manual per no perdre les relacions, o tria crear-los de nou.</span>
                 </div>
             </div>
             
             <div class="alert alert-success" id="alertCleanCatalogs" style="display: none;">
                 <div class="alert-icon">✅</div>
                 <div>
-                    <strong>Catàlegs Sincronitzats!</strong><br>
-                    Tots els aparcamientos i persones del JSON coincideixen exactament amb els existents a la base de dades. Pots continuar sense realitzar matching manual.
+                    <strong data-i18n="alertCleanCatalogsTitle">Catàlegs Sincronitzats!</strong><br>
+                    <span data-i18n="alertCleanCatalogsDesc">Tots els aparcamientos i persones del JSON coincideixen exactament amb els existents a la base de dades. Pots continuar sense realitzar matching manual.</span>
                 </div>
+            </div>
+
+            <div class="alert alert-success" id="infoComercialesMatching" style="display: none;">
+                <div class="alert-icon">📢</div>
+                <div data-i18n="infoComercialesMatching">No es requereix mapeig de catàlegs per a Comerciales. Els preus i tarifes s'importaran directament a la taula plana de Comerciales.</div>
             </div>
 
             <!-- Matching Aparcamientos -->
             <div id="sectionMatchParkings" style="margin-bottom: 28px; display: none;">
-                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;">🚗 Mapeig d'Aparcaments</h3>
+                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;" data-i18n="titleMapeoParkings">🚗 Mapeig d'Aparcaments</h3>
                 <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
                     <table class="matching-table">
                         <thead>
                             <tr>
-                                <th style="width: 45%;">Nom al JSON Llegat</th>
-                                <th style="width: 55%;">Associar amb base de dades</th>
+                                <th style="width: 45%;" data-i18n="thJsonName">Nom al JSON Llegat</th>
+                                <th style="width: 55%;" data-i18n="thDbAssociate">Associar amb base de dades</th>
                             </tr>
                         </thead>
                         <tbody id="bodyMatchParkings"></tbody>
@@ -588,13 +597,13 @@
 
             <!-- Matching Personas -->
             <div id="sectionMatchAgentes" style="display: none;">
-                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;">👥 Mapeig de Persones / Agents</h3>
+                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;" data-i18n="titleMapeoAgentes">👥 Mapeig de Persones / Agents</h3>
                 <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
                     <table class="matching-table">
                         <thead>
                             <tr>
-                                <th style="width: 45%;">Nom al JSON Llegat</th>
-                                <th style="width: 55%;">Associar amb base de dades</th>
+                                <th style="width: 45%;" data-i18n="thJsonName">Nom al JSON Llegat</th>
+                                <th style="width: 55%;" data-i18n="thDbAssociate">Associar amb base de dades</th>
                             </tr>
                         </thead>
                         <tbody id="bodyMatchAgentes"></tbody>
@@ -603,10 +612,10 @@
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-secondary" onclick="retrocederPaso(2)">
+                <button class="btn btn-secondary" onclick="retrocederPaso(2)" data-i18n="btnEnrere">
                     ⬅ Enrere
                 </button>
-                <button class="btn btn-primary" onclick="previsualizarImportacion()">
+                <button class="btn btn-primary" onclick="previsualizarImportacion()" data-i18n="btnPrevisualitzar">
                     Previsualitzar Importació ➔
                 </button>
             </div>
@@ -616,15 +625,15 @@
         <div class="step-content" id="stepContent-4">
             <div class="alert alert-info">
                 <div class="alert-icon">👁️</div>
-                <div>Aquesta és una previsualització dels primers 100 registres que s'escriuran a la base de dades relacional. Si estàs d'acord, clica a "Confirmar i Importar".</div>
+                <div data-i18n="previewHelp">Aquesta és una previsualització dels primers registres que s'escriuran a la base de dades relacional. Si estàs d'acord, clica a "Confirmar i Importar".</div>
             </div>
 
             <div style="display: flex; gap: 20px; margin-bottom: 16px;">
                 <div style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fafafa; font-size: 12px;">
-                    <strong>Total Registres Detectats:</strong> <span id="lblTotalRegistros" style="font-weight: 700; color: var(--primary);">0</span>
+                    <strong data-i18n="lblTotalRegistrosDetectados">Total Registres Detectats:</strong> <span id="lblTotalRegistros" style="font-weight: 700; color: var(--primary);">0</span>
                 </div>
                 <div style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fafafa; font-size: 12px;">
-                    <strong>Estratègia Triada:</strong> <span id="lblEstrategiaTriada" style="font-weight: 700; text-transform: uppercase;">Afegeix</span>
+                    <strong data-i18n="lblEstrategiaTriadaTxt">Estratègia Triada:</strong> <span id="lblEstrategiaTriada" style="font-weight: 700; text-transform: uppercase;">Afegeix</span>
                 </div>
             </div>
 
@@ -636,10 +645,10 @@
             </div>
 
             <div class="btn-group">
-                <button class="btn btn-secondary" onclick="retrocederPaso(3)">
+                <button class="btn btn-secondary" onclick="retrocederPaso(3)" data-i18n="btnEnrere">
                     ⬅ Enrere
                 </button>
-                <button class="btn btn-primary" id="btnEjecutarMigracion" onclick="ejecutarMigracionFinal()">
+                <button class="btn btn-primary" id="btnEjecutarMigracion" onclick="ejecutarMigracionFinal()" data-i18n="btnConfirmarImportar">
                     🚀 Confirmar i Importar
                 </button>
             </div>
@@ -649,7 +658,7 @@
         <div class="step-content" id="stepContent-5">
             <div class="success-box">
                 <div class="icon">🎉</div>
-                <h2 style="margin: 0 0 8px 0; color: var(--success); font-size: 18px;">Migració Completada amb Èxit!</h2>
+                <h2 style="margin: 0 0 8px 0; color: var(--success); font-size: 18px;" data-i18n="successTitle">Migració Completada amb Èxit!</h2>
                 <p id="txtResultadoFinal" style="font-size: 13px; color: var(--text-muted); margin: 0 0 20px 0;">S'han importat correctament 0 registres relacionals en la base de dades.</p>
                 
                 <div id="sectionDatosExcluidos" style="display: none; padding: 16px; border: 1px solid #fca5a5; border-radius: 10px; background: #fff5f5; max-width: 500px; margin: 24px auto;">
@@ -661,10 +670,10 @@
                 </div>
 
                 <div style="margin-top: 30px;">
-                    <button class="btn btn-primary" onclick="reiniciarAsistente()">
+                    <button class="btn btn-primary" onclick="reiniciarAsistente()" data-i18n="btnReiniciar">
                         🔄 Iniciar una altra migració
                     </button>
-                    <button class="btn btn-secondary" onclick="cerrarAsistente()">
+                    <button class="btn btn-secondary" onclick="cerrarAsistente()" data-i18n="btnTornarPortal">
                         🚪 Tornar al Portal
                     </button>
                 </div>
@@ -673,6 +682,118 @@
     </div>
 
     <script>
+        // Diccionario de traducción local para el Migrador (Catalán / Castellano)
+        const migradorTranslations = {
+            ca: {
+                migratorHeader: "Assistent de Càrrega d'Històrics",
+                migratorSubtitle: "Migració intel·ligent i segura de dades llegades a SQLite",
+                stepConfig: "CONFIGURAR",
+                stepBackup: "SEGURETAT",
+                stepMatch: "MATCHING",
+                stepPreview: "PREVISUALITZAR",
+                stepDone: "FINALITZAT",
+                alertStep1: "Selecciona el tipus de dades que vols migrar, indica si vols fusionar o sobrescriure les dades i tria els fitxers JSON a importar.",
+                lblTipoDatos: "Tipus de Dades",
+                optCuadrante: "📋 Quadrant de Torns",
+                optVacaciones: "🏖️ Sol·licituds de Vacances",
+                optDeudas: "⏳ Deutes i Pagarés",
+                optComerciales: "💰 Preus Comercials i Tarifes",
+                lblEstrategia: "Estratègia de Càrrega",
+                optAddTitle: "Afegir i Combinar Dades",
+                optAddDesc: "Uneix les noves dades amb les existents. No elimina informació prèvia.",
+                optOverwriteTitle: "Sobrescriure / Netejar anterior",
+                optOverwriteDesc: "Esborra la informació del mòdul/dates coincidents abans d'inserir el nou històric.",
+                lblFitxersJson: "Fitxers JSON Llegats",
+                btnSeleccionar: "📂 Seleccionar fitxers...",
+                btnSeguent: "Següent Pas ➔",
+                backupTitle: "Còpia de Seguretat Obligatòria Preventiva",
+                backupDesc: "Abans de modificar qualsevol base de dades relacional, el sistema requereix generar una còpia de seguretat. Guarda el fitxer en una ubicació segura per poder restaurar en cas d'error.",
+                lblBdsProteger: "Bases de dades a protegir:",
+                btnHacerBackup: "🛡️ Generar Còpia de Seguretat...",
+                btnEnrere: "⬅ Enrere",
+                btnAnalitzar: "Analitzar Dades ➔",
+                alertDiscrepanciasTitle: "Chequeig de Catàlegs: S'han trobat discrepàncies.",
+                alertDiscrepanciasDesc: "Hi ha noms d'aparcaments o persones al JSON que no consten exactament a la base de dades de catàlegs. Associa'ls de forma manual per no perdre les relacions, o tria crear-los de nou.",
+                alertCleanCatalogsTitle: "Catàlegs Sincronitzats!",
+                alertCleanCatalogsDesc: "Tots els aparcaments i persones del JSON coincideixen exactament amb els existents a la base de dades. Pots continuar sense realitzar matching manual.",
+                titleMapeoParkings: "🚗 Mapeig d'Aparcaments",
+                thJsonName: "Nom al JSON Llegat",
+                thDbAssociate: "Associar amb base de dades",
+                titleMapeoAgentes: "👥 Mapeig de Persones / Agents",
+                btnPrevisualitzar: "Previsualitzar Importació ➔",
+                previewHelp: "Aquesta és una previsualització dels primers registres que s'escriuran a la base de dades relacional. Si estàs d'acord, clica a 'Confirmar i Importar'.",
+                lblTotalRegistrosDetectados: "Total Registres Detectats:",
+                lblEstrategiaTriadaTxt: "Estratègia Triada:",
+                btnConfirmarImportar: "🚀 Confirmar i Importar",
+                successTitle: "Migració Completada amb Èxit!",
+                successDesc: "S'han importat correctament {count} registres relacionals en la base de dades.",
+                btnReiniciar: "🔄 Iniciar una altra migració",
+                btnTornarPortal: "🚪 Tornar al Portal",
+                infoComercialesMatching: "📢 No es requereix mapeig de catàlegs per a Comerciales. Els preus i tarifes s'importaran directament a la taula plana de Comerciales.",
+                alertNoArchivo: "Si us plau, selecciona un fitxer JSON vàlid.",
+                alertErrorLeer: "Error en llegir el fitxer JSON.",
+                alertErrorParse: "El fitxer no conté un JSON vàlid o té un format incorrecte.",
+                alertImportResumen: "Migració de Comerciales completada:\n- Èxits: {exitos}\n- Errors: {errores}",
+                txtCreandoTabla: "Creant taula 'comerciales' si no existeix...",
+                txtImportandoFilas: "Important registres... ({progreso}%)",
+                btnProcessant: "Processant importació..."
+            },
+            es: {
+                migratorHeader: "Asistente de Carga de Históricos",
+                migratorSubtitle: "Migración inteligente y segura de datos legados a SQLite",
+                stepConfig: "CONFIGURAR",
+                stepBackup: "SEGURIDAD",
+                stepMatch: "MATCHING",
+                stepPreview: "PREVISUALIZAR",
+                stepDone: "FINALIZADO",
+                alertStep1: "Selecciona el tipo de datos que deseas migrar, indica si deseas fusionar o sobrescribir los datos y elige los archivos JSON a importar.",
+                lblTipoDatos: "Tipo de Datos",
+                optCuadrante: "📋 Cuadrante de Turnos",
+                optVacaciones: "🏖️ Solicitudes de Vacaciones",
+                optDeudas: "⏳ Deudas y Pagarés",
+                optComerciales: "💰 Precios Comerciales y Tarifas",
+                lblEstrategia: "Estrategia de Carga",
+                optAddTitle: "Añadir y Combinar Datos",
+                optAddDesc: "Une los nuevos datos con los existentes. No elimina información previa.",
+                optOverwriteTitle: "Sobrescribir / Limpiar anterior",
+                optOverwriteDesc: "Borra la información del módulo/fechas coincidentes antes de insertar el nuevo histórico.",
+                lblFitxersJson: "Archivos JSON Legados",
+                btnSeleccionar: "📂 Seleccionar archivos...",
+                btnSeguent: "Siguiente Paso ➔",
+                backupTitle: "Copia de Seguridad Obligatoria Preventiva",
+                backupDesc: "Antes de modificar cualquier base de datos relacional, el sistema requiere generar una copia de seguridad. Guarda el archivo en una ubicación segura para poder restaurar en caso de error.",
+                lblBdsProteger: "Bases de datos a proteger:",
+                btnHacerBackup: "🛡️ Generar Copia de Seguridad...",
+                btnEnrere: "⬅ Atrás",
+                btnAnalitzar: "Analizar Datos ➔",
+                alertDiscrepanciasTitle: "Chequeo de Catálogos: Se han encontrado discrepancias.",
+                alertDiscrepanciasDesc: "Hay nombres de aparcamientos o personas en el JSON que no constan exactamente en la base de datos de catálogos. Asócielos de forma manual para no perder las relaciones, o elija crearlos de nuevo.",
+                alertCleanCatalogsTitle: "¡Catálogos Sincronizados!",
+                alertCleanCatalogsDesc: "Todos los aparcamientos y personas del JSON coinciden exactamente con los existentes en la base de datos. Puedes continuar sin realizar matching manual.",
+                titleMapeoParkings: "🚗 Mapeo de Aparcamientos",
+                thJsonName: "Nombre en JSON Legado",
+                thDbAssociate: "Asociar con base de datos",
+                titleMapeoAgentes: "👥 Mapeo de Persones / Agentes",
+                btnPrevisualitzar: "Previsualizar Importación ➔",
+                previewHelp: "Esta es una previsualización de los primeros registros que se escribirán en la base de datos relacional. Si estás de acuerdo, clica en 'Confirmar e Importar'.",
+                lblTotalRegistrosDetectados: "Total Registros Detectados:",
+                lblEstrategiaTriadaTxt: "Estrategia Elegida:",
+                btnConfirmarImportar: "🚀 Confirmar e Importar",
+                successTitle: "¡Migración Completada con Éxito!",
+                successDesc: "Se han importado correctamente {count} registros relacionales en la base de datos.",
+                btnReiniciar: "🔄 Iniciar otra migración",
+                btnTornarPortal: "🚪 Volver al Portal",
+                infoComercialesMatching: "📢 No se requiere mapeo de catálogos para Comerciales. Los precios y tarifas se importarán directamente en la tabla plana de Comerciales.",
+                alertNoArchivo: "Por favor, selecciona un archivo JSON válido.",
+                alertErrorLeer: "Error al leer el archivo JSON.",
+                alertErrorParse: "El archivo no contiene un JSON válido o tiene un formato incorrecto.",
+                alertImportResumen: "Migración de Comerciales completada:\n- Éxitos: {exitos}\n- Errores: {errores}",
+                txtCreandoTabla: "Creando tabla 'comerciales' si no existe...",
+                txtImportandoFilas: "Importando registros... ({progreso}%)",
+                btnProcessant: "Procesando importación..."
+            }
+        };
+
         // Configuración y variables de estado del asistente
         let pasoActual = 1;
         let selectedFiles = [];
@@ -689,6 +810,9 @@
         let registrosProcesados = []; // Todos los registros leídos del JSON
         let registrosExcluidos = []; // Registros excluidos de la importación
         let registrosParaInsertar = []; // Registros mapeados listos para base de datos
+        
+        // Comerciales: datos desencapsulados listos para importar
+        let datosAImportar = [];
         
         // Obtener APIs de Electron de forma segura
         const electronApi = window.api;
@@ -709,6 +833,17 @@
 
         // Al cargar la ventana
         window.addEventListener('load', async () => {
+            // Fusionar traducciones locales antes de aplicar
+            if (window.i18n && window.i18n.translations) {
+                Object.keys(migradorTranslations).forEach(lang => {
+                    if (window.i18n.translations[lang]) {
+                        Object.assign(window.i18n.translations[lang], migradorTranslations[lang]);
+                    }
+                });
+            }
+            if (window.i18n && typeof window.i18n.translatePage === 'function') {
+                window.i18n.translatePage();
+            }
             await loadCatalogos();
             actualizarInterfazTipo();
         });
@@ -721,6 +856,7 @@
             registrosProcesados = [];
             registrosExcluidos = [];
             registrosParaInsertar = [];
+            datosAImportar = [];
             matchAparcamientosMap.clear();
             matchAgentesMap.clear();
             
@@ -729,6 +865,7 @@
             document.getElementById('btnGoToStep3').disabled = true;
             document.getElementById('btnHacerBackup').disabled = false;
             document.getElementById('txtStatusBackup').style.display = 'none';
+            document.getElementById('inputArchivoJson').value = '';
             
             // Reset indicators
             for (let i = 1; i <= 5; i++) {
@@ -753,14 +890,105 @@
         function actualizarInterfazTipo() {
             const tipo = document.getElementById('tipoMigracion').value;
             const txtBds = document.getElementById('txtBdsAfectadas');
+            const btnSelectElectron = document.getElementById('btnSelectElectron');
+            const btnSelectHtml5 = document.getElementById('btnSelectHtml5');
+            const fileListContainer = document.getElementById('fileListContainer');
+            
+            fileListContainer.style.display = 'none';
+            fileListContainer.innerHTML = '';
+            selectedFiles = [];
+            datosAImportar = [];
+            document.getElementById('btnGoToStep2').disabled = true;
+            document.getElementById('inputArchivoJson').value = '';
             
             if (tipo === 'comerciales') {
                 txtBds.textContent = 'comercial.db';
-            } else if (tipo === 'gastos') {
-                txtBds.textContent = 'finanzas_inventario.db';
+                btnSelectElectron.style.display = 'none';
+                btnSelectHtml5.style.display = 'inline-flex';
             } else {
-                txtBds.textContent = 'operativa_rrhh.db';
+                btnSelectHtml5.style.display = 'none';
+                btnSelectElectron.style.display = 'inline-flex';
+                if (tipo === 'gastos') {
+                    txtBds.textContent = 'finanzas_inventario.db';
+                } else {
+                    txtBds.textContent = 'operativa_rrhh.db';
+                }
             }
+        }
+
+        function manejarArchivoSeleccionado(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsedJson = JSON.parse(e.target.result);
+                    
+                    // Extraer y desencapsular
+                    datosAImportar = [];
+                    for (const [key, value] of Object.entries(parsedJson)) {
+                        // Ignorar claves de metadatos conocidas
+                        if (key.includes('last_export_time') || key.includes('last_export_author')) {
+                            continue;
+                        }
+                        
+                        let rows = [];
+                        if (typeof value === 'string' && value.startsWith('[[')) {
+                            rows = JSON.parse(value);
+                        } else if (Array.isArray(value)) {
+                            rows = value;
+                        }
+                        
+                        if (Array.isArray(rows)) {
+                            rows.forEach(row => {
+                                // Cada fila de comercial debe tener exactamente 7 posiciones de datos
+                                if (Array.isArray(row) && row.length >= 7) {
+                                    datosAImportar.push(row);
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Llenar selectedFiles para que el asistente tenga el nombre y sea compatible
+                    selectedFiles = [{ name: file.name, content: parsedJson }];
+                    
+                    // Visualizar archivo cargado
+                    const container = document.getElementById('fileListContainer');
+                    container.innerHTML = '';
+                    container.style.display = 'block';
+                    
+                    const item = document.createElement('div');
+                    item.className = 'file-item';
+                    
+                    const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
+                    const successMsg = isCa ? "Lectura completada amb èxit" : "Lectura completada con éxito";
+                    item.innerHTML = `
+                        <span class="file-name">📄 ${file.name}</span>
+                        <span class="file-size">${successMsg} (${datosAImportar.length} reg.)</span>
+                    `;
+                    container.appendChild(item);
+                    
+                    if (datosAImportar.length > 0) {
+                        document.getElementById('btnGoToStep2').disabled = false;
+                    } else {
+                        document.getElementById('btnGoToStep2').disabled = true;
+                    }
+                } catch (err) {
+                    console.error("Error al procesar el archivo JSON:", err);
+                    const msg = window.i18n && window.i18n.t ? window.i18n.t('alertErrorParse') : "El archivo no contiene un JSON válido o tiene un formato incorrecto.";
+                    alert(msg);
+                    document.getElementById('btnGoToStep2').disabled = true;
+                }
+            };
+            
+            reader.onerror = function() {
+                const msg = window.i18n && window.i18n.t ? window.i18n.t('alertErrorLeer') : "Error al leer el archivo JSON.";
+                alert(msg);
+                document.getElementById('btnGoToStep2').disabled = true;
+            };
+            
+            reader.readAsText(file);
         }
 
         function seleccionarEstrategia(est) {
@@ -869,6 +1097,19 @@
         // PASO 3: Análisis de catálogos y extracción de entidades
         async function analizarDatosYProceder() {
             const tipo = document.getElementById('tipoMigracion').value;
+            
+            if (tipo === 'comerciales') {
+                document.getElementById('alertDiscrepancias').style.display = 'none';
+                document.getElementById('alertCleanCatalogs').style.display = 'none';
+                document.getElementById('infoComercialesMatching').style.display = 'flex';
+                document.getElementById('sectionMatchParkings').style.display = 'none';
+                document.getElementById('sectionMatchAgentes').style.display = 'none';
+                avanzarPaso(3);
+                return;
+            }
+            
+            // Ocultar información de Comerciales en caso de otros tipos
+            document.getElementById('infoComercialesMatching').style.display = 'none';
             
             let parkingsEnJson = new Set();
             let agentesEnJson = new Set();
@@ -1096,8 +1337,17 @@
             registrosParaInsertar = [];
             registrosExcluidos = [];
             
-            document.getElementById('lblTotalRegistros').textContent = registrosProcesados.length;
-            document.getElementById('lblEstrategiaTriada').textContent = estrategia === 'add' ? 'Afegir' : 'Sobrescriure';
+            const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
+            
+            if (tipo === 'comerciales') {
+                document.getElementById('lblTotalRegistros').textContent = datosAImportar.length;
+            } else {
+                document.getElementById('lblTotalRegistros').textContent = registrosProcesados.length;
+            }
+            
+            document.getElementById('lblEstrategiaTriada').textContent = estrategia === 'add' 
+                ? (isCa ? 'Afegir' : 'Añadir') 
+                : (isCa ? 'Sobrescriure' : 'Sobrescribir');
             
             const head = document.getElementById('headPreview');
             const body = document.getElementById('bodyPreview');
@@ -1107,13 +1357,21 @@
             
             let headers = [];
             if (tipo === 'cuadrante') {
-                headers = ['DATA', 'APARCAMENT', 'PERSONA / AGENT', 'TORN', 'HORES', 'ESTAT'];
+                headers = isCa 
+                    ? ['DATA', 'APARCAMENT', 'PERSONA / AGENT', 'TORN', 'HORES', 'ESTAT']
+                    : ['FECHA', 'APARCAMIENTO', 'PERSONA / AGENTE', 'TURNO', 'HORAS', 'ESTADO'];
             } else if (tipo === 'vacaciones') {
-                headers = ['AGENT / PERSONA', 'INICI', 'FI', 'ESTAT'];
+                headers = isCa 
+                    ? ['AGENT / PERSONA', 'INICI', 'FI', 'ESTAT']
+                    : ['AGENTE / PERSONA', 'INICIO', 'FIN', 'ESTADO'];
             } else if (tipo === 'deudas') {
-                headers = ['COMERCIAL', 'CLIENT', 'IMPORT', 'DATA', 'ESTAT'];
+                headers = isCa 
+                    ? ['COMERCIAL', 'CLIENT', 'IMPORT', 'DATA', 'ESTAT']
+                    : ['COMERCIAL', 'CLIENTE', 'IMPORTE', 'FECHA', 'ESTADO'];
             } else if (tipo === 'comerciales') {
-                headers = ['COORDINADOR', 'CENTRE', 'TARIFA PROMEDIO', 'ESTAT'];
+                headers = isCa 
+                    ? ['NOM', 'ADREÇA', 'PLACES LLIURES', 'PLANTES', 'CAPACITAT', 'TARIFA', 'NOTES']
+                    : ['NOMBRE', 'DIRECCIÓN', 'PLAZAS LIBRES', 'PLANTAS', 'CAPACIDAD', 'TARIFA', 'NOTAS'];
             }
             
             const trHead = document.createElement('tr');
@@ -1126,130 +1384,129 @@
 
             let countVisible = 0;
             
-            registrosProcesados.forEach((reg, i) => {
-                let status = 'ok';
-                let cells = [];
-                
-                if (tipo === 'deudas') {
-                    const agentName = reg.comercial;
-                    const destMatch = matchAgentesMap.get(agentName);
-                    
-                    if (destMatch === 'SKIP') {
-                        status = 'skip';
-                        registrosExcluidos.push(reg);
-                    } else {
-                        registrosParaInsertar.push({
-                            comercial: agentName,
-                            cliente: reg.cliente,
-                            import: reg.import,
-                            fecha: reg.fecha,
-                            agenteId: destMatch
-                        });
-                        status = destMatch === 'NEW' ? 'mapped' : 'ok';
-                    }
-                    
-                    cells = [reg.fecha, reg.comercial, reg.cliente, reg.import];
-                }
-                else if (tipo === 'vacaciones') {
-                    const agentName = reg.nombre;
-                    const destMatch = matchAgentesMap.get(agentName);
-                    
-                    if (destMatch === 'SKIP') {
-                        status = 'skip';
-                        registrosExcluidos.push(reg);
-                    } else {
-                        registrosParaInsertar.push({
-                            nombre: agentName,
-                            fecha_inicio: reg.fecha_inicio,
-                            fecha_fin: reg.fecha_fin,
-                            agenteId: destMatch
-                        });
-                        status = destMatch === 'NEW' ? 'mapped' : 'ok';
-                    }
-                    
-                    cells = [reg.nombre, reg.fecha_inicio, reg.fecha_fin];
-                }
-                else if (tipo === 'comerciales') {
-                    const pkName = reg.centro;
-                    const destMatch = matchAparcamientosMap.get(pkName);
-                    
-                    if (destMatch === 'SKIP') {
-                        status = 'skip';
-                        registrosExcluidos.push(reg);
-                    } else {
-                        registrosParaInsertar.push({
-                            key: reg.key,
-                            coordinador: reg.coordinador,
-                            centro: reg.centro,
-                            direccion: reg.direccion,
-                            fixes: reg.fixes,
-                            variables: reg.variables,
-                            vacants: reg.vacants,
-                            tarifa: reg.tarifa,
-                            observaciones: reg.observaciones,
-                            parkingId: destMatch
-                        });
-                        status = destMatch === 'NEW' ? 'mapped' : 'ok';
-                    }
-                    
-                    cells = [reg.coordinador, reg.centro, reg.tarifa];
-                }
-                else if (tipo === 'cuadrante') {
-                    const pkName = reg.parking;
-                    const agName = reg.agente;
-                    
-                    const destPkMatch = matchAparcamientosMap.get(pkName);
-                    const destAgMatch = agName ? matchAgentesMap.get(agName) : null;
-                    
-                    if (destPkMatch === 'SKIP' || destAgMatch === 'SKIP') {
-                        status = 'skip';
-                        registrosExcluidos.push(reg);
-                    } else {
-                        const parts = reg.rawParts;
-                        const año = parts[2];
-                        const mes = parts[3];
-                        const dia = parts[parts.length - 1];
-                        const turno = parts[parts.length - 2];
-                        
-                        const mesNum = (Number(mes) + 1).toString().padStart(2, '0');
-                        const diaNum = Number(dia).toString().padStart(2, '0');
-                        const fechaStr = `${año}-${mesNum}-${diaNum}`;
-                        
-                        registrosParaInsertar.push({
-                            fecha: fechaStr,
-                            parking: pkName,
-                            agente: agName,
-                            turno: turno,
-                            horas: reg.horas,
-                            es_sub: reg.es_sub,
-                            nota: reg.nota,
-                            parkingId: destPkMatch,
-                            agenteId: destAgMatch
-                        });
-                        status = (destPkMatch === 'NEW' || destAgMatch === 'NEW') ? 'mapped' : 'ok';
-                    }
-                    
-                    cells = [reg.rawParts[2] + '-' + (Number(reg.rawParts[3])+1) + '-' + reg.rawParts[reg.rawParts.length-1], reg.parking, reg.agente || '(Vaci)', reg.rawParts[reg.rawParts.length-2], reg.horas];
-                }
-                
-                if (countVisible < 100 && status !== 'skip') {
+            if (tipo === 'comerciales') {
+                // Mostrar solo los primeros 15 registros de comerciales
+                const maxPreview = Math.min(15, datosAImportar.length);
+                for (let idx = 0; idx < maxPreview; idx++) {
+                    const row = datosAImportar[idx];
                     const tr = document.createElement('tr');
-                    cells.forEach(c => {
+                    
+                    for (let c = 0; c < 7; c++) {
                         const td = document.createElement('td');
-                        td.textContent = c;
+                        td.textContent = row[c] !== undefined ? row[c] : '';
                         tr.appendChild(td);
-                    });
-                    
-                    const tdStatus = document.createElement('td');
-                    tdStatus.innerHTML = status === 'mapped' 
-                        ? `<span class="preview-status mapped">Nou Catàleg</span>` 
-                        : `<span class="preview-status ok">Correcte</span>`;
-                    tr.appendChild(tdStatus);
-                    
+                    }
                     body.appendChild(tr);
-                    countVisible++;
                 }
-            });
+            } else {
+                registrosProcesados.forEach((reg, i) => {
+                    let status = 'ok';
+                    let cells = [];
+                    
+                    if (tipo === 'deudas') {
+                        const agentName = reg.comercial;
+                        const destMatch = matchAgentesMap.get(agentName);
+                        
+                        if (destMatch === 'SKIP') {
+                            status = 'skip';
+                            registrosExcluidos.push(reg);
+                        } else {
+                            registrosParaInsertar.push({
+                                comercial: agentName,
+                                cliente: reg.cliente,
+                                import: reg.import,
+                                fecha: reg.fecha,
+                                agenteId: destMatch
+                            });
+                            status = destMatch === 'NEW' ? 'mapped' : 'ok';
+                        }
+                        
+                        cells = [reg.fecha, reg.comercial, reg.cliente, reg.import];
+                    }
+                    else if (tipo === 'vacaciones') {
+                        const agentName = reg.nombre;
+                        const destMatch = matchAgentesMap.get(agentName);
+                        
+                        if (destMatch === 'SKIP') {
+                            status = 'skip';
+                            registrosExcluidos.push(reg);
+                        } else {
+                            registrosParaInsertar.push({
+                                nombre: agentName,
+                                fecha_inicio: reg.fecha_inicio,
+                                fecha_fin: reg.fecha_fin,
+                                agenteId: destMatch
+                            });
+                            status = destMatch === 'NEW' ? 'mapped' : 'ok';
+                        }
+                        
+                        cells = [reg.nombre, reg.fecha_inicio, reg.fecha_fin];
+                    }
+                    else if (tipo === 'cuadrante') {
+                        const pkName = reg.parking;
+                        const agName = reg.agente;
+                        
+                        const destPkMatch = matchAparcamientosMap.get(pkName);
+                        const destAgMatch = agName ? matchAgentesMap.get(agName) : null;
+                        
+                        if (destPkMatch === 'SKIP' || destAgMatch === 'SKIP') {
+                            status = 'skip';
+                            registrosExcluidos.push(reg);
+                        } else {
+                            const parts = reg.rawParts;
+                            const año = parts[2];
+                            const mes = parts[3];
+                            const dia = parts[parts.length - 1];
+                            const turno = parts[parts.length - 2];
+                            
+                            const mesNum = (Number(mes) + 1).toString().padStart(2, '0');
+                            const diaNum = Number(dia).toString().padStart(2, '0');
+                            const fechaStr = `${año}-${mesNum}-${diaNum}`;
+                            
+                            registrosParaInsertar.push({
+                                fecha: fechaStr,
+                                parking: pkName,
+                                agente: agName,
+                                turno: turno,
+                                horas: reg.horas,
+                                es_sub: reg.es_sub,
+                                nota: reg.nota,
+                                parkingId: destPkMatch,
+                                agenteId: destAgMatch
+                            });
+                            status = (destPkMatch === 'NEW' || destAgMatch === 'NEW') ? 'mapped' : 'ok';
+                        }
+                        
+                        cells = [reg.rawParts[2] + '-' + (Number(reg.rawParts[3])+1) + '-' + reg.rawParts[reg.rawParts.length-1], reg.parking, reg.agente || '(Vaci)', reg.rawParts[reg.rawParts.length-2], reg.horas];
+                    }
+                    
+                    if (countVisible < 100 && status !== 'skip') {
+                        const tr = document.createElement('tr');
+                        cells.forEach(c => {
+                            const td = document.createElement('td');
+                            td.textContent = c;
+                            tr.appendChild(td);
+                        });
+                        
+                        const tdStatus = document.createElement('td');
+                        tdStatus.innerHTML = status === 'mapped' 
+                            ? `<span class="preview-status mapped">${isCa ? 'Nou Catàleg' : 'Nuevo Catálogo'}</span>` 
+                            : `<span class="preview-status ok">${isCa ? 'Correcte' : 'Correcto'}</span>`;
+                        tr.appendChild(tdStatus);
+                        
+                        body.appendChild(tr);
+                        countVisible++;
+                    }
+                });
+            }
+            
+            const btnImport = document.getElementById('btnEjecutarMigracion');
+            btnImport.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+            if (tipo === 'comerciales') {
+                btnImport.disabled = (datosAImportar.length === 0);
+            } else {
+                btnImport.disabled = (registrosParaInsertar.length === 0);
+            }
             
             avanzarPaso(4);
         }
@@ -1262,10 +1519,74 @@
             
             const btn = document.getElementById('btnEjecutarMigracion');
             btn.disabled = true;
-            btn.innerHTML = `<span class="spinner"></span> Processant importació...`;
             
             const tipo = document.getElementById('tipoMigracion').value;
             const estrategia = document.querySelector('input[name="estrategia"]:checked').value;
+            const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
+            
+            btn.innerHTML = `<span class="spinner"></span> ${isCa ? 'Processant importació...' : 'Procesando importación...'}`;
+            
+            if (tipo === 'comerciales') {
+                try {
+                    // 1. Crear tabla si no existe
+                    await dbApi.write('comercial', `
+                        CREATE TABLE IF NOT EXISTS comerciales (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            nombre TEXT,
+                            direccion TEXT,
+                            plazas_libres TEXT,
+                            plantas TEXT,
+                            capacidad TEXT,
+                            tarifa TEXT,
+                            notas TEXT
+                        )
+                    `, []);
+                    
+                    // 2. Aplicar estrategia de vaciado si corresponde
+                    if (estrategia === 'overwrite') {
+                        await dbApi.write('comercial', "DELETE FROM comerciales", []);
+                    }
+                    
+                    // 3. Insertar registros de manera secuencial y asíncrona
+                    let exitos = 0;
+                    let errores = 0;
+                    
+                    for (const fila of datosAImportar) {
+                        try {
+                            await dbApi.write('comercial', 'INSERT INTO comerciales (nombre, direccion, plazas_libres, plantas, capacidad, tarifa, notas) VALUES (?, ?, ?, ?, ?, ?, ?)', [
+                                fila[0] !== undefined ? fila[0] : '',
+                                fila[1] !== undefined ? fila[1] : '',
+                                fila[2] !== undefined ? fila[2] : '',
+                                fila[3] !== undefined ? fila[3] : '',
+                                fila[4] !== undefined ? fila[4] : '',
+                                fila[5] !== undefined ? fila[5] : '',
+                                fila[6] !== undefined ? fila[6] : ''
+                            ]);
+                            exitos++;
+                        } catch (errRow) {
+                            console.error("Error al insertar fila de comerciales:", errRow, fila);
+                            errores++;
+                        }
+                    }
+                    
+                    // 4. Mostrar feedback y resetear UI
+                    btn.disabled = false;
+                    btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                    
+                    const resumenMsg = isCa 
+                        ? `Migració de Comerciales completada:\n- Èxits: ${exitos}\n- Errors: ${errores}`
+                        : `Migración de Comerciales completada:\n- Éxitos: ${exitos}\n- Errores: ${errores}`;
+                    alert(resumenMsg);
+                    
+                    reiniciarAsistente();
+                } catch (errGlobal) {
+                    console.error("Error global en migración de comerciales:", errGlobal);
+                    btn.disabled = false;
+                    btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                    alert((isCa ? "❌ Error al executar la importació definitiva: " : "❌ Error al ejecutar la importación definitiva: ") + errGlobal.message);
+                }
+                return;
+            }
             
             try {
                 let nuevosAgentes = new Set();
@@ -1314,7 +1635,7 @@
                     }
                 }
 
-                const dbKey = (tipo === 'comerciales') ? 'comercial' : 'operativa';
+                const dbKey = 'operativa';
                 
                 await dbApi.write(dbKey, "BEGIN TRANSACTION;", []);
                 
@@ -1324,9 +1645,6 @@
                     }
                     else if (tipo === 'vacaciones') {
                         await dbApi.write('operativa', "DELETE FROM vacances", []);
-                    }
-                    else if (tipo === 'comerciales') {
-                        await dbApi.write('comercial', "DELETE FROM kv_store", []);
                     }
                     else if (tipo === 'cuadrante' && registrosParaInsertar.length > 0) {
                         const fechas = registrosParaInsertar.map(r => r.fecha);
@@ -1363,51 +1681,6 @@
                             `, [resolvedAgId, r.fecha_inicio, r.fecha_fin]);
                             insertados++;
                         }
-                    }
-                }
-                else if (tipo === 'comerciales') {
-                    const agrupados = new Map();
-                    registrosParaInsertar.forEach(r => {
-                        const resolvedPkId = matchAparcamientosMap.get(r.centro);
-                        if (resolvedPkId && resolvedPkId !== 'SKIP') {
-                            const keyParts = r.key.split('_');
-                            let coordId = '';
-                            let coordNombre = '';
-                            let mes = '';
-                            let año = '2026';
-                            
-                            if (r.key.startsWith('nn_A_')) {
-                                coordId = 'albert'; coordNombre = 'Albert'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
-                            } else if (r.key.startsWith('nn_L_')) {
-                                coordId = 'laura'; coordNombre = 'Laura'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
-                            } else if (r.key.startsWith('comercials_albert_')) {
-                                coordId = 'albert'; coordNombre = 'Albert'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
-                            } else if (r.key.startsWith('comercials_laura_')) {
-                                coordId = 'laura'; coordNombre = 'Laura'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
-                            }
-                            
-                            const targetKey = `dades ${coordNombre}/comercials_${coordId}_${mes}_${año}`;
-                            if (!agrupados.has(targetKey)) {
-                                agrupados.set(targetKey, []);
-                            }
-                            agrupados.get(targetKey).push([
-                                r.centro,
-                                r.direccion,
-                                r.fixes,
-                                r.variables,
-                                r.vacants,
-                                r.tarifa,
-                                r.observaciones
-                            ]);
-                        }
-                    });
-                    
-                    for (const [keyPath, matrixValue] of agrupados.entries()) {
-                        await dbApi.write('comercial', `
-                            INSERT OR REPLACE INTO kv_store (key, value, updated_at)
-                            VALUES (?, ?, CURRENT_TIMESTAMP)
-                        `, [keyPath, JSON.stringify(matrixValue)]);
-                        insertados++;
                     }
                 }
                 else if (tipo === 'cuadrante') {
