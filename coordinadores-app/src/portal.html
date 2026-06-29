@@ -530,8 +530,8 @@
                 <div class="dropdown-admin-content" id="adminDropdownContent">
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
-                    <button class="dropdown-admin-item" onclick="openAdminPanel(); closeAdminDropdown();">⚙️ Panel Admin y Migraciones</button>
-                    <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();">📊 Assistent de Càrrega d'Històrics</button>
+                    <button class="dropdown-admin-item" onclick="openAdminPanel(); closeAdminDropdown();" data-i18n="adminMenuTitle">⚙️ Panel Admin y Migraciones</button>
+                    <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();" data-i18n="adminMigratorTitle">📊 Assistent de Càrrega d'Històrics</button>
                     <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
                     <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
                 </div>
@@ -612,7 +612,7 @@
                 <div id="importJsonSection" data-roles="coordinador,jefe_operaciones" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; gap: 8px;">
                     <span style="font-size: 10px; color: #64748b; font-weight: 700; letter-spacing: 0.5px;" data-i18n="importSectionTitle">MIGRACIÓ E IMPORTACIÓ DE DADES</span>
                     <div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center;">
-                        <button class="btn-manage-coord" style="background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; font-weight: 700; padding: 8px 16px;" onclick="openTab('migrador', this)">📊 OBRIR ASSISTENT DE CÀRREGA D'HISTÒRICS</button>
+                        <button class="btn-manage-coord" style="background: #e8f5e9; color: #1b5e20; border-color: #a5d6a7; font-weight: 700; padding: 8px 16px;" onclick="openTab('migrador', this)" data-i18n="btnObrirMigrador">📊 OBRIR ASSISTENT DE CÀRREGA D'HISTÒRICS</button>
                         <button class="btn-manage-coord" style="background: #e0f2fe; color: #0369a1; border-color: #bae6fd;" onclick="document.getElementById('importFileSelector').click();" data-i18n="btnImportJson">📥 Importar JSON a KV Directe</button>
                     </div>
                     <input type="file" id="importFileSelector" accept=".json" style="display: none;" onchange="handleImportJsonFile(event)">

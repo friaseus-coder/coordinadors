@@ -794,6 +794,16 @@
             }
         };
 
+        // Fusionar traducciones locales inmediatamente para que estén listas en DOMContentLoaded
+        const activeI18n = window.i18n || (typeof i18n !== 'undefined' ? i18n : null);
+        if (activeI18n && activeI18n.translations) {
+            Object.keys(migradorTranslations).forEach(lang => {
+                if (activeI18n.translations[lang]) {
+                    Object.assign(activeI18n.translations[lang], migradorTranslations[lang]);
+                }
+            });
+        }
+
         // Configuración y variables de estado del asistente
         let pasoActual = 1;
         let selectedFiles = [];
@@ -833,16 +843,10 @@
 
         // Al cargar la ventana
         window.addEventListener('load', async () => {
-            // Fusionar traducciones locales antes de aplicar
-            if (window.i18n && window.i18n.translations) {
-                Object.keys(migradorTranslations).forEach(lang => {
-                    if (window.i18n.translations[lang]) {
-                        Object.assign(window.i18n.translations[lang], migradorTranslations[lang]);
-                    }
-                });
-            }
-            if (window.i18n && typeof window.i18n.translatePage === 'function') {
-                window.i18n.translatePage();
+            // Asegurar traducción de la ventana tras cargar
+            const finalI18n = window.i18n || (typeof i18n !== 'undefined' ? i18n : null);
+            if (finalI18n && typeof finalI18n.translatePage === 'function') {
+                finalI18n.translatePage();
             }
             await loadCatalogos();
             actualizarInterfazTipo();
@@ -1098,18 +1102,12 @@
         async function analizarDatosYProceder() {
             const tipo = document.getElementById('tipoMigracion').value;
             
-            if (tipo === 'comerciales') {
-                document.getElementById('alertDiscrepancias').style.display = 'none';
-                document.getElementById('alertCleanCatalogs').style.display = 'none';
-                document.getElementById('infoComercialesMatching').style.display = 'flex';
-                document.getElementById('sectionMatchParkings').style.display = 'none';
-                document.getElementById('sectionMatchAgentes').style.display = 'none';
-                avanzarPaso(3);
-                return;
-            }
-            
             // Ocultar información de Comerciales en caso de otros tipos
-            document.getElementById('infoComercialesMatching').style.display = 'none';
+            if (tipo === 'comerciales') {
+                document.getElementById('infoComercialesMatching').style.display = 'none';
+            } else {
+                document.getElementById('infoComercialesMatching').style.display = 'none';
+            }
             
             let parkingsEnJson = new Set();
             let agentesEnJson = new Set();
@@ -1144,29 +1142,40 @@
                 }
                 else if (tipo === 'comerciales') {
                     for (const [key, value] of Object.entries(content)) {
+                        if (key.includes('last_export_time') || key.includes('last_export_author')) {
+                            continue;
+                        }
                         if (key.startsWith('nn_') || key.startsWith('comercials_')) {
                             let coordName = 'Desconocido';
                             if (key.startsWith('nn_A_') || key.includes('_albert_')) coordName = 'Albert';
                             else if (key.startsWith('nn_L_') || key.includes('_laura_')) coordName = 'Laura';
                             
-                            const rows = Array.isArray(value) ? value : [];
-                            rows.forEach(row => {
-                                const centro = (row[0] || '').trim();
-                                if (centro) {
-                                    parkingsEnJson.add(centro);
-                                    registrosProcesados.push({
-                                        key: key,
-                                        coordinador: coordName,
-                                        centro: centro,
-                                        direccion: row[1] || '',
-                                        fixes: row[2] || '',
-                                        variables: row[3] || '',
-                                        vacants: row[4] || '',
-                                        tarifa: row[5] || '',
-                                        observaciones: row[6] || ''
-                                    });
-                                }
-                            });
+                            let rows = [];
+                            if (typeof value === 'string' && value.startsWith('[[')) {
+                                try { rows = JSON.parse(value); } catch(e) { console.error("Error al parsear matriz legada:", e); }
+                            } else if (Array.isArray(value)) {
+                                rows = value;
+                            }
+                            
+                            if (Array.isArray(rows)) {
+                                rows.forEach(row => {
+                                    const centro = (row[0] || '').trim();
+                                    if (centro) {
+                                        parkingsEnJson.add(centro);
+                                        registrosProcesados.push({
+                                            key: key,
+                                            coordinador: coordName,
+                                            centro: centro,
+                                            direccion: row[1] || '',
+                                            fixes: row[2] || '',
+                                            variables: row[3] || '',
+                                            vacants: row[4] || '',
+                                            tarifa: row[5] || '',
+                                            observaciones: row[6] || ''
+                                        });
+                                    }
+                                });
+                            }
                         }
                     }
                 }
@@ -1385,17 +1394,48 @@
             let countVisible = 0;
             
             if (tipo === 'comerciales') {
-                // Mostrar solo los primeros 15 registros de comerciales
-                const maxPreview = Math.min(15, datosAImportar.length);
+                registrosProcesados.forEach((reg, i) => {
+                    const pkName = reg.centro;
+                    const destMatch = matchAparcamientosMap.get(pkName);
+                    
+                    if (destMatch === 'SKIP') {
+                        registrosExcluidos.push(reg);
+                    } else {
+                        let nombreCentroResuelto = reg.centro;
+                        if (destMatch && destMatch !== 'NEW') {
+                            const apOficial = catalogosLocales.aparcamientos.find(a => a.id == destMatch);
+                            if (apOficial) {
+                                nombreCentroResuelto = apOficial.nombre;
+                            }
+                        }
+                        
+                        registrosParaInsertar.push({
+                            key: reg.key,
+                            coordinador: reg.coordinador,
+                            centro: nombreCentroResuelto,
+                            direccion: reg.direccion,
+                            fixes: reg.fixes,
+                            variables: reg.variables,
+                            vacants: reg.vacants,
+                            tarifa: reg.tarifa,
+                            observaciones: reg.observaciones,
+                            parkingId: destMatch
+                        });
+                    }
+                });
+                
+                // Mostrar solo los primeros 15 registros de comerciales resueltos
+                const maxPreview = Math.min(15, registrosParaInsertar.length);
                 for (let idx = 0; idx < maxPreview; idx++) {
-                    const row = datosAImportar[idx];
+                    const r = registrosParaInsertar[idx];
                     const tr = document.createElement('tr');
                     
-                    for (let c = 0; c < 7; c++) {
+                    const cells = [r.centro, r.direccion, r.fixes, r.variables, r.vacants, r.tarifa, r.observaciones];
+                    cells.forEach(c => {
                         const td = document.createElement('td');
-                        td.textContent = row[c] !== undefined ? row[c] : '';
+                        td.textContent = c !== undefined ? c : '';
                         tr.appendChild(td);
-                    }
+                    });
                     body.appendChild(tr);
                 }
             } else {
@@ -1502,11 +1542,7 @@
             
             const btnImport = document.getElementById('btnEjecutarMigracion');
             btnImport.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-            if (tipo === 'comerciales') {
-                btnImport.disabled = (datosAImportar.length === 0);
-            } else {
-                btnImport.disabled = (registrosParaInsertar.length === 0);
-            }
+            btnImport.disabled = (registrosParaInsertar.length === 0);
             
             avanzarPaso(4);
         }
@@ -1528,54 +1564,88 @@
             
             if (tipo === 'comerciales') {
                 try {
-                    // 1. Crear tabla si no existe
-                    await dbApi.write('comercial', `
-                        CREATE TABLE IF NOT EXISTS comerciales (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            nombre TEXT,
-                            direccion TEXT,
-                            plazas_libres TEXT,
-                            plantas TEXT,
-                            capacidad TEXT,
-                            tarifa TEXT,
-                            notas TEXT
-                        )
-                    `, []);
-                    
-                    // 2. Aplicar estrategia de vaciado si corresponde
-                    if (estrategia === 'overwrite') {
-                        await dbApi.write('comercial', "DELETE FROM comerciales", []);
-                    }
-                    
-                    // 3. Insertar registros de manera secuencial y asíncrona
+                    // 1. Agrupar registros resueltos por clave final
+                    const agrupados = new Map();
+                    registrosParaInsertar.forEach(r => {
+                        const keyParts = r.key.split('_');
+                        let coordId = '';
+                        let coordNombre = '';
+                        let mes = '';
+                        let año = '2026';
+                        
+                        if (r.key.startsWith('nn_A_')) {
+                            coordId = 'albert'; coordNombre = 'Albert'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
+                        } else if (r.key.startsWith('nn_L_')) {
+                            coordId = 'laura'; coordNombre = 'Laura'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
+                        } else if (r.key.startsWith('comercials_albert_')) {
+                            coordId = 'albert'; coordNombre = 'Albert'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
+                        } else if (r.key.startsWith('comercials_laura_')) {
+                            coordId = 'laura'; coordNombre = 'Laura'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
+                        }
+                        
+                        // Generar el path exacto esperado por comercials.html con extensión .json
+                        const targetKey = `dades ${coordNombre}/comercials_${coordId}_${mes}_${año}.json`;
+                        const clauActual = `comercials_${coordId}_${mes}_${año}`;
+                        
+                        if (!agrupados.has(targetKey)) {
+                            agrupados.set(targetKey, {
+                                clau: clauActual,
+                                coordNombre: coordNombre,
+                                filas: []
+                            });
+                        }
+                        
+                        agrupados.get(targetKey).filas.push([
+                            r.centro,
+                            r.direccion,
+                            r.fixes,
+                            r.variables,
+                            r.vacants,
+                            r.tarifa,
+                            r.observaciones
+                        ]);
+                    });
+
+                    // 2. Procesar escritura en la base de datos comercial
                     let exitos = 0;
                     let errores = 0;
                     
-                    for (const fila of datosAImportar) {
+                    for (const [targetKey, group] of agrupados.entries()) {
                         try {
-                            await dbApi.write('comercial', 'INSERT INTO comerciales (nombre, direccion, plazas_libres, plantas, capacidad, tarifa, notas) VALUES (?, ?, ?, ?, ?, ?, ?)', [
-                                fila[0] !== undefined ? fila[0] : '',
-                                fila[1] !== undefined ? fila[1] : '',
-                                fila[2] !== undefined ? fila[2] : '',
-                                fila[3] !== undefined ? fila[3] : '',
-                                fila[4] !== undefined ? fila[4] : '',
-                                fila[5] !== undefined ? fila[5] : '',
-                                fila[6] !== undefined ? fila[6] : ''
-                            ]);
+                            // Aplicar estrategia de vaciado para este mes si corresponde
+                            if (estrategia === 'overwrite') {
+                                await dbApi.write('comercial', "DELETE FROM kv_store WHERE key = ?", [targetKey]);
+                            }
+                            
+                            // Construir el payload con la doble encapsulación que lee comercials.html
+                            const payload = {};
+                            payload[group.clau] = JSON.stringify(group.filas);
+                            payload["nn_last_export_time_shared"] = new Date().toLocaleString('ca-ES', { 
+                                day: '2-digit', month: '2-digit', year: 'numeric', 
+                                hour: '2-digit', minute: '2-digit' 
+                            });
+                            payload["nn_last_export_author_shared"] = group.coordNombre.toUpperCase();
+                            
+                            // Escribir en SQLite kv_store
+                            await dbApi.write('comercial', `
+                                INSERT OR REPLACE INTO kv_store (key, value, updated_at)
+                                VALUES (?, ?, CURRENT_TIMESTAMP)
+                            `, [targetKey, JSON.stringify(payload)]);
+                            
                             exitos++;
                         } catch (errRow) {
-                            console.error("Error al insertar fila de comerciales:", errRow, fila);
+                            console.error("Error al escribir grupo en kv_store comercial:", errRow, targetKey);
                             errores++;
                         }
                     }
                     
-                    // 4. Mostrar feedback y resetear UI
+                    // 3. Mostrar feedback y resetear UI
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                     
                     const resumenMsg = isCa 
-                        ? `Migració de Comerciales completada:\n- Èxits: ${exitos}\n- Errors: ${errores}`
-                        : `Migración de Comerciales completada:\n- Éxitos: ${exitos}\n- Errores: ${errores}`;
+                        ? `Migració de Comerciales completada:\n- Èxits: ${exitos} mesos/arxius\n- Errors: ${errores}`
+                        : `Migración de Comerciales completada:\n- Éxitos: ${exitos} meses/archivos\n- Errores: ${errores}`;
                     alert(resumenMsg);
                     
                     reiniciarAsistente();

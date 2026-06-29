@@ -382,6 +382,9 @@ const i18n = (() => {
       
       // Admin (admin.html)
       adminTitle: "Panel de Administració i Migracions",
+      adminMenuTitle: "⚙️ Panel Admin y Migraciones",
+      adminMigratorTitle: "📊 Assistent de Càrrega d'Històrics",
+      btnObrirMigrador: "📊 OBRIR ASSISTENT DE CÀRREGA D'HISTÒRICS",
       adminQuadrantHist: "Cuadrant Històric",
       adminQuadrantHistDesc: "Migra els torns dels antics arxius quadrant_ALBERT.json o quadrant_LAURA.json cap a SQLite.",
       adminImportQuadrant: "Importar JSON Cuadrant",
@@ -965,6 +968,9 @@ const i18n = (() => {
       
       // Admin (admin.html)
       adminTitle: "Panel de Administración y Migraciones",
+      adminMenuTitle: "⚙️ Panel Admin y Migraciones",
+      adminMigratorTitle: "📊 Asistente de Carga de Históricos",
+      btnObrirMigrador: "📊 ABRIR ASISTENTE DE CARGA DE HISTÓRICOS",
       adminQuadrantHist: "Cuadrante Histórico",
       adminQuadrantHistDesc: "Migra los turnos de los antiguos archivos quadrant_ALBERT.json o quadrant_LAURA.json hacia SQLite.",
       adminImportQuadrant: "Importar JSON Cuadrante",
@@ -1347,3 +1353,7 @@ const i18n = (() => {
     translations
   };
 })();
+
+// Exponer explícitamente a window para permitir acceso cruzado de iframes
+window.i18n = i18n;
+
