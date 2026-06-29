@@ -483,6 +483,8 @@
                     <option value="vacaciones" data-i18n="optVacaciones">🏖️ Sol·licituds de Vacances</option>
                     <option value="deudas" data-i18n="optDeudas">⏳ Deutes i Pagarés</option>
                     <option value="comerciales" data-i18n="optComerciales">💰 Preus Comercials i Tarifes</option>
+                    <option value="rutas" data-i18n="optRutas">📍 Rutes Comercials</option>
+                    <option value="gastos" data-i18n="optGastos">📅 Gastos y Kilometraje</option>
                 </select>
             </div>
 
@@ -577,6 +579,16 @@
             <div class="alert alert-success" id="infoComercialesMatching" style="display: none;">
                 <div class="alert-icon">📢</div>
                 <div data-i18n="infoComercialesMatching">No es requereix mapeig de catàlegs per a Comerciales. Els preus i tarifes s'importaran directament a la taula plana de Comerciales.</div>
+            </div>
+
+            <div class="alert alert-success" id="infoRutasMatching" style="display: none;">
+                <div class="alert-icon">📢</div>
+                <div data-i18n="infoRutasMatching">No es requereix mapeig de catàlegs per a Rutes. Les rutes s'importaran directament a la taula de movimientos_economicos.</div>
+            </div>
+
+            <div class="alert alert-success" id="infoGastosMatching" style="display: none;">
+                <div class="alert-icon">📢</div>
+                <div data-i18n="infoGastosMatching">No es requereix mapeig de catàlegs per a Gastos i Kilometratge. S'importaran directament a la taula de movimientos_economicos.</div>
             </div>
 
             <!-- Matching Aparcamientos -->
@@ -730,6 +742,10 @@
                 btnReiniciar: "🔄 Iniciar una altra migració",
                 btnTornarPortal: "🚪 Tornar al Portal",
                 infoComercialesMatching: "📢 No es requereix mapeig de catàlegs per a Comerciales. Els preus i tarifes s'importaran directament a la taula plana de Comerciales.",
+                infoRutasMatching: "📢 No es requereix mapeig de catàlegs per a Rutes. Les rutes s'importaran directament a la taula de movimientos_economicos.",
+                infoGastosMatching: "📢 No es requereix mapeig de catàlegs per a Gastos i Kilometratge. S'importaran directament a la taula de movimientos_economicos.",
+                optRutas: "📍 Rutes Comercials",
+                optGastos: "📅 Despeses i Kilometratge",
                 alertNoArchivo: "Si us plau, selecciona un fitxer JSON vàlid.",
                 alertErrorLeer: "Error en llegir el fitxer JSON.",
                 alertErrorParse: "El fitxer no conté un JSON vàlid o té un format incorrecte.",
@@ -784,6 +800,10 @@
                 btnReiniciar: "🔄 Iniciar otra migración",
                 btnTornarPortal: "🚪 Volver al Portal",
                 infoComercialesMatching: "📢 No se requiere mapeo de catálogos para Comerciales. Los precios y tarifas se importarán directamente en la tabla plana de Comerciales.",
+                infoRutasMatching: "📢 No se requiere mapeo de catálogos para Rutas. Las rutas se importarán directamente en la tabla movimientos_economicos.",
+                infoGastosMatching: "📢 No se requiere mapeo de catálogos para Gastos y Kilometraje. Se importarán directamente en la tabla movimientos_economicos.",
+                optRutas: "📍 Rutas Comerciales",
+                optGastos: "📅 Gastos y Kilometraje",
                 alertNoArchivo: "Por favor, selecciona un archivo JSON válido.",
                 alertErrorLeer: "Error al leer el archivo JSON.",
                 alertErrorParse: "El archivo no contiene un JSON válido o tiene un formato incorrecto.",
@@ -823,6 +843,10 @@
         
         // Comerciales: datos desencapsulados listos para importar
         let datosAImportar = [];
+        
+        // Gastos y Kilometraje
+        let gastosAImportar = [];
+        let empleadoIdUsuario = "";
         
         // Obtener APIs de Electron de forma segura
         const electronApi = window.api;
@@ -902,6 +926,8 @@
             fileListContainer.innerHTML = '';
             selectedFiles = [];
             datosAImportar = [];
+            gastosAImportar = [];
+            empleadoIdUsuario = "";
             document.getElementById('btnGoToStep2').disabled = true;
             document.getElementById('inputArchivoJson').value = '';
             
@@ -909,14 +935,18 @@
                 txtBds.textContent = 'comercial.db';
                 btnSelectElectron.style.display = 'none';
                 btnSelectHtml5.style.display = 'inline-flex';
+            } else if (tipo === 'rutas') {
+                txtBds.textContent = 'finanzas_inventario.db';
+                btnSelectElectron.style.display = 'none';
+                btnSelectHtml5.style.display = 'inline-flex';
+            } else if (tipo === 'gastos') {
+                txtBds.textContent = 'finanzas_inventario.db';
+                btnSelectElectron.style.display = 'none';
+                btnSelectHtml5.style.display = 'inline-flex';
             } else {
                 btnSelectHtml5.style.display = 'none';
                 btnSelectElectron.style.display = 'inline-flex';
-                if (tipo === 'gastos') {
-                    txtBds.textContent = 'finanzas_inventario.db';
-                } else {
-                    txtBds.textContent = 'operativa_rrhh.db';
-                }
+                txtBds.textContent = 'operativa_rrhh.db';
             }
         }
 
@@ -924,64 +954,110 @@
             const file = event.target.files[0];
             if (!file) return;
             
+            const tipo = document.getElementById('tipoMigracion').value;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const parsedJson = JSON.parse(e.target.result);
                     
-                    // Extraer y desencapsular
-                    datosAImportar = [];
-                    for (const [key, value] of Object.entries(parsedJson)) {
-                        // Ignorar claves de metadatos conocidas
-                        if (key.includes('last_export_time') || key.includes('last_export_author')) {
-                            continue;
-                        }
-                        
-                        let rows = [];
-                        if (typeof value === 'string' && value.startsWith('[[')) {
-                            rows = JSON.parse(value);
-                        } else if (Array.isArray(value)) {
-                            rows = value;
-                        }
-                        
-                        if (Array.isArray(rows)) {
-                            rows.forEach(row => {
-                                // Cada fila de comercial debe tener exactamente 7 posiciones de datos
-                                if (Array.isArray(row) && row.length >= 7) {
-                                    datosAImportar.push(row);
-                                }
-                            });
-                        }
-                    }
-                    
-                    // Llenar selectedFiles para que el asistente tenga el nombre y sea compatible
-                    selectedFiles = [{ name: file.name, content: parsedJson }];
-                    
-                    // Visualizar archivo cargado
+                    const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
+                    const successMsg = isCa ? "Lectura completada amb èxit" : "Lectura completada con éxito";
                     const container = document.getElementById('fileListContainer');
                     container.innerHTML = '';
                     container.style.display = 'block';
-                    
                     const item = document.createElement('div');
                     item.className = 'file-item';
                     
-                    const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
-                    const successMsg = isCa ? "Lectura completada amb èxit" : "Lectura completada con éxito";
-                    item.innerHTML = `
-                        <span class="file-name">📄 ${file.name}</span>
-                        <span class="file-size">${successMsg} (${datosAImportar.length} reg.)</span>
-                    `;
-                    container.appendChild(item);
-                    
-                    if (datosAImportar.length > 0) {
+                    if (tipo === 'comerciales') {
+                        datosAImportar = [];
+                        for (const [key, value] of Object.entries(parsedJson)) {
+                            if (key.includes('last_export_time') || key.includes('last_export_author')) {
+                                continue;
+                            }
+                            
+                            let rows = [];
+                            if (typeof value === 'string' && value.startsWith('[[')) {
+                                rows = JSON.parse(value);
+                            } else if (Array.isArray(value)) {
+                                rows = value;
+                            }
+                            
+                            if (Array.isArray(rows)) {
+                                rows.forEach(row => {
+                                    if (Array.isArray(row) && row.length >= 7) {
+                                        datosAImportar.push(row);
+                                    }
+                                });
+                            }
+                        }
+                        
+                        selectedFiles = [{ name: file.name, content: parsedJson }];
+                        item.innerHTML = `
+                            <span class="file-name">📄 ${file.name}</span>
+                            <span class="file-size">${successMsg} (${datosAImportar.length} reg.)</span>
+                        `;
+                        container.appendChild(item);
+                        
+                        if (datosAImportar.length > 0) {
+                            document.getElementById('btnGoToStep2').disabled = false;
+                        } else {
+                            document.getElementById('btnGoToStep2').disabled = true;
+                        }
+                    } else if (tipo === 'rutas') {
+                        let totalKeys = 0;
+                        for (const [key, value] of Object.entries(parsedJson)) {
+                            if (key.startsWith('METADATA')) continue;
+                            const parts = key.split('-');
+                            if (parts.length >= 5) {
+                                totalKeys++;
+                            }
+                        }
+                        
+                        if (totalKeys === 0) {
+                            throw new Error(isCa ? "No s'han trobat rutes vàlides al JSON." : "No se han encontrado rutas válidas en el JSON.");
+                        }
+                        
+                        selectedFiles = [{ name: file.name, content: parsedJson }];
+                        item.innerHTML = `
+                            <span class="file-name">📄 ${file.name}</span>
+                            <span class="file-size">${successMsg} (${totalKeys} registres detectats)</span>
+                        `;
+                        container.appendChild(item);
                         document.getElementById('btnGoToStep2').disabled = false;
-                    } else {
-                        document.getElementById('btnGoToStep2').disabled = true;
+                    } else if (tipo === 'gastos') {
+                        let totalRows = 0;
+                        const empleado = parsedJson["nyn_nom_empleat"];
+                        if (!empleado) {
+                            throw new Error(isCa ? "No s'ha trobat el nom de l'empleat ('nyn_nom_empleat') al JSON." : "No se ha encontrado el nombre del empleado ('nyn_nom_empleat') en el JSON.");
+                        }
+                        
+                        for (const [key, value] of Object.entries(parsedJson)) {
+                            if (key.startsWith('nyn_despeses_') && Array.isArray(value)) {
+                                value.forEach(row => {
+                                    if (Array.isArray(row) && row[0] && row[0] !== "") {
+                                        totalRows++;
+                                    }
+                                });
+                            }
+                        }
+                        
+                        if (totalRows === 0) {
+                            throw new Error(isCa ? "No s'han trobat files de despeses vàlides al JSON." : "No se han encontrado filas de gastos válidas en el JSON.");
+                        }
+                        
+                        empleadoIdUsuario = empleado;
+                        selectedFiles = [{ name: file.name, content: parsedJson }];
+                        item.innerHTML = `
+                            <span class="file-name">📄 ${file.name}</span>
+                            <span class="file-size">${successMsg} (${empleado}, ${totalRows} reg.)</span>
+                        `;
+                        container.appendChild(item);
+                        document.getElementById('btnGoToStep2').disabled = false;
                     }
                 } catch (err) {
                     console.error("Error al procesar el archivo JSON:", err);
                     const msg = window.i18n && window.i18n.t ? window.i18n.t('alertErrorParse') : "El archivo no contiene un JSON válido o tiene un formato incorrecto.";
-                    alert(msg);
+                    alert(msg + " " + err.message);
                     document.getElementById('btnGoToStep2').disabled = true;
                 }
             };
@@ -1102,12 +1178,10 @@
         async function analizarDatosYProceder() {
             const tipo = document.getElementById('tipoMigracion').value;
             
-            // Ocultar información de Comerciales en caso de otros tipos
-            if (tipo === 'comerciales') {
-                document.getElementById('infoComercialesMatching').style.display = 'none';
-            } else {
-                document.getElementById('infoComercialesMatching').style.display = 'none';
-            }
+            // Ocultar información de Comerciales, Rutas y Gastos por defecto
+            document.getElementById('infoComercialesMatching').style.display = 'none';
+            document.getElementById('infoRutasMatching').style.display = 'none';
+            document.getElementById('infoGastosMatching').style.display = 'none';
             
             let parkingsEnJson = new Set();
             let agentesEnJson = new Set();
@@ -1235,6 +1309,95 @@
                             });
                         }
                     }
+                } else if (tipo === 'rutas') {
+                    // Procesar el JSON y agrupar por YYYY-MM-DD_Trabajador
+                    const groups = {};
+                    for (const [key, value] of Object.entries(content)) {
+                        if (key.startsWith('METADATA')) continue;
+                        const parts = key.split('-');
+                        if (parts.length < 5) continue;
+                        
+                        const worker = parts[0];
+                        const year = parts[1];
+                        const monthRaw = parseInt(parts[2], 10);
+                        const dayRaw = parseInt(parts[3], 10);
+                        const stopIndex = parseInt(parts[4], 10);
+                        const isHolidayKey = parts[5] === 'holiday';
+                        
+                        const month = String(monthRaw + 1).padStart(2, '0');
+                        const day = String(dayRaw).padStart(2, '0');
+                        const formattedDate = `${year}-${month}-${day}`;
+                        
+                        const groupKey = `${formattedDate}_${worker}`;
+                        
+                        if (!groups[groupKey]) {
+                            groups[groupKey] = {
+                                worker: worker,
+                                date: formattedDate,
+                                tempStops: [],
+                                festivo: false
+                            };
+                        }
+                        
+                        if (isHolidayKey) {
+                            if (value === "1" || value === 1 || value === true || value === "true") {
+                                groups[groupKey].festivo = true;
+                            }
+                        } else {
+                            if (value !== undefined && value !== null) {
+                                groups[groupKey].tempStops[stopIndex] = value.toString().trim();
+                            }
+                        }
+                    }
+                    
+                    Object.values(groups).forEach(g => {
+                        const cleanStops = g.tempStops.filter(stop => stop !== undefined && stop !== null && stop !== "");
+                        let concepto = "";
+                        if (g.festivo) {
+                            concepto = "FESTIVO";
+                        } else {
+                            concepto = cleanStops.join(" ➤ ");
+                        }
+                        
+                        registrosProcesados.push({
+                            worker: g.worker,
+                            date: g.date,
+                            stops: cleanStops,
+                            festivo: g.festivo,
+                            concepto: concepto
+                        });
+                    });
+                    
+                    // Ordenar por fecha y trabajador
+                    registrosProcesados.sort((a, b) => {
+                        if (a.date !== b.date) return a.date.localeCompare(b.date);
+                        return a.worker.localeCompare(b.worker);
+                    });
+                } else if (tipo === 'gastos') {
+                    // Extraer el nombre del empleado
+                    const empleado = content["nyn_nom_empleat"];
+                    empleadoIdUsuario = empleado;
+                    
+                    gastosAImportar = []; // Vaciar
+                    for (const [key, value] of Object.entries(content)) {
+                        if (key.startsWith('nyn_despeses_') && Array.isArray(value)) {
+                            value.forEach(row => {
+                                // Ignorar filas vacías
+                                if (Array.isArray(row) && row[0] && row[0] !== "") {
+                                    gastosAImportar.push({
+                                        fecha: row[0],
+                                        concepto: row[1] || "",
+                                        km: row[2] || "0",
+                                        tarifa: row[3] || "0",
+                                        extras: row[4] || "0"
+                                    });
+                                }
+                            });
+                        }
+                    }
+                    
+                    // Ordenar por fecha cronológicamente
+                    gastosAImportar.sort((a, b) => a.fecha.localeCompare(b.fecha));
                 }
             });
 
@@ -1268,16 +1431,36 @@
             });
 
             // Decidir si mostramos el paso de matching o avanzamos directamente
-            if (discrepanciasParkings.length > 0 || discrepanciasAgentes.length > 0) {
-                document.getElementById('alertDiscrepancias').style.display = 'flex';
-                document.getElementById('alertCleanCatalogs').style.display = 'none';
-                
-                buildMatchingUI(discrepanciasParkings, discrepanciasAgentes);
-            } else {
+            if (tipo === 'rutas') {
                 document.getElementById('alertDiscrepancias').style.display = 'none';
-                document.getElementById('alertCleanCatalogs').style.display = 'flex';
+                document.getElementById('alertCleanCatalogs').style.display = 'none';
                 document.getElementById('sectionMatchParkings').style.display = 'none';
                 document.getElementById('sectionMatchAgentes').style.display = 'none';
+                document.getElementById('infoRutasMatching').style.display = 'block';
+            } else if (tipo === 'gastos') {
+                document.getElementById('alertDiscrepancias').style.display = 'none';
+                document.getElementById('alertCleanCatalogs').style.display = 'none';
+                document.getElementById('sectionMatchParkings').style.display = 'none';
+                document.getElementById('sectionMatchAgentes').style.display = 'none';
+                document.getElementById('infoGastosMatching').style.display = 'block';
+            } else if (tipo === 'comerciales') {
+                document.getElementById('alertDiscrepancias').style.display = 'none';
+                document.getElementById('alertCleanCatalogs').style.display = 'none';
+                document.getElementById('sectionMatchParkings').style.display = 'none';
+                document.getElementById('sectionMatchAgentes').style.display = 'none';
+                document.getElementById('infoComercialesMatching').style.display = 'block';
+            } else {
+                if (discrepanciasParkings.length > 0 || discrepanciasAgentes.length > 0) {
+                    document.getElementById('alertDiscrepancias').style.display = 'flex';
+                    document.getElementById('alertCleanCatalogs').style.display = 'none';
+                    
+                    buildMatchingUI(discrepanciasParkings, discrepanciasAgentes);
+                } else {
+                    document.getElementById('alertDiscrepancias').style.display = 'none';
+                    document.getElementById('alertCleanCatalogs').style.display = 'flex';
+                    document.getElementById('sectionMatchParkings').style.display = 'none';
+                    document.getElementById('sectionMatchAgentes').style.display = 'none';
+                }
             }
             
             avanzarPaso(3);
@@ -1376,6 +1559,8 @@
             
             if (tipo === 'comerciales') {
                 document.getElementById('lblTotalRegistros').textContent = datosAImportar.length;
+            } else if (tipo === 'gastos') {
+                document.getElementById('lblTotalRegistros').textContent = gastosAImportar.length;
             } else {
                 document.getElementById('lblTotalRegistros').textContent = registrosProcesados.length;
             }
@@ -1407,6 +1592,14 @@
                 headers = isCa 
                     ? ['NOM', 'ADREÇA', 'PLACES LLIURES', 'PLANTES', 'CAPACITAT', 'TARIFA', 'NOTES']
                     : ['NOMBRE', 'DIRECCIÓN', 'PLAZAS LIBRES', 'PLANTAS', 'CAPACIDAD', 'TARIFA', 'NOTAS'];
+            } else if (tipo === 'rutas') {
+                headers = isCa 
+                    ? ['DATA', 'TREBALLADOR', 'TIPUS', 'RECORREGUT (CONCEPTE)', 'ESTAT']
+                    : ['FECHA', 'TRABAJADOR', 'TIPO', 'RECORRIDO (CONCEPTO)', 'ESTADO'];
+            } else if (tipo === 'gastos') {
+                headers = isCa 
+                    ? ['DATA', 'TREBALLADOR', 'RECORREGUT (CONCEPTE)', 'KM', 'TARIFA', 'ESTAT']
+                    : ['FECHA', 'TRABAJADOR', 'RECORRIDO (CONCEPTO)', 'KM', 'TARIFA', 'ESTADO'];
             }
             
             const trHead = document.createElement('tr');
@@ -1465,7 +1658,8 @@
                     body.appendChild(tr);
                 }
             } else {
-                registrosProcesados.forEach((reg, i) => {
+                const arrIter = (tipo === 'gastos') ? gastosAImportar : registrosProcesados;
+                arrIter.forEach((reg, i) => {
                     let status = 'ok';
                     let cells = [];
                     
@@ -1544,9 +1738,28 @@
                         }
                         
                         cells = [reg.rawParts[2] + '-' + (Number(reg.rawParts[3])+1) + '-' + reg.rawParts[reg.rawParts.length-1], reg.parking, reg.agente || '(Vaci)', reg.rawParts[reg.rawParts.length-2], reg.horas];
+                    } else if (tipo === 'rutas') {
+                        registrosParaInsertar.push({
+                            worker: reg.worker,
+                            date: reg.date,
+                            stops: reg.stops,
+                            festivo: reg.festivo,
+                            concepto: reg.concepto
+                        });
+                        cells = [reg.date, reg.worker, 'Ruta Comercial', reg.concepto];
+                    } else if (tipo === 'gastos') {
+                        registrosParaInsertar.push({
+                            fecha: reg.fecha,
+                            concepto: reg.concepto,
+                            km: reg.km,
+                            tarifa: reg.tarifa,
+                            extras: reg.extras
+                        });
+                        cells = [reg.fecha, empleadoIdUsuario, reg.concepto, reg.km, reg.tarifa];
                     }
                     
-                    if (countVisible < 100 && status !== 'skip') {
+                    const maxRows = (tipo === 'rutas' || tipo === 'gastos') ? 15 : 100;
+                    if (countVisible < maxRows && status !== 'skip') {
                         const tr = document.createElement('tr');
                         cells.forEach(c => {
                             const td = document.createElement('td');
@@ -1587,6 +1800,158 @@
             const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
             
             btn.innerHTML = `<span class="spinner"></span> ${isCa ? 'Processant importació...' : 'Procesando importación...'}`;
+            
+            if (tipo === 'gastos') {
+                try {
+                    // Preguntar antes de importar (como pidió el usuario: "recuerda que primero se pregunta")
+                    const confirmMsg = estrategia === 'overwrite'
+                        ? (isCa 
+                            ? "⚠️ ATENCIÓ: Es perdran TOTS els registres anteriors de Kilometratge a la base de dades. Vols continuar?"
+                            : "⚠️ ATENCIÓN: Se perderán TODOS los registros anteriores de Kilometraje en la base de datos. ¿Deseas continuar?")
+                        : (isCa
+                            ? "⚠️ Estàs segur que vols importar els gastos? Els registres coincidents de data, treballador i kilometratge seran reemplaçats."
+                            : "⚠️ ¿Estás seguro de que deseas importar los gastos? Los registros coincidentes de fecha, trabajador y kilometraje serán reemplazados.");
+                    
+                    if (!confirm(confirmMsg)) {
+                        btn.disabled = false;
+                        btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                        return;
+                    }
+                    
+                    // Iniciar transacción en la base de datos finanzas
+                    await dbApi.write('finanzas', "BEGIN TRANSACTION;", []);
+                    
+                    if (estrategia === 'overwrite') {
+                        // Borrar todos los registros de 'Kilometraje' del usuario actual
+                        await dbApi.write('finanzas', `
+                            DELETE FROM movimientos_economicos 
+                            WHERE tipo_movimiento = 'Kilometraje' AND id_usuario = ?
+                        `, [empleadoIdUsuario]);
+                    }
+                    
+                    let exitos = 0;
+                    let errores = 0;
+                    
+                    for (const r of registrosParaInsertar) {
+                        try {
+                            if (estrategia === 'add') {
+                                // Borrar el registro existente para esa misma fecha, trabajador y tipo de movimiento antes de insertar el nuevo para evitar duplicados
+                                await dbApi.write('finanzas', `
+                                    DELETE FROM movimientos_economicos 
+                                    WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Kilometraje'
+                                `, [empleadoIdUsuario, r.fecha]);
+                            }
+                            
+                            // Insertar
+                            await dbApi.write('finanzas', `
+                                INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
+                                VALUES (?, ?, 'Kilometraje', ?, 0, ?)
+                            `, [empleadoIdUsuario, r.fecha, r.concepto, JSON.stringify({ km: r.km, tarifa: r.tarifa, extras: r.extras })]);
+                            
+                            exitos++;
+                        } catch (errRow) {
+                            console.error("Error al importar gasto:", errRow, r);
+                            errores++;
+                        }
+                    }
+                    
+                    await dbApi.write('finanzas', "COMMIT;", []);
+                    
+                    btn.disabled = false;
+                    btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                    
+                    document.getElementById('txtResultadoFinal').innerHTML = isCa
+                        ? `S'han importat correctament <strong>${exitos}</strong> registres de kilometratge per a l'empleat <strong>${empleadoIdUsuario}</strong>.`
+                        : `Se han importado correctamente <strong>${exitos}</strong> registros de kilometraje para el empleado <strong>${empleadoIdUsuario}</strong>.`;
+                        
+                    document.getElementById('sectionDatosExcluidos').style.display = 'none';
+                    
+                    avanzarPaso(5);
+                } catch (errGlobal) {
+                    console.error("Error global en migración de gastos:", errGlobal);
+                    try {
+                        await dbApi.write('finanzas', "ROLLBACK;", []);
+                    } catch(e) {}
+                    btn.disabled = false;
+                    btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                    alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
+                }
+                return;
+            }
+            
+            if (tipo === 'rutas') {
+                try {
+                    // Preguntar antes de importar (como pidió el usuario: "recuerda que primero se pregunta")
+                    const confirmMsg = estrategia === 'overwrite'
+                        ? (isCa 
+                            ? "⚠️ ATENCIÓ: Es perdran TOTS els registres anteriors de Rutes Comercials a la base de dades. Vols continuar?"
+                            : "⚠️ ATENCIÓN: Se perderán TODOS los registros anteriores de Rutas Comerciales en la datos. ¿Deseas continuar?")
+                        : (isCa
+                            ? "⚠️ Estàs segur que vols importar les rutes? Els registres coincidents de treballador i data seran reemplaçats."
+                            : "⚠️ ¿Estás seguro de que deseas importar las rutas? Los registros coincidentes de trabajador y fecha serán reemplazados.");
+                    
+                    if (!confirm(confirmMsg)) {
+                        btn.disabled = false;
+                        btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                        return;
+                    }
+                    
+                    // Iniciar transacción en la base de datos finanzas
+                    await dbApi.write('finanzas', "BEGIN TRANSACTION;", []);
+                    
+                    if (estrategia === 'overwrite') {
+                        await dbApi.write('finanzas', "DELETE FROM movimientos_economicos WHERE tipo_movimiento = 'Ruta Comercial'", []);
+                    }
+                    
+                    let exitos = 0;
+                    let errores = 0;
+                    
+                    for (const r of registrosParaInsertar) {
+                        try {
+                            if (estrategia === 'add') {
+                                // Eliminar coincidencias para evitar duplicados en modo agregar
+                                await dbApi.write('finanzas', `
+                                    DELETE FROM movimientos_economicos 
+                                    WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Ruta Comercial'
+                                `, [r.worker, r.date]);
+                            }
+                            
+                            // Insertar
+                            await dbApi.write('finanzas', `
+                                INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
+                                VALUES (?, ?, 'Ruta Comercial', ?, 0, ?)
+                            `, [r.worker, r.date, r.concepto, JSON.stringify({ paradas: r.stops, festivo: r.festivo })]);
+                            
+                            exitos++;
+                        } catch (errRow) {
+                            console.error("Error al importar ruta:", errRow, r);
+                            errores++;
+                        }
+                    }
+                    
+                    await dbApi.write('finanzas', "COMMIT;", []);
+                    
+                    btn.disabled = false;
+                    btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                    
+                    document.getElementById('txtResultadoFinal').innerHTML = isCa
+                        ? `S'han importat correctament <strong>${exitos}</strong> rutes comercials a la base de dades finances.`
+                        : `Se han importado correctamente <strong>${exitos}</strong> rutas comerciales en la base de datos finanzas.`;
+                        
+                    document.getElementById('sectionDatosExcluidos').style.display = 'none';
+                    
+                    avanzarPaso(5);
+                } catch (errGlobal) {
+                    console.error("Error global en migración de rutas:", errGlobal);
+                    try {
+                        await dbApi.write('finanzas', "ROLLBACK;", []);
+                    } catch(e) {}
+                    btn.disabled = false;
+                    btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                    alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
+                }
+                return;
+            }
             
             if (tipo === 'comerciales') {
                 try {

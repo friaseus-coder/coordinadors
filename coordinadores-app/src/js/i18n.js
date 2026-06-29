@@ -629,7 +629,9 @@ const i18n = (() => {
       portalOnlyJsonAllowed: "⚠️ Només s'admeten fitxers .json",
       portalNoPermissionImport: "⚠️ El teu perfil no té permisos per importar dades.",
       portalSessionExpired: "⚠️ Sessió no identificada. Torna a entrar.",
-      birthdayGreeting: "Feliç aniversari {name}!!"
+      birthdayGreeting: "Feliç aniversari {name}!!",
+      optRutas: "📍 Rutes Comercials",
+      optGastos: "📅 Despeses i Kilometratge"
     },
     es: {
       // Login (index.html)
@@ -1215,7 +1217,9 @@ const i18n = (() => {
       portalOnlyJsonAllowed: "⚠️ Solo se admiten archivos .json",
       portalNoPermissionImport: "⚠️ Tu perfil no tiene permisos para importar datos.",
       portalSessionExpired: "⚠️ Sesión no identificada. Vuelve a entrar.",
-      birthdayGreeting: "¡¡Feliz cumpleaños {name}!!"
+      birthdayGreeting: "¡¡Feliz cumpleaños {name}!!",
+      optRutas: "📍 Rutas Comerciales",
+      optGastos: "📅 Gastos y Kilometraje"
     }
   };
 

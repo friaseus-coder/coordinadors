@@ -2286,7 +2286,7 @@ ipcMain.handle('crear-backup-migracion', async (event, { tipo }) => {
       dbKey = 'comercial';
     } else if (tipo === 'deudas') {
       dbKey = 'operativa';
-    } else if (tipo === 'gastos') {
+    } else if (tipo === 'gastos' || tipo === 'rutas') {
       dbKey = 'finanzas';
     }
     

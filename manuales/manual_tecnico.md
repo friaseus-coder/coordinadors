@@ -323,7 +323,7 @@ Durante la sincronización de archivos de configuración (`coordinadores.json`),
 Con la implantación de la **Fase 10**, SQLite es la fuente de verdad única absoluta en la aplicación, habiéndose eliminado los antiguos fallbacks locales y archivos JSON en la edición diaria. Las migraciones de datos legados se canalizan a través de un asistente premium interactivo y seguro, habiéndose eliminado por completo el Panel de Administración heredado (`admin.html`) por redundancia.
 
 ### A. Asistente Guiado de Carga de Históricos (`migrador.html`)
-Se ha diseñado una interfaz de asistente guiada por pasos (`src/migrador/migrador.html`) que permite importar históricos de manera segura para los módulos de **Cuadrantes**, **Vacaciones**, **Deudas** y **Precios Comerciales**. El flujo de trabajo consta de 5 pasos consecutivos:
+Se ha diseñado una interfaz de asistente guiada por pasos (`src/migrador/migrador.html`) que permite importar históricos de manera segura para los módulos de **Cuadrantes**, **Vacaciones**, **Deudas**, **Precios Comerciales**, **Rutas Comerciales** y **Gastos y Kilometraje**. El flujo de trabajo consta de 5 pasos consecutivos:
 
 1.  **Configuración de la Carga (Paso 1):** El usuario selecciona la base de datos a modificar y la estrategia de carga:
     *   *Afegir i Combinar Dades:* Conserva los datos existentes e inyecta los nuevos registros.
@@ -340,6 +340,11 @@ Se ha diseñado una interfaz de asistente guiada por pasos (`src/migrador/migrad
 *   **Comerciales:** La migración toma los datos legacy del tipo `nn_A_...` o `nn_L_...` y los transforma automáticamente a las claves modernas tipo `dades Albert/comercials_albert_...json` estructurando la matriz de tarifas e inyectándola en la base de datos `comercial.db` -> tabla `kv_store`.
 *   **Doble Encapsulado**: Para respetar el esquema original de lectura del frontend (`comercials.html`), el valor se almacena como un objeto JSON que contiene la firma dinámica del mes, y cuyo valor a su vez es el string JSON de la matriz de datos (`double-stringification`), garantizando que la aplicación lea e interprete los datos migrados de forma directa.
 *   **Importaciones Manuales KV**: Se mantiene un botón alternativo en la pantalla de inicio para la carga directa de JSONs a la base de datos clave-valor simple sin validación de catálogos relacionales, reservado para soporte técnico.
+
+### C. Carga Histórica de Rutas y Gastos/Kilometraje en Base de Datos de Finanzas
+*   **Rutas Comerciales:** Este importador analiza un JSON con paradas fragmentadas y atributos de festivos por trabajador. Agrupa secuencialmente las paradas por cada día y trabajador, generando un recorrido formateado (ej. "PROVENÇA 111 ➤ VALENCIA 243") e inserta el resultado de manera transaccional y atómica en la tabla `movimientos_economicos` de `finanzas_inventario.db` (tipo_movimiento = 'Ruta Comercial').
+*   **Gastos y Kilometraje:** Extrae de manera global el trabajador del campo `"nyn_nom_empleat"`, analiza las llaves de meses válidos con prefijo `"nyn_despeses_"`, ignora filas con fecha vacía, y mapea el trayecto, kilómetros, tarifa y peajes a la tabla `movimientos_economicos` (tipo_movimiento = 'Kilometraje') en `finanzas_inventario.db`, guardando los detalles estructurados en el campo flexible `json_detalles`.
+*   **Idempotencia e Integridad:** Ambos importadores requieren de confirmación explícita mediante un cuadro de confirmación interactiva. En el modo de sobrescribir, limpian los registros existentes en la tabla unificada del usuario antes de importar; en el modo de añadir, eliminan registros individuales con las mismas coincidencias para evitar la generación accidental de filas duplicadas en caso de reintentos.
 
 ---
 
