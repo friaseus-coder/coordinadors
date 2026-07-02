@@ -1066,6 +1066,56 @@ ipcMain.handle('db-execute', async (event, { sql, params }) => {
   }
 });
 
+// ==========================================
+// MIDDLEWARE DE SEGURIDAD ANTI-INYECCIÓN SQL
+// ==========================================
+
+/**
+ * Valida la consulta SQL y los permisos del usuario antes de ejecutar cualquier escritura.
+ * Lanza un Error con un mensaje descriptivo si la operación no está permitida.
+ * @param {string} dbKey   - Identificador del shard de base de datos
+ * @param {string} query   - Consulta SQL que se pretende ejecutar
+ * @param {string} userRole - Rol del usuario obtenido del sessionStorage
+ * @param {string} userName - Nombre del usuario obtenido del sessionStorage
+ */
+function validateSecurity(dbKey, query, userRole, userName) {
+  const queryUpper = query.toUpperCase();
+  const role = (userRole || '').toLowerCase();
+
+  // --- REGLA 1: Bloqueo Absoluto (Nivel Dios) ---
+  // Ningún usuario, ni admins, puede ejecutar comandos destructivos de esquema desde la UI.
+  const COMANDOS_DESTRUCTIVOS = ['DROP TABLE', 'TRUNCATE', 'ALTER TABLE', 'GRANT'];
+  for (const cmd of COMANDOS_DESTRUCTIVOS) {
+    if (queryUpper.includes(cmd)) {
+      throw new Error(
+        `ALERTA DE SEGURIDAD: Comando SQL destructivo bloqueado. (Detectado: ${cmd})`
+      );
+    }
+  }
+
+  // --- REGLA 2: Protección de Borrado ---
+  // Solo los administradores pueden ejecutar DELETE FROM.
+  if (queryUpper.includes('DELETE FROM')) {
+    if (role !== 'admin') {
+      throw new Error(
+        'Permisos insuficientes: Solo los administradores pueden borrar registros.'
+      );
+    }
+  }
+
+  // --- REGLA 3: Protección Financiera ---
+  // En el shard 'finanzas', los UPDATE y DELETE solo están permitidos para roles admin o finanzas.
+  // Los coordinadores estándar únicamente pueden hacer INSERT de nuevos gastos.
+  if (dbKey === 'finanzas') {
+    const esModificacion = queryUpper.includes('UPDATE') || queryUpper.includes('DELETE');
+    if (esModificacion && role !== 'admin' && role !== 'finanzas') {
+      throw new Error(
+        'Permisos insuficientes: Solo los roles admin o finanzas pueden modificar o borrar registros financieros.'
+      );
+    }
+  }
+}
+
 // NUEVO: Canalización explícita para la API window.dbAPI (Tarea 4)
 ipcMain.handle('read-db', async (event, { dbKey, query, params }) => {
   return new Promise((resolve, reject) => {
@@ -1085,13 +1135,18 @@ ipcMain.handle('read-db', async (event, { dbKey, query, params }) => {
   });
 });
 
-ipcMain.handle('write-db', async (event, { dbKey, query, params }) => {
+ipcMain.handle('write-db', async (event, { dbKey, query, params, userRole, userName }) => {
   try {
-    const result = await safeWriteCombined(dbKey, query, params);
-    return result;
-  } catch (err) {
-    console.error(`[dbAPI Write Error] dbKey: ${dbKey} | Query: ${query} | Error: ${err.message}`);
-    throw err;
+    // 1. Pasar por el control de seguridad antes de adquirir el Mutex
+    validateSecurity(dbKey, query, userRole, userName);
+
+    // 2. Ejecutar la escritura segura con Mutex (safeWriteCombined)
+    return await safeWriteCombined(dbKey, query, params);
+  } catch (error) {
+    console.warn(
+      `[Seguridad/DB] Intento fallido de ${userName || 'Desconocido'} (${userRole || 'sin-rol'}) en ${dbKey}: ${query}`
+    );
+    throw new Error(error.message);
   }
 });
 

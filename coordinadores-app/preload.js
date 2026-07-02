@@ -32,7 +32,11 @@ contextBridge.exposeInMainWorld('databaseAPI', {
 
 contextBridge.exposeInMainWorld('dbAPI', {
   read: (dbKey, query, params) => ipcRenderer.invoke('read-db', { dbKey, query, params }),
-  write: (dbKey, query, params) => ipcRenderer.invoke('write-db', { dbKey, query, params }),
+  write: (dbKey, query, params) => {
+    const userRole = sessionStorage.getItem('userRole') || 'invitado';
+    const userName = sessionStorage.getItem('user') || 'Desconocido';
+    return ipcRenderer.invoke('write-db', { dbKey, query, params, userRole, userName });
+  },
   forceUnlock: (dbKey) => ipcRenderer.invoke('force-unlock-db', dbKey)
 });
 
