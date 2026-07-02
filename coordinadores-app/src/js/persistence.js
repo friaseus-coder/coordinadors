@@ -70,7 +70,7 @@ const persistence = (() => {
     inventari: (key) => key.startsWith('nyn_log_v13'),
     vacances: (key) => key.startsWith('nyn_vacances') || key.startsWith('Vacances_'),
     comercials: (key) => key.startsWith('nyn_comercials') || key.startsWith('comercials_') || key.startsWith('nn_') || key.startsWith('nn_last_export_'),
-    despeses: (key) => key.startsWith('nyn_gastos') || key.startsWith('despeses'),
+    despeses: (key) => key.startsWith('nyn_gastos') || key.startsWith('despeses') || key.startsWith('nyn_despeses'),
     deutes: (key) => key.startsWith('nyn_deutes') || key.startsWith('deutes'),
     ruta: (key) => key.startsWith('nyn_ruta') || key.startsWith('ruta_'),
     ranking: (key) => key.startsWith('nyn_ranking') || key.startsWith('ranking')

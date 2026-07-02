@@ -257,10 +257,10 @@ function syncToLocal(dbKey) {
   }
 }
 
-function acquireLock(dbKey) {
+function acquireLock(dbKey, retries = 15, delay = 1000) {
   const lockDir = path.join(NETWORK_DIR, `_${dbKey}.lock`);
-  const maxRetries = 15;
-  const delayMs = 1000;
+  const maxRetries = retries;
+  const delayMs = delay;
 
   return new Promise((resolve, reject) => {
     let attempt = 0;
@@ -272,6 +272,19 @@ function acquireLock(dbKey) {
         resolve(lockDir);
       } catch (err) {
         if (err.code === 'EEXIST') {
+          try {
+            const stats = fs.statSync(lockDir);
+            const time = Math.min(stats.birthtimeMs || stats.mtimeMs, stats.mtimeMs);
+            if (Date.now() - time > 180000) {
+              console.warn(`[MUTEX] Candado obsoleto detectado para ${dbKey} (antigüedad: ${Date.now() - time}ms). Eliminando forzosamente...`);
+              fs.rmSync(lockDir, { recursive: true, force: true });
+              tryAcquire();
+              return;
+            }
+          } catch (statErr) {
+            console.error(`[MUTEX Error] Error al comprobar/eliminar candado fantasma:`, statErr.message);
+          }
+
           attempt++;
           if (attempt >= maxRetries) {
             reject(new Error(`[MUTEX Timeout] No se pudo adquirir el candado en red para ${dbKey} tras ${maxRetries} reintentos.`));
@@ -1078,6 +1091,20 @@ ipcMain.handle('write-db', async (event, { dbKey, query, params }) => {
     return result;
   } catch (err) {
     console.error(`[dbAPI Write Error] dbKey: ${dbKey} | Query: ${query} | Error: ${err.message}`);
+    throw err;
+  }
+});
+
+ipcMain.handle('force-unlock-db', async (event, dbKey) => {
+  const lockDir = path.join(NETWORK_DIR, `_${dbKey}.lock`);
+  try {
+    if (fs.existsSync(lockDir)) {
+      fs.rmSync(lockDir, { recursive: true, force: true });
+      console.log(`[MUTEX Override] Candado liberado forzosamente para ${dbKey}: ${lockDir}`);
+    }
+    return { success: true, message: 'Candado liberado forzosamente' };
+  } catch (err) {
+    console.error(`[MUTEX Override Error] Error al liberar forzosamente ${lockDir}:`, err.message);
     throw err;
   }
 });

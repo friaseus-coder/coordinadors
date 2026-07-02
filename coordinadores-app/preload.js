@@ -32,7 +32,8 @@ contextBridge.exposeInMainWorld('databaseAPI', {
 
 contextBridge.exposeInMainWorld('dbAPI', {
   read: (dbKey, query, params) => ipcRenderer.invoke('read-db', { dbKey, query, params }),
-  write: (dbKey, query, params) => ipcRenderer.invoke('write-db', { dbKey, query, params })
+  write: (dbKey, query, params) => ipcRenderer.invoke('write-db', { dbKey, query, params }),
+  forceUnlock: (dbKey) => ipcRenderer.invoke('force-unlock-db', dbKey)
 });
 
 
