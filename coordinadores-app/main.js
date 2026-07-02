@@ -387,23 +387,9 @@ async function safeWriteCombined(dbKey, query, params) {
 // ============================================================
 
 function aplicarSchemaCanonicoYMigrar(dbConnection) {
-  // 1. Aplicar el schema.sql canónico (todas las sentencias son CREATE IF NOT EXISTS, seguro en cualquier estado)
-  const schemaPath = path.join(__dirname, 'schema.sql');
-  if (fs.existsSync(schemaPath)) {
-    const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    dbConnection.exec(schemaSql, (errSchema) => {
-      if (errSchema) {
-        console.error('[DB] Error al aplicar schema.sql canónico:', errSchema.message);
-      } else {
-        console.log('[DB] Schema canónico aplicado correctamente (CREATE IF NOT EXISTS).');
-      }
-      // 2. Comprobar versión actual y ejecutar migraciones
-      comprobarVersionYMigrar(dbConnection);
-    });
-  } else {
-    console.warn('[DB] schema.sql no encontrado. Ejecutando migración sin schema canónico.');
-    comprobarVersionYMigrar(dbConnection);
-  }
+  // schema.sql eliminado (arquitectura de Sharding completada).
+  // Las tablas se crean con CREATE TABLE IF NOT EXISTS en las propias migraciones versionadas.
+  comprobarVersionYMigrar(dbConnection);
 }
 
 function comprobarVersionYMigrar(dbConnection) {

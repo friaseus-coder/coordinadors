@@ -266,6 +266,28 @@ document.addEventListener('alpine:init', () => {
                     if (!aRow || aRow.length === 0) return;
                     const agenteId = aRow[0].id;
 
+                    // --- VALIDACIÓN DE REGLAS DE NEGOCIO ---
+                    // Comprobar si el trabajador ya tiene un turno asignado ese día en cualquier otro parking/turno.
+                    // Si se está actualizando la misma celda (mismo parking + mismo turno), excluirla de la comprobación.
+                    const esActualizacion = (checkRow) => checkRow && checkRow.length > 0;
+                    const checkExistente = await window.dbAPI.read(
+                        'operativa',
+                        "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?",
+                        [fechaStr, parkingId, turno]
+                    );
+                    const idExistente = esActualizacion(checkExistente) ? checkExistente[0].id : null;
+
+                    const estaLibre = await this.validarReglasAsignacion(agenteId, fechaStr, idExistente);
+                    if (!estaLibre) {
+                        const msg = i18n.getLanguage() === 'es'
+                            ? `Error: ${workerName} ya tiene un turno asignado el día ${dia}/${mesNum} en otro parking.`
+                            : `Error: ${workerName} ja té un torn assignat el dia ${dia}/${mesNum} en un altre parking.`;
+                        alert(msg);
+                        await this.cargarCuadrantes();
+                        return;
+                    }
+                    // -----------------------------------------
+
                     const hoursParts = hoursStr.split('-');
                     const horaInicio = hoursParts[0] || '06:00';
                     const horaFin = hoursParts[1] || '14:00';
@@ -275,13 +297,12 @@ document.addEventListener('alpine:init', () => {
                     if (endHour < startHour) endHour += 24;
                     const horasTrabajadas = endHour - startHour;
 
-                    const checkRow = await window.dbAPI.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
-                    if (checkRow && checkRow.length > 0) {
+                    if (idExistente) {
                         await window.dbAPI.write('operativa', `
                             UPDATE quadrant 
                             SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ?, es_substitucio = ?
                             WHERE id = ?
-                        `, [agenteId, horaInicio, horaFin, horasTrabajadas, isSub, checkRow[0].id]);
+                        `, [agenteId, horaInicio, horaFin, horasTrabajadas, isSub, idExistente]);
                     } else {
                         await window.dbAPI.write('operativa', `
                             INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio)
@@ -293,6 +314,41 @@ document.addEventListener('alpine:init', () => {
                 await this.cargarCuadrantes();
             } catch (err) {
                 console.error("Error guardando celda:", err);
+            }
+        },
+
+        /**
+         * Valida si un trabajador ya tiene algún turno asignado en una fecha dada.
+         * Excluye el registro existente de la misma celda (idExistente) para permitir actualizaciones.
+         * @param {number} agenteId      - ID del agente en la tabla agentes
+         * @param {string} fechaStr      - Fecha en formato YYYY-MM-DD
+         * @param {number|null} idExistente - ID del registro quadrant que se está actualizando (null si es nuevo)
+         * @returns {Promise<boolean>}   - true si el agente está libre ese día, false si ya está ocupado
+         */
+        async validarReglasAsignacion(agenteId, fechaStr, idExistente) {
+            try {
+                let rows;
+                if (idExistente) {
+                    // Actualizar celda existente: excluir ese registro para no bloquearse a sí mismo
+                    rows = await window.dbAPI.read(
+                        'operativa',
+                        "SELECT id FROM quadrant WHERE agente_id = ? AND fecha = ? AND id != ?",
+                        [agenteId, fechaStr, idExistente]
+                    );
+                } else {
+                    // Nueva asignación: buscar cualquier registro del agente en esa fecha
+                    rows = await window.dbAPI.read(
+                        'operativa',
+                        "SELECT id FROM quadrant WHERE agente_id = ? AND fecha = ?",
+                        [agenteId, fechaStr]
+                    );
+                }
+                // Si existen registros, el trabajador ya está ocupado ese día
+                return !rows || rows.length === 0;
+            } catch (err) {
+                console.error("[Validación] Error al comprobar solapamiento de turnos:", err);
+                // En caso de error de BD, permitir la operación para no bloquear el flujo de trabajo
+                return true;
             }
         },
 
