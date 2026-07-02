@@ -2,647 +2,354 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <title>NN Control Excés Jornada</title>
-    <script src="../js/persistence.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
-        :root { 
-            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
-            --nyn-verd-accent: #008d36; /* Verde acento */
-            --border: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        * { font-family: 'Outfit', 'Segoe UI', Arial, sans-serif !important; }
-
-        body { 
-            background-color: #f8fafc !important; 
-            margin: 0; 
-            color: #333; 
-            font-size: 11px; 
-            display: flex; 
-            flex-direction: column; 
-            height: 100vh; 
-        }
-
-        /* --- HEADER ESTILO CUADRANTE --- */
-        header { 
-            background-color: var(--nyn-verd) !important; 
-            color: white !important; 
-            padding: 8px 24px !important; 
-            display: flex !important;        
-            justify-content: center !important; 
-            align-items: center !important; 
-            height: 48px !important; 
-            border-bottom: 2px solid var(--nyn-verd-accent) !important;
-            box-sizing: border-box !important;
-            margin-bottom: 0 !important;
-            text-align: center !important;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        header h1 { 
-            font-size: 15px !important; 
-            font-weight: 700 !important; 
-            text-transform: uppercase !important; 
-            letter-spacing: 1px !important; 
-            color: white !important;
-            margin: 0 !important;
-        }
-
-        /* --- BARRA DE HERRAMIENTAS Y CONTROL --- */
-        .admin-panel { 
-            padding: 10px 24px; 
-            display: flex; 
-            flex-wrap: wrap;
-            gap: 12px; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            background: #ffffff; 
-            margin-bottom: 12px;
-        }
-        .toolbar-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #ffffff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            box-shadow: var(--shadow-sm);
-        }
-        .filter-label { 
-            font-weight: 700; 
-            color: var(--nyn-verd); 
-            font-size: 10px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
-
-        /* DROPDOWNS Y BOTONES */
-        select, button, input[type="text"], input[type="number"] {
-            padding: 4px 10px !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 6px !important;
-            font-size: 11px !important;
-            font-weight: 500 !important;
-            cursor: pointer !important;
-            height: 28px !important;
-            box-sizing: border-box !important;
-            transition: all 0.2s ease !important;
-            background: #ffffff !important;
-            color: #334155 !important;
-            box-shadow: var(--shadow-sm) !important;
-        }
-        input[type="text"], input[type="number"] {
-            cursor: text !important;
-        }
-        select:hover, select:focus, input[type="text"]:focus {
-            border-color: var(--nyn-verd-accent) !important;
-            outline: none !important;
-        }
-
-        .btn-action {
-            background: var(--nyn-verd) !important;
-            color: #ffffff !important;
-            border: 1px solid var(--nyn-verd) !important;
-            font-weight: 600 !important;
-        }
-        .btn-action:hover {
-            background: #0b4e43 !important;
-            border-color: #0b4e43 !important;
-        }
-        .btn-action-sec {
-            background: #3b82f6 !important;
-            color: white !important;
-            border: 1px solid #3b82f6 !important;
-            font-weight: 600 !important;
-        }
-        .btn-action-sec:hover {
-            background: #2563eb !important;
-            border-color: #2563eb !important;
-        }
-        .btn-archive {
-            background: #f1f5f9 !important;
-            border: 1px solid #e2e8f0 !important;
-            color: #475569 !important;
-        }
-        .btn-archive:hover {
-            background: #e2e8f0 !important;
-        }
-
-        /* --- STATS WRAPPER --- */
-        .stats-wrapper { 
-            display: flex; 
-            align-items: center; 
-            gap: 8px;
-            font-weight: bold; 
-            font-size: 11px;
-        }
-        .stat-box { 
-            display: flex; 
-            align-items: center; 
-            gap: 4px; 
-            height: 24px; 
-            background: #f8fafc;
-            padding: 2px 8px;
-            border-radius: 6px;
-            border: 1px solid #e2e8f0;
-        }
-        .stat-label { 
-            color: #64748b; 
-            font-size: 9px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
-        .stat-val-red { 
-            color: #ef4444; 
-            font-weight: 800;
-        }
-        .stat-val-yellow { 
-            color: #d97706; 
-            font-weight: 800;
-        }
-        .stat-val-black { 
-            color: #1e293b; 
-            font-weight: 800;
-        }
-        .stat-val-blue { 
-            color: #2563eb; 
-            font-weight: 800;
-        }
-        .stats-legend {
-            font-size: 9px; 
-            color: #64748b; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 2px; 
-            text-transform: uppercase;
-        }
-        
-        .main-container { display: flex; flex: 1; overflow: hidden; }
-        .table-container { flex: 1; overflow: auto; padding: 16px 24px; background: #f8fafc; }
-
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; border: 1px solid var(--border) !important; border-radius: 12px; overflow: hidden; background: white; box-shadow: var(--shadow-md); }
-        
-        th { 
-            background-color: #1e293b !important; color: #ffffff !important; padding: 6px 4px !important; text-align: center; font-size: 11px; 
-            border: 1px solid #334155 !important; font-weight: 600; position: sticky; top: 0; z-index: 900;
-            text-transform: none; 
-        }
-        
-        .thead-double th { top: 0; }
-        .thead-double tr:nth-child(2) th { top: 29px; }
-
-        td { padding: 4px; border: 1px solid #eee; font-size: 11px; height: 24px; text-align: center; vertical-align: middle; background-color: white; }
-        
-        .col-centre { width: 150px; text-align: left; padding-left: 5px; font-weight: bold !important; }
-        .col-nom { width: 150px; text-align: left; padding-left: 5px; }
-        .col-jornada { width: 70px; text-align: center; }
-        .col-data { width: 115px; } 
-        .col-obs { width: 300px; text-align: center; }
-        .col-del { width: 30px; font-size: 12px; }
-
-        /* RECUADRE AGRUPACIÓ CENTRE */
-        tr.group-item td:first-child { border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
-        tr.group-start td:first-child { border-top: 1.5px solid black !important; }
-        tr.group-end td:first-child { border-bottom: 1.5px solid black !important; }
-
-        .col-obs input { 
-            width: 100%; border: none; background: transparent; font-family: inherit; font-size: 11px; 
-            text-align: center; outline: none; height: 100%; padding: 0;
-        }
-
-        .col-centre select, .col-nom select, .filter-select, .col-jornada select { 
-            width: 100%; border: none; background: transparent; font-family: inherit; font-size: 11px; 
-            outline: none; color: inherit; cursor: pointer; appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="%23666"/></svg>');
-            background-repeat: no-repeat; background-position: right 4px center; padding-right: 12px;
-        }
-        .filter-select { text-align: center; font-size: 10px; font-weight: 600; color: white !important; }
-        
-        .text-tp { color: #9b59b6 !important; font-weight: normal !important; }
-
-        .cell-wrapper { display: flex; align-items: center; width: 100%; height: 100%; }
-        .cell-wrapper input[type="date"] { flex: 1; border: none; background: transparent; font-family: inherit; font-size: 9px; text-align: center; outline: none; height: 100%; }
-        .btn-nc-trigger { width: 15px; border: none; background: transparent; cursor: pointer; color: #ccc; font-size: 9px; padding: 0; }
-        .btn-nc-trigger:hover { color: red; }
-
-        .bg-nc { background-color: #ff4d4d !important; color: white !important; }
-        .bg-conv-dat {  background-color: rgba(241, 196, 15, 0.5) !important; color: #333 !important; }
-        .bg-vac-dat { background-color: #2ecc71 !important; }
-        .bg-noc-dat { background-color: #0070c0 !important; color: white !important; }
-
-        .data-antiga { color: #8e44ad !important;  }
-
-        .header-conveni { background-color: #d97706 !important; color: white !important; border-color: #b45309 !important; }
-        .header-vacances { background-color: #16a34a !important; color: white !important; border-color: #15803d !important; }
-        .header-nocturn { background-color: #1d4ed8 !important; color: white !important; border-color: #1e40af !important; }
-        .header-reajust { background-color: #0284c7 !important; color: white !important; border-color: #0369a1 !important; }
-
-        .side-charts { width: 260px; background: #ffffff; border-left: 1px solid #e2e8f0; padding: 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
-        .chart-card-ranking { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; box-shadow: var(--shadow-sm); }
-        .chart-card-pie { background: white; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; margin-top: 15px; flex-shrink: 0; box-shadow: var(--shadow-sm); }
-        .chart-title { font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: var(--nyn-verd); border-bottom: 1px solid #e2e8f0; padding-bottom: 4px; }
-        
-        #rankingTreballadors { flex-grow: 1; }
-        .bar-row { margin-bottom: 4px; }
-        .bar-label { font-size: 8.5px; display: flex; justify-content: space-between; margin-bottom: 1px; }
-        .bar-outer { background: #eee; height: 6px; border-radius: 3px; overflow: hidden; }
-        .bar-inner { height: 100%; background: var(--nyn-verd); }
-
-        .pie-container { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 5px 0; }
-        .pie-chart { width: 80px; height: 80px; border-radius: 50%; background: conic-gradient(#f1c40f 0% 0%, #eee 0% 100%); display: flex; align-items: center; justify-content: center; position: relative; }
-        .pie-chart::before { content: ""; position: absolute; width: 48px; height: 48px; background: white; border-radius: 50%; }
-        .pie-percentage { position: relative; font-size: 14px; font-weight: 800; color: #444; }
-        .pie-legend { font-size: 9px; margin-top: 8px; display: flex; gap: 10px; }
-        .legend-item { display: flex; align-items: center; gap: 4px; }
-        .dot { width: 8px; height: 8px; border-radius: 2px; }
-
-        #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; border:2px solid var(--nyn-verd); border-radius:12px; padding:20px; z-index:2000; box-shadow: var(--shadow-md); width:500px; }
-        #modalGestio h3 { color: var(--nyn-verd) !important; font-weight: 700; margin-top: 0; }
-        #modalGestio button { background: var(--nyn-verd) !important; color: white !important; font-weight: 600; }
-        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999; }
-    </style>
-    <script src="../js/i18n.js"></script>
+    <title>NyN Pàrquings | Control Excés Jornada</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-       // Forzar traducción inmediata al cargar
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        }
+      }
+    </script>
+    <script src="../js/persistence.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
        document.addEventListener('DOMContentLoaded', () => {
            if(typeof applyTranslations === 'function') applyTranslations();
        });
     </script>
+    
+<style>
+    [x-cloak] { display: none !important; }
+
+    :root {
+        --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+        --nyn-verd-accent: #008d36; /* Verde acento */
+        --border: #e2e8f0;
+        --text-main: #0f2d4a;
+        --text-muted: #64748b;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    body { 
+        font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+        background: #f8fafc; 
+        color: #1e293b;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    header { 
+        background-color: var(--nyn-verd); 
+        color: white; 
+        padding: 8px 24px; 
+        display: flex;        
+        justify-content: center; 
+        align-items: center; 
+        height: 48px; 
+        border-bottom: 2px solid var(--nyn-verd-accent);
+        box-sizing: border-box;
+    }
+
+    .header-center { 
+        font-size: 15px; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+    }
+
+    .main-container {
+        display: flex;
+        flex: 1;
+        gap: 20px;
+        padding: 24px;
+        box-sizing: border-box;
+    }
+
+    .left-panel {
+        width: 380px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .form-panel, .balance-panel {
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    .list-panel {
+        flex: 1;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    h2 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+        text-transform: uppercase;
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 8px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    label {
+        font-weight: 700;
+        color: var(--nyn-verd);
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    input, select, button {
+        font-family: inherit;
+        font-size: 11.5px;
+        box-sizing: border-box;
+    }
+
+    input[type="text"], input[type="date"], input[type="number"], select {
+        padding: 6px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        width: 100%;
+        background: #ffffff;
+        outline: none;
+        transition: border-color 0.2s;
+    }
+
+    input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus, select:focus {
+        border-color: var(--nyn-verd-accent);
+    }
+
+    .btn-nyn {
+        background: var(--nyn-verd);
+        color: white;
+        border: 1px solid var(--nyn-verd);
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
+
+    .btn-nyn:hover {
+        background: #0b4e43;
+        border-color: #0b4e43;
+    }
+
+    .btn-danger-icon {
+        color: #ef4444;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-danger-icon:hover {
+        color: #b91c1c;
+    }
+
+    /* Tabla */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #f8fafc;
+        color: var(--text-main);
+        font-weight: 700;
+        font-size: 10px;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        border-bottom: 2px solid var(--border);
+        text-align: left;
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 11px;
+        vertical-align: middle;
+    }
+
+    tr:hover td {
+        background-color: #f8fafc;
+    }
+</style>
 </head>
-<body data-required-roles="coordinador,jefe_operaciones">
+<body x-data="moduloDeudas()" x-init="init()">
 
 <header>
-    <h1 id="titolPrincipal" data-i18n="deutesTitle">Control Excés Jornada</h1>
+    <div class="header-center"><i class="fas fa-clock mr-2"></i> CONTROL EXCÉS JORNADA (DEUTES DE HORES)</div>
 </header>
 
-<div class="admin-panel">
-    <div class="toolbar-group">
-        <span class="filter-label" data-i18n="deutesLabelAny">Any:</span>
-        <select id="anyActual" onchange="canviarAny()"></select>
-    </div>
-    
-    <div class="toolbar-group">
-        <button class="btn-action" onclick="afegirFila()" data-i18n="deutesBtnFilaNova">✚ Fila Nova</button>
-        <button class="btn-archive" onclick="obrirGestio()" data-i18n="deutesBtnGestionarDades">⚙️ Gestionar Dades</button>
-    </div>
-
-    <div class="toolbar-group">
-        <span class="filter-label" data-i18n="deutesLabelMetriques">Mètriques:</span>
-        <div class="stats-wrapper">
-            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelPendentPct">% pendent:</span><span id="statPendentPct" class="stat-val-red">0%</span></div>
-            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelLiquidatPct">% liquidat:</span><span id="statLiquidatPct" class="stat-val-yellow">0%</span></div>
-            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelTotals">totals:</span><span id="statTotals" class="stat-val-black">0</span></div>
-            <div class="stat-box"><span class="stat-label" data-i18n="deutesLabelPendents">pendents:</span><span id="statPendentAbs" class="stat-val-blue">0</span></div>
-        </div>
-    </div>
-
-    <div class="toolbar-group" style="margin-left: auto;">
-        <div class="stats-legend">
-            <span id="countFiles">nº files: 0</span>
-            <span id="countCelles">nº cel·les: 0</span>
-        </div>
-    </div>
-</div>
-
 <div class="main-container">
-    <div class="table-container">
-        <table id="taulaPrincipal">
-            <thead id="capTaula" class="thead-double"></thead>
-            <tbody id="cosTaula"></tbody>
-        </table>
+    <div class="left-panel">
+        <!-- Registrar Ajuste -->
+        <div class="form-panel">
+            <h2><i class="fas fa-plus-circle"></i> Ajust de Hores</h2>
+            
+            <div class="flex flex-col gap-1.5">
+                <label>Treballador</label>
+                <select x-model="nuevaIncidencia.agente">
+                    <option value="">-- Selecciona --</option>
+                    <template x-for="t in listaAgentes" :key="t">
+                        <option :value="t" x-text="t"></option>
+                    </template>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label>Fecha</label>
+                <input type="date" x-model="nuevaIncidencia.fecha">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label>Concepto / Tipo</label>
+                <select x-model="nuevaIncidencia.tipo">
+                    <option value="Bolsa Horas (+)">Bolsa Horas (+) - Suma horas al saldo</option>
+                    <option value="Deuda Horas (-)">Deuda Horas (-) - Resta horas al saldo</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label>Horas</label>
+                <input type="number" min="0.5" step="0.5" x-model.number="nuevaIncidencia.horas">
+            </div>
+
+            <div class="flex flex-col gap-1.5">
+                <label>Comentarios / Motivo</label>
+                <input type="text" x-model="nuevaIncidencia.comentarios" placeholder="Ej: Suplència, hores extres...">
+            </div>
+
+            <button class="btn-nyn w-full mt-2" @click="registrarIncidencia()">
+                <i class="fas fa-save"></i> Guardar Ajust
+            </button>
+        </div>
+
+        <!-- Balance Global -->
+        <div class="balance-panel">
+            <h2><i class="fas fa-balance-scale"></i> Balanç de Treballadors</h2>
+            <div class="flex flex-col gap-2 max-h-80 overflow-y-auto pr-1">
+                <template x-for="(bal, name) in balances" :key="name">
+                    <div class="flex justify-between items-center border-b border-gray-100 pb-1.5 text-xs">
+                        <span class="font-bold text-gray-700" x-text="name"></span>
+                        <span class="px-2 py-0.5 rounded font-bold" 
+                              :class="{
+                                  'bg-green-100 text-green-800': bal > 0,
+                                  'bg-red-100 text-red-800': bal < 0,
+                                  'bg-gray-100 text-gray-500': bal === 0
+                              }"
+                              x-text="bal > 0 ? '+' + bal + 'h' : bal + 'h'"></span>
+                    </div>
+                </template>
+            </div>
+        </div>
     </div>
 
-    <div class="side-charts">
-        <div class="chart-card-ranking">
-            <div class="chart-title" data-i18n="deutesChartRankingTitle">rànquing gaudits (%)</div>
-            <div id="rankingTreballadors"></div>
-        </div>
-        <div class="chart-card-pie">
-            <div class="chart-title" data-i18n="deutesChartPieTitle">estat global anual</div>
-            <div class="pie-container">
-                <div class="pie-chart" id="pieChart"><span class="pie-percentage" id="piePctText">0%</span></div>
-                <div class="pie-legend">
-                    <div class="legend-item"><div class="dot" style="background:#f1c40f"></div><span data-i18n="deutesLegendLiquidat">Liquidat</span></div>
-                    <div class="legend-item"><div class="dot" style="background:#eee"></div><span data-i18n="deutesLegendPendent">Pendent</span></div>
-                </div>
+    <!-- Panel Derecho: Listado Histórico -->
+    <div class="list-panel">
+        <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-2">
+            <h2><i class="fas fa-history"></i> Historial d'Ajustos</h2>
+            
+            <div class="flex gap-2">
+                <select x-model="filtros.agente" style="width: 160px; height: 26px;">
+                    <option value="ALL">Tots els agents</option>
+                    <template x-for="t in listaAgentes" :key="t">
+                        <option :value="t" x-text="t"></option>
+                    </template>
+                </select>
+
+                <select x-model="filtros.tipo" style="width: 160px; height: 26px;">
+                    <option value="ALL">Tots els tipus</option>
+                    <option value="Bolsa Horas (+)">Bolsa Horas (+)</option>
+                    <option value="Deuda Horas (-)">Deuda Horas (-)</option>
+                </select>
             </div>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Treballador</th>
+                        <th width="100">Fecha</th>
+                        <th width="150">Ajuste</th>
+                        <th width="80" class="text-right">Horas</th>
+                        <th>Coordinador</th>
+                        <th>Comentarios / Motivo</th>
+                        <th width="60" class="text-center">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="inc in incidenciasFiltradas" :key="inc.id">
+                        <tr>
+                            <td class="font-bold text-gray-800" x-text="inc.id_trabajador"></td>
+                            <td x-text="inc.fecha_inicio"></td>
+                            <td>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold"
+                                      :class="{
+                                          'bg-green-100 text-green-800': inc.tipo_incidencia === 'Bolsa Horas (+)',
+                                          'bg-red-100 text-red-800': inc.tipo_incidencia === 'Deuda Horas (-)'
+                                      }" x-text="inc.tipo_incidencia"></span>
+                            </td>
+                            <td class="text-right font-bold text-gray-900" x-text="inc.impacto_horas + 'h'"></td>
+                            <td class="text-gray-600 font-semibold" x-text="inc.coordinador"></td>
+                            <td class="text-gray-500" x-text="inc.comentarios || '-'"></td>
+                            <td class="text-center">
+                                <button class="btn-danger-icon" @click="eliminarIncidencia(inc.id)">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                    <template x-if="incidenciasFiltradas.length === 0">
+                        <tr>
+                            <td colspan="7" class="text-center py-8 text-gray-400">
+                                <i class="fas fa-info-circle mb-1 text-lg"></i><br>
+                                No hay registros de ajuste de horas.
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<div class="modal-overlay" id="overlay" onclick="tancarGestio()"></div>
-<div id="modalGestio">
-    <h3 style="margin-top:0; color:#008d36;" data-i18n="deutesModalConfigTitle">Configuració</h3>
-    <div style="display:flex; gap:20px;">
-        <div style="flex:1;">
-            <strong><span data-i18n="deutesModalCentres">Centres:</span></strong>
-            <div id="llistaCentresModal" style="max-height:100px; overflow-y:auto; border:1px solid #eee; margin-bottom:5px;"></div>
-            <div style="display:flex; gap:3px;"><input type="text" id="nouCentre" style="width:70%"><button onclick="afegirMestre('centres', 'nouCentre')">+</button></div>
-        </div>
-        <div style="flex:1;">
-            <strong><span data-i18n="deutesModalTreballadors">Treballadors:</span></strong>
-            <div id="llistaNomsModal" style="max-height:100px; overflow-y:auto; border:1px solid #eee; margin-bottom:5px;"></div>
-            <div style="display:flex; gap:3px;"><input type="text" id="nouNom" style="width:70%"><button onclick="afegirMestre('noms', 'nouNom')">+</button></div>
-        </div>
-    </div>
-    <hr>
-    <strong><span data-i18n="deutesModalAnysTitle">Anys i Dies d'Excés:</span></strong>
-    <div id="llistaAnysModal" style="max-height:80px; overflow-y:auto; margin-bottom:5px;"></div>
-    <div style="display:flex; gap:5px;"><input type="number" id="nouAnyVal" placeholder="2028" data-i18n="deutesModalPlaceholderAny" style="width:80px"><input type="number" id="nousDiesVal" placeholder="Dies" data-i18n="deutesModalPlaceholderDies" style="width:60px"><button onclick="afegirAnyConfig()" data-i18n="deutesModalBtnAfegirAny">Afegir Any</button></div>
-    <button onclick="tancarGestio()" style="width:100%; padding:10px; background:#008d36; color:white; border:none; font-weight:bold; cursor:pointer; margin-top:10px;" data-i18n="deutesModalBtnTancarAplicar">TANCAR I APLICAR</button>
-</div>
-
-<script>
-    let dadesGlobals = { "2026": [] }; 
-    let mestres = { centres: ["-"], noms: ["-"] };
-    let configAnys = { "2026": 5 };
-    let anySeleccionat = "2026";
-    let colorsCentresMap = {};
-
-    function guardarAlLocal() { localStorage.setItem('dadesControlJornada', JSON.stringify({ dadesGlobals, mestres, configAnys, anySeleccionat, colorsCentresMap })); }
-    
-    function carregarDelLocal() {
-        const d = localStorage.getItem('dadesControlJornada');
-        if (d) {
-            const p = JSON.parse(d);
-            dadesGlobals = p.dadesGlobals || dadesGlobals;
-            mestres = p.mestres || { centres: ["-"], noms: ["-"] };
-            configAnys = p.configAnys || { "2026": 5 };
-            anySeleccionat = p.anySeleccionat || "2026";
-            colorsCentresMap = p.colorsCentresMap || {};
-        }
-        reassignarColors(); 
-    }
-
-    function reassignarColors() {
-        const llistaCentres = (mestres.centres || []).filter(c => c !== "-");
-        llistaCentres.forEach((centre, i) => {
-            const hue = (i * (360 / Math.max(1, llistaCentres.length))) % 360;
-            colorsCentresMap[centre] = `hsl(${hue}, 85%, 92%)`;
-        });
-    }
-
-    function calcularStats() {
-        const llistaActual = dadesGlobals[anySeleccionat] || [];
-        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
-        const totalColsPerFila = numExces + 5; 
-        
-        const filesAComptar = llistaActual; 
-        
-        let totalCellesGlobals = filesAComptar.length * totalColsPerFila;
-        let liquidatsGlobals = 0;
-        let statsPerTreballador = [];
-
-        filesAComptar.forEach(t => {
-            let userLiquidats = 0;
-            if (t.d) {
-                for(let i=0; i < totalColsPerFila; i++) {
-                    let valor = (t.d[i]) ? t.d[i].toString().trim() : "";
-                    if (valor !== "") {
-                        userLiquidats++;
-                        liquidatsGlobals++;
-                    }
-                }
-            }
-            if (t.nom !== "-") {
-                statsPerTreballador.push({ 
-                    nom: t.nom, 
-                    pct: (userLiquidats / totalColsPerFila) * 100 
-                });
-            }
-        });
-
-        const liquidatPct = totalCellesGlobals > 0 ? (liquidatsGlobals / totalCellesGlobals * 100) : 0;
-        
-        document.getElementById('statTotals').innerText = totalCellesGlobals;
-        document.getElementById('statPendentAbs').innerText = totalCellesGlobals - liquidatsGlobals;
-        document.getElementById('statLiquidatPct').innerText = liquidatPct.toFixed(1) + "%";
-        document.getElementById('statPendentPct').innerText = (100 - liquidatPct).toFixed(1) + "%";
-        
-        document.getElementById('countFiles').innerText = i18n.t('deutesCountFiles', { count: llistaActual.length });
-        document.getElementById('countCelles').innerText = i18n.t('deutesCountCelles', { count: totalCellesGlobals });
-
-        const pieChart = document.getElementById('pieChart');
-        if (pieChart) {
-            pieChart.style.background = `conic-gradient(#f1c40f 0% ${liquidatPct}%, #eeeeee ${liquidatPct}% 100%)`;
-        }
-        document.getElementById('piePctText').innerText = Math.round(liquidatPct) + "%";
-
-        statsPerTreballador.sort((a,b) => b.pct - a.pct);
-        document.getElementById('rankingTreballadors').innerHTML = statsPerTreballador.map(s => `
-            <div class="bar-row">
-                <div class="bar-label"><span>${s.nom}</span><b>${s.pct.toFixed(0)}%</b></div>
-                <div class="bar-outer"><div class="bar-inner" style="width:${s.pct}%"></div></div>
-            </div>
-        `).join('');
-    }
-
-    function canviarAny() {
-        anySeleccionat = document.getElementById('anyActual').value;
-        if (!dadesGlobals[anySeleccionat]) dadesGlobals[anySeleccionat] = [];
-        guardarAlLocal(); renderCapcalera(); renderTable();
-    }
-
-    function renderCapcalera() {
-        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
-        const cap = document.getElementById('capTaula');
-        document.getElementById('titolPrincipal').innerText = `${i18n.t('deutesTitle')} ${anySeleccionat}`;
-        
-        cap.innerHTML = `
-            <tr>
-                <th rowspan="2" class="col-centre"><select id="selCentre" class="filter-select" onchange="renderTable()"></select></th>
-                <th rowspan="2" class="col-nom"><select id="selNom" class="filter-select" onchange="renderTable()"></select></th>
-                <th rowspan="2" class="col-jornada"><select id="selJornada" class="filter-select" onchange="renderTable()">
-                    <option value="">${i18n.t('deutesThJornada')}</option>
-                    <option value="T.C.">T.C.</option>
-                    <option value="T.P.">T.P.</option>
-                </select></th>
-                <th colspan="${numExces + 1}">${i18n.t('deutesThDiesExces')}</th>
-                <th colspan="4" class="header-reajust">${i18n.t('deutesThReajust')}</th>
-                <th rowspan="2" class="col-obs">${i18n.t('deutesThObservacions')}</th>
-                <th rowspan="2" class="col-del">🗑️</th>
-            </tr>
-            <tr>
-                ${Array.from({length: numExces}, (_, i) => `<th class="col-data">e${i+1}</th>`).join('')}
-                <th class="header-conveni">${i18n.t('deutesThConveni')}</th>
-                <th class="header-vacances">${i18n.t('deutesThVacances')}</th>
-                <th colspan="3" class="header-nocturn">${i18n.t('deutesThNocturn')}</th>
-            </tr>`;
-        poblarFiltres();
-    }
-
-    function renderTable() {
-        const filtreC = document.getElementById('selCentre').value;
-        const filtreN = document.getElementById('selNom').value;
-        const filtreJ = document.getElementById('selJornada') ? document.getElementById('selJornada').value : "";
-        const cos = document.getElementById('cosTaula');
-        cos.innerHTML = "";
-        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
-        const totalCols = numExces + 5;
-        const llistaActual = dadesGlobals[anySeleccionat] || [];
-        const anyAvui = new Date().getFullYear();
-
-        llistaActual.forEach((treb, idx) => {
-            if (!treb.jornada) treb.jornada = "T.C."; 
-
-            if ((filtreC === "" || treb.centre === filtreC) && (filtreN === "" || treb.nom === filtreN) && (filtreJ === "" || treb.jornada === filtreJ)) {
-                let fila = document.createElement('tr');
-                const bgColor = treb.centre !== "-" ? (colorsCentresMap[treb.centre] || "#fff") : "#fff";
-                const claseTP = treb.jornada === "T.P." ? "text-tp" : "";
-                
-                let html = `<td class="col-centre" style="background-color:${bgColor}"><select style="font-weight:bold" onchange="actualitzarDada(${idx}, 'centre', this.value)">`;
-                mestres.centres.forEach(c => html += `<option value="${c}" ${treb.centre===c?'selected':''}>${c}</option>`);
-                html += `</select></td><td class="col-nom"><select onchange="actualitzarDada(${idx}, 'nom', this.value)">`;
-                mestres.noms.forEach(n => html += `<option value="${n}" ${treb.nom===n?'selected':''}>${n}</option>`);
-                html += `</select></td><td class="col-jornada"><select class="${claseTP}" style="text-align-last: center;" onchange="actualitzarDada(${idx}, 'jornada', this.value)">
-                    <option value="T.C." ${treb.jornada==='T.C.'?'selected':''}>T.C.</option>
-                    <option value="T.P." ${treb.jornada==='T.P.'?'selected':''}>T.P.</option>
-                </select></td>`;
-                
-                for(let i=0; i<totalCols; i++) {
-                    let valor = (treb.d && treb.d[i]) ? treb.d[i].toString().trim() : "";
-                    let colorCls = "";
-                    let estilDataCls = ""; 
-                    
-                    if (valor === "NC") {
-                        colorCls = "bg-nc";
-                    } else if (valor !== "") {
-                        const parts = valor.split('-');
-                        if (parts.length === 3) {
-                            if (parseInt(parts[0]) < anyAvui) estilDataCls = "data-antiga";
-                        }
-                        if (i === numExces) colorCls = "bg-conv-dat";
-                        else if (i === numExces + 1) colorCls = "bg-vac-dat";
-                        else if (i > numExces + 1) colorCls = "bg-noc-dat";
-                    }
-
-                    let intensitat = 248 - (i * (48 / Math.max(1, numExces))); 
-                    let estilGris = (valor !== "" && valor !== "NC" && i < numExces) ? 
-                        `background-color: rgb(${intensitat}, ${intensitat}, ${intensitat}) !important;` : "";
-
-                    let inputVal = (valor === "NC") ? "" : valor;
-
-                    html += `<td class="col-data ${colorCls}" style="${estilGris}">
-                        <div class="cell-wrapper">
-                            <button class="btn-nc-trigger" onclick="marcarNC(${idx}, ${i})" title="${i18n.t('deutesBtnNcTitle')}">x</button>
-                            <input type="date" class="${estilDataCls}" value="${inputVal}" onchange="guardarDiaInstant(${idx}, ${i}, this.value)">
-                        </div>
-                    </td>`;
-                }
-
-                html += `<td class="col-obs"><input type="text" value="${treb.obs||''}" onchange="dadesGlobals['${anySeleccionat}'][${idx}].obs=this.value; guardarAlLocal();"></td>`;
-                html += `<td class="col-del"><span style="cursor:pointer" onclick="esborrarFila(${idx})">✖</span></td>`;
-                fila.innerHTML = html; cos.appendChild(fila);
-            }
-        });
-        marcarSeparadors();
-        calcularStats();
-    }
-
-    function marcarSeparadors() {
-        const files = Array.from(document.querySelectorAll('#cosTaula tr')).filter(tr => tr.style.display !== "none");
-        files.forEach((tr, index) => {
-            tr.classList.remove('group-start', 'group-item', 'group-end');
-            const cA = tr.cells[0].querySelector('select').value;
-            if (cA === "-") return;
-            tr.classList.add('group-item');
-            if (index === 0 || files[index - 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-start');
-            if (index === files.length - 1 || files[index + 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-end');
-        });
-    }
-
-    function marcarNC(idx, diaIdx) {
-        if(!dadesGlobals[anySeleccionat][idx].d) dadesGlobals[anySeleccionat][idx].d = [];
-        let actual = dadesGlobals[anySeleccionat][idx].d[diaIdx];
-        dadesGlobals[anySeleccionat][idx].d[diaIdx] = (actual === "NC") ? "" : "NC";
-        guardarAlLocal(); renderTable();
-    }
-
-    function guardarDiaInstant(idx, diaIdx, valor) {
-        if(!dadesGlobals[anySeleccionat][idx].d) dadesGlobals[anySeleccionat][idx].d = [];
-        dadesGlobals[anySeleccionat][idx].d[diaIdx] = valor; 
-        guardarAlLocal(); renderTable(); 
-    }
-
-    function actualitzarDada(idx, camp, valor) { 
-        dadesGlobals[anySeleccionat][idx][camp] = valor; 
-        if (camp !== 'jornada' && valor !== "-") dadesGlobals[anySeleccionat].sort((a,b) => a.centre.localeCompare(b.centre) || a.nom.localeCompare(b.nom)); 
-        guardarAlLocal(); renderTable(); 
-    }
-
-    function afegirFila() { 
-        const numExces = parseInt(configAnys[anySeleccionat]) || 5;
-        const totalCols = numExces + 5;
-        let nousDies = [];
-        for(let i = 0; i < totalCols; i++) { nousDies[i] = ""; }
-        dadesGlobals[anySeleccionat].unshift({ centre: "-", nom: "-", jornada: "T.C.", d: nousDies, obs: "" }); 
-        guardarAlLocal(); 
-        renderTable();
-    }
-
-    function esborrarFila(idx) { 
-        if(confirm(i18n.t('deutesConfirmEliminarFila'))) { dadesGlobals[anySeleccionat].splice(idx, 1); guardarAlLocal(); renderTable(); } 
-    }
-
-    function actualitzarSelectorsAny() {
-        document.getElementById('anyActual').innerHTML = Object.keys(configAnys).sort().map(a => `<option value="${a}" ${a===anySeleccionat?'selected':''}>${a}</option>`).join('');
-    }
-    
-    function obrirGestio() { document.getElementById('modalGestio').style.display='block'; document.getElementById('overlay').style.display='block'; actualitzarLlistesModal(); }
-    function tancarGestio() { document.getElementById('modalGestio').style.display='none'; document.getElementById('overlay').style.display='none'; reassignarColors(); renderCapcalera(); renderTable(); }
-    
-    function afegirMestre(tipus, inputId) { 
-        const v = document.getElementById(inputId).value.trim(); 
-        if(v && !mestres[tipus].includes(v)) { 
-            mestres[tipus].push(v); mestres[tipus].sort((a, b) => a.localeCompare(b));
-            document.getElementById(inputId).value=""; guardarAlLocal(); actualitzarLlistesModal(); 
-        } 
-    }
-
-    function borrarMestre(tipus, v) { 
-        if(v==="-") return; 
-        mestres[tipus] = (mestres[tipus] || []).filter(x => x!==v); 
-        guardarAlLocal(); actualitzarLlistesModal(); 
-    }
-
-    function afegirAnyConfig() { 
-        const a = document.getElementById('nouAnyVal').value; const d = parseInt(document.getElementById('nousDiesVal').value); 
-        if (a && d) { configAnys[a] = d; if (!dadesGlobals[a]) dadesGlobals[a] = []; guardarAlLocal(); actualitzarSelectorsAny(); actualitzarLlistesModal(); } 
-    }
-
-    function actualitzarLlistesModal() {
-        ['centres', 'noms'].forEach(t => {
-            document.getElementById(`llista${t.charAt(0).toUpperCase()+t.slice(1)}Modal`).innerHTML = (mestres[t] || []).map(v => `<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;"><span>${v}</span>${v!=='-' ? `<span style="color:red;cursor:pointer" onclick="borrarMestre('${t}','${v}')">✖</span>`:''}</div>`).join('');
-        });
-        document.getElementById('llistaAnysModal').innerHTML = Object.keys(configAnys).sort().map(a => `<div style="display:flex;justify-content:space-between;padding:2px;border-bottom:1px solid #eee;"><span>${i18n.t('deutesLlistaAnysModalLabel', { any: a, dies: configAnys[a] })}</span></div>`).join('');
-    }
-    
-    function poblarFiltres() {
-        const selC = document.getElementById('selCentre');
-        const selN = document.getElementById('selNom');
-        if(selC) selC.innerHTML = `<option value="">${i18n.t('deutesFiltreCentre')}</option>` + (mestres.centres || []).filter(c=>c!=="-").map(c => `<option value="${c}">${c}</option>`).join('');
-        if(selN) selN.innerHTML = `<option value="">${i18n.t('deutesFiltreNom')}</option>` + (mestres.noms || []).filter(n=>n!=="-").map(n => `<option value="${n}">${n}</option>`).join('');
-    }
-
-    window.onload = async () => { 
-        await persistence.syncLoad('deutes');
-        carregarDelLocal(); 
-        actualitzarSelectorsAny(); 
-        renderCapcalera(); 
-        renderTable(); 
-    };
-
-    window.addEventListener('languageChanged', () => {
-        if(typeof applyTranslations === 'function') applyTranslations();
-        renderCapcalera();
-        renderTable();
-    });
-</script>
+<script src="./js/deutes.js"></script>
 </body>
 </html>

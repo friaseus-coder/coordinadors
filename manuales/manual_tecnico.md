@@ -7,10 +7,10 @@ Este documento detalla el funcionamiento interno, la arquitectura de archivos, l
 La aplicación se ha diseñado para funcionar sin servidores de backend ni bases de datos en la nube (como PostgreSQL o MySQL remotos). Esto reduce a cero los costes de mantenimiento y simplifica el despliegue en la red de la oficina.
 
 *   **Runtime:** [Electron.js (v31)](https://www.electronjs.org/), que unifica el motor de renderizado Chromium de Google con el entorno de ejecución Node.js de escritorio.
-*   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS) y JavaScript nativo ES6.
+*   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS), **Alpine.js (v3.x.x)** como micro-framework reactivo y JavaScript nativo ES6.
 *   **Fuentes de Texto:** Carga de la tipografía premium **Outfit** desde Google Fonts.
 *   **Persistencia y Triple Estrategia (Sharding Lógico + Caché Local):** La persistencia se divide en 4 bases de datos SQLite independientes según áreas de negocio: `operativa_rrhh.db`, `finanzas_inventario.db`, `comercial.db` y `catalogos_maestros.db`. En el arranque, Electron realiza una copia de caché en el almacenamiento local del usuario (`app.getPath('userData')/db_cache`). Todas las lecturas se resuelven exclusivamente sobre esta caché local, eliminando latencias de red y cuelgues por conectividad lenta.
-*   **Concurrencia (Mutex Atómico de Escritura):** Para evitar la corrupción de datos por concurrencia multi-usuario, las escrituras en red están controladas por un Candado Mutex de directorio físico (`_<dbKey>.lock`). Antes de modificar una base de datos en red, el proceso realiza un intento de creación de carpeta (`fs.mkdirSync`) con reintento automático (15 reintentos con 1 segundo de retraso). Una vez obtenido el candado, aplica la query (usando `PRAGMA journal_mode = DELETE;`), cierra la base de datos de red, libera el candado y actualiza la caché local del usuario que escribe.
+*   **Concurrencia (Mutex de Red con Auto-caducidad y Override):** Para evitar la corrupción de datos por concurrencia multi-usuario, las escrituras en red están controladas por un Candado Mutex de directorio físico (`_<dbKey>.lock`). Antes de modificar una base de datos en red, el proceso realiza un intento de creación de carpeta (`fs.mkdirSync`). Si la carpeta ya existe por un fallo anterior (cuelgue de otro usuario), la aplicación evalúa su antigüedad mediante `fs.statSync`. Si es superior a 3 minutos (180,000 ms), se asume que es un candado fantasma y se auto-elimina (`fs.rmSync`) de forma segura antes de reintentar. Además, los usuarios con rol de "Jefe de Operaciones" pueden forzar el desbloqueo desde la interfaz mediante un canal IPC dedicado.
 
 ---
 
@@ -141,24 +141,25 @@ Para mantener la compatibilidad con consultas complejas del frontend legado que 
     `ATTACH DATABASE '<ruta_local>/catalogos_maestros.db' AS catalogos;`
 *   Esto mapea de forma transparente las tablas de catálogos dentro del mismo contexto de conexión, permitiendo resolver consultas con sintaxis del tipo `JOIN catalogos.agentes a ON q.agente_id = a.id` sin necesidad de reescribir la lógica de consultas de la interfaz de usuario.
 
-### C. Exclusión Mutua Atómica (Mutex de Red en Escritura)
+### C. Exclusión Mutua Atómica (Mutex de Red en Escritura con Auto-caducidad y Override)
 Para evitar la corrupción de datos que ocurre cuando múltiples instancias de SQLite escriben de forma concurrente en un archivo compartido en red, el proceso principal canaliza todas las consultas de modificación (`INSERT`, `UPDATE`, `DELETE`) a través del canal `write-db` bajo un estricto patrón de exclusión mutua:
 1.  **Solicitud de Escritura**: El cliente solicita una escritura llamando a `window.dbAPI.write(dbKey, query, params)`.
 2.  **Adquisición de Candado Físico (`acquireLock`)**: El backend de Electron intenta crear un directorio físico llamado `_<dbKey>.lock` (por ejemplo, `_operativa.lock`) en la carpeta de red compartida (`NETWORK_DIR`) mediante `fs.mkdirSync(lockDir)`.
-    *   **Si la carpeta ya existe (`EEXIST`)**: Significa que otro coordinador está escribiendo en esa base de datos. El proceso entra en un bucle de reintento automático (hasta 15 intentos espacedos por 1 segundo de retraso).
-    *   **Si expira el reintento**: La petición falla, rechazando la escritura para proteger la integridad del archivo.
+    *   **Si la carpeta ya existe (`EEXIST`)**: Significa que hay un bloqueo activo. Para evitar que bloqueos huérfanos (por cuelgues o desconexiones) paralicen la aplicación, se obtiene la fecha de creación/modificación de la carpeta usando `fs.statSync(lockDir)`. Si la antigüedad de la carpeta supera los **3 minutos** (180,000 ms), se asume que es un candado fantasma y se destruye automáticamente (`fs.rmSync(lockDir, { recursive: true, force: true })`). Luego, el proceso reintenta la creación. Si tiene menos de 3 minutos, entra en un bucle de reintento automático (15 intentos espaciados por 1 segundo).
+    *   **Si expira el reintento**: La petición falla, informando del bloqueo para proteger la integridad.
+    *   **Override manual (Modo Dios)**: El canal IPC `force-unlock-db` permite a usuarios con privilegios de "Jefe de Operaciones" forzar la eliminación del candado de red independientemente de su antigüedad.
 3.  **Escritura Directa en Red**: Una vez adquirido el candado, Electron:
     *   Abre una conexión directa exclusiva a la base de datos correspondiente en red.
-    *   Ejecuta `PRAGMA journal_mode = DELETE;` para desactivar el diario de transacciones persistente (WAL/journal en red), escribiendo directamente sobre el archivo principal y reduciendo riesgos de archivos temporales huérfanos.
+    *   Ejecuta `PRAGMA journal_mode = DELETE;` para desactivar el diario de transacciones en red, escribiendo directamente sobre el archivo principal.
     *   Ejecuta la consulta SQL con los parámetros proporcionados.
     *   Cierra la conexión física a la base de datos de red de forma limpia.
-4.  **Liberación del Mutex (`releaseLock`)**: Elimina el directorio físico de bloqueo `_<dbKey>.lock` utilizando `fs.rmdirSync(lockDir)`.
-5.  **Refresco de Caché Local**: Inmediatamente después de liberar el candado en red, Electron ejecuta `syncToLocal(dbKey)` para cerrar la conexión local, copiar el archivo modificado de red a la caché local de `%LocalAppData%` y reabrir la conexión de lectura. Esto asegura que el coordinador que acaba de escribir tenga su caché actualizada al 100%.
+4.  **Liberación del Mutex (`releaseLock`)**: Elimina el directorio físico de bloqueo `_<dbKey>.lock` utilizando `fs.rmdirSync(lockDir)` o `fs.rmSync`.
+5.  **Refresco de Caché Local**: Inmediatamente después de liberar el candado en red, Electron ejecuta `syncToLocal(dbKey)` para cerrar la conexión local, copiar el archivo modificado de red a la caché local de `%LocalAppData%` y reabrir la conexión de lectura. Esto asegura que la caché local esté sincronizada al 100%.
 
 > [!IMPORTANT]
 > **Bloqueos y Concurrencia**:
-> *   **Mutex de Red (`_<dbKey>.lock`)**: Control físico de bajo nivel a nivel de archivo SQLite para evitar corrupción de base de datos durante operaciones de escritura rápidas (`INSERT/UPDATE/DELETE`). Es de corta duración (milisegundos) y se gestiona automáticamente en `main.js`.
-> *   **Concurrencia Cooperativa Relacional**: Las funciones heredadas de bloqueo relacional cooperativo visual (`~quadrant_[coord].lock`) y cálculo de alertas/recomendaciones han sido inhabilitadas en esta versión. Esto permite una edición libre y concurrente sin restricciones a nivel de interfaz de usuario, confiando la integridad de los datos exclusivamente al Mutex físico de escritura en red.
+> *   **Mutex de Red (`_<dbKey>.lock`)**: Control físico de bajo nivel a nivel de archivo SQLite para evitar corrupción de base de datos durante operaciones de escritura rápidas. Cuenta con auto-caducidad de 3 minutos y posibilidad de desbloqueo manual forzado por parte del Jefe de Operaciones.
+> *   **Concurrencia Cooperativa Relacional**: Las funciones heredadas de bloqueo relacional cooperativo visual (`~quadrant_[coord].lock`) y cálculo de alertas han sido inhabilitadas para permitir edición concurrente libre a nivel de UI, delegando la consistencia en el mutex físico.
 
 ---
 
@@ -304,12 +305,14 @@ El asistente lateral de asignación inteligente realiza un procesamiento multica
     *   **Sugeridos**: Candidatos libres. Si se trata de un proveedor de seguridad externo, se marca como `EMPRESA SEGURIDAD` y se posiciona de forma prioritaria al principio del listado al no estar sujeto a límites de horas o convenios de sociedades.
     *   **Descartados**: Candidatos excluidos indicando la causa específica (ej: "De vacaciones / Baja", "Ya asignado a otro parking hoy", o exceso del tope de días).
 
-### B. Arquitectura de Delegación de Eventos de Interfaz
-Debido a que el cuadrante del calendario se genera dinámicamente en el DOM (reconstruyendo todos los elementos `<td>` al filtrar o cambiar de período), los listeners individuales de eventos se gestionarían de forma ineficiente. Para solucionarlo:
-1.  Se inyectan en el renderizado de la tabla atributos de datos específicos en cada celda: `data-fecha`, `data-parking` y `data-sid`.
-2.  Se implementó un escuchador único global en la vista: `document.addEventListener('click', (e) => { ... })`.
-3.  Al hacer clic, se utiliza `e.target.closest('td')` para identificar la celda correspondiente de forma rápida y centralizada.
-4.  **Control de Edición Manual**: El listener delegado analiza el estado en memoria. Si el clic ocurre sobre los selectores de trabajador (`select.select-worker`) o de horas (`select.select-hour`) para edición manual directa, la apertura automática del panel lateral del asistente inteligente es bloqueada. Esto previene superposiciones no deseadas en el flujo de trabajo del coordinador.
+### B. Arquitectura Reactiva en Cuadrantes y Módulos (Alpine.js)
+Con la migración a **Alpine.js (v3.x.x)**, se ha eliminado la manipulación manual del DOM y la delegación imperativa de eventos.
+1.  **Renderizado Declarativo**: El calendario de cuadrantes, la lista de paradas de rutas, el stock del inventario, y las tablas de deudas y coberturas se renderizan utilizando directivas `x-for` y `x-show` sobre estructuras de datos locales reactivas.
+2.  **Enlace Bidireccional (`x-model`)**: Los filtros (Mes, Año, Parking) y los campos de los formularios (registro de incidencias, nueva ruta, ajuste de inventario, etc.) se enlazan directamente a las variables reactivas de Alpine.js, eliminando la necesidad de buscar elementos por ID.
+3.  **Gestión de Eventos Reactivos**: Los clics y cambios en los desplegables se gestionan con directivas `@click` y `@change` integradas directamente en el HTML, lo que mejora la legibilidad y previene fugas de memoria al reconstruir el calendario.
+4.  **Carga Síncrona**: Al interactuar con la base de datos a través de `window.dbAPI`, el estado se actualiza en memoria y Alpine.js propaga los cambios instantáneamente a la UI, simplificando el flujo de datos.
+
+---
 
 ### C. Resolución de Mismatch de Tipos en Personal (Coordinadores)
 Durante la sincronización de archivos de configuración (`coordinadores.json`), se detectó un error `SQLITE_MISMATCH: datatype mismatch` debido a que el campo `id` de los coordinadores en el archivo JSON es una cadena de texto (ej. `"albert"`, `"laura"`), mientras que el esquema de base de datos define `id` en la tabla `agentes` como un `INTEGER PRIMARY KEY AUTOINCREMENT`.

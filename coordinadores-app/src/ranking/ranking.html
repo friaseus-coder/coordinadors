@@ -1,56 +1,71 @@
 <!DOCTYPE html>
 <html lang="ca">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Valoració Agents (RANKING)</title>
-  <script src="../js/persistence.js"></script>
-  <link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NyN Pàrquings | Rànquing d'Agents</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        }
+      }
+    </script>
+    <script src="../js/persistence.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
+       document.addEventListener('DOMContentLoaded', () => {
+           if(typeof applyTranslations === 'function') applyTranslations();
+       });
+    </script>
+    
+<style>
+    [x-cloak] { display: none !important; }
 
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
-    :root { 
+    :root {
         --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
         --nyn-verd-accent: #008d36; /* Verde acento */
         --border: #e2e8f0;
+        --text-main: #0f2d4a;
+        --text-muted: #64748b;
         --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
         --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
     }
 
-    * { font-family: 'Outfit', 'Segoe UI', Arial, sans-serif !important; }
-
-    body {
-        background-color: #f8fafc !important;
-        padding: 0 !important;
-        margin: 0 !important;
+    body { 
+        font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+        background: #f8fafc; 
         color: #1e293b;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
     }
-
-    /* --- HEADER ESTILO CUADRANTE --- */
+    
     header { 
-        background-color: var(--nyn-verd) !important; 
-        color: white !important; 
-        padding: 8px 24px !important; 
-        display: flex !important;        
-        justify-content: center !important; 
-        align-items: center !important; 
-        height: 48px !important; 
-        border-bottom: 2px solid var(--nyn-verd-accent) !important;
-        box-sizing: border-box !important;
-        margin-bottom: 0 !important;
-        text-align: center !important;
-    }
-    header h1 { 
-        font-size: 15px !important; 
-        font-weight: 700 !important; 
-        text-transform: uppercase !important; 
-        letter-spacing: 1px !important; 
-        color: white !important;
-        margin: 0 !important;
+        background-color: var(--nyn-verd); 
+        color: white; 
+        padding: 8px 24px; 
+        display: flex;        
+        justify-content: center; 
+        align-items: center; 
+        height: 48px; 
+        border-bottom: 2px solid var(--nyn-verd-accent);
+        box-sizing: border-box;
+        flex-shrink: 0;
     }
 
-    /* --- BARRA DE HERRAMIENTAS Y CONTROL --- */
+    .header-center { 
+        font-size: 15px; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+    }
+
     .admin-panel { 
         padding: 10px 24px; 
         display: flex; 
@@ -59,8 +74,9 @@
         align-items: center; 
         border-bottom: 1px solid var(--border); 
         background: #ffffff; 
-        margin-bottom: 16px;
+        flex-shrink: 0;
     }
+
     .toolbar-group {
         display: flex;
         align-items: center;
@@ -71,6 +87,7 @@
         border: 1px solid #e2e8f0;
         box-shadow: var(--shadow-sm);
     }
+
     .filter-label { 
         font-weight: 700; 
         color: var(--nyn-verd); 
@@ -79,503 +96,295 @@
         letter-spacing: 0.5px;
     }
 
-    /* --- DROPDOWNS Y BOTONES --- */
-    select, button, input[type="text"] {
-        padding: 4px 10px !important;
-        border: 1px solid #cbd5e1 !important;
-        border-radius: 6px !important;
-        font-size: 11px !important;
-        font-weight: 500 !important;
-        cursor: pointer !important;
-        height: 28px !important;
-        box-sizing: border-box !important;
-        transition: all 0.2s ease !important;
-        background: #ffffff !important;
-        color: #334155 !important;
-        box-shadow: var(--shadow-sm) !important;
-    }
-    
-    input[type="text"] {
-        cursor: text !important;
+    input, select, button {
+        font-family: inherit;
+        font-size: 11px;
+        box-sizing: border-box;
+        height: 28px;
     }
 
-    select:hover, select:focus, input[type="text"]:focus {
-        border-color: var(--nyn-verd-accent) !important;
-        outline: none !important;
+    input[type="text"], select {
+        padding: 4px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        outline: none;
+        transition: border-color 0.2s;
     }
 
-    /* BOTONES ACCION Y VISTA */
-    .btn-action {
-        background: var(--nyn-verd) !important;
-        color: #ffffff !important;
-        border: 1px solid var(--nyn-verd) !important;
-        font-weight: 600 !important;
+    input[type="text"]:focus, select:focus {
+        border-color: var(--nyn-verd-accent);
     }
-    .btn-action:hover {
-        background: #0b4e43 !important;
-        border-color: #0b4e43 !important;
+
+    .btn-nyn {
+        background: var(--nyn-verd);
+        color: white;
+        border: 1px solid var(--nyn-verd);
+        font-weight: 700;
+        padding: 4px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
     }
-    .btn-action-sec {
-        background: #3b82f6 !important;
-        color: white !important;
-        border: 1px solid #3b82f6 !important;
-        font-weight: 600 !important;
+
+    .btn-nyn:hover {
+        background: #0b4e43;
+        border-color: #0b4e43;
     }
-    .btn-action-sec:hover {
-        background: #2563eb !important;
-        border-color: #2563eb !important;
+
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
     }
-    .btn-archive {
-        background: #f1f5f9 !important;
-        border: 1px solid #e2e8f0 !important;
-        color: #475569 !important;
-    }
-    .btn-archive:hover {
+
+    .btn-secondary:hover {
         background: #e2e8f0;
     }
 
-    .charts-container {
-        padding: 16px 24px;
-        background: #f8fafc;
-    }
-
-    .chart-box {
-        background: #ffffff;
-        border-radius: 12px;
-        border: 1px solid #e2e8f0;
-        box-shadow: var(--shadow-md);
-        padding: 16px;
-    }
-    .chart-box h2 {
+    .btn-danger-icon {
+        color: #ef4444;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
         font-size: 12px;
-        color: var(--nyn-verd);
-        text-transform: uppercase;
-        font-weight: 700;
-        margin-bottom: 12px;
-        border-bottom: 1px solid #e2e8f0;
-        padding-bottom: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
     }
 
-    #tableContainer {
-        padding: 16px 24px;
-        background: #f8fafc;
+    .btn-danger-icon:hover {
+        color: #b91c1c;
     }
 
-    #tableView {
+    /* Tabla */
+    .table-container {
+        padding: 24px;
+        flex: 1;
+        overflow-x: auto;
+    }
+
+    table {
+        width: 100%;
         border-collapse: collapse;
-        border: 1px solid var(--border) !important;
+        background: #ffffff;
         border-radius: 12px;
         box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
         overflow: hidden;
-        background: #ffffff;
     }
-    #tableView th {
-        background-color: #1e293b !important;
-        color: #ffffff !important;
-        height: 36px;
+
+    th {
+        background: #1e293b;
+        color: white;
+        font-weight: 700;
+        font-size: 10px;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        border-bottom: 2px solid #0f172a;
+        text-align: left;
+    }
+
+    td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
         font-size: 11px;
-        font-weight: 600;
-        border: none !important;
-        border-bottom: 2px solid #0f172a !important;
-        border-right: 1px solid #334155 !important;
         vertical-align: middle;
-        padding: 6px 12px !important;
-        letter-spacing: 0.5px;
     }
-  </style>
-  <script src="../js/i18n.js"></script>
-  <script>
-     // Forzar traducción inmediata al cargar
-     document.addEventListener('DOMContentLoaded', () => {
-         if(typeof applyTranslations === 'function') applyTranslations();
-     });
-  </script>
+
+    tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    /* Cards Grid */
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 16px;
+        padding: 24px;
+    }
+
+    .card-agent {
+        background: white;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+</style>
 </head>
-<body data-required-roles="comercial,coordinador,jefe_operaciones">
-  <header>
-    <h1 data-i18n="rankingTitle">Valoració Agents (RANKING)</h1>
-  </header>
+<body x-data="moduloRanking()" x-init="init()">
 
-  <div class="admin-panel">
+<header>
+    <div class="header-center"><i class="fas fa-star mr-2"></i> RÀNQUING I VALORACIÓ D'AGENTS</div>
+</header>
+
+<div class="admin-panel">
     <div class="toolbar-group">
-      <span class="filter-label" data-i18n="rankingLabelFiltres">Filtres:</span>
-      <select id="filterZona">
-        <option value="" data-i18n="rankingAllZones">Totes les zones</option>
-        <option value="Zona 1">Zona 1</option>
-        <option value="Zona 2">Zona 2</option>
-        <option value="Zona 3">Zona 3</option>
-      </select>
-
-      <select id="filterCentre">
-        <option value="" data-i18n="rankingAllCentres">Tots els centres</option>
-      </select>
-
-      <select id="filterTorn">
-        <option value="" data-i18n="rankingAllTorns">Tots els torns</option>
-      </select>
-
-      <select id="filterNota">
-        <option value="" data-i18n="rankingAllNotes">Totes les notes</option>
-      </select>
-
-      <input type="text" id="search" placeholder="Cerca per agent..." data-i18n="rankingSearchPlaceholder">
+        <span class="filter-label">Cerca:</span>
+        <input type="text" x-model="busqueda" placeholder="Cerca agent, centre..." style="width: 200px;">
     </div>
 
     <div class="toolbar-group">
-      <span class="filter-label" data-i18n="rankingLabelVista">Vista:</span>
-      <button id="btnTableView" class="btn-action" data-i18n="rankingBtnShowTable">Mostrar Taula</button>
-      <button id="btnCardView" class="btn-action-sec" data-i18n="rankingBtnShowCards">Mostrar Targetes</button>
+        <span class="filter-label">Filtres:</span>
+        <select x-model="filtros.centre">
+            <option value="">Tots els centres</option>
+            <template x-for="c in centresUnics" :key="c">
+                <option :value="c" x-text="c"></option>
+            </template>
+        </select>
+
+        <select x-model="filtros.torn">
+            <option value="">Tots els torns</option>
+            <template x-for="t in opcionsTorn" :key="t">
+                <option :value="t" x-text="t"></option>
+            </template>
+        </select>
+
+        <select x-model="filtros.zona">
+            <option value="">Totes les zones</option>
+            <template x-for="z in opcionsZona" :key="z">
+                <option :value="z" x-text="z"></option>
+            </template>
+        </select>
+
+        <select x-model="filtros.nota">
+            <option value="">Totes les notes</option>
+            <template x-for="n in notesOptions" :key="n.value">
+                <option :value="n.value" x-text="n.label"></option>
+            </template>
+        </select>
     </div>
 
     <div class="toolbar-group">
-      <span class="filter-label" data-i18n="rankingLabelDades">Dades:</span>
-      <button class="btn-archive" onclick="exportarDadesRanking()">💾 Exportar</button>
-      <button class="btn-archive" onclick="document.getElementById('importFileRanking').click()">📂 Importar</button>
-      <input type="file" id="importFileRanking" style="display:none" accept=".json" onchange="importarDadesRanking(this)">
+        <button class="btn-nyn btn-secondary" @click="viewMode = 'table'" :class="viewMode === 'table' ? 'bg-slate-200' : ''"><i class="fas fa-table"></i> Tabla</button>
+        <button class="btn-nyn btn-secondary" @click="viewMode = 'card'" :class="viewMode === 'card' ? 'bg-slate-200' : ''"><i class="fas fa-th-large"></i> Cards</button>
     </div>
 
-    <div class="toolbar-group">
-      <span class="filter-label" data-i18n="rankingLabelLegend">Llegenda:</span>
-      <div style="display: flex; gap: 4px; font-size: 10px; font-weight: bold; align-items: center;">
-        <span style="background: rgba(255, 215, 0, 0.3); color: #856404; padding: 2px 6px; border: 1px solid rgba(255, 215, 0, 0.5);">9-10</span>
-        <span style="background: rgba(200, 230, 201, 0.5); color: #2e7d32; padding: 2px 6px; border: 1px solid #a5d6a7;">7-8</span>
-        <span style="background: rgba(255, 205, 210, 0.5); color: #c62828; padding: 2px 6px; border: 1px solid #ef9a9a;">5-6</span>
-        <span style="background: rgba(0, 0, 0, 0.1); color: #333; padding: 2px 6px; border: 1px solid rgba(0, 0, 0, 0.2);">&lt; 5</span>
-      </div>
+    <div class="toolbar-group" x-show="userRole === 'jefe operaciones'">
+        <button class="btn-nyn" @click="afegirFila()"><i class="fas fa-plus mr-1"></i> Afegir Fila</button>
     </div>
 
-    <div class="toolbar-group" style="margin-left: auto; display: flex; align-items: center; gap: 15px;">
-      <span id="workerCount" style="font-weight:bold; font-size:11px; color:#23631f;">
-        <span data-i18n="rankingWorkerCountLabel">Nº Treballadors</span>: 0
-      </span>
-      <span id="llegendaExport" style="font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; font-size: 11px; color: #64748b; font-weight: 500;">
-        <span data-i18n="rankingExportLegendNone">| Darrera exportació: Cap dada encara</span>
-      </span>
-      <img src="logo.png" alt="Logo Empresa" id="logoVista" style="height:35px; object-fit: contain;">
+    <div class="toolbar-group" style="margin-left: auto;">
+        <button class="btn-nyn btn-secondary" @click="exportarBackupJSON()"><i class="fas fa-download mr-1"></i> Exportar</button>
+        <button class="btn-nyn btn-secondary" @click="document.getElementById('importFile').click()"><i class="fas fa-upload mr-1"></i> Importar</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" @change="importarBackupJSON($event)">
     </div>
-  </div>
+</div>
 
-  <div class="charts-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;">
-    <div class="chart-box">
-      <h2 data-i18n="rankingChartAverageCentre">Mitjana per centre</h2>
-      <canvas id="centreChart"></canvas>
-    </div>
-
-    <div class="chart-box">
-      <h2 data-i18n="rankingChartAptitudeVolume">Volum aptituds</h2>
-      <canvas id="scatterChart"></canvas>
-    </div>
-
-    <div class="chart-box">
-      <h2 data-i18n="rankingChartPerformanceCompare">Comparativa rendiment</h2>
-      <div id="sunburstChart" style="width:100%; height:500px;"></div>
-    </div>
-  </div>
-
-
-
-  <div id="tableContainer">
-    <table id="tableView">
-
-      <thead>
-        <tr>
-          <th></th>
-          <th data-i18n="rankingThAgent">Agent</th>
-          <th data-i18n="rankingThCentre">Centre</th>
-          <th data-i18n="rankingThSocietat">Societat</th>
-          <th data-i18n="rankingThTorn">Torn</th>
-          <th data-i18n="rankingThZona">Zona</th>
-          <th data-i18n="rankingThConeixements">Coneixements</th>
-          <th data-i18n="rankingThAtencio">Atenció</th>
-          <th data-i18n="rankingThDisponibilitat">Disponibilitat</th>
-          <th data-i18n="rankingThActitud">Actitud</th>
-          <th data-i18n="rankingThValoracio">Valoració</th>
-          <th data-i18n="rankingThObservacions">Observacions</th>
-        </tr>
-      </thead>
-
-      <tbody id="tableBody">
-      </tbody>
-
-      <tfoot>
-      <tr>
-        <td colspan="13" style="text-align:left; padding:10px 0;">
-          <button id="addRowBtn" data-i18n="rankingAddRow">+ Afegir fila</button>
-        </td>
-      </tr>
-      <tr>
-        <td colspan="13" class="footer">
-          nn parkings 2026 v1.0 beta
-        </td>
-      </tr>
-    </tfoot>
-
+<!-- VISTA TABLA -->
+<div class="table-container" x-show="viewMode === 'table'">
+    <table>
+        <thead>
+            <tr>
+                <th width="50" class="text-center">Ordre</th>
+                <th>Treballador / Agent</th>
+                <th>Centre</th>
+                <th>Societat</th>
+                <th width="90">Torn</th>
+                <th width="80">Zona</th>
+                <th width="60" class="text-center">Coneix.</th>
+                <th width="60" class="text-center">Atenció</th>
+                <th width="60" class="text-center">Dispo.</th>
+                <th width="60" class="text-center">Actitud</th>
+                <th width="70" class="text-center">Valoració</th>
+                <th>Observacions</th>
+                <th x-show="userRole === 'jefe operaciones'" width="50" class="text-center">Acció</th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="(d, index) in dadesFiltrades" :key="d.agent">
+                <tr :style="getRowColor(d.valoracio)">
+                    <td class="text-center font-bold text-gray-500" x-text="index + 1"></td>
+                    <td>
+                        <input type="text" x-model="d.agent" @change="guardar()" :disabled="userRole !== 'jefe operaciones'" style="width: 100%; border: none; background: transparent; font-weight: bold;">
+                    </td>
+                    <td>
+                        <input type="text" x-model="d.centre" @change="guardar()" :disabled="userRole !== 'jefe operaciones'" style="width: 100%; border: none; background: transparent;">
+                    </td>
+                    <td>
+                        <input type="text" x-model="d.societat" @change="guardar()" :disabled="userRole !== 'jefe operaciones'" style="width: 100%; border: none; background: transparent;">
+                    </td>
+                    <td>
+                        <select x-model="d.torn" @change="guardar()" :disabled="userRole !== 'jefe operaciones'" style="width: 100%; border: none; background: transparent; height: 22px;">
+                            <template x-for="t in opcionsTorn" :key="t">
+                                <option :value="t" x-text="t" :selected="d.torn === t"></option>
+                            </template>
+                        </select>
+                    </td>
+                    <td>
+                        <select x-model="d.zona" @change="guardar()" :disabled="userRole !== 'jefe operaciones'" style="width: 100%; border: none; background: transparent; height: 22px;">
+                            <template x-for="z in opcionsZona" :key="z">
+                                <option :value="z" x-text="z" :selected="d.zona === z"></option>
+                            </template>
+                        </select>
+                    </td>
+                    <td>
+                        <input type="number" min="0" max="10" x-model.number="d.coneixements" @input="recalcularValoracio(d)" :disabled="userRole !== 'jefe operaciones'" class="text-center" style="width: 100%; border: none; background: transparent;">
+                    </td>
+                    <td>
+                        <input type="number" min="0" max="10" x-model.number="d.atencio" @input="recalcularValoracio(d)" :disabled="userRole !== 'jefe operaciones'" class="text-center" style="width: 100%; border: none; background: transparent;">
+                    </td>
+                    <td>
+                        <input type="number" min="0" max="10" x-model.number="d.disponibilitat" @input="recalcularValoracio(d)" :disabled="userRole !== 'jefe operaciones'" class="text-center" style="width: 100%; border: none; background: transparent;">
+                    </td>
+                    <td>
+                        <input type="number" min="0" max="10" x-model.number="d.actitud" @input="recalcularValoracio(d)" :disabled="userRole !== 'jefe operaciones'" class="text-center" style="width: 100%; border: none; background: transparent;">
+                    </td>
+                    <td class="text-center">
+                        <span :class="getRatingClass(d.valoracio)" x-text="d.valoracio"></span>
+                    </td>
+                    <td>
+                        <input type="text" x-model="d.observacions" @change="guardar()" :disabled="userRole !== 'jefe operaciones'" style="width: 100%; border: none; background: transparent; font-size: 10.5px;">
+                    </td>
+                    <td x-show="userRole === 'jefe operaciones'" class="text-center">
+                        <button class="btn-danger-icon" @click="borrarFila(dades.indexOf(d))">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            </template>
+        </tbody>
     </table>
-  </div>
+</div>
 
-  <div id="cardsContainer" style="display:none;"></div>
-
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
-  
-  <script>
-
-
-    /* LOGICA EXPORT/IMPORT PER AL RANKING */
-
-function refrescarLlegendaGlobal() {
-    // Clau específica per al Rànquing
-    const data = localStorage.getItem('nyn_ranking_export_data');
-    const autor = localStorage.getItem('nyn_ranking_export_autor');
-    const el = document.getElementById('llegendaExport');
-    
-    if (el) {
-        if (data && autor) {
-            const lang = (typeof i18n !== 'undefined') ? i18n.getLanguage() : 'ca';
-            const prefix = lang === 'es' ? '| Última exportación ranking: ' : '| Darrera exportació rànquing: ';
-            const byLabel = lang === 'es' ? 'por' : 'per';
-            el.innerHTML = ` ${prefix}${data} (${byLabel} ${autor})`;
-        } else {
-            const lang = (typeof i18n !== 'undefined') ? i18n.getLanguage() : 'ca';
-            el.innerHTML = lang === 'es' ? '| Última exportación ranking: Sin datos aún' : '| Darrera exportació rànquing: Cap dada encara';
-        }
-    }
-}
-
-
-
-// --- FUNCIÓ DE LOG ---
-function registrarLog(usuari, accio) {
-    const ara = new Date();
-    const dataFormatada = ara.toLocaleString('ca-ES', { 
-        day: '2-digit', month: '2-digit', year: 'numeric', 
-        hour: '2-digit', minute: '2-digit', second: '2-digit' 
-    });
-
-    const nouLog = {
-        data: dataFormatada,
-        usuari: usuari.toUpperCase(),
-        fitxer: "ranking.html",
-        accio: accio.trim()
-    };
-
-    let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
-    logs.unshift(nouLog);
-    if (logs.length > 500) logs.pop();
-    localStorage.setItem('nyn_logs', JSON.stringify(logs));
-}
-
-function exportarDadesRanking() {
-    let dades = {};
-    let trobat = false;
-
-    // 1. Busquem dades de rànquing
-    for (let i = 0; i < localStorage.length; i++) {
-        let clau = localStorage.key(i);
-        if (clau === 'rankingData') { 
-            dades[clau] = localStorage.getItem(clau);
-            trobat = true;
-        }
-    }
-
-    if (!trobat) {
-        for (let i = 0; i < localStorage.length; i++) {
-            let clau = localStorage.key(i);
-            if (!clau.startsWith('nyn_') && 
-                !clau.startsWith('nn_') && 
-                !clau.startsWith('Albert') && 
-                !clau.startsWith('Laura') && 
-                clau !== 'customCenters') {
-                dades[clau] = localStorage.getItem(clau);
-                trobat = true;
-            }
-        }
-    }
-
-    if (!trobat) {
-        alert(i18n.t("rankingNoDataAlert"));
-        return;
-    }
-
-    // AFEGIM METADADES (SIGNATURA)
-    const ara = new Date();
-    const dataFormatada = ara.toLocaleString('ca-ES', { 
-        day: '2-digit', month: '2-digit', year: 'numeric', 
-        hour: '2-digit', minute: '2-digit' 
-    });
-    
-    const nomSencer = localStorage.getItem('nyn_nom_empleat') || "";
-    let usuari = "SISTEMA"; 
-    if (nomSencer.toUpperCase().includes("ALBERT")) usuari = "ALBERT";
-    else if (nomSencer.toUpperCase().includes("LAURA")) usuari = "LAURA";
-
-    dades["METADATA_EXPORT_DATA"] = dataFormatada;
-    dades["METADATA_EXPORT_AUTOR"] = usuari;
-
-    const blob = new Blob([JSON.stringify(dades, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = "ranking.json"; 
-    a.click();
-    URL.revokeObjectURL(url);
-
-    // Actualitzem llegenda i log
-    localStorage.setItem('nyn_ranking_export_data', dataFormatada);
-localStorage.setItem('nyn_ranking_export_autor', usuari);
-refrescarLlegendaGlobal();
-    registrarLog(usuari, "Ha exportat les dades de RANKING");
-}
-
-function importarDadesRanking(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const dades = JSON.parse(e.target.result);
+<!-- VISTA CARDS -->
+<div class="cards-grid" x-show="viewMode === 'card'" x-cloak>
+    <template x-for="(d, index) in dadesFiltrades" :key="d.agent">
+        <div class="card-agent" :style="getRowColor(d.valoracio)">
+            <div class="flex justify-between items-start border-b pb-1.5 mb-1.5">
+                <span class="text-gray-400 font-bold" x-text="'#' + (index + 1)"></span>
+                <span :class="getRatingClass(d.valoracio)" class="text-base" x-text="d.valoracio"></span>
+            </div>
+            <div class="font-bold text-gray-800 text-sm" x-text="d.agent"></div>
+            <div class="text-xs text-gray-600"><i class="fas fa-parking mr-1 text-slate-400"></i> <span x-text="d.centre"></span></div>
+            <div class="text-xs text-gray-500"><i class="fas fa-building mr-1 text-slate-400"></i> <span x-text="d.societat"></span></div>
             
-            // Si el fitxer porta signatura, l'apliquem a la llegenda
-            if (dades.METADATA_EXPORT_DATA) {
-                localStorage.setItem('nyn_ultima_export_data', dades.METADATA_EXPORT_DATA);
-                localStorage.setItem('nyn_ultima_export_autor', dades.METADATA_EXPORT_AUTOR);
-            }
-
-            Object.keys(dades).forEach(clau => {
-                if (clau !== "METADATA_EXPORT_DATA" && clau !== "METADATA_EXPORT_AUTOR") {
-                    localStorage.setItem(clau, dades[clau]);
-                }
-            });
+            <div class="grid grid-cols-2 gap-2 mt-2 text-xs">
+                <div><strong>Torn:</strong> <span x-text="d.torn"></span></div>
+                <div><strong>Zona:</strong> <span x-text="d.zona"></span></div>
+                <div><strong>Coneix.:</strong> <span x-text="d.coneixements"></span>/10</div>
+                <div><strong>Atenció:</strong> <span x-text="d.atencio"></span>/10</div>
+                <div><strong>Dispo.:</strong> <span x-text="d.disponibilitat"></span>/10</div>
+                <div><strong>Actitud:</strong> <span x-text="d.actitud"></span>/10</div>
+            </div>
             
-            await persistence.syncSave();
-            alert(i18n.t('rankingImportSuccess'));
-            location.reload();
-        } catch (err) { 
-            console.error("Error en importar dades"); 
-            alert(i18n.t('rankingImportError'));
-        }
-    };
-    reader.readAsText(file);
-}
+            <div class="mt-2 text-[10.5px] text-gray-500 italic border-t pt-1.5" x-text="d.observacions || 'Sense observacions.'"></div>
+        </div>
+    </template>
+</div>
 
-// --- VIGILANT DEFINITIU PER POSICIÓ DE COLUMNA ---
-document.addEventListener('change', function(e) {
-    const target = e.target;
-    const fila = target.closest('#tableBody tr');
-    if (fila) registrarCanviManual(target, fila);
-}, true);
-
-document.addEventListener('focusout', function(e) {
-    const target = e.target;
-    if (target.tagName === 'SELECT') return; 
-    const fila = target.closest('#tableBody tr');
-    if (fila) registrarCanviManual(target, fila);
-}, true);
-
-function registrarCanviManual(target, fila) {
-    let nomAgent = fila.cells[1] ? fila.cells[1].innerText.replace('💾', '').trim() : "Agent";
-    const indexColumna = target.closest('td').cellIndex;
-    const caps = ["Acció", "AGENT", "CENTRE", "SOCIETAT", "TORN", "ZONA", "CONEIXEMENTS", "ATENCIÓ", "DISPO", "ACTITUD", "VALORACIÓ", "OBS"];
-    let nomColumna = caps[indexColumna] || "DADA";
-
-    let valor = "";
-    if (target.tagName === 'SELECT') {
-        valor = target.options[target.selectedIndex].text;
-    } else {
-        valor = target.innerText || target.value || "";
-    }
-
-    valor = valor.toString().replace(/\n/g, " ").trim();
-    if (nomColumna === "AGENT") return;
-
-    if (valor !== "") {
-        registrarLog("SISTEMA", `RANKING [${nomAgent}]: ${nomColumna} ➡️ ${valor}`);
-    }
-}
-
-// Botó afegir fila
-document.addEventListener('click', function(e) {
-    if (e.target && e.target.id === 'addRowBtn') {
-        registrarLog("SISTEMA", "RANKING: S'ha clicat 'Afegir fila'");
-    }
-});
-
-  </script>
-
-  <script src="js/data.js"></script>
-  <script src="js/charts.js"></script> 
-  <script src="js/app.js"></script>
-
-
-<script>
-  // 1. NETEJAR I ORDENAR EL SELECTOR GENERAL
-  function netejarIOrdenarCentresDalt() {
-    const selector = document.getElementById('filterCentre');
-    if (!selector) return;
-    let opcions = Array.from(selector.options);
-    opcions = opcions.filter(opt => opt.value !== "NN CORSEGA");
-    const primera = opcions.shift();
-    opcions.sort((a, b) => a.text.localeCompare(b.text, 'ca'));
-    opcions.unshift(primera);
-    selector.innerHTML = "";
-    opcions.forEach(opt => selector.add(opt));
-  }
-
-  // 2. NETEJAR ELS SELECTORS QUE HI HA DINS DE LES FILES
-  function netejarSelectorsTaula() {
-    const selectorsTaula = document.querySelectorAll('#tableBody select');
-    selectorsTaula.forEach(sel => {
-      for (let i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value === "NN CORSEGA") {
-          sel.remove(i);
-          break; 
-        }
-      }
-    });
-  }
-
-  // 3. LA TEVA FUNCIÓ DE COMPTADOR
-  function actualitzarComptadorTreballadors() {
-    const tableBody = document.getElementById('tableBody');
-    const workerCountSpan = document.getElementById('workerCount');
-    if (tableBody && workerCountSpan) {
-      const visibles = Array.from(tableBody.querySelectorAll('tr')).filter(tr => tr.style.display !== 'none').length;
-      workerCountSpan.textContent = i18n.t('rankingWorkerCount', { count: visibles });
-    }
-    netejarSelectorsTaula();
-  }
-
-  // 4. EXECUTAR EN CARREGAR I VIGILAR CANVIS
-  window.addEventListener('load', async () => {
-    await persistence.syncLoad('ranking');
-    setTimeout(() => {
-        refrescarLlegendaGlobal(); // <--- ARRENCADA LLEGENDA
-        netejarIOrdenarCentresDalt();
-        actualitzarComptadorTreballadors();
-    }, 300);
-  });
-
-  document.querySelectorAll('.controls select, #search').forEach(el => {
-    el.addEventListener('input', () => setTimeout(actualitzarComptadorTreballadors, 50));
-  });
-
-  const btnAdd = document.getElementById('addRowBtn');
-  if (btnAdd) {
-    btnAdd.addEventListener('click', () => {
-      setTimeout(() => {
-        netejarSelectorsTaula();
-        actualitzarComptadorTreballadors();
-      }, 100);
-    });
-  }
-  // Listener para cambio de idioma en caliente
-  window.addEventListener('languageChanged', () => {
-    refrescarLlegendaGlobal();
-    actualitzarComptadorTreballadors();
-    if (typeof applyTranslations === 'function') applyTranslations();
-  });
-</script>
-
+<script src="js/data.js"></script>
+<script src="js/ranking.js"></script>
 </body>
 </html>

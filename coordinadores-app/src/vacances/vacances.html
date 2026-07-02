@@ -3,908 +3,349 @@
 <head>
     <meta charset="UTF-8">
     <title>NyN Pàrquings | Gestió Vacances</title>
-    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        }
+      }
+    </script>
     <script src="../js/persistence.js"></script>
     <script src="../js/i18n.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
-       // Forzar traducción inmediata al cargar
        document.addEventListener('DOMContentLoaded', () => {
            if(typeof applyTranslations === 'function') applyTranslations();
        });
     </script>
     
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ca.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+<style>
+    [x-cloak] { display: none !important; }
 
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+    :root {
+        --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+        --nyn-verd-accent: #008d36; /* Verde acento */
+        --border: #e2e8f0;
+        --text-main: #0f2d4a;
+        --text-muted: #64748b;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
 
-        :root { 
-            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
-            --nyn-verd-accent: #008d36; /* Verde acento */
-            --nyn-verd-light: #e6f4ea;
-            --border: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-        
-        html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; display: flex; flex-direction: column; }
-        body { font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; background: #f8fafc; font-size: 11px; color: #1e293b; }
-        
-        header { 
-            background-color: var(--nyn-verd); 
-            color: white; 
-            padding: 8px 24px; 
-            display: flex;        
-            justify-content: center; 
-            align-items: center; 
-            height: 48px; 
-            border-bottom: 2px solid var(--nyn-verd-accent);
-            box-sizing: border-box;
-            flex-shrink: 0;
-            position: relative;
-        }
+    body { 
+        font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+        background: #f8fafc; 
+        color: #1e293b;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    header { 
+        background-color: var(--nyn-verd); 
+        color: white; 
+        padding: 8px 24px; 
+        display: flex;        
+        justify-content: center; 
+        align-items: center; 
+        height: 48px; 
+        border-bottom: 2px solid var(--nyn-verd-accent);
+        box-sizing: border-box;
+    }
 
-        .header-center { 
-            font-size: 15px; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            text-align: center; 
-            letter-spacing: 1px; 
-        }
-        
-        .admin-panel { 
-            padding: 10px 24px; 
-            display: flex; 
-            flex-wrap: wrap;
-            gap: 12px; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            background: #ffffff; 
-            flex-shrink: 0;
-        }
-        
-        .toolbar-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #ffffff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .filter-label { 
-            font-weight: 700; 
-            color: var(--nyn-verd); 
-            font-size: 10px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
+    .header-center { 
+        font-size: 15px; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+    }
 
-        select, button { 
-            padding: 4px 10px; 
-            border: 1px solid #cbd5e1; 
-            border-radius: 6px; 
-            font-size: 11px; 
-            font-weight: 500;
-            cursor: pointer; 
-            height: 28px; 
-            box-sizing: border-box; 
-            font-family: inherit; 
-            transition: all 0.2s ease;
-            background: #ffffff;
-            color: #334155;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        select:hover, select:focus {
-            border-color: var(--nyn-verd-accent);
-            outline: none;
-        }
+    .main-container {
+        display: flex;
+        flex: 1;
+        gap: 20px;
+        padding: 24px;
+        box-sizing: border-box;
+    }
 
-        .btn-action {
-            background: var(--nyn-verd);
-            color: #ffffff;
-            border: 1px solid var(--nyn-verd);
-            font-weight: 600;
-        }
-        
-        .btn-action:hover {
-            background: #0b4e43;
-            border-color: #0b4e43;
-        }
-        
-        .btn-action-sec {
-            background: #3b82f6;
-            color: white;
-            border: 1px solid #3b82f6;
-            font-weight: 600;
-        }
-        
-        .btn-action-sec:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-        }
-        
-        .btn-archive {
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            color: #475569;
-        }
-        
-        .btn-archive:hover {
-            background: #e2e8f0;
-        }
-        
-        .btn-danger-right {
-            background: #ef4444;
-            color: white;
-            font-weight: 600;
-            border: 1px solid #ef4444;
-        }
-        
-        .btn-danger-right:hover {
-            background: #dc2626;
-            border-color: #dc2626;
-        }
+    .form-panel {
+        width: 380px;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        height: fit-content;
+    }
 
-        .table-container { flex-grow: 1; overflow: auto; padding: 0; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        
-        th { 
-            background: #f0f0f0; color: #444; padding: 0px 2px; border: 1px solid #ddd; 
-            font-size: 9px; position: sticky; top: 0; z-index: 10; font-weight: bold;
-            text-align: center; vertical-align: middle; height: 19px;
-        }
+    .list-panel {
+        flex: 1;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow-md);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
 
-        .filter-select { 
-            width: 100%; height: 100%; border: none; background: transparent; 
-            font-family: inherit; font-size: 9px; font-weight: bold;
-            text-align: center; text-align-last: center; cursor: pointer; outline: none;
-            appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="%23666"/></svg>');
-            background-repeat: no-repeat; background-position: right 4px center; padding-right: 12px;
-        }
+    h2 {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--text-main);
+        text-transform: uppercase;
+        border-bottom: 2px solid var(--border);
+        padding-bottom: 8px;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
 
-        td { border: 1px solid #eee; padding: 0; height: 18px; overflow: hidden; text-align: center; }
+    label {
+        font-weight: 700;
+        color: var(--nyn-verd);
+        font-size: 10.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
 
-        tr.group-item td:first-child { border-left: 1.5px solid black !important; border-right: 1.5px solid black !important; }
-        tr.group-start td:first-child { border-top: 1.5px solid black !important; }
-        tr.group-end td:first-child { border-bottom: 1.5px solid black !important; }
+    input, select, button {
+        font-family: inherit;
+        font-size: 11.5px;
+        box-sizing: border-box;
+    }
 
-        select { 
-            width: 100%; height: 100%; border: none; background: transparent; font-family: inherit; font-size: 10px; 
-            outline: none; cursor: pointer; appearance: none;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="6" height="6" viewBox="0 0 10 10"><path d="M0 2 L5 8 L10 2 Z" fill="%23666"/></svg>');
-            background-repeat: no-repeat; background-position: right 4px center; padding-right: 12px;
-        }
+    input[type="text"], input[type="date"], select {
+        padding: 6px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        width: 100%;
+        background: #ffffff;
+        outline: none;
+        transition: border-color 0.2s;
+    }
 
-        .col-centre { width: 145px; text-align: left; font-weight: bold; }
-        .col-centre select { padding-left: 10px; text-align: left; }
-        .col-nom { width: 175px; text-align: left; }
-        .col-nom select { padding-left: 10px; text-align: left; }
+    input[type="text"]:focus, input[type="date"]:focus, select:focus {
+        border-color: var(--nyn-verd-accent);
+    }
 
-        .bg-disfrutats { background-color: rgba(46, 204, 113, 0.08) !important; color: #1e8449 !important; font-weight: bold; }
-        .bg-disfrutats input { color: #1e8449 !important; font-weight: bold; }
-        
-        .bg-pendents { background-color: rgba(231, 76, 60, 0.06) !important; color: #c0392b !important; font-weight: bold; }
-        
-        .bg-corresp { background-color: rgba(52, 152, 219, 0.06) !important; color: #21618c !important; font-weight: bold; }
-        .bg-corresp input { color: #21618c !important; font-weight: bold; }
+    .btn-nyn {
+        background: var(--nyn-verd);
+        color: white;
+        border: 1px solid var(--nyn-verd);
+        font-weight: 700;
+        padding: 8px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+    }
 
-        .bg-festiuper { background-color: rgba(241, 196, 15, 0.2) !important; }
-        .bg-festius { background-color: rgba(155, 89, 182, 0.06) !important; }
+    .btn-nyn:hover {
+        background: #0b4e43;
+        border-color: #0b4e43;
+    }
 
-        input { width: 100%; height: 100%; border: none; background: transparent; text-align: center; font-family: inherit; font-size: 10px; outline: none; }
-        .input-periode { font-weight: bold !important; color: #008d36 !important; cursor: pointer; font-size: 9.5px; }
-        
-        .btn-delete-row { border:none; background:none; color:#ccc; cursor:pointer; font-weight: bold; }
-        .btn-delete-row:hover { color: #d32f2f !important; }
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
 
-        #deleteModal { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); background:white; padding:20px; border:2px solid var(--nyn-verd); z-index:2000; border-radius:8px; width:320px; box-shadow: 0 0 20px rgba(0,0,0,0.3); }
-        .modal-input { border:1px solid #ccc; width:100%; margin-bottom:10px; height:28px; padding-left:5px; box-sizing: border-box; }
-    </style>
+    .btn-secondary:hover {
+        background: #e2e8f0;
+    }
+
+    .btn-danger-icon {
+        color: #ef4444;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .btn-danger-icon:hover {
+        color: #b91c1c;
+    }
+
+    /* Tabla */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th {
+        background: #f8fafc;
+        color: var(--text-main);
+        font-weight: 700;
+        font-size: 10px;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        border-bottom: 2px solid var(--border);
+        text-align: left;
+    }
+
+    td {
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        font-size: 11px;
+        vertical-align: middle;
+    }
+
+    tr:hover td {
+        background-color: #f8fafc;
+    }
+</style>
 </head>
-<body data-required-roles="coordinador,jefe_operaciones">
+<body x-data="moduloVacaciones()" x-init="init()">
 
 <header>
-    <div class="header-center" data-i18n="vacancesTitle">Vacances Pàrkings</div>
+    <div class="header-center"><i class="fas fa-umbrella-beach mr-2"></i> GESTIÓ DE VACANCES</div>
 </header>
 
-<div class="admin-panel">
-    <div class="toolbar-group">
-        <span class="filter-label" data-i18n="vacancesLabelAny">Any:</span>
-        <select id="selectAny" onchange="inicialitzar()" style="width: 80px;"></select>
+<div class="main-container">
+    <!-- Panel Izquierdo: Registrar Vacaciones -->
+    <div class="form-panel">
+        <h2><i class="fas fa-calendar-plus"></i> Nova Sol·licitud</h2>
+        
+        <div class="flex flex-col gap-1.5">
+            <label>Treballador</label>
+            <select x-model="nuevaSolicitud.agente">
+                <option value="">-- Selecciona --</option>
+                <template x-for="t in listaAgentes" :key="t">
+                    <option :value="t" x-text="t"></option>
+                </template>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label>Fecha Inicio</label>
+            <input type="date" x-model="nuevaSolicitud.fecha_inicio">
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label>Fecha Fin (Opcional)</label>
+            <input type="date" x-model="nuevaSolicitud.fecha_fin">
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label>Estado</label>
+            <select x-model="nuevaSolicitud.estado">
+                <option value="Aprobado">Aprobado</option>
+                <option value="Pendiente">Pendiente</option>
+                <option value="Rechazado">Rechazado</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1.5">
+            <label>Comentaris</label>
+            <input type="text" x-model="nuevaSolicitud.comentarios" placeholder="Ej: Vacances estiu, pont...">
+        </div>
+
+        <button class="btn-nyn w-full mt-2" @click="registrarSolicitud()">
+            <i class="fas fa-save"></i> Registrar Vacances
+        </button>
     </div>
-    
-    <div class="toolbar-group">
-        <button class="btn-action" onclick="afegirFila()" data-i18n="vacancesAddRow">➕ Afegir Fila</button>
-        <button class="btn-archive" onclick="openDeleteModal()" data-i18n="vacancesManageData">⚙️ Gestionar Dades</button>
-    </div>
-    
-    <div class="toolbar-group">
-        <button class="btn-action-sec" onclick="exportarExcel()" data-i18n="vacancesExportExcel">📥 Exportar Excel</button>
-        <button class="btn-archive" onclick="exportarJSON()" data-i18n="vacancesExportJSON">💾 Exportar</button>
-        <button class="btn-archive" onclick="document.getElementById('inputImportar').click()" data-i18n="vacancesImportJSON">📂 Importar</button>
-        <input type="file" id="inputImportar" style="display:none" accept=".json" onchange="importarJSON(event)">
-    </div>
-    
-    <div class="toolbar-group" style="margin-left: auto;">
-        <div id="lastExport" style="font-size: 10px; color: #64748b; font-weight: 500; margin-right: 10px;" data-i18n="vacancesLastExportNone">Última exportació: Mai</div>
-        <button class="btn-danger-right" onclick="reiniciarTot()" data-i18n="vacancesClearData">🗑️ Esborrar dades</button>
-    </div>
-</div>
 
-<div class="table-container">
-    <table id="tablaVacances">
-        <thead>
-            <tr>
-                <th style="width: 145px;"><select id="filterCentre" class="filter-select" onchange="filtrarTaula()"><option value="" data-i18n="colCentre">CENTRE</option></select></th>
-                <th style="width: 175px;"><select id="filterNom" class="filter-select" onchange="filtrarTaula()"><option value="" data-i18n="colTrabajador">TREBALLADOR</option></select></th>
-                <th style="width: 85px;"><select id="filterJornada" class="filter-select" onchange="filtrarTaula()"><option value="" data-i18n="colJornada">JORNADA</option></select></th>
-                <th style="width: 155px;" data-i18n="vacancesPeriod1">1er PERÍODE</th>
-                <th style="width: 155px;" data-i18n="vacancesPeriod2">2on PERÍODE</th>
-                <th style="width: 75px;" class="bg-disfrutats" data-i18n="vacancesDisfrutados">DISFRUTATS</th>
-                <th style="width: 75px;" class="bg-pendents" data-i18n="vacancesPendientes">PENDENTS</th>
-                <th style="width: 85px;" class="bg-corresp" data-i18n="vacancesCorrespondientes">CORRESPONENTS</th>
-                <th style="width: 110px;" class="bg-festiuper" data-i18n="vacancesFestivosPeriodo">FESTIUS PERÍODE</th>
-                <th style="width: 65px;" class="bg-festius" data-i18n="vacancesNumFestivos">Nº FESTIUS</th>
-                <th style="width: 90px;" data-i18n="vacancesBolsaHoras">BOSSA HORES</th>
-                <th data-i18n="vacancesObservaciones">OBSERVACIONS</th>
-                <th style="width: 25px;">🗑️</th>
-            </tr>
-        </thead>
-        <tbody id="listaVacances"></tbody>
-    </table>
-</div>
-
-<div id="deleteModal">
-    <div style="font-weight:bold; margin-bottom:12px; font-size: 13px;" data-i18n="vacancesManageDataModal">⚙️ GESTIONAR DADES</div>
-    
-    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;" data-i18n="vacancesLabelTypeList">TIPUS DE LLISTA:</label>
-    <select id="deleteType" onchange="updateDeleteOptions()" class="modal-input" style="appearance: auto; padding: 0 5px;">
-        <option value="centres" data-i18n="vacancesOptCentres">Centres</option>
-        <option value="plantilla" data-i18n="vacancesOptTreballadors">Treballadors</option>
-        <option value="anys" data-i18n="vacancesOptAnys">Anys</option>
-    </select>
-
-    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;" data-i18n="vacancesLabelSelectElement">SELECCIONA ELEMENT:</label>
-    <select id="deleteItem" onchange="syncEditInput()" class="modal-input" style="appearance: auto; padding: 0 5px;"></select>
-
-    <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px;" data-i18n="vacancesLabelNameEdit">NOM (AFEGIR O MODIFICAR):</label>
-    <input type="text" id="editInput" class="modal-input" placeholder="Escriu aquí..." data-i18n="vacancesPlaceholderWrite">
-
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:6px; margin-top: 5px;">
-        <button onclick="addNewItem()" class="btn-nyn" style="background:var(--nyn-verd);" data-i18n="vacancesBtnAddNew">➕ Afegir Nou</button>
-        <button onclick="modifyItem()" class="btn-nyn" style="background:var(--nyn-taronja);" data-i18n="vacancesBtnModify">✏️ Modificar</button>
-        <button onclick="confirmDelete()" class="btn-nyn" style="background:#d32f2f;" data-i18n="vacancesBtnDelete">🗑️ Eliminar</button>
-        <button onclick="document.getElementById('deleteModal').style.display='none'" class="btn-nyn" style="background:#666;" data-i18n="vacancesBtnClose">Tancar</button>
-    </div>
-</div>
-
-<script>
-
-// Festius oficials extrets del teu quadrant.html
-const FESTIUS_BCN = ["0-1", "0-6", "3-3", "3-6", "4-1", "4-25", "5-24", "7-15", "8-11", "8-24", "9-12", "11-8", "11-25", "11-26"];
-const FESTIUS_REUS = ["0-1", "0-6", "3-3", "3-6", "4-1", "5-24", "5-29", "7-15", "8-11", "8-25", "9-12", "11-8", "11-25", "11-26"];
-
-// Funció per saber si un dia és festiu segons el centre
-function esDiaFestiu(data, centre) {
-    const m = data.getMonth();
-    const d = data.getDate();
-    const clau = `${m}-${d}`;
-    const esReus = (centre || "").toUpperCase().includes("PALLOL") || (centre || "").toUpperCase().includes("REUS");
-    
-    return esReus ? FESTIUS_REUS.includes(clau) : FESTIUS_BCN.includes(clau);
-}
-
-
-
-    let CENTRES = JSON.parse(localStorage.getItem('nyn_centres')) || ["NN CENTRAL", "NN LA TAMARITA", "P. Gran Via"];
-    let PLANTILLA = JSON.parse(localStorage.getItem('nyn_plantilla')) || ["Albert", "Joan", "Marta"];
-    let ANYS = JSON.parse(localStorage.getItem('nyn_anys')) || ["2025", "2026", "2027", "2028"];
-    let colorsMap = {};
-
-    function generarColors() {
-        const centresOrdenats = [...CENTRES].sort();
-        centresOrdenats.forEach((c, i) => {
-            const hue = (i * (360 / Math.max(centresOrdenats.length, 1))) % 360;
-            colorsMap[c] = `hsl(${hue}, 85%, 92%)`; 
-        });
-    }
-
-    async function inicialitzar() {
-        window.AGENTES_SQLITE = await loadCoordinadores();
-        await persistence.syncLoad('vacances');
-        CENTRES = JSON.parse(localStorage.getItem('nyn_centres')) || [];
-        PLANTILLA = JSON.parse(localStorage.getItem('nyn_plantilla')) || [];
-        generarColors();
-        const selAny = document.getElementById('selectAny');
-        const valorActual = selAny.value;
-        selAny.innerHTML = "";
-        ANYS.sort().forEach(a => {
-            const opt = document.createElement('option');
-            opt.value = a;
-            opt.innerText = a;
-            if(a === valorActual || (valorActual === "" && a === "2026")) opt.selected = true;
-            selAny.appendChild(opt);
-        });
-        if (selAny.value === "") selAny.value = ANYS.includes("2026") ? "2026" : ANYS[0];
-
-        const storedExport = localStorage.getItem('nyn_last_export_' + selAny.value);
-        document.getElementById('lastExport').innerText = storedExport ? i18n.t('vacancesLastExportPrefix') + storedExport : i18n.t('vacancesLastExportNone');
-        actualitzarFiltres();
-        await renderTable();
-    }
-
-    function actualitzarFiltres() {
-        document.getElementById('filterCentre').innerHTML = '<option value="" data-i18n="colCentre">' + i18n.t('colCentre') + '</option>' + CENTRES.sort().map(c => `<option value="${c}">${c}</option>`).join('');
-        document.getElementById('filterNom').innerHTML = '<option value="" data-i18n="colTrabajador">' + i18n.t('colTrabajador') + '</option>' + PLANTILLA.sort().map(n => `<option value="${n}">${n}</option>`).join('');
-        document.getElementById('filterJornada').innerHTML = '<option value="" data-i18n="colJornada">' + i18n.t('colJornada') + '</option><option value="T.C.">T.C.</option><option value="T.P.">T.P.</option>';
-    }
-
-    function filtrarTaula() {
-        const fC = document.getElementById('filterCentre').value;
-        const fN = document.getElementById('filterNom').value;
-        const fJ = document.getElementById('filterJornada').value;
-        Array.from(document.querySelectorAll('#listaVacances tr')).forEach(tr => {
-            const vC = tr.cells[0].querySelector('select').value;
-            const vN = tr.cells[1].querySelector('select').value;
-            const vJ = tr.cells[2].querySelector('select').value;
-            tr.style.display = ((!fC || vC === fC) && (!fN || vN === fN) && (!fJ || vJ === fJ)) ? "" : "none";
-        });
-        marcarSeparadors();
-    }
-
-    async function renderTable() {
-        const any = document.getElementById('selectAny').value;
-        if(!any) return;
-        
-        // 1. Cargamos las vacaciones relacionales de SQLite
-        const vacancesSQLite = await loadVacacionesSQLite();
-        // 2. Cargamos los metadatos desde el localStorage
-        const dades = JSON.parse(localStorage.getItem('nyn_vacances_' + any)) || [];
-        
-        // Filtrar vacaciones relacionales de SQLite del año seleccionado
-        const vacancesDelAny = vacancesSQLite.filter(v => v.fecha_inicio.startsWith(any) || v.fecha_fin.startsWith(any));
-        
-        // Función helper para formatear fechas YYYY-MM-DD a DD/MM/YYYY
-        function formatearFechaSQL(fechaSQL) {
-            if (!fechaSQL) return "";
-            const parts = fechaSQL.split('-');
-            if (parts.length < 3) return fechaSQL;
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-        
-        // Agrupamos las vacaciones de SQLite por agente_nombre (insensible a mayúsculas/minúsculas)
-        const agrupadoSQLite = {};
-        vacancesDelAny.forEach(v => {
-            const nombreClave = v.agente_nombre.toUpperCase();
-            if (!agrupadoSQLite[nombreClave]) {
-                agrupadoSQLite[nombreClave] = [];
-            }
-            agrupadoSQLite[nombreClave].push(v);
-        });
-        
-        // Ordenamos cronológicamente las vacaciones de cada agente
-        for (const nombre in agrupadoSQLite) {
-            agrupadoSQLite[nombre].sort((a, b) => a.fecha_inicio.localeCompare(b.fecha_inicio));
-        }
-        
-        // Mapeamos y actualizamos las fechas de los períodos de los metadatos cargados
-        const dadesActualitzades = dades.map(d => {
-            const nombreAgente = (d.n || "").trim();
-            if (nombreAgente === "-" || nombreAgente === "") return d;
+    <!-- Panel Derecho: Listado Solicitudes -->
+    <div class="list-panel">
+        <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-2">
+            <h2><i class="fas fa-list"></i> Sol·licituds Registrades</h2>
             
-            const periodosAgente = agrupadoSQLite[nombreAgente.toUpperCase()];
-            if (periodosAgente && periodosAgente.length > 0) {
-                // Primer período
-                const p1 = periodosAgente[0];
-                const inicio1 = formatearFechaSQL(p1.fecha_inicio);
-                const fin1 = formatearFechaSQL(p1.fecha_fin);
-                d.p = (inicio1 === fin1) ? inicio1 : `${inicio1} a ${fin1}`;
-                d.id1 = p1.id;
-                
-                // Segundo período
-                if (periodosAgente.length > 1) {
-                    const p2 = periodosAgente[1];
-                    const inicio2 = formatearFechaSQL(p2.fecha_inicio);
-                    const fin2 = formatearFechaSQL(p2.fecha_fin);
-                    d.p2 = (inicio2 === fin2) ? inicio2 : `${inicio2} a ${fin2}`;
-                    d.id2 = p2.id;
-                } else {
-                    d.p2 = "";
-                    d.id2 = "";
-                }
-            } else {
-                d.p = "";
-                d.id1 = "";
-                d.p2 = "";
-                d.id2 = "";
-            }
-            return d;
-        });
-        
-        // Comprobar si hay agentes con vacaciones en SQLite que no estén en nuestros metadatos
-        for (const nombreClave in agrupadoSQLite) {
-            const existeEnMetadatos = dadesActualitzades.some(d => d.n.toUpperCase() === nombreClave);
-            if (!existeEnMetadatos) {
-                const periodosAgente = agrupadoSQLite[nombreClave];
-                const p1 = periodosAgente[0];
-                const inicio1 = formatearFechaSQL(p1.fecha_inicio);
-                const fin1 = formatearFechaSQL(p1.fecha_fin);
-                const rango1 = (inicio1 === fin1) ? inicio1 : `${inicio1} a ${fin1}`;
-                
-                let rango2 = "";
-                if (periodosAgente.length > 1) {
-                    const p2 = periodosAgente[1];
-                    const inicio2 = formatearFechaSQL(p2.fecha_inicio);
-                    const fin2 = formatearFechaSQL(p2.fecha_fin);
-                    rango2 = (inicio2 === fin2) ? inicio2 : `${inicio2} a ${fin2}`;
-                }
-                
-                dadesActualitzades.push({
-                    c: "-", 
-                    n: p1.agente_nombre, 
-                    j: "T.C.", 
-                    p: rango1,
-                    id1: p1.id,
-                    p2: rango2,
-                    id2: periodosAgente.length > 1 ? periodosAgente[1].id : "",
-                    d: 0,
-                    cor: 30,
-                    fp: "",
-                    f: 0,
-                    b: "-",
-                    obs: "Creado automáticamente desde SQLite"
-                });
-            }
-        }
-        
-        const tbody = document.getElementById('listaVacances');
-        tbody.innerHTML = "";
-
-        if (dadesActualitzades.length > 0) {
-            dadesActualitzades.reverse().forEach(d => {
-                afegirFila(d);
-                const tr = tbody.rows[0];
-                const selectCentre = tr.cells[0].querySelector('select');
-                if (selectCentre && selectCentre.value !== "-") {
-                    const event = new Event('change');
-                    selectCentre.dispatchEvent(event);
-                }
-            });
-        } else {
-            afegirFila();
-        }
-        ordenarTaula();
-    }
-
-    function afegirFila(d = {}) {
-        const tbody = document.getElementById('listaVacances');
-        const tr = document.createElement('tr');
-        const cSel = d.c || "-";
-        const nSel = d.n || "-";
-        const j = d.j || "T.C.";
-        tr.innerHTML = `
-            <td class="col-centre" style="background:${colorsMap[cSel] || '#fff'}">
-                <select onchange="canviCentre(this)" style="font-weight:bold;">
-                    <option value="-">-</option>
-                    ${CENTRES.sort().map(v => `<option value="${v}" ${v===cSel?'selected':''}>${v}</option>`).join('')}
+            <div class="flex gap-2">
+                <select x-model="filtros.anio" style="width: 100px; height: 26px;">
+                    <option value="">Tots els anys</option>
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
                 </select>
-            </td>
-            <td class="col-nom">
-                <select onchange="canviTrabajador(this); desar()">
-                    <option value="-">-</option>
-                    ${PLANTILLA.sort().map(v => `<option value="${v}" ${v===nSel?'selected':''}>${v}</option>`).join('')}
+                
+                <select x-model="filtros.agente" style="width: 160px; height: 26px;">
+                    <option value="ALL">Tots els agents</option>
+                    <template x-for="t in listaAgentes" :key="t">
+                        <option :value="t" x-text="t"></option>
+                    </template>
                 </select>
-            </td>
-            <td>
-                <select onchange="aplicarColorJornada(this); desar()" style="text-align-last: center;">
-                    <option ${j==='T.C.'?'selected':''}>T.C.</option>
-                    <option ${j==='T.P.'?'selected':''}>T.P.</option>
+
+                <select x-model="filtros.estado" style="width: 120px; height: 26px;">
+                    <option value="ALL">Tots els estats</option>
+                    <option value="Aprobado">Aprobado</option>
+                    <option value="Pendiente">Pendiente</option>
+                    <option value="Rechazado">Rechazado</option>
                 </select>
-            </td>
-            <td style="background:#f9f9f9"><input type="text" class="input-periode" value="${d.p||''}" data-db-id="${d.id1||''}" readonly></td>
-            <td style="background:#fcfcfc"><input type="text" class="input-periode" value="${d.p2||''}" data-db-id="${d.id2||''}" readonly></td>
-            <td class="bg-disfrutats"><input type="number" min="0" value="${d.d||0}" oninput="validarPositiu(this); calcular(this)"></td>
-            <td class="bg-pendents">0</td>
-            <td class="bg-corresp"><input type="number" min="0" value="${d.cor||30}" oninput="validarPositiu(this); calcular(this)"></td>
-            <td class="bg-festiuper"><input type="text" class="input-festius-multi" value="${d.fp||''}" readonly style="font-size:9px; cursor:pointer;"></td>
-            <td class="bg-festius"><input type="number" min="0" value="${d.f||0}" oninput="validarPositiu(this); aplicarColorFestius(this); desar()"></td>
-            <td><input type="text" value="${d.b||'-'}" oninput="desar()"></td>
-            <td><input type="text" style="text-align:left; padding-left:5px" value="${d.obs||''}" oninput="desar()"></td>
-            <td><button class="btn-delete-row" onclick="eliminarFilaVacaciones(this)">✖</button></td>
-        `;
-        tbody.prepend(tr);
-        configurarCalendari(tr);
-        aplicarColorJornada(tr.cells[2].querySelector('select'));
-        aplicarColorFestius(tr.querySelector('td.bg-festius input'));
-        calcular(tr.querySelector('input[type="number"]'));
-    }
-
-    async function eliminarFilaVacaciones(btn) {
-        const tr = btn.closest('tr');
-        if (!tr) return;
-
-        if (confirm(i18n.t('vacancesConfirmDeleteRow'))) {
-            const inputsPeriode = tr.querySelectorAll('.input-periode');
-            for (const input of inputsPeriode) {
-                const dbId = input.getAttribute('data-db-id');
-                if (dbId) {
-                    console.log(`Eliminando vacación relacional con ID: ${dbId}`);
-                    await deleteVacacionSQLite(Number(dbId));
-                }
-            }
-            tr.remove();
-            desar();
-            marcarSeparadors();
-        }
-    }
-
-    function canviCentre(sel) { sel.closest('td').style.backgroundColor = colorsMap[sel.value] || "#fff"; desar(); ordenarTaula(); }
-    function ordenarTaula() { const tbody = document.getElementById('listaVacances'); const files = Array.from(tbody.rows); files.sort((a, b) => a.cells[0].querySelector('select').value.localeCompare(b.cells[0].querySelector('select').value)); files.forEach(f => tbody.appendChild(f)); marcarSeparadors(); }
-    function marcarSeparadors() { const files = Array.from(document.querySelectorAll('#listaVacances tr')).filter(tr => tr.style.display !== "none"); files.forEach((tr, index) => { tr.classList.remove('group-start', 'group-item', 'group-end'); const cA = tr.cells[0].querySelector('select').value; if (cA === "-") return; tr.classList.add('group-item'); if (index === 0 || files[index - 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-start'); if (index === files.length - 1 || files[index + 1].cells[0].querySelector('select').value !== cA) tr.classList.add('group-end'); }); }
-    function aplicarColorJornada(sel) { sel.style.color = (sel.value === "T.P.") ? "var(--nyn-lila)" : "black"; }
-    function validarPositiu(input) { if (input.value < 0) input.value = 0; }
-    function aplicarColorFestius(input) { const v = parseFloat(input.value) || 0; input.style.fontWeight = (v > 2) ? "bold" : "normal"; input.style.color = (v === 1) ? "#d4ac0d" : (v >= 2) ? "red" : "black"; }
-    
-
-
-function configurarCalendari(tr) {
-    const actualitzarTotAut = () => {
-        const inputP1 = tr.cells[3].querySelector('input');
-        const inputP2 = tr.cells[4].querySelector('input');
-        const centreNom = tr.cells[0].querySelector('select').value.toUpperCase();
+            </div>
+        </div>
         
-        // --- PART A: CÀLCUL AUTOMÀTIC DE FESTIUS ---
-        if (centreNom !== "-" && (inputP1.value || inputP2.value)) {
-            const extreureDatesDeRang = (val) => {
-                if (!val) return [];
-                const parts = val.includes(" a ") ? val.split(" a ") : val.split(" to ");
-                if (parts.length < 2) return [];
-                const [d1, m1, a1] = parts[0].split("/").map(Number);
-                const [d2, m2, a2] = parts[1].split("/").map(Number);
-                let inici = new Date(a1, m1 - 1, d1), fi = new Date(a2, m2 - 1, d2), llista = [], temp = new Date(inici);
-                while (temp <= fi) {
-                    llista.push(new Date(temp.getFullYear(), temp.getMonth(), temp.getDate()));
-                    temp.setDate(temp.getDate() + 1);
-                }
-                return llista;
-            };
+        <div class="overflow-x-auto">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Treballador</th>
+                        <th width="100">Fecha Inicio</th>
+                        <th width="100">Fecha Fin</th>
+                        <th width="110">Estado</th>
+                        <th>Comentarios</th>
+                        <th width="80" class="text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="inc in incidenciasFiltradas" :key="inc.id">
+                        <tr>
+                            <td class="font-bold text-gray-800" x-text="inc.id_trabajador"></td>
+                            <td x-text="inc.fecha_inicio"></td>
+                            <td x-text="inc.fecha_fin || '-'"></td>
+                            <td>
+                                <select :value="inc.estado" @change="cambiarEstado(inc.id, $event.target.value)" 
+                                        :class="{
+                                            'bg-green-100 text-green-800 border-green-300 font-semibold': inc.estado === 'Aprobado',
+                                            'bg-yellow-100 text-yellow-800 border-yellow-300 font-semibold': inc.estado === 'Pendiente',
+                                            'bg-red-100 text-red-800 border-red-300 font-semibold': inc.estado === 'Rechazado'
+                                        }" style="height: 24px; padding: 2px 6px;">
+                                    <option value="Aprobado">Aprobado</option>
+                                    <option value="Pendiente">Pendiente</option>
+                                    <option value="Rechazado">Rechazado</option>
+                                </select>
+                            </td>
+                            <td class="text-gray-600" x-text="inc.comentarios || '-'"></td>
+                            <td class="text-center">
+                                <button class="btn-danger-icon" @click="eliminarSolicitud(inc.id)">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                    <template x-if="incidenciasFiltradas.length === 0">
+                        <tr>
+                            <td colspan="6" class="text-center py-8 text-gray-400">
+                                <i class="fas fa-info-circle mb-1 text-lg"></i><br>
+                                No hay solicitudes de vacaciones registradas con los filtros seleccionados.
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
-            const totesLesDates = [...extreureDatesDeRang(inputP1.value), ...extreureDatesDeRang(inputP2.value)];
-            let festiusTrobats = [];
-            totesLesDates.forEach(data => {
-                const m = data.getMonth(), d = data.getDate(), clau = `${m}-${d}`;
-                const esReus = centreNom.includes("PALLOL") || centreNom.includes("REUS");
-                const comunes = ["0-1", "0-6", "3-3", "3-6", "4-1", "5-24", "7-15", "8-11", "9-12", "11-8", "11-25", "11-26"];
-                const locals = esReus ? ["5-29", "8-25"] : ["4-25", "8-24"];
-                if (comunes.includes(clau) || locals.includes(clau)) {
-                    festiusTrobats.push(`${String(data.getDate()).padStart(2, '0')}/${String(data.getMonth() + 1).padStart(2, '0')}/${data.getFullYear()}`);
-                }
-            });
-            const festiusUnics = [...new Set(festiusTrobats)];
-            tr.querySelector('.input-festius-multi').value = festiusUnics.join(", ");
-            const inputNumF = tr.querySelector('td.bg-festius input');
-            inputNumF.value = festiusUnics.length;
-            aplicarColorFestius(inputNumF);
-        }
-
-        // --- PART B: CÀLCUL AUTOMÀTIC DE DIES DISFRUTATS (NOVETAT) ---
-        const diesP1 = calcularDiesPassats(inputP1.value);
-        const diesP2 = calcularDiesPassats(inputP2.value);
-        const inputDisfrutats = tr.cells[5].querySelector('input');
-        
-        inputDisfrutats.value = diesP1 + diesP2; // Assignem els dies automàticament
-        
-        calcular(inputDisfrutats); // Això actualitza la columna "Pendents"
-        desar(); // Ho guardem al LocalStorage
-    };
-
-    // Vinculació amb els calendaris
-    const flatpickrLocale = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? 'es' : 'ca';
-    tr.querySelectorAll(".input-periode").forEach(input => {
-        flatpickr(input, { 
-            mode: "range", dateFormat: "d/m/Y", locale: flatpickrLocale, allowInput: true,
-            onClose: (selectedDates, dateStr, instance) => { 
-                actualitzarTotAut(); 
-                sincronizarPeriodoSQLite(instance.element);
-            }
-        });
-    });
-
-    tr.querySelectorAll(".input-festius-multi").forEach(input => {
-        flatpickr(input, { 
-            mode: "multiple", dateFormat: "d/m/Y", locale: flatpickrLocale, conjunction: ", ",
-            onClose: (dates) => {
-                const inputNum = tr.querySelector('td.bg-festius input');
-                if (inputNum) { inputNum.value = dates.length; aplicarColorFestius(inputNum); }
-                desar();
-            }
-        });
-    });
-
-    const elSelect = tr.cells[0].querySelector('select');
-    elSelect.onchange = (e) => {
-        canviCentre(e.target);
-        actualitzarTotAut(); 
-    };
-}
-
-async function sincronizarPeriodoSQLite(input) {
-    const tr = input.closest('tr');
-    if (!tr) return;
-    
-    const selectAgente = tr.cells[1].querySelector('select');
-    if (!selectAgente) return;
-    
-    const nombreAgente = selectAgente.value;
-    const dbId = input.getAttribute('data-db-id');
-    const any = document.getElementById('selectAny').value || '2026';
-    
-    if (nombreAgente === "-" || nombreAgente === "") {
-        if (dbId) {
-            await deleteVacacionSQLite(Number(dbId));
-            input.removeAttribute('data-db-id');
-        }
-        return;
-    }
-    
-    if (typeof AGENTES_SQLITE === 'undefined' || !AGENTES_SQLITE) {
-        AGENTES_SQLITE = await loadCoordinadores();
-    }
-    const agenteObj = AGENTES_SQLITE.find(a => a.nombre.toUpperCase() === nombreAgente.toUpperCase());
-    if (!agenteObj) {
-        console.warn("Agente no encontrado en SQLite:", nombreAgente);
-        return;
-    }
-    const agenteId = agenteObj.id;
-    
-    const dateStr = input.value.trim();
-    if (dateStr === "" || dateStr === "-") {
-        if (dbId) {
-            await deleteVacacionSQLite(Number(dbId));
-            input.removeAttribute('data-db-id');
-            desar();
-        }
-        return;
-    }
-    
-    const parseado = persistence.parsearRangoFecha(dateStr, any);
-    if (!parseado) {
-        console.warn("Rango de fecha no válido:", dateStr);
-        return;
-    }
-    
-    try {
-        if (dbId) {
-            console.log(`Borrando vacación anterior con ID: ${dbId}`);
-            await deleteVacacionSQLite(Number(dbId));
-            input.removeAttribute('data-db-id');
-        }
-        
-        console.log(`Guardando vacación relacional para agente ${agenteId} (${nombreAgente}): ${parseado.inicio} a ${parseado.fin}`);
-        const res = await saveVacacionSQLite(agenteId, parseado.inicio, parseado.fin);
-        if (res && res.success && res.id) {
-            input.setAttribute('data-db-id', res.id);
-            console.log(`Vacación guardada en SQLite con nuevo ID: ${res.id}`);
-        }
-        desar();
-    } catch (e) {
-        console.error("Error sincronizando vacación SQLite:", e);
-    }
-}
-
-async function canviTrabajador(select) {
-    const tr = select.closest('tr');
-    if (!tr) return;
-    
-    const inputs = tr.querySelectorAll('.input-periode');
-    for (const input of inputs) {
-        await sincronizarPeriodoSQLite(input);
-    }
-}
-
-
-
-function calcularDiesPassats(rang) {
-        if (!rang || (!rang.includes(" a ") && !rang.includes(" to "))) return 0;
-        const separador = rang.includes(" a ") ? " a " : " to ";
-        const parts = rang.split(separador);
-        if (parts.length < 2) return 0;
-
-        const [d1, m1, a1] = parts[0].split("/").map(Number);
-        const [d2, m2, a2] = parts[1].split("/").map(Number);
-        const inici = new Date(a1, m1 - 1, d1);
-        const fi = new Date(a2, m2 - 1, d2);
-        const avui = new Date();
-        avui.setHours(0, 0, 0, 0); 
-
-        if (avui < inici) return 0; 
-        const dataReferencia = (avui > fi) ? fi : avui;
-        const diferenciaMs = dataReferencia - inici;
-        return Math.floor(diferenciaMs / (1000 * 60 * 60 * 24)) + 1;
-    }
-
-
-
-    function calcular(el) { const tr = el.closest('tr'); const d = parseFloat(tr.cells[5].querySelector('input').value) || 0; const c = parseFloat(tr.cells[7].querySelector('input').value) || 0; tr.cells[6].innerText = Math.max(0, c - d); desar(); }
-
-    function desar() { 
-        const any = document.getElementById('selectAny').value;
-        if(!any) return;
-        const rows = Array.from(document.querySelectorAll('#listaVacances tr')).map(tr => ({
-            c: tr.cells[0].querySelector('select').value, 
-            n: tr.cells[1].querySelector('select').value, 
-            j: tr.cells[2].querySelector('select').value, 
-            p: tr.cells[3].querySelector('input').value, 
-            p2: tr.cells[4].querySelector('input').value, 
-            d: tr.cells[5].querySelector('input').value, 
-            cor: tr.cells[7].querySelector('input').value, 
-            fp: tr.cells[8].querySelector('input').value, 
-            f: tr.cells[9].querySelector('input').value, 
-            b: tr.cells[10].querySelector('input').value, 
-            obs: tr.cells[11].querySelector('input').value 
-        }));
-        localStorage.setItem('nyn_vacances_' + any, JSON.stringify(rows)); 
-    }
-
-    function openDeleteModal() { document.getElementById('deleteModal').style.display='block'; updateDeleteOptions(); }
-    
-    function updateDeleteOptions() { 
-        const type = document.getElementById('deleteType').value; 
-        let items = [];
-        if(type === 'centres') items = CENTRES;
-        else if(type === 'plantilla') items = PLANTILLA;
-        else if(type === 'anys') items = ANYS;
-        
-        const sel = document.getElementById('deleteItem'); 
-        sel.innerHTML = items.sort().map(i => `<option value="${i}">${i}</option>`).join(''); 
-        syncEditInput(); 
-    }
-
-    function syncEditInput() { document.getElementById('editInput').value = document.getElementById('deleteItem').value; }
-    
-    function addNewItem() { 
-        const type = document.getElementById('deleteType').value; 
-        const val = document.getElementById('editInput').value.trim(); 
-        if(!val) return; 
-        if(type === 'centres') { if(!CENTRES.includes(val)) CENTRES.push(val); } 
-        else if(type === 'plantilla') { if(!PLANTILLA.includes(val)) PLANTILLA.push(val); }
-        else if(type === 'anys') { if(!ANYS.includes(val)) ANYS.push(val); }
-        saveAndReload(); 
-    }
-
-    function modifyItem() { 
-        const type = document.getElementById('deleteType').value; 
-        const vell = document.getElementById('deleteItem').value; 
-        const nou = document.getElementById('editInput').value.trim(); 
-        if(!nou || vell === nou) return; 
-        if(type === 'centres') { CENTRES = CENTRES.map(c => c === vell ? nou : c); } 
-        else if(type === 'plantilla') { PLANTILLA = PLANTILLA.map(p => p === vell ? nou : p); }
-        else if(type === 'anys') { ANYS = ANYS.map(a => a === vell ? nou : a); }
-        saveAndReload(); 
-    }
-
-    function confirmDelete() { 
-        const type = document.getElementById('deleteType').value; 
-        const val = document.getElementById('deleteItem').value; 
-        if(!confirm(i18n.t('vacancesConfirmDelete', {val: val}))) return; 
-        if(type === 'centres') CENTRES = CENTRES.filter(i => i !== val); 
-        else if(type === 'plantilla') PLANTILLA = PLANTILLA.filter(i => i !== val); 
-        else if(type === 'anys') ANYS = ANYS.filter(i => i !== val);
-        saveAndReload(); 
-    }
-
-    function saveAndReload() { 
-        localStorage.setItem('nyn_centres', JSON.stringify(CENTRES)); 
-        localStorage.setItem('nyn_plantilla', JSON.stringify(PLANTILLA)); 
-        localStorage.setItem('nyn_anys', JSON.stringify(ANYS));
-        location.reload(); 
-    }
-
-    function registrarExportacio() { const now = new Date(); const dataStr = now.toLocaleDateString() + " " + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); localStorage.setItem('nyn_last_export_' + document.getElementById('selectAny').value, dataStr); document.getElementById('lastExport').innerText = i18n.t('vacancesLastExportPrefix') + dataStr; }
-    
-    function exportarJSON() { 
-        registrarExportacio(); 
-        const any = document.getElementById('selectAny').value;
-        const dadesBrutes = localStorage.getItem('nyn_vacances_' + any) || "[]";
-        const dadesParsejades = JSON.parse(dadesBrutes);
-        const avui = new Date();
-        const dataStr = avui.getDate().toString().padStart(2, '0') + '-' + (avui.getMonth() + 1).toString().padStart(2, '0') + '-' + avui.getFullYear();
-
-        const exportacioFinal = {
-            any: any,
-            exportatEl: dataStr,
-            dades: dadesParsejades,
-            configuracio: { centres: CENTRES, plantilla: PLANTILLA }
-        };
-
-        const blob = new Blob([JSON.stringify(exportacioFinal, null, 2)], {type: "application/json"});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Vacances_${any}_${dataStr}.json`; 
-        a.click();
-        URL.revokeObjectURL(url);
-    }
-
-    function importarJSON(e) { 
-        const reader = new FileReader(); 
-        reader.onload = async f => { 
-            try {
-                const contingut = JSON.parse(f.target.result);
-                const anyActual = document.getElementById('selectAny').value;
-                let dadesFinals = contingut.dades || contingut;
-                localStorage.setItem('nyn_vacances_' + anyActual, JSON.stringify(dadesFinals)); 
-                await persistence.syncSave();
-                location.reload(); 
-            } catch (err) { alert(i18n.t('vacancesErrorImport')); }
-        }; 
-        reader.readAsText(e.target.files[0]); 
-    }
-
-    function exportarExcel() {
-        registrarExportacio();
-        const any = document.getElementById('selectAny').value;
-        
-        // 1. Recollim totes les files de la taula que no estiguin filtrades
-        const rows = Array.from(document.querySelectorAll('#listaVacances tr'))
-                          .filter(tr => tr.style.display !== "none");
-        
-        if (rows.length === 0) {
-            alert(i18n.t('vacancesErrorNoDataExport'));
-            return;
-        }
-
-        // 2. Mapegem les dades per a l'Excel (agafant els valors dels inputs i selects)
-        const dadesPerExcel = rows.map(tr => ({
-            "CENTRE": tr.cells[0].querySelector('select').value,
-            "TREBALLADOR/A": tr.cells[1].querySelector('select').value,
-            "JORNADA": tr.cells[2].querySelector('select').value,
-            "1er PERÍODE": tr.cells[3].querySelector('input').value,
-            "2on PERÍODE": tr.cells[4].querySelector('input').value,
-            "DISFRUTATS": parseFloat(tr.cells[5].querySelector('input').value) || 0,
-            "PENDENTS": parseFloat(tr.cells[6].innerText) || 0,
-            "CORRESPONENTS": parseFloat(tr.cells[7].querySelector('input').value) || 0,
-            "FESTIUS PERÍODE": tr.cells[8].querySelector('input').value,
-            "Nº FESTIUS": parseFloat(tr.cells[9].querySelector('input').value) || 0,
-            "BOSSA HORES": tr.cells[10].querySelector('input').value,
-            "OBSERVACIONS": tr.cells[11].querySelector('input').value
-        }));
-
-        // 3. Creem el full de càlcul
-        const worksheet = XLSX.utils.json_to_sheet(dadesPerExcel);
-        const workbook = XLSX.utils.book_new();
-        XLSX.utils.book_append_sheet(workbook, worksheet, "Vacances " + any);
-
-        // 4. Ajustem l'amplada de les columnes perquè es llegeixi bé
-        const wscols = [
-            {wch: 20}, {wch: 25}, {wch: 10}, {wch: 20}, {wch: 20}, 
-            {wch: 12}, {wch: 10}, {wch: 15}, {wch: 30}, {wch: 10}, 
-            {wch: 15}, {wch: 35}
-        ];
-        worksheet['!cols'] = wscols;
-
-        // 5. Generem i descarreguem el fitxer .xlsx
-        const dataAvui = new Date().toISOString().slice(0,10);
-        XLSX.writeFile(workbook, `Vacances_NyN_${any}_exportat_${dataAvui}.xlsx`);
-    }
-    function reiniciarTot() { if(confirm(i18n.t('vacancesConfirmResetAll'))) { localStorage.removeItem('nyn_vacances_' + document.getElementById('selectAny').value); location.reload(); }}
-
-    window.addEventListener('languageChanged', () => {
-        i18n.translatePage();
-        inicialitzar();
-    });
-
-
-
-    window.onload = inicialitzar;
-</script>
+<script src="./js/vacances.js"></script>
 </body>
 </html>

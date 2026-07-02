@@ -2,963 +2,343 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <title>NN Pàrkings 2026 v1.0 beta</title>
-    <script src="../js/i18n.js"></script>
+    <title>NyN Pàrquings | Tarifes i Comercials</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-       // Forzar traducción inmediata al cargar
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        }
+      }
+    </script>
+    <script src="../js/persistence.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
        document.addEventListener('DOMContentLoaded', () => {
            if(typeof applyTranslations === 'function') applyTranslations();
        });
     </script>
-    <script src="../js/persistence.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root { 
-            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
-            --nyn-verd-accent: #008d36; /* Verde acento */
-            --border: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
+    
+<style>
+    [x-cloak] { display: none !important; }
 
-        body { 
-            font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
-            background-color: #f8fafc; 
-            margin: 0; 
-            color: #1e293b; 
-            overflow-x: hidden; 
-        }
-        
-        header { 
-            background-color: var(--nyn-verd); 
-            color: white; 
-            padding: 8px 24px; 
-            display: flex;        
-            justify-content: center; 
-            align-items: center; 
-            height: 48px; 
-            border-bottom: 2px solid var(--nyn-verd-accent);
-            box-sizing: border-box;
-            flex-shrink: 0;
-            position: relative;
-        }
+    :root {
+        --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+        --nyn-verd-accent: #008d36; /* Verde acento */
+        --border: #e2e8f0;
+        --text-main: #0f2d4a;
+        --text-muted: #64748b;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
 
-        .header-center { 
-            font-size: 15px; 
-            font-weight: 700; 
-            text-transform: uppercase; 
-            text-align: center; 
-            letter-spacing: 1px; 
-        }
-        
-        .admin-panel { 
-            padding: 10px 24px; 
-            display: flex; 
-            flex-wrap: wrap;
-            gap: 12px; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            background: #ffffff; 
-            flex-shrink: 0;
-        }
-        
-        .toolbar-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #ffffff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .filter-label { 
-            font-weight: 700; 
-            color: var(--nyn-verd); 
-            font-size: 10px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
+    body { 
+        font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+        background: #f8fafc; 
+        color: #1e293b;
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    header { 
+        background-color: var(--nyn-verd); 
+        color: white; 
+        padding: 8px 24px; 
+        display: flex;        
+        justify-content: center; 
+        align-items: center; 
+        height: 48px; 
+        border-bottom: 2px solid var(--nyn-verd-accent);
+        box-sizing: border-box;
+    }
 
-        select, button { 
-            padding: 4px 16px; 
-            border: 1px solid #cbd5e1; 
-            border-radius: 6px; 
-            font-size: 11px; 
-            font-weight: 500;
-            cursor: pointer; 
-            height: 28px; 
-            box-sizing: border-box; 
-            font-family: inherit; 
-            transition: all 0.2s ease;
-            background: #ffffff;
-            color: #334155;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        select:hover, select:focus {
-            border-color: var(--nyn-verd-accent);
-            outline: none;
-        }
+    .header-center { 
+        font-size: 15px; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+    }
 
-        .btn-action {
-            background: var(--nyn-verd);
-            color: #ffffff;
-            border: 1px solid var(--nyn-verd);
-            font-weight: 600;
-        }
-        
-        .btn-action:hover {
-            background: #0b4e43;
-            border-color: #0b4e43;
-        }
-        
-        .btn-action-sec {
-            background: #3b82f6;
-            color: white;
-            border: 1px solid #3b82f6;
-            font-weight: 600;
-            box-shadow: var(--shadow-sm);
-        }
-        
-        .btn-action-sec:hover {
-            background: #2563eb;
-            border-color: #2563eb;
-        }
-        
-        .btn-archive {
-            background: #f1f5f9;
-            border: 1px solid #e2e8f0;
-            color: #475569;
-        }
-        
-        .btn-archive:hover {
-            background: #e2e8f0;
-        }
-        
-        .btn-nyn:hover { 
-            opacity: 0.9;
-            transform: translateY(-1px);
-        }
-        
-        .btn-copy { 
-            background: #eff6ff !important; 
-            color: #1e40af !important; 
-            border: 1px solid #bfdbfe !important; 
-        }
-        
-        .btn-copy:hover {
-            background: #dbeafe !important;
-        }
-        
-        .obs-header-container { 
-            display: flex; 
-            align-items: center; 
-            justify-content: space-between; 
-            width: 100%; 
-            padding-right: 10px; 
-        }
-        
-        .llegenda-inline { 
-            display: inline-flex; 
-            gap: 16px; 
-            align-items: center; 
-            font-size: 11px; 
-            color: #64748b; 
-            text-transform: none; 
-            margin-left: 24px; 
-            font-weight: 500;
-        }
-        
-        .llegenda-item { 
-            display: flex; 
-            align-items: center; 
-            gap: 6px; 
-            line-height: 1; 
-        }
-        
-        .dreceres-teclat { 
-            color: #94a3b8; 
-            font-size: 9px; 
-            display: flex; 
-            gap: 12px; 
-            text-transform: none; 
-            font-weight: 500; 
-        }
-        
-        .quadrat { 
-            width: 10px; 
-            height: 10px; 
-            border-radius: 3px; 
-            flex-shrink: 0;
-        }
-        
-        .table-wrapper { 
-            width: 100%; 
-            overflow-x: auto; 
-            padding: 16px 24px; 
-            box-sizing: border-box; 
-            background: #f8fafc; 
-        }
-        
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            min-width: 1100px; 
-            table-layout: fixed; 
-            border: 1px solid var(--border); 
-            background: #ffffff;
-            border-radius: 12px;
-            box-shadow: var(--shadow-md);
-            overflow: hidden;
-        }
-        
-        th { 
-            background-color: #1e293b !important; 
-            color: #ffffff !important; 
-            padding: 14px 16px; 
-            text-align: center; 
-            font-size: 11px; 
-            text-transform: uppercase; 
-            border-bottom: 2px solid #0f172a; 
-            border-right: 1px solid #334155;
-            font-weight: 700; 
-            letter-spacing: 0.5px;
-        }
-        
-        th.col-left { 
-            text-align: left; 
-            padding-left: 16px; 
-        }
-        
-        td { 
-            padding: 16px 16px; 
-            border-bottom: 1px solid #f1f5f9; 
-            font-size: 13px; 
-            line-height: 1.5; 
-            outline: none; 
-            text-align: center; 
-            vertical-align: middle; 
-            color: #334155;
-        }
-        
-        tr:nth-child(even) { 
-            background-color: #fcfdfe; 
-        }
-        
-        tr:hover { 
-            background-color: #f8fafc !important; 
-        }
-        
-        .sep-row { 
-            background-color: #f8fafc !important; 
-            border-bottom: 1px solid #e2e8f0; 
-            border-top: 1px solid #e2e8f0; 
-        }
-        
-        .sep-content { 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            padding: 8px 16px; 
-            font-weight: 700; 
-            font-size: 13px; 
-            color: #0f2d4a; 
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        
-        .btn-add-centre { 
-            border: 1px solid #a7f3d0; 
-            border-radius: 9999px; 
-            cursor: pointer; 
-            font-weight: 600; 
-            background: #ecfdf5; 
-            color: #065f46; 
-            padding: 4px 14px; 
-            font-size: 10px; 
-            margin-right: 8px; 
-            text-transform: uppercase; 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 4px; 
-            height: 24px;
-            line-height: 1; 
-            vertical-align: middle;  
-            transition: all 0.2s;
-        }
-        
-        .btn-add-centre:hover { 
-            background: #d1fae5; 
-            color: #047857;
-            transform: translateY(-1px);
-        }
-        
-        .btn-del { 
-            width: 20px; 
-            height: 20px; 
-            font-size: 14px; 
-            margin-right: 8px; 
-            border: none; 
-            background: transparent; 
-            color: #94a3b8; 
-            cursor: pointer; 
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            transition: all 0.2s;
-        }
-        
-        .btn-del:hover { 
-            color: #ef4444; 
-            background: #fee2e2;
-        }
-        
-        .col-centre { 
-            width: 160px; 
-            font-weight: 600; 
-            text-align: left; 
-            padding-left: 16px;
-            color: #0f2d4a;
-        }
-        
-        .col-adreça { 
-            width: 140px; 
-            text-align: left; 
-            color: #64748b; 
-            font-size: 12px; 
-        }
-        
-        .col-dispo { 
-            width: 35px; 
-            font-weight: 700; 
-        }
-        
-        .col-preu { 
-            width: 80px; 
-            font-weight: 700; 
-            color: #d97706; 
-        } 
-        
-        .col-obs { 
-            text-align: left; 
-            font-size: 12px; 
-            color: #475569; 
-            white-space: normal; 
-            word-wrap: break-word; 
-        }
-        
-        td:focus { 
-            background-color: #fffbeb !important; 
-            outline: 1px solid #fde68a; 
-        }
+    .admin-panel { 
+        padding: 10px 24px; 
+        display: flex; 
+        flex-wrap: wrap;
+        gap: 12px; 
+        align-items: center; 
+        border-bottom: 1px solid var(--border); 
+        background: #ffffff; 
+    }
 
-        /* Buscador superior de aparcamientos */
-        .search-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-        
-        .search-input {
-            background: #f1f5f9;
-            color: #334155;
-            border: 1px solid #e2e8f0;
-            border-radius: 9999px;
-            font-size: 11px;
-            font-weight: 600;
-            padding: 6px 16px 6px 32px;
-            width: 240px;
-            outline: none;
-            font-family: inherit;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            height: 28px;
-            box-sizing: border-box;
-        }
-        
-        .search-input:focus {
-            border-color: #063931;
-            background: #ffffff;
-            width: 320px;
-            box-shadow: 0 0 0 2px rgba(6, 57, 49, 0.1);
-        }
-        
-        .search-icon {
-            position: absolute;
-            left: 12px;
-            color: #64748b;
-            font-size: 11px;
-            pointer-events: none;
-        }
-    </style>
+    .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #ffffff;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .filter-label { 
+        font-weight: 700; 
+        color: var(--nyn-verd); 
+        font-size: 10px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+    }
+
+    input, select, button {
+        font-family: inherit;
+        font-size: 11.5px;
+        box-sizing: border-box;
+    }
+
+    input[type="text"], select {
+        padding: 6px 12px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        background: #ffffff;
+        outline: none;
+        transition: border-color 0.2s;
+        height: 28px;
+    }
+
+    input[type="text"]:focus, select:focus {
+        border-color: var(--nyn-verd-accent);
+    }
+
+    .btn-nyn {
+        background: var(--nyn-verd);
+        color: white;
+        border: 1px solid var(--nyn-verd);
+        font-weight: 700;
+        padding: 6px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        height: 28px;
+    }
+
+    .btn-nyn:hover {
+        background: #0b4e43;
+        border-color: #0b4e43;
+    }
+
+    .btn-secondary {
+        background: #f1f5f9;
+        color: #475569;
+        border: 1px solid #e2e8f0;
+    }
+
+    .btn-secondary:hover {
+        background: #e2e8f0;
+    }
+
+    /* Tabla */
+    .table-container {
+        padding: 24px;
+        flex: 1;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background: #ffffff;
+        border-radius: 12px;
+        box-shadow: var(--shadow-md);
+        border: 1px solid var(--border);
+        overflow: hidden;
+    }
+
+    th {
+        background: #1e293b;
+        color: white;
+        font-weight: 700;
+        font-size: 10.5px;
+        text-transform: uppercase;
+        padding: 12px 14px;
+        border-bottom: 2px solid #0f172a;
+        text-align: left;
+    }
+
+    td {
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        font-size: 11.5px;
+        vertical-align: middle;
+    }
+
+    tr:hover td {
+        background-color: #f8fafc;
+    }
+
+    .form-modal {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: white;
+        border: 2px solid var(--nyn-verd);
+        border-radius: 12px;
+        padding: 24px;
+        z-index: 2000;
+        box-shadow: var(--shadow-lg);
+        width: 450px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 1999;
+    }
+</style>
 </head>
-<body data-required-roles="comercial,coordinador,jefe_operaciones">
+<body x-data="moduloComerciales()" x-init="init()">
 
-    <header>
-        <div class="header-center" data-i18n="comercialsHeader">Comercials Pàrkings</div>
-    </header>
+<header>
+    <div class="header-center"><i class="fas fa-percent mr-2"></i> TARIFES I COMERCIALS</div>
+</header>
 
-    <div class="admin-panel">
-        <div class="toolbar-group">
-            <span class="filter-label" data-i18n="rutaLabelMes">Mes:</span>
-            <select id="mesActual" onchange="canviarMes()" style="height:26px;">
-                <option value="gener" data-i18n="optGener">GENER</option>
-                <option value="febrer" data-i18n="optFebrer">FEBRER</option>
-                <option value="marc" data-i18n="optMarc">MARÇ</option>
-                <option value="abril" data-i18n="optAbril">ABRIL</option>
-                <option value="maig" data-i18n="optMaig">MAIG</option>
-                <option value="juny" data-i18n="optJuny" selected>JUNY</option>
-                <option value="juliol" data-i18n="optJuliol">JULIOL</option>
-                <option value="agost" data-i18n="optAgost">AGOST</option>
-                <option value="setembre" data-i18n="optSetembre">SETEMBRE</option>
-                <option value="octubre" data-i18n="optOctubre">OCTUBRE</option>
-                <option value="novembre" data-i18n="optNovembre">NOVEMBRE</option>
-                <option value="desembre" data-i18n="optDesembre">DESEMBRE</option>
-            </select>
-            <select id="anyActual" onchange="canviarMes()" style="height:26px;">
-                <option value="2026" selected>2026</option>
-                <option value="2027">2027</option>
-                <option value="2028">2028</option>
-                <option value="2029">2029</option>
-                <option value="2030">2030</option>
-            </select>
-        </div>
-        <!-- Buscador premium de aparcamientos -->
-        <div class="toolbar-group">
-            <div class="search-wrapper">
-                <span class="search-icon">🔍</span>
-                <input type="text" id="searchAparcament" class="search-input" placeholder="🔍 Cercar aparcament..." data-i18n="placeholderSearch" oninput="filtrarTaula()" style="padding-left: 28px; width: 200px;">
-            </div>
-        </div>
+<div class="admin-panel">
+    <div class="toolbar-group">
+        <span class="filter-label">Cerca:</span>
+        <input type="text" x-model="busqueda" placeholder="Cerca aparcament, adreça..." style="width: 250px;">
     </div>
+    
+    <div class="toolbar-group" x-show="canEdit()">
+        <button class="btn-nyn" @click="showFormNueva = true"><i class="fas fa-plus mr-1"></i> Nova Tarifa</button>
+    </div>
+</div>
 
-    <div class="table-wrapper">
-        <table id="comercialsTable">
-            <thead>
+<div class="table-container">
+    <table>
+        <thead>
+            <tr>
+                <th width="180">Centre / Aparcament</th>
+                <th width="200">Adreça</th>
+                <th width="100">Plantas</th>
+                <th width="100">Capacidad</th>
+                <th width="100">Plazas Libres</th>
+                <th width="120">Tarifa</th>
+                <th>Notas / Observaciones</th>
+                <th x-show="canEdit()" width="110" class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="c in comercialesFiltrados" :key="c.id">
                 <tr>
-                    <th class="col-left" style="width: 18%;" data-i18n="colCentre">CENTRE</th>
-                    <th class="col-left" style="width: 18%;" data-i18n="colAdreça">ADREÇA</th>
-                    <th style="width: 8%;" data-i18n="colFixes">FIXES</th>
-                    <th style="width: 8%;" data-i18n="colVariables">VARIABLES</th>
-                    <th style="width: 8%;" data-i18n="colVacants">VACANTS</th>
-                    <th style="width: 12%;" data-i18n="colTarifa">TARIFA (promig)</th>
-                    <th class="col-left" style="width: 28%;">
-                        <div class="obs-header-container">
-                            <div style="display: flex; align-items: center;">
-                                <span data-i18n="colObs">OBSERVACIONS</span>
-                                <div class="llegenda-inline">
-                                    <div class="llegenda-item"><div class="quadrat" style="background:#065f46;"></div> <span data-i18n="legendApte">&lt;10 apte</span></div>
-                                    <div class="llegenda-item"><div class="quadrat" style="background:#1e3a8a;"></div> <span data-i18n="legendRisc">10-25 risc</span></div>
-                                    <div class="llegenda-item"><div class="quadrat" style="background:#991b1b;"></div> <span data-i18n="legendNoApte">&gt;25 no apte (urgent abonar)</span></div>
-                                </div>
-                            </div>
-                            <div class="dreceres-teclat">
-                                <span data-i18n="shortcuts">Dreceres de teclat</span>
-                                <span>CTRL+B (<b>N</b>)</span>
-                                <span>CTRL+I (<i>I</i>)</span>
-                                <span>CTRL+U (<u>U</u>)</span>
-                            </div>
-                        </div>
-                    </th>
+                    <!-- Modo Normal -->
+                    <template x-if="!c.editing">
+                        <>
+                            <td class="font-bold text-gray-800" x-text="c.nombre"></td>
+                            <td class="text-gray-600" x-text="c.direccion"></td>
+                            <td x-text="c.plantas"></td>
+                            <td x-text="c.capacidad"></td>
+                            <td :class="getColorDP(c.plazas_libres)" x-text="c.plazas_libres"></td>
+                            <td class="font-bold text-gray-800" x-text="c.tarifa"></td>
+                            <td class="text-gray-500 text-xs" x-html="c.notes || c.notas"></td>
+                            <td x-show="canEdit()" class="text-center">
+                                <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto mr-1" @click="c.editing = true"><i class="fas fa-edit"></i></button>
+                                <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto text-red-600 border-red-200 hover:bg-red-50" @click="eliminarComercial(c.id)"><i class="fas fa-trash-alt"></i></button>
+                            </td>
+                        </>
+                    </template>
+
+                    <!-- Modo Edición Inline -->
+                    <template x-if="c.editing">
+                        <>
+                            <td><input type="text" x-model="c.nombre" style="width: 100%;"></td>
+                            <td><input type="text" x-model="c.direccion" style="width: 100%;"></td>
+                            <td><input type="text" x-model="c.plantas" style="width: 100%;"></td>
+                            <td><input type="text" x-model="c.capacidad" style="width: 100%;"></td>
+                            <td><input type="text" x-model="c.plazas_libres" style="width: 100%;"></td>
+                            <td><input type="text" x-model="c.tarifa" style="width: 100%;"></td>
+                            <td><input type="text" x-model="c.notas" style="width: 100%;"></td>
+                            <td class="text-center">
+                                <button class="btn-nyn text-xs px-2 py-0.5 h-auto mr-1" @click="guardarEdicion(c)"><i class="fas fa-check"></i></button>
+                                <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto" @click="c.editing = false"><i class="fas fa-times"></i></button>
+                            </td>
+                        </>
+                    </template>
                 </tr>
-            </thead>
-        </table>
+            </template>
+            <template x-if="comercialesFiltrados.length === 0">
+                <tr>
+                    <td :colspan="canEdit() ? 8 : 7" class="text-center py-8 text-gray-400">
+                        <i class="fas fa-info-circle mb-1 text-lg"></i><br>
+                        No s'han trobat tarifes comercials.
+                    </td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal Nueva Tarifa -->
+<div class="modal-overlay" x-show="showFormNueva" @click="showFormNueva = false" x-cloak></div>
+<div class="form-modal" x-show="showFormNueva" x-cloak>
+    <h3 class="text-base font-bold text-gray-800 border-b pb-2 mb-2 uppercase"><i class="fas fa-plus-circle mr-1"></i> Nueva Tarifa</h3>
+    
+    <div class="flex flex-col gap-1">
+        <label>Nombre del Aparcamiento</label>
+        <input type="text" x-model="nuevaTarifa.nombre" placeholder="Ej: NN BRUC">
     </div>
 
-    <script>
-    // Variable global con la lista de coordinadores cargados
-    let coordList = [];
+    <div class="flex flex-col gap-1">
+        <label>Dirección</label>
+        <input type="text" x-model="nuevaTarifa.direccion" placeholder="Ej: Bruc, 103">
+    </div>
 
-    // Obtener la API de Electron
-    // Obtener la API de Electron de forma segura
-    let electronApi = window.api;
-    if (!electronApi) {
-        try {
-            if (window.parent && window.parent.api) {
-                electronApi = window.parent.api;
-            }
-        } catch (e) {
-            console.warn('[COMERCIALS] No se puede acceder a window.parent.api:', e);
-        }
-    }
+    <div class="flex flex-col gap-1">
+        <label>Plantas</label>
+        <input type="text" x-model="nuevaTarifa.plantas" placeholder="Ej: Todas, -2 a -4">
+    </div>
 
-    // Obtener la API de Base de Datos de forma segura
-    let dbApi = window.dbAPI;
-    if (!dbApi) {
-        try {
-            if (window.parent && window.parent.dbAPI) {
-                dbApi = window.parent.dbAPI;
-            }
-        } catch (e) {
-            console.warn('[COMERCIALS] No se puede acceder a window.parent.dbAPI:', e);
-        }
-    }
+    <div class="flex flex-col gap-1">
+        <label>Capacidad</label>
+        <input type="text" x-model="nuevaTarifa.capacidad" placeholder="Ej: 20, 5">
+    </div>
 
-    // Obtener valores de la sesión de forma segura (con fallback al padre)
-    function getSessionItem(key) {
-        let val = sessionStorage.getItem(key);
-        if (!val) {
-            try {
-                if (window.parent && window.parent.sessionStorage) {
-                    val = window.parent.sessionStorage.getItem(key);
-                }
-            } catch (e) {
-                console.warn(`[COMERCIALS] No se puede acceder a parent.sessionStorage para la clave ${key}:`, e);
-            }
-        }
-        return val;
-    }
+    <div class="flex flex-col gap-1">
+        <label>Plazas Libres</label>
+        <input type="text" x-model="nuevaTarifa.plazas_libres" placeholder="Ej: ninguna, todas">
+    </div>
 
-    async function loadCoordinadores() {
-        try {
-            if (electronApi && electronApi.getCoordinadores) {
-                coordList = await electronApi.getCoordinadores();
-            }
-        } catch (e) {
-            console.error('[COMERCIALS] Error carregant coordinadors:', e);
-        }
-        // Fallback si no se pueden cargar
-        if (!coordList || coordList.length === 0) {
-            coordList = [
-                { id: 'albert', nombre: 'Albert', apellido: 'Campins' },
-                { id: 'laura', nombre: 'Laura', apellido: 'Navarro' }
-            ];
-        }
-    }
+    <div class="flex flex-col gap-1">
+        <label>Tarifa mensual</label>
+        <input type="text" x-model="nuevaTarifa.tarifa" placeholder="Ej: ±190€">
+    </div>
 
-    function buildCoordSections() {
-        const table = document.getElementById('comercialsTable');
-        if (!table) return;
+    <div class="flex flex-col gap-1">
+        <label>Notas / Observaciones</label>
+        <input type="text" x-model="nuevaTarifa.notas" placeholder="Observaciones adicionales...">
+    </div>
 
-        // Eliminar tbodies antiguos para evitar acumulaciones al cambiar de mes
-        const existingTbodys = table.querySelectorAll('tbody');
-        existingTbodys.forEach(tb => tb.remove());
+    <div class="flex gap-2 justify-end mt-4">
+        <button class="btn-nyn btn-secondary" @click="showFormNueva = false">Cancelar</button>
+        <button class="btn-nyn" @click="agregarComercial()"><i class="fas fa-save mr-1"></i> Guardar</button>
+    </div>
+</div>
 
-        const userRole = getSessionItem('userRole');
-        const userName = getSessionItem('userName');
-
-        coordList.forEach(coord => {
-            // Tbody para las filas de datos y la fila separadora de este coordinador
-            const tbody = document.createElement('tbody');
-            tbody.id = `lista-${coord.id}`;
-
-            // Fila separadora con botones
-            const sepTr = document.createElement('tr');
-            sepTr.className = 'sep-row';
-
-            let canEditBlock = false;
-            if (userRole === 'jefe operaciones') {
-                canEditBlock = true;
-            } else if (userRole === 'coordinador' && userName === coord.nombre) {
-                canEditBlock = true;
-            }
-
-            const disabledAttr = canEditBlock ? '' : 'disabled style="opacity:0.4;pointer-events:none;"';
-
-            sepTr.innerHTML = `
-                <td colspan="7">
-                    <div class="sep-content">
-                        <button class="btn-nyn btn-copy" ${disabledAttr} onclick="copiarMes('${coord.id}')" data-i18n="btnCopyMonth">${i18n.t('btnCopyMonth')}</button>
-                        <span style="margin-left: 50px; font-weight: 700; color: #0f2d4a;">${coord.nombre.toUpperCase()} ${coord.apellido.toUpperCase()}</span>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(sepTr);
-            table.appendChild(tbody);
-        });
-    }
-
-    // Obtener el prefijo de clave localStorage para un coordinador
-    function getKeyPrefix(coordId) {
-        // Usar la primera letra del nombre en mayúsculas como prefijo
-        const coord = coordList.find(c => c.id === coordId);
-        if (!coord) return `nn_${coordId}_`;
-        return `nn_${coord.nombre.charAt(0).toUpperCase()}_`;
-    }
-
-    function canviarMes() {
-        // Limpiar todas las listas de coordinadores
-        coordList.forEach(coord => {
-            const el = document.getElementById(`lista-${coord.id}`);
-            if (el) el.innerHTML = '';
-        });
-        load();
-    }
-
-    function getColorDP(valor) {
-        const n = parseInt(valor);
-        if (isNaN(n)) return "";
-        if (n <= 10) return "#065f46"; 
-        if (n <= 25) return "#1e3a8a"; 
-        return "#991b1b"; 
-    }
-
-    function crearFila(coordId, valors = ["", "", "", "", "", "", ""]) {
-        const userRole = getSessionItem('userRole');
-        const userName = getSessionItem('userName');
-        
-        const coord = coordList.find(c => c.id === coordId);
-        let canEditBlock = false;
-        if (userRole === 'jefe operaciones') {
-            canEditBlock = true;
-        } else if (userRole === 'coordinador' && coord && userName === coord.nombre) {
-            canEditBlock = true;
-        }
-        
-        const tbody = document.getElementById('lista-' + coordId);
-        if (!tbody) return;
-        const tr = document.createElement('tr');
-        const colorInicial = getColorDP(valors[4]);
-        
-        const editAttr = canEditBlock ? 'contenteditable="true"' : 'contenteditable="false" style="pointer-events: none; opacity: 0.9;"';
-        const deleteBtn = canEditBlock ? '<button class="btn-del" onclick="eliminarFila(this)">–</button>' : '';
-        
-        tr.innerHTML = `
-            <td class="col-centre"><div style="display:flex; align-items:center;">${deleteBtn}<span ${editAttr} style="flex:1;">${valors[0]}</span></div></td>
-            <td class="col-adreça" ${editAttr}>${valors[1]}</td>
-            <td ${editAttr}>${valors[2]}</td>
-            <td ${editAttr}>${valors[3]}</td>
-            <td class="col-dispo" ${editAttr} style="color:${colorInicial}" oninput="this.style.color = getColorDP(this.innerText)">${valors[4]}</td>
-            <td class="col-preu" ${editAttr}>${valors[5]}</td>
-            <td class="col-obs" ${editAttr}>${valors[6]}</td>
-        `;
-        if (canEditBlock) {
-            tr.addEventListener('input', save);
-        }
-        tbody.appendChild(tr);
-    }
-
-    function afegirFila(coordId) { crearFila(coordId); save(); }
-    function eliminarFila(btn) { if (confirm(i18n.t('confirmDeleteCentre'))) { btn.closest('tr').remove(); save(); } }
-
-    function save() {
-        const mes = document.getElementById('mesActual').value;
-        const any = document.getElementById('anyActual').value;
-        const extraure = (selector) => Array.from(document.querySelectorAll(selector)).map(tr => {
-            const cells = tr.querySelectorAll('td');
-            return [cells[0].querySelector('span').innerText, cells[1].innerText, cells[2].innerText, cells[3].innerText, cells[4].innerText, cells[5].innerText, cells[6].innerHTML];
-        });
-        
-        coordList.forEach(coord => {
-            const prefix = getKeyPrefix(coord.id);
-            const key = prefix + mes + '_' + any;
-            const data = extraure(`#lista-${coord.id} tr:not(.sep-row)`);
-            localStorage.setItem(key, JSON.stringify(data));
-        });
-    }
-
-    async function load() {
-        await loadCoordinadores();
-        buildCoordSections();
-        
-        // Cargar lista de aparcamientos desde la base de datos centralizada
-        let aparcamientosList = [];
-        try {
-            if (electronApi && electronApi.getAparcamientos) {
-                aparcamientosList = await electronApi.getAparcamientos();
-            }
-        } catch (e) {
-            console.error('Error al cargar aparcamientos desde la base de datos:', e);
-        }
-        
-        await persistence.syncLoad('comercials');
-        
-        const mes = document.getElementById('mesActual').value;
-        const any = document.getElementById('anyActual').value;
-        
-        coordList.forEach(coord => {
-            const prefix = getKeyPrefix(coord.id);
-            const key = prefix + mes + '_' + any;
-            
-            // Datos locales guardados del mes
-            const dataStr = localStorage.getItem(key);
-            let savedRows = [];
-            if (dataStr) {
-                try {
-                    savedRows = JSON.parse(dataStr);
-                } catch(e) {
-                    console.error('Error al parsear datos de comerciales:', e);
-                }
-            }
-            
-            // Filtrar aparcamientos asignados a este coordinador
-            const assigned = aparcamientosList.filter(ap => ap.coordinadorId === coord.id);
-            
-            assigned.forEach(ap => {
-                // Buscar si tiene datos ya guardados para este aparcamiento en este mes
-                const saved = savedRows.find(row => {
-                    const rowCentre = row[0]?.replace('–', '').trim() || '';
-                    return rowCentre.toLowerCase() === ap.nombre.toLowerCase();
-                });
-                
-                if (saved) {
-                    crearFila(coord.id, saved);
-                } else {
-                    // Si no tiene datos, crear fila vacía con el nombre del aparcamiento
-                    crearFila(coord.id, [ap.nombre, "", "", "", "", "", ""]);
-                }
-            });
-        });
-
-        // Aplicar el filtro de búsqueda por si estuviera activo
-        filtrarTaula();
-    }
-
-    // Filtrar aparcamientos por buscador
-    function filtrarTaula() {
-        const query = (document.getElementById('searchAparcament')?.value || '').toLowerCase().trim();
-        
-        coordList.forEach(coord => {
-            const tbody = document.getElementById(`lista-${coord.id}`);
-            if (!tbody) return;
-            
-            const rows = Array.from(tbody.querySelectorAll('tr:not(.sep-row)'));
-            let visibleCount = 0;
-            
-            rows.forEach(tr => {
-                const cells = tr.querySelectorAll('td');
-                if (cells.length < 2) return;
-                
-                // Limpiar caracteres extra como el botón "-" o espacios
-                const centreText = cells[0].innerText.replace('–', '').trim().toLowerCase();
-                const adresaText = cells[1].innerText.toLowerCase();
-                
-                if (centreText.includes(query) || adresaText.includes(query)) {
-                    tr.style.display = '';
-                    visibleCount++;
-                } else {
-                    tr.style.display = 'none';
-                }
-            });
-            
-            // Ocultar sep-row si no hay ningún registro coincidente para este coordinador
-            const sepRow = tbody.querySelector('.sep-row');
-            if (sepRow) {
-                if (query !== '' && visibleCount === 0) {
-                    sepRow.style.display = 'none';
-                } else {
-                    sepRow.style.display = '';
-                }
-            }
-        });
-    }
-
-    function resetTaula(coordId) {
-        const coord = coordList.find(c => c.id === coordId);
-        const nomComercial = coord ? `${coord.nombre.toUpperCase()} ${coord.apellido.toUpperCase()}` : coordId.toUpperCase();
-        const missatge = i18n.t('confirmResetComercials', { name: nomComercial });
-        if (confirm(missatge)) {
-            const mes = document.getElementById('mesActual').value;
-            const any = document.getElementById('anyActual').value;
-            const prefix = getKeyPrefix(coordId);
-            localStorage.setItem(prefix + mes + '_' + any, JSON.stringify([]));
-            canviarMes();
-        }
-    }
-
-    async function copiarMes(coordId) {
-        const userRole = getSessionItem('userRole');
-        const userName = getSessionItem('userName');
-        const coord = coordList.find(c => c.id === coordId);
-        
-        let canEdit = false;
-        if (userRole === 'jefe operaciones') {
-            canEdit = true;
-        } else if (userRole === 'coordinador' && coord && userName === coord.nombre) {
-            canEdit = true;
-        }
-        
-        if (!canEdit) {
-            alert(i18n.t('errorNoPermission'));
-            return;
-        }
-
-        const mesActual = document.getElementById('mesActual').value;
-        const anyActual = document.getElementById('anyActual').value;
-        const prefix = getKeyPrefix(coordId);
-        const clauActual = prefix + mesActual + '_' + anyActual;
-        const dadesActual = localStorage.getItem(clauActual);
-
-        if (!dadesActual || dadesActual === '[]' || JSON.parse(dadesActual).length === 0) {
-            alert(i18n.t('errorNoDataToCopy'));
-            return;
-        }
-
-        const mesosValids = ['gener', 'febrer', 'marc', 'abril', 'maig', 'juny', 'juliol', 'agost', 'setembre', 'octubre', 'novembre', 'desembre'];
-        const mapeigMesosCastella = {
-            'enero': 'gener',
-            'febrero': 'febrer',
-            'marzo': 'marc',
-            'abril': 'abril',
-            'mayo': 'maig',
-            'junio': 'juny',
-            'julio': 'juliol',
-            'agosto': 'agost',
-            'septiembre': 'setembre',
-            'octubre': 'octubre',
-            'noviembre': 'novembre',
-            'diciembre': 'desembre'
-        };
-        const mesDestiInput = prompt(i18n.t('promptDestMonth'));
-        if (!mesDestiInput) return;
-        let mesDesti = mesDestiInput.trim().toLowerCase();
-        if (mapeigMesosCastella[mesDesti]) {
-            mesDesti = mapeigMesosCastella[mesDesti];
-        }
-        if (!mesosValids.includes(mesDesti)) {
-            alert(i18n.t('errorInvalidMonth'));
-            return;
-        }
-
-        const anyDestiInput = prompt(i18n.t('promptDestYear'), anyActual);
-        if (!anyDestiInput) return;
-        const anyDesti = anyDestiInput.trim();
-        if (isNaN(parseInt(anyDesti))) {
-            alert(i18n.t('errorInvalidYear'));
-            return;
-        }
-
-        if (mesDesti === mesActual && anyDesti === anyActual) {
-            alert(i18n.t('errorSameSourceDest'));
-            return;
-        }
-
-        const clauDesti = prefix + mesDesti + '_' + anyDesti;
-        
-        // Comprobar si existen datos en el destino leyendo de SQLite kv_store
-        const coordNombre = coord ? coord.nombre : coordId;
-        const pathDesti = `dades ${coordNombre}/comercials_${coordId}_${mesDesti}_${anyDesti}.json`;
-        
-        if (!dbApi) {
-            alert(i18n.t('errorApiNotAvailable'));
-            return;
-        }
-        
-        let destExists = false;
-        try {
-            const rows = await dbApi.read('comercial', "SELECT value FROM kv_store WHERE key = ?", [pathDesti]);
-            if (rows && rows.length > 0 && rows[0].value) {
-                const destData = JSON.parse(rows[0].value);
-                if (destData && destData[clauDesti]) {
-                    const parsedRows = JSON.parse(destData[clauDesti]);
-                    if (parsedRows && parsedRows.length > 0) {
-                        destExists = true;
-                    }
-                }
-            }
-        } catch (e) {
-            console.error('[COMERCIALS] Error al comprobar destino en SQLite:', e);
-        }
-
-        if (destExists) {
-            const toLabel = i18n.t('opt' + mesDesti.charAt(0).toUpperCase() + mesDesti.slice(1)) + " " + anyDesti;
-            alert(i18n.t('errorDestExists', { to: toLabel.toUpperCase() }));
-            return;
-        }
-
-        const fromLabel = i18n.t('opt' + mesActual.charAt(0).toUpperCase() + mesActual.slice(1)) + " " + anyActual;
-        const toLabel = i18n.t('opt' + mesDesti.charAt(0).toUpperCase() + mesDesti.slice(1)) + " " + anyDesti;
-
-        if (confirm(i18n.t('confirmCopyComercials', { from: fromLabel.toUpperCase(), to: toLabel.toUpperCase() }))) {
-            localStorage.setItem(clauDesti, dadesActual);
-            
-            const payload = {};
-            payload[clauDesti] = dadesActual;
-            const ara = new Date().toLocaleString('ca-ES', { 
-                day: '2-digit', month: '2-digit', year: 'numeric', 
-                hour: '2-digit', minute: '2-digit' 
-            });
-            payload["nn_last_export_time_shared"] = ara;
-            payload["nn_last_export_author_shared"] = coordNombre.toUpperCase();
-
-            // Guardar en la base de datos centralizada SQLite kv_store
-            let writeSuccess = false;
-            try {
-                await dbApi.write('comercial',
-                    "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)",
-                    [pathDesti, JSON.stringify(payload)]
-                );
-                writeSuccess = true;
-            } catch (writeErr) {
-                console.error('[COMERCIALS] Error al guardar copia en SQLite:', writeErr);
-            }
-            
-            if (writeSuccess) {
-                alert(i18n.t('successCopyComercials', { to: toLabel.toUpperCase() }));
-                document.getElementById('mesActual').value = mesDesti;
-                document.getElementById('anyActual').value = anyDesti;
-                canviarMes();
-            } else {
-                alert(i18n.t('errorWriteDest'));
-            }
-        }
-    }
-
-    window.onload = load;
-    </script>
-
-    <script>
-    // --- SISTEMA DE LOG PER A COMERCIALS ---
-    function registrarLog(usuari, accio) {
-        const ara = new Date();
-        const dataFormatada = ara.toLocaleString('ca-ES', { 
-            day: '2-digit', month: '2-digit', year: 'numeric', 
-            hour: '2-digit', minute: '2-digit', second: '2-digit' 
-        });
-        const nouLog = {
-            data: dataFormatada,
-            usuari: usuari.toUpperCase(),
-            fitxer: "comercials.html",
-            accio: accio.trim()
-        };
-        let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
-        logs.unshift(nouLog);
-        if (logs.length > 500) logs.pop();
-        localStorage.setItem('nyn_logs', JSON.stringify(logs));
-    }
-
-    document.addEventListener('focusout', function(e) {
-        const target = e.target;
-        const fila = target.closest('tr');
-        const llista = target.closest('tbody');
-        if (!fila || !llista) return;
-        
-        // Determinar el coordinador a partir del id del tbody
-        const llistaId = llista.id; // e.g. "lista-albert"
-        const coordId = llistaId.replace('lista-', '');
-        const coord = coordList.find(c => c.id === coordId);
-        const comercial = coord ? `${coord.nombre.toUpperCase()} ${coord.apellido.toUpperCase()}` : coordId.toUpperCase();
-        
-        const centre = fila.cells[0]?.innerText.replace('–', '').trim() || "Centre nou";
-        const indexCol = target.cellIndex;
-        const columnes = ["CENTRE", "ADREÇA", "FIXES", "VARIABLES", "DISPO", "TARIFA", "OBSERVACIONS"];
-        const nomCol = columnes[indexCol] || "DADA";
-        const valor = target.innerText.trim();
-        if (valor !== "" && nomCol !== "CENTRE") {
-            const mes = document.getElementById('mesActual').value.toUpperCase();
-            const any = document.getElementById('anyActual').value;
-            registrarLog("SISTEMA", `COMERCIALS [${comercial}][${mes} ${any}]: ${centre} -> Canvi en ${nomCol} ➡️ ${valor}`);
-        }
-    }, true);
-
-    document.addEventListener('click', function(e) {
-        const target = e.target;
-        if (target.classList.contains('btn-add-centre')) {
-            const text = target.innerText.toLowerCase();
-            if (text.includes("afegir")) {
-                registrarLog("SISTEMA", "COMERCIALS: S'ha premut 'Afegir centre'");
-            }
-        }
-    }, true);
-
-    window.addEventListener('load', function() {
-        const mes = document.getElementById('mesActual').value.toUpperCase();
-        const any = document.getElementById('anyActual').value;
-        registrarLog("SISTEMA", `COMERCIALS: Visualització mes ${mes} ${any}`);
-    });
-    </script>
-
+<script src="./js/comercials.js"></script>
 </body>
 </html>

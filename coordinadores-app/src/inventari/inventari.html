@@ -2,397 +2,422 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <title>INVENTARI - Logística</title>
-    <script src="../js/persistence.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
-
-        :root { 
-            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
-            --nyn-verd-accent: #008d36; /* Verde acento */
-            --border: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --color-consumibles: #3b82f6; 
-            --color-ofimatica: #22c55e; 
-            --color-manteniment: #eab308; 
-            --color-mobiliari: #a855f7;
-        }
-
-        * { font-family: 'Outfit', sans-serif !important; }
-
-        body { 
-            background: #f8fafc; margin: 0; font-size: 11px; 
-            display: flex; flex-direction: column; height: 100vh; overflow: hidden; 
-        }
-
-        /* --- HEADER ESTILO CUADRANTE --- */
-        header { 
-            background-color: var(--nyn-verd) !important; 
-            color: white !important; 
-            padding: 8px 24px !important; 
-            display: flex !important;        
-            justify-content: center !important; 
-            align-items: center !important; 
-            height: 48px !important; 
-            border-bottom: 2px solid var(--nyn-verd-accent) !important;
-            box-sizing: border-box !important;
-            margin-bottom: 0 !important;
-            text-align: center !important;
-            position: relative;
-            z-index: 1000;
-        }
-        header h1 { 
-            font-size: 15px !important; 
-            font-weight: 700 !important; 
-            text-transform: uppercase !important; 
-            letter-spacing: 1px !important; 
-            color: white !important;
-            margin: 0 !important;
-        }
-
-        /* --- BARRA DE HERRAMIENTAS Y CONTROL --- */
-        .admin-panel { 
-            padding: 10px 24px; 
-            display: flex; 
-            flex-wrap: wrap;
-            gap: 12px; 
-            align-items: center; 
-            border-bottom: 1px solid var(--border); 
-            background: #ffffff; 
-            margin-bottom: 12px;
-        }
-        .toolbar-group {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #ffffff;
-            padding: 6px 12px;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            box-shadow: var(--shadow-sm);
-        }
-        .filter-label { 
-            font-weight: 700; 
-            color: var(--nyn-verd); 
-            font-size: 10px; 
-            text-transform: uppercase; 
-            letter-spacing: 0.5px;
-        }
-
-        /* DROPDOWNS Y BOTONES */
-        select, button, input[type="text"], input[type="number"] {
-            padding: 4px 10px !important;
-            border: 1px solid #cbd5e1 !important;
-            border-radius: 6px !important;
-            font-size: 11px !important;
-            font-weight: 500 !important;
-            cursor: pointer !important;
-            height: 28px !important;
-            box-sizing: border-box !important;
-            transition: all 0.2s ease !important;
-            background: #ffffff !important;
-            color: #334155 !important;
-            box-shadow: var(--shadow-sm) !important;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        input[type="text"], input[type="number"] {
-            cursor: text !important;
-        }
-        select:hover, select:focus, input[type="text"]:focus {
-            border-color: var(--nyn-verd-accent) !important;
-            outline: none !important;
-        }
-
-        .btn-action {
-            background: var(--nyn-verd) !important;
-            color: #ffffff !important;
-            border: 1px solid var(--nyn-verd) !important;
-            font-weight: 600 !important;
-        }
-        .btn-action:hover {
-            background: #0b4e43 !important;
-            border-color: #0b4e43 !important;
-        }
-        .btn-action-sec {
-            background: #3b82f6 !important;
-            color: white !important;
-            border: 1px solid #3b82f6 !important;
-            font-weight: 600 !important;
-        }
-        .btn-action-sec:hover {
-            background: #2563eb !important;
-            border-color: #2563eb !important;
-        }
-        .btn-archive {
-            background: #f1f5f9 !important;
-            border: 1px solid #e2e8f0 !important;
-            color: #475569 !important;
-        }
-        .btn-archive:hover {
-            background: #e2e8f0 !important;
-        }
-
-        .main-container { display: flex; flex: 1; overflow: hidden; padding: 16px 24px; gap: 16px; background: #f8fafc; }
-        .section { background: white; border: 1px solid var(--border); display: flex; flex-direction: column; border-radius: 12px; box-shadow: var(--shadow-md); overflow: hidden; }
-        .section-magatzem { width: 550px; } 
-        .section-comandes { flex: 1; }
-        
-        h2 { 
-            background: #f8fafc; margin: 0; padding: 12px 16px; font-size: 12px; font-weight: 700;
-            border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; 
-            color: var(--nyn-verd); text-transform: uppercase;
-        }
-        
-        .table-wrapper { flex: 1; overflow-y: auto; padding: 8px; }
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th { background: #1e293b; color: white; padding: 8px 4px; border: 1px solid #334155; font-size: 10px; font-weight: 600; text-transform: uppercase; position: sticky; top: 0; z-index: 10; }
-        td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; height: 28px; }
-        
-        .row-box { border-left: 4px solid #ccc; }
-        .row-consumibles { border-left-color: var(--color-consumibles); }
-        .row-ofimatica { border-left-color: var(--color-ofimatica); }
-        .row-manteniment { border-left-color: var(--color-manteniment); }
-        .row-mobiliari { border-left-color: var(--color-mobiliari); }
-        .no-stock-row { background-color: #fef2f2 !important; border-right: 4px solid #ef4444; }
-        
-        input, select { font-size: 11px; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 6px; width: 100%; height: 24px; box-sizing: border-box; }
-        .btn-qty { width: 22px; height: 22px; cursor: pointer; border: 1px solid #cbd5e1; background: white; font-weight: bold; line-height: 1; border-radius: 4px; }
-        .btn-qty:hover { border-color: var(--nyn-verd-accent); color: var(--nyn-verd-accent); }
-        
-        .status-btn { padding: 0 4px; border-radius: 6px; font-weight: bold; font-size: 9px; width: 100%; cursor: pointer; height: 22px; border: 1px solid transparent; }
-        .pendent { background: #fffbeb; color: #d97706; border-color: #fef3c7; }
-        .entregat { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
-        .delete-btn { cursor: pointer; color: #cbd5e1; font-size: 14px; background: none; border: none; font-weight: bold; transition: color 0.2s; }
-        .delete-btn:hover { color: #ef4444; }
-        
-        #modalGestio { display:none; position:fixed; top:50%; left:50%; transform:translate(-50%, -50%); background:white; padding:20px; z-index:2000; box-shadow: var(--shadow-md); width:700px; max-height: 90vh; border-radius: 12px; border: 2px solid var(--nyn-verd); flex-direction: column; }
-        #modalGestio h3 { color: var(--nyn-verd); margin: 0; font-weight: 700; }
-        .modal-overlay { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:1999; }
-    </style>
-    <script src="../js/i18n.js"></script>
+    <title>NyN Pàrquings | Inventari i Logística</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <script>
-       // Forzar traducción inmediata al cargar
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        }
+      }
+    </script>
+    <script src="../js/persistence.js"></script>
+    <script src="../js/i18n.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script>
        document.addEventListener('DOMContentLoaded', () => {
            if(typeof applyTranslations === 'function') applyTranslations();
        });
     </script>
+    
+<style>
+    [x-cloak] { display: none !important; }
+
+    :root { 
+        --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+        --nyn-verd-accent: #008d36; /* Verde acento */
+        --border: #e2e8f0;
+        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        --color-consumibles: #3b82f6; 
+        --color-ofimatica: #22c55e; 
+        --color-manteniment: #eab308; 
+        --color-mobiliari: #a855f7;
+    }
+
+    body { 
+        font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+        background: #f8fafc; 
+        margin: 0; 
+        font-size: 11px; 
+        display: flex; 
+        flex-direction: column; 
+        height: 100vh; 
+        overflow: hidden; 
+    }
+
+    header { 
+        background-color: var(--nyn-verd); 
+        color: white; 
+        padding: 8px 24px; 
+        display: flex;        
+        justify-content: center; 
+        align-items: center; 
+        height: 48px; 
+        border-bottom: 2px solid var(--nyn-verd-accent);
+        box-sizing: border-box;
+        flex-shrink: 0;
+    }
+
+    header h1 { 
+        font-size: 15px; 
+        font-weight: 700; 
+        text-transform: uppercase; 
+        letter-spacing: 1px; 
+        margin: 0;
+    }
+
+    .admin-panel { 
+        padding: 10px 24px; 
+        display: flex; 
+        flex-wrap: wrap;
+        gap: 12px; 
+        align-items: center; 
+        border-bottom: 1px solid var(--border); 
+        background: #ffffff; 
+        flex-shrink: 0;
+    }
+
+    .toolbar-group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: #ffffff;
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .filter-label { 
+        font-weight: 700; 
+        color: var(--nyn-verd); 
+        font-size: 10px; 
+        text-transform: uppercase; 
+        letter-spacing: 0.5px;
+    }
+
+    select, button, input[type="text"], input[type="number"], input[type="date"] {
+        padding: 4px 10px;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 500;
+        height: 28px;
+        box-sizing: border-box;
+        background: #ffffff;
+        color: #334155;
+        outline: none;
+    }
+
+    select, button {
+        cursor: pointer;
+    }
+
+    select:hover, select:focus, input[type="text"]:focus {
+        border-color: var(--nyn-verd-accent);
+    }
+
+    .btn-action {
+        background: var(--nyn-verd);
+        color: #ffffff;
+        border: 1px solid var(--nyn-verd);
+        font-weight: 600;
+    }
+
+    .btn-action:hover {
+        background: #0b4e43;
+    }
+
+    .btn-action-sec {
+        background: #3b82f6;
+        color: white;
+        border: 1px solid #3b82f6;
+        font-weight: 600;
+    }
+
+    .btn-action-sec:hover {
+        background: #2563eb;
+    }
+
+    .btn-archive {
+        background: #f1f5f9;
+        border: 1px solid #e2e8f0;
+        color: #475569;
+    }
+
+    .btn-archive:hover {
+        background: #e2e8f0;
+    }
+
+    .main-container { 
+        display: flex; 
+        flex: 1; 
+        overflow: hidden; 
+        padding: 16px 24px; 
+        gap: 16px; 
+        background: #f8fafc; 
+    }
+
+    .section { 
+        background: white; 
+        border: 1px solid var(--border); 
+        display: flex; 
+        flex-direction: column; 
+        border-radius: 12px; 
+        box-shadow: var(--shadow-md); 
+        overflow: hidden; 
+    }
+
+    .section-magatzem { width: 550px; } 
+    .section-comandes { flex: 1; }
+
+    h2 { 
+        background: #f8fafc; 
+        margin: 0; 
+        padding: 12px 16px; 
+        font-size: 12px; 
+        font-weight: 700;
+        border-bottom: 1px solid var(--border); 
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        color: var(--nyn-verd); 
+        text-transform: uppercase;
+    }
+
+    .table-wrapper { flex: 1; overflow-y: auto; padding: 8px; }
+    table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+    th { 
+        background: #1e293b; 
+        color: white; 
+        padding: 8px 4px; 
+        border: 1px solid #334155; 
+        font-size: 10px; 
+        font-weight: 600; 
+        text-transform: uppercase; 
+        position: sticky; 
+        top: 0; 
+        z-index: 10; 
+    }
+    td { padding: 4px 6px; border-bottom: 1px solid #e2e8f0; text-align: center; height: 28px; }
+
+    .row-box { border-left: 4px solid #ccc; }
+    .row-consumibles { border-left-color: var(--color-consumibles); }
+    .row-ofimatica { border-left-color: var(--color-ofimatica); }
+    .row-manteniment { border-left-color: var(--color-manteniment); }
+    .row-mobiliari { border-left-color: var(--color-mobiliari); }
+    .no-stock-row { background-color: #fef2f2 !important; border-right: 4px solid #ef4444; }
+
+    .btn-qty { width: 22px; height: 22px; cursor: pointer; border: 1px solid #cbd5e1; background: white; font-weight: bold; line-height: 1; border-radius: 4px; }
+    .btn-qty:hover { border-color: var(--nyn-verd-accent); color: var(--nyn-verd-accent); }
+
+    .status-btn { padding: 0 4px; border-radius: 6px; font-weight: bold; font-size: 9px; width: 100%; cursor: pointer; height: 22px; border: 1px solid transparent; }
+    .pendent { background: #fffbeb; color: #d97706; border-color: #fef3c7; }
+    .entregat { background: #f0fdf4; color: #16a34a; border-color: #bbf7d0; }
+    
+    .delete-btn { cursor: pointer; color: #cbd5e1; font-size: 14px; background: none; border: none; font-weight: bold; transition: color 0.2s; }
+    .delete-btn:hover { color: #ef4444; }
+
+    #modalGestio { 
+        position: fixed; 
+        top: 50%; 
+        left: 50%; 
+        transform: translate(-50%, -50%); 
+        background: white; 
+        padding: 20px; 
+        z-index: 2000; 
+        box-shadow: var(--shadow-md); 
+        width: 700px; 
+        max-height: 90vh; 
+        border-radius: 12px; 
+        border: 2px solid var(--nyn-verd); 
+        display: flex;
+        flex-direction: column; 
+    }
+    #modalGestio h3 { color: var(--nyn-verd); margin: 0; font-weight: 700; }
+    .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1999; }
+</style>
 </head>
-<body data-required-roles="coordinador,jefe_operaciones">
+<body x-data="moduloInventario()" x-init="init()">
 
 <header>
-    <h1 data-i18n="inventariHeader">Inventari i Logística</h1>
+    <h1>📦 INVENTARI I LOGÍSTICA</h1>
 </header>
 
 <div class="admin-panel">
     <div class="toolbar-group">
-        <span class="filter-label" data-i18n="inventariDadesLabel">Dades:</span>
-        <button class="btn-archive" onclick="document.getElementById('importFile').click()" data-i18n="vacancesImportJSON">📂 Importar</button>
-        <button class="btn-archive" onclick="exportarJSON()" data-i18n="vacancesExportJSON">💾 Exportar</button>
-        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarJSON(event)">
+        <span class="filter-label">Dades:</span>
+        <button class="btn-archive" @click="document.getElementById('importFile').click()">📂 Importar</button>
+        <button class="btn-archive" @click="exportarJSON()">💾 Exportar</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" @change="importarJSON($event)">
     </div>
     
     <div class="toolbar-group">
-        <button class="btn-action" onclick="obrirGestio()" data-i18n="inventariBtnCatalog">⚙️ GESTIONAR CATÀLEG</button>
+        <button class="btn-action" @click="showModalGestio = true">⚙️ GESTIONAR CATÀLEG</button>
     </div>
 </div>
 
 <div class="main-container">
+    <!-- WAREHOUSE / STOCK -->
     <div class="section section-magatzem">
-        <h2><span data-i18n="inventariStockTitle">📦 STOCK</span> <button class="btn-nyn btn-add" onclick="afegirFilaStock()" data-i18n="inventariStockEntryBtn">+ Entrada</button></h2>
+        <h2>
+            <span>📦 STOCK</span> 
+            <button class="btn-action px-3 py-1 h-auto text-xs" @click="afegirFilaStock()">+ Entrada</button>
+        </h2>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th width="90" data-i18n="inventariThLocation">Ubicació</th><th data-i18n="inventariThMaterial">Material</th><th width="70" data-i18n="inventariThStock">Stock</th><th width="25"></th></tr></thead>
-                <tbody id="bodyMagatzem"></tbody>
+                <thead>
+                    <tr>
+                        <th width="110">Ubicació</th>
+                        <th>Material</th>
+                        <th width="80">Stock</th>
+                        <th width="30"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="s in dades.stock" :key="s.id">
+                        <tr class="row-box" :class="getCatClass(s.ref)">
+                            <td>
+                                <select :value="s.magatzem" @change="canviarMag(s.id, $event.target.value)">
+                                    <template x-for="m in dades.magatzems" :key="m">
+                                        <option :value="m" x-text="m" :selected="s.magatzem === m"></option>
+                                    </template>
+                                    <option value="ADD">+ Nou Magatzem...</option>
+                                </select>
+                            </td>
+                            <td>
+                                <select :value="s.ref" @change="canviarItemStock(s.id, $event.target.value)">
+                                    <option value="">-- Selecciona Material --</option>
+                                    <template x-for="c in dades.categories" :key="c">
+                                        <optgroup :label="c">
+                                            <template x-for="m in dades.cataleg.filter(x => x.cat === c)" :key="m.ref">
+                                                <option :value="m.ref" x-text="m.ref + ' | ' + m.nom" :selected="s.ref === m.ref"></option>
+                                            </template>
+                                        </optgroup>
+                                    </template>
+                                </select>
+                            </td>
+                            <td>
+                                <button class="btn-qty" @click="modQty(s.id, -1)">-</button>
+                                <b x-text="s.stock"></b>
+                                <button class="btn-qty" @click="modQty(s.id, 1)">+</button>
+                            </td>
+                            <td>
+                                <button class="delete-btn" @click="borrarStock(s.id)">✖</button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
             </table>
         </div>
     </div>
+
+    <!-- ORDERS / COMANDES -->
     <div class="section section-comandes">
-        <h2><span data-i18n="inventariOrdersTitle">🚚 COMANDES</span> <button class="btn-nyn btn-add" onclick="novaComanda()" data-i18n="inventariNewOrderBtn">✚ Nova</button></h2>
+        <h2>
+            <span>🚚 COMANDES</span> 
+            <button class="btn-action px-3 py-1 h-auto text-xs" @click="novaComanda()">✚ Nova</button>
+        </h2>
         <div class="table-wrapper">
             <table>
-                <thead><tr><th width="75" data-i18n="inventariThDate">Data</th><th width="120" data-i18n="inventariThCenter">Centre</th><th data-i18n="inventariThMaterial">Material</th><th width="35" data-i18n="inventariThUds">Uds.</th><th width="65" data-i18n="inventariThStatus">Estat</th><th width="75" data-i18n="inventariThRec">Rec.</th><th width="25"></th></tr></thead>
-                <tbody id="bodyComandes"></tbody>
+                <thead>
+                    <tr>
+                        <th width="90">Data</th>
+                        <th width="120">Centre</th>
+                        <th>Material</th>
+                        <th width="50">Uds.</th>
+                        <th width="75">Estat</th>
+                        <th width="95">Rec.</th>
+                        <th width="30"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(c, index) in dades.comandes" :key="index">
+                        <tr class="row-box" :class="[getCatClass(c.ref), (!c.ref || c.uds > getEstocDisponible(c.ref)) && c.estat === 'pendent' ? 'no-stock-row' : '']" :style="c.estat === 'entregat' ? 'opacity:0.5;' : ''">
+                            <td><input type="date" x-model="c.data" @change="guardar()"></td>
+                            <td>
+                                <select x-model="c.centre" @change="guardar()">
+                                    <option value="">-- Selecciona --</option>
+                                    <template x-for="p in centresLlista" :key="p">
+                                        <option :value="p" x-text="p" :selected="c.centre === p"></option>
+                                    </template>
+                                </select>
+                            </td>
+                            <td>
+                                <select x-model="c.ref" @change="guardar()">
+                                    <option value="">-- Selecciona --</option>
+                                    <template x-for="m in dades.cataleg" :key="m.ref">
+                                        <option :value="m.ref" x-text="m.ref + ' - ' + m.nom" :selected="c.ref === m.ref"></option>
+                                    </template>
+                                </select>
+                            </td>
+                            <td><input type="number" min="1" x-model.number="c.uds" @change="guardar()" style="width: 100%;"></td>
+                            <td>
+                                <button class="status-btn text-[9px]" :class="c.estat === 'entregat' ? 'entregat' : 'pendent'" @click="canviarEstat(index)" x-text="c.estat === 'entregat' ? 'Entregat' : 'Pendent'"></button>
+                            </td>
+                            <td><input type="date" x-model="c.rec" @change="guardar()"></td>
+                            <td><button class="delete-btn" @click="borrarCom(index)">✖</button></td>
+                        </tr>
+                    </template>
+                </tbody>
             </table>
         </div>
     </div>
 </div>
 
-<div class="modal-overlay" id="overlay" onclick="tancarGestio()"></div>
-<div id="modalGestio">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;"><h3 data-i18n="inventariCatalogTitle">⚙️ Catàleg</h3><button onclick="tancarGestio()" class="delete-btn">✖</button></div>
-    <div style="background:#f9f9f9; padding:8px; border:1px solid #ddd; display:flex; gap:4px; margin-bottom:8px;">
-        <input type="text" id="newRef" placeholder="Ref. 0000" data-i18n="inventariNewRefPlaceholder" style="width:70px;">
-        <input type="text" id="newNom" placeholder="NOM MATERIAL" data-i18n="inventariNewNomPlaceholder" style="flex:1;">
-        <select id="newCat" style="width:150px;" onchange="comprovarNovaCat(this)">
-            <option value="CONSUMIBLES IMPRESSORA" data-i18n="inventariOptConsumibles">CONSUMIBLES</option>
-            <option value="MATERIAL OFIMÀTIC" data-i18n="inventariOptOfimatica">OFIMÀTICA</option>
-            <option value="MANTENIMENT I VARIS" data-i18n="inventariOptMantenimiento">MANTENIMENT</option>
-            <option value="MOBILIARI I ERGONOMIA" data-i18n="inventariOptMobiliario">MOBILIARI</option>
-            <option value="ADD_CAT" data-i18n="inventariOptNewTheme">+ Nova temàtica...</option>
-        </select>
-        <button class="btn-nyn btn-add" style="background:var(--nn-green); color:white;" onclick="afegirAlCataleg()" data-i18n="inventariAddBtn">Afegir</button>
+<!-- MODAL CATALOG -->
+<div class="modal-overlay" x-show="showModalGestio" @click="showModalGestio = false" x-cloak></div>
+<div id="modalGestio" x-show="showModalGestio" x-cloak>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <h3>⚙️ Catàleg de Materials</h3>
+        <button @click="showModalGestio = false" class="delete-btn">✖</button>
     </div>
-    <div class="table-wrapper"><table><thead><tr><th width="80" data-i18n="inventariThRef">REF</th><th data-i18n="inventariThNom">NOM</th><th width="150" data-i18n="inventariThTheme">TEMÀTICA</th><th width="30"></th></tr></thead><tbody id="bodyGestio"></tbody></table></div>
+    
+    <div style="background:#f9f9f9; padding:8px; border:1px solid #ddd; display:flex; gap:4px; margin-bottom:8px;">
+        <input type="text" x-model="newRef" placeholder="Ref. 0000" style="width:70px;">
+        <input type="text" x-model="newNom" placeholder="NOM MATERIAL" style="flex:1;">
+        <select x-model="newCat" style="width:150px;" @change="comprovarNovaCat($event.target.value)">
+            <template x-for="c in dades.categories" :key="c">
+                <option :value="c" x-text="c" :selected="newCat === c"></option>
+            </template>
+            <option value="ADD_CAT">+ Nova temàtica...</option>
+        </select>
+        <button class="btn-action text-xs" @click="afegirAlCataleg()">Afegir</button>
+    </div>
+    
+    <div class="table-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th width="80">REF</th>
+                    <th>NOM</th>
+                    <th width="150">TEMÀTICA</th>
+                    <th width="30"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="(m, i) in dades.cataleg" :key="i">
+                    <tr class="row-box" :class="getCatClass(m.ref)">
+                        <td><input type="text" x-model="m.ref" @change="guardar()"></td>
+                        <td><input type="text" x-model="m.nom" @change="m.nom = m.nom.toUpperCase(); guardar()"></td>
+                        <td>
+                            <select x-model="m.cat" @change="guardar()">
+                                <template x-for="c in dades.categories" :key="c">
+                                    <option :value="c" x-text="c" :selected="m.cat === c"></option>
+                                </template>
+                            </select>
+                        </td>
+                        <td><button class="delete-btn" @click="eliminarDelCataleg(i)">✖</button></td>
+                    </tr>
+                </template>
+            </tbody>
+        </table>
+    </div>
 </div>
 
-<script>
-    const centresLlista = ["NN ARAGÓ", "NN BONANOVA", "NN BORRELL", "NN BRUC", "NN CONCEPT", "NN CORSEGA", "NN DIAGONAL", "NN EL PALLOL", "NN ESPRONCEDA", "NN ESTEVE TARRADAS", "NN GEIGLE", "NN GRAN VIA", "NN HERCEGOVINA", "NN MASTER CATALONIA", "NN LA ROTONDA", "NN PEDRALBES", "NN ROCAFORT", "NN SANTALÓ", "NN SANT GERVASI", "NN SENTMENAT 2", "NN TAMARITA", "NN TARRAGONA", "NN TRAVESSERA", "NN URGELL", "NN URGELL 2", "NN VALENCIA", "NN VALENCIA 2", "NN VALENCIA 3", "NN VIA AUGUSTA", "ZONA FRANCA", "OFICINA CENTRAL"].sort();
-    
-    let dades = { 
-        cataleg: [], 
-        stock: [], 
-        comandes: [], 
-        magatzems: ["OFICINES", "PROVENÇA", "CÒRSEGA"],
-        categories: ["CONSUMIBLES IMPRESSORA", "MATERIAL OFIMÀTIC", "MANTENIMENT I VARIS", "MOBILIARI I ERGONOMIA"]
-    };
-
-    async function guardar() {
-        if (persistence.isReadOnly()) return;
-        await persistence.write(dades);
-    }
-    async function carregar() {
-        const canEdit = await persistence.init('inventari');
-        const fileData = await persistence.read();
-        if (fileData) {
-            dades = fileData;
-        } else {
-            const d = localStorage.getItem('nyn_log_v13');
-            if (d) {
-                dades = JSON.parse(d);
-                if (canEdit) await persistence.write(dades);
-            }
-        }
-        render();
-    }
-
-    function getCatClass(ref) {
-        const m = dades.cataleg.find(x=>x.ref===ref);
-        if(!m) return "";
-        const c = m.cat;
-        if(c.includes("CONSUM")) return "row-consumibles";
-        if(c.includes("OFIM")) return "row-ofimatica";
-        if(c.includes("MANTEN")) return "row-manteniment";
-        if(c.includes("MOBILI")) return "row-mobiliari";
-        return "";
-    }
-
-    function render() {
-        const refsEnStock = dades.stock.map(s => s.ref);
-        
-        // Render Stock
-        document.getElementById('bodyMagatzem').innerHTML = dades.stock.map(s => {
-            let opts = `<option value="">${i18n.t("inventariSelectDefault")}</option>`;
-            dades.categories.forEach(c => {
-                const items = dades.cataleg.filter(m => m.cat === c && (!refsEnStock.includes(m.ref) || m.ref === s.ref));
-                if(items.length) {
-                    opts += `<optgroup label="${c}">` + items.map(i=>`<option value="${i.ref}" ${s.ref===i.ref?'selected':''}>${i.ref} | ${i.nom}</option>`).join('') + `</optgroup>`;
-                }
-            });
-            return `<tr class="row-box ${getCatClass(s.ref)}">
-                <td><select onchange="canviarMag(${s.id}, this)"><option value="ADD">${i18n.t("inventariSelectWarehouseNew")}</option>${dades.magatzems.map(m=>`<option value="${m}" ${s.magatzem===m?'selected':''}>${m}</option>`).join('')}</select></td>
-                <td><select onchange="canviarItemStock(${s.id}, this.value)">${opts}</select></td>
-                <td><button class="btn-qty" onclick="modQty(${s.id},-1)">-</button> <b>${s.stock}</b> <button class="btn-qty" onclick="modQty(${s.id},1)">+</button></td>
-                <td><button class="delete-btn" onclick="borrarStock(${s.id})">✖</button></td></tr>`;
-        }).join('');
-
-        // Render Comandes (Ordenades per Centre)
-        const comandesOrdenades = [...dades.comandes].sort((a, b) => a.centre.localeCompare(b.centre));
-        
-        document.getElementById('bodyComandes').innerHTML = comandesOrdenades.map((c) => {
-            const idxOriginal = dades.comandes.indexOf(c);
-            const isE = c.estat==='entregat';
-            const s = dades.stock.find(x => x.ref === c.ref);
-            const estocDisponible = s ? s.stock : 0;
-            const faltaEstoc = !isE && c.ref && c.uds > estocDisponible;
-            
-            return `<tr class="row-box ${getCatClass(c.ref)} ${faltaEstoc ? 'no-stock-row' : ''}" style="${isE?'opacity:0.5':''}">
-                <td><input type="date" value="${c.data}" onchange="dades.comandes[${idxOriginal}].data=this.value; guardar()"></td>
-                <td><select onchange="dades.comandes[${idxOriginal}].centre=this.value; render(); guardar()"><option value="">${i18n.t("inventariChooseCenter")}</option>${centresLlista.map(p=>`<option value="${p}" ${c.centre===p?'selected':''}>${p}</option>`).join('')}</select></td>
-                <td><select onchange="dades.comandes[${idxOriginal}].ref=this.value; render(); guardar()"><option value="">${i18n.t("inventariChooseMaterial")}</option>${dades.cataleg.map(m=>`<option value="${m.ref}" ${c.ref===m.ref?'selected':''}>${m.ref} - ${m.nom}</option>`).join('')}</select></td>
-                <td><input type="number" min="1" value="${c.uds}" onchange="dades.comandes[${idxOriginal}].uds=Math.max(1,parseInt(this.value)); render(); guardar()"></td>
-                <td><button class="status-btn ${isE?'entregat':'pendent'}" onclick="canviarEstat(${idxOriginal})">${isE ? i18n.t("inventariEntregat") : i18n.t("inventariPendent")}</button></td>
-                <td><input type="date" value="${c.rec||''}" onchange="dades.comandes[${idxOriginal}].rec=this.value; guardar()"></td>
-                <td><button class="delete-btn" onclick="borrarCom(${idxOriginal})">✖</button></td></tr>`;
-        }).join('');
-    }
-
-    function canviarEstat(i) {
-        const c = dades.comandes[i], s = dades.stock.find(x=>x.ref===c.ref);
-        if(!c.ref || !c.centre) return alert(i18n.t("inventariMissingFields"));
-        if(c.estat==='pendent') {
-            if(!s || s.stock < c.uds) return alert(i18n.t("inventariNoStockAlert"));
-            s.stock -= c.uds; c.estat='entregat'; c.rec=new Date().toISOString().split('T')[0];
-        } else { if(s) s.stock += c.uds; c.estat='pendent'; }
-        render(); guardar();
-    }
-
-    function modQty(id, d) { 
-        const i = dades.stock.find(x=>x.id===id); 
-        i.stock=Math.max(0, i.stock+d); render(); guardar(); 
-    }
-
-    function canviarItemStock(id, val) {
-        if(val && dades.stock.find(x => x.ref === val && x.id !== id)) return alert(i18n.t("inventariItemInStock"));
-        dades.stock.find(x => x.id === id).ref = val; render(); guardar();
-    }
-
-    function comprovarNovaCat(el) {
-        if(el.value === "ADD_CAT") {
-            const n = prompt(i18n.t("inventariPromptNewTheme")).toUpperCase();
-            if(n && !dades.categories.includes(n)) { dades.categories.push(n); actualitzarSelectorsCat(); el.value = n; }
-            else { el.value = dades.categories[0]; }
-        }
-    }
-
-    function actualitzarSelectorsCat() {
-        const sel = document.getElementById('newCat');
-        const curr = sel.value;
-        sel.innerHTML = dades.categories.map(c => `<option value="${c}">${c}</option>`).join('') + `<option value="ADD_CAT">${i18n.t("inventariOptNewTheme")}</option>`;
-        sel.value = curr;
-    }
-
-    function afegirFilaStock() { dades.stock.unshift({id:Date.now(), magatzem:dades.magatzems[0], ref:"", stock:0}); render(); }
-    function novaComanda() { dades.comandes.unshift({data:new Date().toISOString().split('T')[0], centre:"", ref:"", uds:1, estat:'pendent'}); render(); }
-    
-    function canviarMag(id, el) {
-        if(el.value==="ADD") {
-            const n = prompt(i18n.t("inventariPromptNewWarehouse")).toUpperCase();
-            if(n) { dades.magatzems.push(n); dades.stock.find(x=>x.id===id).magatzem=n; guardar(); render(); }
-        } else { dades.stock.find(x=>x.id===id).magatzem=el.value; guardar(); }
-    }
-
-    function obrirGestio() { actualitzarSelectorsCat(); document.getElementById('modalGestio').style.display='flex'; document.getElementById('overlay').style.display='block'; renderGestio(); }
-    function tancarGestio() { document.getElementById('modalGestio').style.display='none'; document.getElementById('overlay').style.display='none'; render(); }
-    
-    function renderGestio() {
-        document.getElementById('bodyGestio').innerHTML = dades.cataleg.sort((a,b)=>a.ref.localeCompare(b.ref)).map((m) => {
-            const i = dades.cataleg.indexOf(m);
-            return `<tr class="row-box ${getCatClass(m.ref)}">
-                <td><input type="text" value="${m.ref}" onchange="dades.cataleg[${i}].ref=this.value; guardar()"></td>
-                <td><input type="text" value="${m.nom}" onchange="dades.cataleg[${i}].nom=this.value.toUpperCase(); guardar()"></td>
-                <td><select onchange="dades.cataleg[${i}].cat=this.value; renderGestio(); guardar()">${dades.categories.map(c=>`<option value="${c}" ${m.cat===c?'selected':''}>${c}</option>`).join('')}</select></td>
-                <td><button class="delete-btn" onclick="dades.cataleg.splice(${i},1); renderGestio(); guardar()">✖</button></td></tr>`;
-        }).join('');
-    }
-
-    function afegirAlCataleg() {
-        const r = document.getElementById('newRef').value, n = document.getElementById('newNom').value, c = document.getElementById('newCat').value;
-        if(r && n) { dades.cataleg.push({cat:c, ref:r, nom:n.toUpperCase()}); renderGestio(); guardar(); }
-    }
-    function borrarStock(id) { dades.stock = dades.stock.filter(x=>x.id!==id); render(); guardar(); }
-    function borrarCom(i) { dades.comandes.splice(i,1); render(); guardar(); }
-    function exportarJSON() { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(dades)], {type:"application/json"})); a.download="inventari.json"; a.click(); }
-    function importarJSON(e) { 
-        const f = e.target.files[0]; if(!f) return;
-        const r = new FileReader(); r.onload= async (ev)=>{ dades=JSON.parse(ev.target.result); render(); await guardar(); }; r.readAsText(f);
-    }
-    window.onload = carregar;
-    window.addEventListener('languageChanged', () => {
-        render();
-    });
-</script>
+<script src="./js/inventari.js"></script>
 </body>
 </html>
