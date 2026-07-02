@@ -13,8 +13,10 @@
         }
       }
     </script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script src="../js/persistence.js"></script>
     <script src="../js/i18n.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
        // Forzar traducción inmediata al cargar
        document.addEventListener('DOMContentLoaded', () => {
@@ -23,6 +25,8 @@
     </script>
     
 <style>
+    [x-cloak] { display: none !important; }
+
     :root {
         --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
         --nyn-verd-accent: #008d36; /* Verde acento */
@@ -53,7 +57,6 @@
         background: #f8fafc; 
         color: #1e293b;
         overflow: visible;
-        user-select: none; 
     }
     
     .sticky-top { 
@@ -100,7 +103,6 @@
         gap: 12px;           
     }
 
-    /* BARRA DE HERRAMIENTAS MODERNA Y GRUPOS */
     .admin-panel { 
         padding: 10px 24px; 
         display: flex; 
@@ -124,7 +126,7 @@
     .toolbar-group.danger-group {
         background: var(--danger-bg);
         border: 1px solid var(--danger-border);
-        margin-left: auto; /* Empuja el botón de borrar al extremo derecho */
+        margin-left: auto;
     }
 
     .filter-label { 
@@ -156,7 +158,6 @@
         outline: none;
     }
 
-    /* BOTONES */
     .btn-main { 
         background: #ffffff; 
         color: #334155; 
@@ -215,7 +216,6 @@
         border-color: #dc2626;
     }
 
-    /* ESTILOS DE LA TABLA */
     .table-wrapper {
         padding: 16px 24px;
         background: #f8fafc;
@@ -240,7 +240,7 @@
         font-weight: 600;
         position: -webkit-sticky; 
         position: sticky; 
-        top: 110px; /* Ajustado para la altura real de la barra superior */
+        top: 110px; 
         z-index: 999; 
         border: none;
         border-bottom: 2px solid #0f172a;
@@ -271,7 +271,6 @@
         border-right: none;
     }
 
-    /* FILAS HOVER EFFECT */
     tbody tr:hover {
         background-color: #f8fafc;
     }
@@ -289,318 +288,190 @@
         z-index: 10;
     }
 
-    .selected-cell .select-worker, 
-    .selected-cell .select-hour, 
-    .selected-cell .sub-radio { 
-        pointer-events: auto !important; 
-    }
-
-    /* Columna de MATÍ/TARDA/NIT (La primera) */
     .col-name { 
         background-color: #f8fafc; 
-        width: 140px !important;
-        min-width: 140px !important;
-        max-width: 140px !important;
-        font-weight: 700; 
-        color: var(--nyn-verd); 
+        font-weight: bold; 
+        color: var(--text-main); 
+        font-size: 10px;
         text-transform: uppercase; 
-        font-size: 10px; 
-        border-right: 2px solid var(--nyn-verd-accent); 
-        overflow: hidden;
-        text-align: center;
         letter-spacing: 0.5px;
+        text-align: left;
+        padding-left: 12px;
+        box-sizing: border-box;
+        border-right: 2px solid var(--border);
+        width: 105px !important;
+        min-width: 105px !important;
     }
 
-    /* Las columnas de los días (Las 31 restantes) */
-    #mainTable th:not(.col-name), 
-    #mainTable td:not(.col-name) {
-        width: 58px !important;
-        min-width: 58px !important;
-        max-width: 58px !important;
-        overflow: hidden;
+    .is-weekend { background-color: var(--bg-weekend) !important; }
+    .is-festiu { background-color: var(--nyn-festiu) !important; }
+    .is-vacances { background-color: var(--bg-vacances) !important; }
+
+    .has-note::after {
+        content: "";
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 0;
+        height: 0;
+        border-style: solid;
+        border-width: 0 6px 6px 0;
+        border-color: transparent #ef4444 transparent transparent;
+        z-index: 5;
     }
 
-    /* ESTRUCTURA CELDA */
     .cell-container { 
         display: flex; 
         flex-direction: column; 
-        height: 56px; 
-        width: 100%; 
-        position: relative; 
-        cursor: default; 
-        z-index: 2; 
-        box-sizing: border-box; 
-        overflow: hidden; 
+        justify-content: center; 
+        align-items: stretch;
+        padding: 3px; 
+        gap: 2px; 
+        height: 52px; 
+        box-sizing: border-box;
+        width: 100%;
     }
-    
+
     .select-worker, .select-hour { 
         width: 100%; 
-        border: none; 
-        font-weight: 600; 
-        background: transparent; 
-        outline: none; 
-        text-align-last: center; 
-        font-family: inherit; 
-        appearance: none; 
-        -webkit-appearance: none;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23008d36' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
-        background-repeat: no-repeat; 
-        background-position: right 4px center; 
-        background-size: 7px;
+        border: 1px solid #cbd5e1; 
+        border-radius: 4px; 
+        font-size: 8px; 
+        padding: 1px; 
+        height: 18px !important;
+        background: white; 
+        color: #334155; 
+        font-weight: 500;
         box-shadow: none;
-        height: auto;
-        border-radius: 0;
-        pointer-events: none !important; 
-    }
-
-    .select-worker { 
-        flex: 1; 
-        font-size: 10px; 
-        line-height: 1.2; 
-        padding: 4px 12px 4px 4px; 
-        white-space: normal; 
-        overflow: hidden; 
-        display: block; 
-        color: #1e293b;
+        outline: none;
     }
     
-    .select-hour { 
-        height: 18px; 
-        border-top: 1px solid rgba(0,0,0,0.05); 
-        font-size: 9px; 
-        color: #64748b; 
-        padding: 0 12px 0 4px; 
-        background-color: rgba(255,255,255,0.4); 
-    }
+    .select-worker { font-weight: 700; color: var(--nyn-verd); }
+    .select-hour { font-size: 8px; color: #475569; font-weight: bold; }
 
     .sub-radio { 
-        position: absolute; 
-        bottom: 4px; 
-        left: 4px; 
-        width: 10px; 
-        height: 10px; 
-        cursor: pointer; 
-        z-index: 15; 
-        opacity: 0.6; 
+        align-self: center; 
         margin: 0; 
-        pointer-events: auto !important; 
-    }
-    
-    .has-note::before { 
-        content: ""; 
-        position: absolute; 
-        top: 0; 
-        right: 0; 
-        border-style: solid; 
-        border-width: 0 8px 8px 0; 
-        border-color: transparent var(--nyn-verd) transparent transparent; 
-        pointer-events: none; 
-        z-index: 12;
+        width: 12px; 
+        height: 12px; 
+        cursor: pointer;
+        accent-color: var(--nyn-verd-accent);
     }
 
     .center-header { 
         background: #f1f5f9; 
-        height: 28px; 
-        font-weight: 700; 
-        color: var(--nyn-verd); 
+        padding: 6px 12px; 
         display: flex; 
         align-items: center; 
-        padding: 0 16px; 
+        gap: 8px;
+        border-bottom: 2px solid #cbd5e1;
+        border-top: 1px solid var(--border);
+    }
+    .check-marcador { 
+        width: 13px; 
+        height: 13px; 
+        cursor: pointer;
+        accent-color: var(--nyn-verd-accent);
+    }
+    .center-label { 
+        font-weight: bold; 
+        color: var(--nyn-verd); 
+        font-size: 11px; 
         text-transform: uppercase; 
-        border-bottom: 1px solid var(--border); 
         letter-spacing: 0.5px;
     }
 
-    .center-label { 
-        flex-grow: 1; 
-        text-align: left; 
-        font-size: 11px;
-    }
-    
-    .check-marcador { 
-        width: 14px; 
-        height: 14px; 
-        cursor: pointer; 
-        margin-right: 10px; 
-        z-index: 10; 
-        accent-color: var(--nyn-verd-accent);
+    .month-locked .select-worker, 
+    .month-locked .select-hour, 
+    .month-locked .sub-radio { 
+        pointer-events: none !important; 
+        opacity: 0.65; 
     }
 
-    /* FILAS POR TURNO */
-    .row-mati { background-color: #fffbeb; } /* Crema muy suave */
-    .row-tarda { background-color: #f0fdf4; } /* Verde muy suave */
-    .row-nit { background-color: #f8fafc; } /* Blanco azulado */
-    
-    .is-festiu { background-color: var(--nyn-festiu) !important; } 
-    .is-weekend { background-color: var(--bg-weekend); }
-    .is-vacances { background-color: var(--bg-vacances) !important; }
-
-    /* MODALES REDISEÑADOS */
     #noteModal, #deleteModal, #horesModal { 
-        display: none; 
         position: fixed; 
         top: 50%; 
         left: 50%; 
         transform: translate(-50%, -50%); 
-        background: #ffffff; 
+        background: white; 
         border: 1px solid var(--border); 
         padding: 24px; 
         z-index: 2000; 
         border-radius: 12px; 
-        width: 320px; 
-        box-shadow: var(--shadow-lg); 
+        box-shadow: var(--shadow-lg);
+        font-family: inherit;
     }
+    #noteModal { width: 350px; }
+    #deleteModal { width: 320px; }
 
     #horesModal { 
         width: 90%; 
         max-width: 800px; 
-        max-height: 85vh; 
+        max-height: 80vh; 
         overflow-y: auto; 
-        padding: 24px; 
-        border-radius: 12px; 
     }
     
-    .hores-modal-header { 
-        position: sticky; 
-        top: 0; 
-        background: white; 
-        z-index: 2020; 
-        padding-bottom: 12px; 
-        border-bottom: 2px solid var(--nyn-verd-accent);
-        margin-bottom: 16px;
+    #horesModal table { 
+        width: 100%; 
+        border-collapse: collapse; 
+        margin-top: 10px;
     }
-    
-    .hores-title-box { 
-        margin: 0; 
-        font-weight: 800; 
-        font-size: 15px; 
-        color: var(--text-main); 
-    }
-    
     #horesModal table thead th { 
-        position: sticky; 
-        top: 0; 
-        background: #1e293b !important; 
-        color: white !important; 
-        height: 32px !important; 
-        font-size: 10px; 
-        z-index: 2019; 
-        vertical-align: middle; 
-        padding: 6px !important; 
-        border: 1px solid #334155; 
+        font-size: 9px; 
+        font-weight: bold; 
+        background: #f1f5f9; 
+        color: #475569; 
+        border: 1px solid #cbd5e1;
+        padding: 6px;
     }
-
-    #taulaResumHores {
-        overflow-x: auto;
-        max-height: 55vh; 
-        border-radius: 8px;
-        border: 1px solid var(--border);
+    #horesModal table tbody td { 
+        border: 1px solid #cbd5e1; 
+        padding: 6px;
     }
-
+    
     #horesModal .close-btn-top { 
         position: absolute; 
-        top: -4px; 
-        right: -4px; 
-        z-index: 2021; 
-        background: #f1f5f9; 
+        top: 15px; 
+        right: 15px; 
+        background: none; 
         border: none; 
         font-size: 20px; 
         cursor: pointer; 
-        color: #64748b; 
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s ease;
+        color: #94a3b8;
+        box-shadow: none;
+        height: auto;
+        padding: 0;
     }
-    
-    #horesModal .close-btn-top:hover {
-        background: #e2e8f0;
-        color: #1e293b;
-    }
-    
-    .btn-tancar-resum { 
-        display: inline-flex !important; 
-        align-items: center; 
-        justify-content: center; 
-        padding: 0 20px; 
-        height: 32px; 
-        background: var(--nyn-verd); 
-        color: white; 
-        font-weight: bold; 
-        border: none; 
-        border-radius: 6px; 
-        cursor: pointer; 
+    #horesModal .close-btn-top:hover { 
+        color: #ef4444; 
     }
 
-    textarea, .input-edit { 
-        width: 100%; 
-        font-size: 12px; 
-        margin-bottom: 12px; 
-        border: 1px solid #cbd5e1; 
-        border-radius: 6px;
-        padding: 8px; 
-        box-sizing: border-box; 
-        font-family: inherit; 
-        background: #ffffff;
+    .btn-tancar-resum {
+        background: var(--nyn-verd) !important;
+        color: white !important;
+        border: 1px solid var(--nyn-verd) !important;
+        padding: 6px 16px !important;
+        font-weight: bold !important;
+        border-radius: 6px !important;
+        cursor: pointer !important;
     }
-    
-    textarea:focus, .input-edit:focus {
-        border-color: var(--nyn-verd-accent);
-        outline: none;
-    }
-    
-    textarea { height: 90px; resize: none; }
-    .input-edit { height: 32px; }
-
-    @media print {
-        .sticky-top, .btn-main, .btn-danger-right, .admin-panel, #noteModal, #deleteModal, #horesModal, .sub-radio { display: none !important; }
-        body { background: white; margin: 0; padding: 0; }
-        table { 
-            width: 900px !important; 
-            table-layout: fixed !important; 
-            transform: scale(0.8); 
-            transform-origin: top left;
-        }
-        .cell-container { height: auto !important; min-height: 40px !important; display: flex !important; flex-direction: column !important; justify-content: center !important; align-items: center !important; }
-        .select-worker, .select-hour { display: block !important; width: 100% !important; position: static !important; font-size: 7pt !important; line-height: 1.1 !important; pointer-events: auto !important; 
-        cursor: pointer; }
-        th, td { border: 1px solid #000 !important; padding: 1px !important; overflow: hidden !important; }
-        * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        @page { size: landscape; margin: 0.3cm; }
+    .btn-tancar-resum:hover {
+        background: #0b4e43 !important;
     }
 
-    .month-locked .cell-container { background-color: #f1f5f9 !important; opacity: 0.75; pointer-events: none !important; }
-    .month-locked .col-name, .month-locked .center-header { filter: grayscale(0.8); }
-    .btn-lock { background: #334155; color: white; border-color: #334155; }
-    .btn-lock:hover { background: #1e293b; border-color: #1e293b; }
-    .btn-unlock { background: var(--danger-coral); color: white; border-color: var(--danger-coral); }
-    .btn-unlock:hover { background: #dc2626; border-color: #dc2626; }
-    .parking-section-pendent td::after { content: ""; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--nyn-marcador-tel); pointer-events: none; z-index: 5; }
-
-    /* ESTILO DE SUSTITUCIONES */
-    .is-substitucio { 
-        background-color: var(--nyn-substitucio-bg) !important; 
-        outline: 2px solid var(--nyn-substitucio-border) !important;
-        outline-offset: -2px; 
-        position: relative;
-        z-index: 5;
+    /* ESTILOS DE TURNOS SUSTITUCIÓN */
+    .is-substitucio {
+        background-color: var(--nyn-substitucio-bg) !important;
+        border: 2px solid var(--nyn-substitucio-border) !important;
         border-radius: 4px;
     }
-
-    .is-substitucio .cell-container {
-        background-color: transparent !important;
-    }
-
+    
     .is-substitucio .select-worker, 
-    .is-substitucio .select-hour { 
-        background-color: transparent !important; 
+    .is-substitucio .select-hour {
+        background-color: var(--nyn-substitucio-bg) !important;
         color: var(--nyn-substitucio-text) !important; 
         font-weight: 700;
         border: none !important;
-        pointer-events: auto !important; 
     }
 
     .is-substitucio .select-worker option, 
@@ -618,84 +489,144 @@
 </style>
 
 </head>
-<body onkeydown="handleGlobalKey(event)" onmouseup="isDragging=false" data-required-roles="coordinador,jefe_operaciones">
+<body x-data="moduloCuadrantes()" x-init="init()" onkeydown="if(event.key==='Escape') closeAssistant();" class="bg-slate-50">
 
-<div class="sticky-top">
+<div class="sticky-top no-print">
     <header>
         <div class="header-center">
-            <span id="displayMonth" data-i18n="displayMonth"></span> 
-            <span id="rellotge" data-i18n="rellotge"></span>
-            <span id="llegendaExport" style="font-family: inherit; font-size: 13px; color: #ffffff; opacity: 0.9; text-transform: none; text-shadow: none; font-weight: normal; font-style: normal; margin-left: 10px;" data-i18n="llegendaExport">
-                | Darrera exportació: Sense dades
-            </span>
+            <span x-text="['GENER','FEBRER','MARÇ','ABRIL','MAIG','JUNY','JULIOL','AGOST','SETEMBRE','OCTUBRE','NOVEMBRE','DESEMBRE'][parseInt(filtros.mes)] + ' ' + filtros.anio"></span> 
+            <span x-text="reloj" style="margin-left: 15px; font-weight: normal; opacity: 0.8;"></span>
+            <span class="llegenda-vacances" data-i18n="llegendaVacances">🌴 PERÍODE VACANCIA</span>
         </div>
     </header>
     <div class="admin-panel">
         <!-- Grupo 1: Filtres de Visualització -->
         <div class="toolbar-group">
             <div class="filter-label" data-i18n="quadrantLabelPeriodo">📅 Període:</div>
-            <select id="selectMonth" onchange="changeMonth()"></select>
-            <select id="selectYear" onchange="changeMonth()"></select>
+            
+            <select x-model="filtros.mes" @change="cargarCuadrantes()">
+                <template x-for="(m, i) in ['Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost','Setembre','Octubre','Novembre','Desembre']">
+                    <option :value="i" x-text="m"></option>
+                </template>
+            </select>
+
+            <select x-model="filtros.anio" @change="cargarCuadrantes()">
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+            </select>
             
             <div class="filter-label" style="margin-left: 8px;" data-i18n="quadrantLabelFiltros">🔍 Filtres:</div>
-            <select id="filterPark" onchange="renderTable()"><option value="ALL" data-i18n="quadrantOptAllCentres">Tots els Centres</option></select>
-            <select id="filterWorker" onchange="renderTable()"><option value="ALL" data-i18n="quadrantOptAllWorkers">Tots els Treballadors</option></select>
-            <select id="filterHorari" onchange="renderTable()">
+            <select x-model="filtros.parking" @change="cargarCuadrantes()">
+                <option value="ALL" data-i18n="quadrantOptAllCentres">Tots els Centres</option>
+                <template x-for="p in listaParkings" :key="p.nombre">
+                    <option :value="p.nombre" x-text="p.nombre"></option>
+                </template>
+            </select>
+
+            <select x-model="filtros.trabajador">
+                <option value="ALL" data-i18n="quadrantOptAllWorkers">Tots els Treballadors</option>
+                <template x-for="t in listaTrabajadores" :key="t.nombre">
+                    <option :value="t.nombre" x-text="t.nombre"></option>
+                </template>
+            </select>
+
+            <select x-model="filtros.horario">
                 <option value="ALL" data-i18n="quadrantOptAllHours">Tots els Horaris / Torns</option>
                 <optgroup label="Torns Generals">
                     <option value="T_MATÍ" data-i18n="quadrantOptMati">Només Matí</option>
                     <option value="T_TARDA" data-i18n="quadrantOptTarda">Només Tarda</option>
                     <option value="T_NIT" data-i18n="quadrantOptNit">Només Nit</option>
                 </optgroup>
-                <optgroup label="Franges Específiques" id="optHorarisList"></optgroup>
             </select>
-            <button class="btn-main" onclick="resetFilters()" data-i18n="quadrantBtnResetFilters">♻️ Reset Filtres</button>
+            <button class="btn-main" @click="resetFilters()" data-i18n="quadrantBtnResetFilters">♻️ Reset Filtres</button>
         </div>
 
         <!-- Grupo 2: Accions del Cuadrante -->
         <div class="toolbar-group">
             <div class="filter-label" data-i18n="quadrantLabelAcciones">⚡ Accions:</div>
-            <button class="btn-main btn-action-sec" onclick="calcularHoresMes()" data-i18n="quadrantBtnRecompte">📊 Recompte Hores</button>
-            <button class="btn-main" onclick="openDeleteModal()" data-i18n="quadrantBtnManageData">⚙️ Gestionar Dades</button>
-            <button id="btnExport" class="btn-main btn-action" onclick="exportToNextMonth()" data-i18n="quadrantBtnExportNext">🚚 Exportar a ...</button>
-            <button id="btnLockMonth" class="btn-main btn-lock" onclick="toggleLockMonth()" data-i18n="quadrantBtnCloseMonth">🔒 Tancar Mes</button>
-            <button id="btnAlertes" class="btn-main" onclick="toggleAlertsPanel()" style="background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; font-weight: 600; display: none;">⚠️ Alertes (<span id="alertCount">0</span>)</button>
+            <button class="btn-main btn-action-sec" @click="calcularHoresMes()" data-i18n="quadrantBtnRecompte">📊 Recompte Hores</button>
+            <button class="btn-main" @click="openDeleteModal()" data-i18n="quadrantBtnManageData">⚙️ Gestionar Dades</button>
+            <button id="btnExport" class="btn-main btn-action" @click="exportToNextMonth()" data-i18n="quadrantBtnExportNext">🚚 Exportar a ...</button>
+            <button id="btnLockMonth" @click="toggleLockMonth()" :class="isMonthLocked() ? 'btn-main btn-unlock' : 'btn-main btn-lock'" x-text="isMonthLocked() ? '🔓 Obrir Mes' : '🔒 Tancar Mes'"></button>
         </div>
 
-        <!-- Grupo 3: Arxiu i Importacions -->
+        <!-- Grupo 3: Exportacions Extensas -->
         <div class="toolbar-group">
-            <div class="filter-label" data-i18n="quadrantLabelArchivos">💾 Fitxers:</div>
-            <button class="btn-main btn-archive" onclick="exportarExcel()" style="color: #15803d; font-weight: 600;" data-i18n="quadrantBtnExcel">📥 Excel</button>
-            <button class="btn-main btn-archive" onclick="window.print()" data-i18n="quadrantBtnPrint">🖨️ Imprimir</button>
-            <button class="btn-main btn-archive" onclick="exportarBackupJSON()" data-i18n="quadrantBtnExportBackup">💾 Exportar Backup</button>
-            <button class="btn-main btn-archive" onclick="document.getElementById('importFile').click()" data-i18n="quadrantBtnImportBackup">📂 Importar Backup</button>
-            <button class="btn-main btn-archive" onclick="document.getElementById('fileVacances').click()" style="color: #7e22ce; font-weight: 600;" data-i18n="quadrantBtnImportVacances">🌴 Importar Vacances</button>
-            <input type="file" id="importFile" style="display:none" accept=".json" onchange="importarBackupJSON(this)">
-            <input type="file" id="fileVacances" style="display:none" onchange="importarVacances(this)">
+            <button class="btn-main btn-action-sec" style="background:#16a34a!important; border-color:#16a34a!important;" @click="exportarExcel()">📊 Exportar Excel</button>
+            <button class="btn-main btn-archive" @click="exportarBackupJSON()" data-i18n="quadrantBtnExportBackup">💾 Exportar Backup</button>
+            <button class="btn-main btn-archive" @click="document.getElementById('importFile').click()" data-i18n="quadrantBtnImportBackup">📂 Importar Backup</button>
+            <button class="btn-main btn-archive" @click="document.getElementById('fileVacances').click()" style="color: #7e22ce; font-weight: 600;" data-i18n="quadrantBtnImportVacances">🌴 Importar Vacances</button>
+            <input type="file" id="importFile" style="display:none" accept=".json" @change="importarBackupJSON($event)">
+            <input type="file" id="fileVacances" style="display:none" accept=".json" @change="importarVacances($event)">
         </div>
 
         <!-- Grupo 4: Zona de Perill -->
         <div class="toolbar-group danger-group">
-            <button class="btn-danger-right" onclick="resetAll()" data-i18n="quadrantBtnClearMonth">🗑️ Esborrar dades del mes</button>
-        </div>
-    </div>
-
-    <!-- Panel de Alertas en Caliente -->
-    <div id="alertsPanel" style="display: none; padding: 10px 24px; background: #fff1f2; border-bottom: 1px solid #fecdd3; font-family: inherit; box-shadow: var(--shadow-sm);">
-        <div style="font-weight: 700; color: #9f1239; font-size: 11px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
-            <span data-i18n="quadrantAlertsTitle">⚠️ SITUACIONS PER SOLUCIONAR (ALERTES DE NEGOCI)</span>
-        </div>
-        <div id="alertsList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 8px; max-height: 120px; overflow-y: auto; padding: 4px 0;">
-            <!-- Las alertas se cargarán dinámicamente -->
+            <button class="btn-danger-right" @click="resetAll()" data-i18n="quadrantBtnClearMonth">🗑️ Esborrar dades del mes</button>
         </div>
     </div>
 </div>
 
 <div class="flex flex-row overflow-hidden" style="display: flex; flex-direction: row; align-items: stretch; min-height: calc(100vh - 120px); width: 100%;">
+    <!-- Tabla Principal de Cuadrante -->
     <div class="table-wrapper" style="flex-grow: 1; overflow-x: auto; padding: 16px 24px;">
-        <table id="mainTable">
-            <thead><tr id="headerRow"></tr></thead>
-            <tbody id="tableBody"></tbody>
+        <table id="mainTable" :class="{ 'month-locked': isMonthLocked() }">
+            <thead>
+                <tr>
+                    <th class="col-name" data-i18n="quadrantThHorario">HORARI</th>
+                    <template x-for="day in diasDelMes">
+                        <th :class="{ 'is-weekend-header': day.isWeekend, 'is-festiu-header': day.isFestiu }" x-text="day.label"></th>
+                    </template>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <template x-for="row in matrizCuadrante" :key="row.parking + '_' + row.turno">
+                    <!-- Cabecera de Parking -->
+                    <tr x-show="row.turno === 'MATÍ'" class="parking-section-header">
+                        <td :colspan="diasDelMes.length + 1" style="background:#f1f5f9; border-bottom: 2px solid #cbd5e1; text-align: left; padding: 6px 12px; font-weight: bold;">
+                            <div class="flex items-center gap-2">
+                                <input type="checkbox" class="check-marcador" :checked="row.isPendent" @change="toggleMarcador(row.parking, $event.target.checked)">
+                                <span x-text="row.parking"></span>
+                            </div>
+                        </td>
+                    </tr>
+                    <!-- Fila de Turno -->
+                    <tr :class="'row-' + row.turno.toLowerCase() + ' park-row-' + row.parking.replace(/\s+/g, '_') + (row.isPendent ? ' parking-section-pendent' : '')">
+                        <td class="col-name" x-text="getTranslatedTorn(row.turno)"></td>
+                        
+                        <!-- Celdas de Días -->
+                        <template x-for="dayData in row.dias" :key="dayData.key">
+                            <td :id="'cell_' + dayData.key"
+                                :class="{ 'is-weekend': dayData.isWeekend, 'is-festiu': dayData.isFestiu, 'has-note': dayData.note, 'is-vacances': dayData.isVacances }"
+                                :style="dayData.isVacances ? 'background-color: rgba(186, 104, 200, 0.18);' : ''"
+                                @contextmenu.prevent="openNote(dayData.key)"
+                                @dblclick="openAssistant(dayData.key)">
+                                
+                                <div class="cell-container" :class="{ 'is-substitucio': dayData.isSub }" style="pointer-events: auto;">
+                                    <!-- Trabajador -->
+                                    <select class="select-worker" :value="dayData.worker" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'worker', $event.target.value)">
+                                        <option value="-">-</option>
+                                        <template x-for="t in listaTrabajadores" :key="t.nombre">
+                                            <option :value="t.nombre" x-text="t.nombre" :selected="dayData.worker === t.nombre"></option>
+                                        </template>
+                                    </select>
+
+                                    <!-- Horas -->
+                                    <select class="select-hour" :value="dayData.hours" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'hours', $event.target.value)">
+                                        <template x-for="h in listaHorarios" :key="h">
+                                            <option :value="h" x-text="h" :selected="dayData.hours === h"></option>
+                                        </template>
+                                    </select>
+
+                                    <!-- Checkbox Sustitución -->
+                                    <input type="checkbox" class="sub-radio" :checked="dayData.isSub" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'isSub', $event.target.checked)">
+                                </div>
+                            </td>
+                        </template>
+                    </tr>
+                </template>
+            </tbody>
         </table>
     </div>
     
@@ -703,1945 +634,129 @@
     <aside id="panel-asistente" class="hidden w-80 bg-orange-50 border-l border-orange-200 p-4 overflow-y-auto flex-shrink-0 shadow-inner" style="min-width: 320px; max-width: 320px;">
       <div class="flex justify-between items-center mb-4 border-b border-orange-200 pb-2">
         <h3 class="text-lg font-bold text-orange-800" style="margin: 0;"><i class="fas fa-robot mr-2"></i> <span data-i18n="asistenteTitle">Asistente</span></h3>
-        <button id="cerrar-asistente" class="text-orange-500 hover:text-orange-800" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 0; box-shadow: none; height: auto;"><i class="fas fa-times"></i></button>
+        <button @click="closeAssistant()" class="text-orange-500 hover:text-orange-800" style="background: none; border: none; font-size: 16px; cursor: pointer; padding: 0; box-shadow: none; height: auto;"><i class="fas fa-times"></i></button>
       </div>
       
-      <div id="info-celda-asistente" class="text-sm text-gray-700 mb-4 bg-white p-2 rounded border border-orange-100">
-        <!-- Aquí irá la info del parking y día -->
+      <div class="text-sm text-gray-700 mb-4 bg-white p-2 rounded border border-orange-100" x-text="asistenteData.info">
       </div>
-
+      
       <div class="mb-4">
           <div style="display: flex; align-items: center; justify-content: space-between; padding: 6px 10px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; font-family: inherit;">
               <span style="font-weight: 700; font-size: 11px; color: #475569;" data-i18n="asistenteLabelDesasignar">Desassignar torn / Deixar buit</span>
-              <button id="btn-desasignar-asistente" style="background: #64748b; color: white; border: none; font-weight: 700; padding: 4px 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm);" data-i18n="asistenteBtnDesasignar">
+              <button @click="asignarAgenteDesdeAsistente('-')" style="background: #64748b; color: white; border: none; font-weight: 700; padding: 4px 12px; height: 26px; border-radius: 6px; font-size: 10px; cursor: pointer; box-shadow: var(--shadow-sm);" data-i18n="asistenteBtnDesasignar">
                   Desassignar
               </button>
           </div>
       </div>
 
       <h4 class="text-sm font-bold text-green-700 mb-2 mt-4 uppercase"><i class="fas fa-check-circle mr-1"></i> <span data-i18n="asistenteRecomendados">Recomendados</span></h4>
-      <ul id="lista-sugeridos" class="space-y-2 mb-6" style="padding-left: 0; list-style: none;">
-        <!-- Dinámico -->
+      <ul class="space-y-2 mb-6" style="padding-left: 0; list-style: none;">
+        <template x-for="agente in asistenteData.sugeridos" :key="agente.nombre">
+            <li class="bg-white p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md cursor-pointer transition-all flex flex-col gap-1.5 group relative" @click="asignarAgenteDesdeAsistente(agente.nombre)">
+                <div class="flex justify-between items-start w-full">
+                    <div>
+                        <div class="font-bold text-gray-800 text-xs">
+                            <span x-text="agente.nombre"></span>
+                            <span class="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold ml-2" x-show="agente.tipo === 'EMPRESA SEGURIDAD'" data-i18n="asistenteExterno">Extern</span>
+                            <span class="text-[9px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-bold ml-2" x-show="agente.ranking_score >= 80">TOP</span>
+                        </div>
+                        <div class="text-[10px] text-gray-500 mt-0.5">
+                            Ranking: <span x-text="agente.ranking_score"></span> | Horas: <span x-text="agente.dias_mes_actual * 8"></span>h
+                        </div>
+                    </div>
+                    <button class="bg-green-600 text-white px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 font-bold transition-opacity" style="border: none; padding: 3px 8px; cursor: pointer; border-radius: 4px;" data-i18n="asistenteAsignar">Asignar</button>
+                </div>
+            </li>
+        </template>
+        <template x-if="asistenteData.sugeridos.length === 0">
+            <li class="text-sm text-gray-500 bg-white p-3 rounded-lg border border-gray-200 text-center" data-i18n="asistenteNoSugeridos">No hi ha suggeriments</li>
+        </template>
       </ul>
 
       <h4 class="text-sm font-bold text-red-700 mb-2 uppercase"><i class="fas fa-ban mr-1"></i> <span data-i18n="asistenteDescartados">Descartados</span></h4>
-      <ul id="lista-descartados" class="space-y-2 opacity-75" style="padding-left: 0; list-style: none;">
-        <!-- Dinámico -->
+      <ul class="space-y-2 opacity-75" style="padding-left: 0; list-style: none;">
+        <template x-for="agente in asistenteData.descartados" :key="agente.nombre">
+            <li class="bg-red-50/50 p-2.5 rounded-lg border border-red-100 flex flex-col gap-1 text-left">
+                <div class="font-bold text-gray-700 text-xs" x-text="agente.nombre"></div>
+                <div class="text-[9.5px] text-red-700 font-medium flex items-start gap-1">
+                    <i class="fas fa-exclamation-triangle mt-0.5 flex-shrink-0"></i> 
+                    <span x-text="agente.motivo_bloqueo || agente.motivo_descarte || 'No disponible'"></span>
+                </div>
+            </li>
+        </template>
+        <template x-if="asistenteData.descartados.length === 0">
+            <li class="text-xs text-gray-400 text-center py-2" data-i18n="asistenteNoDescartados">No hi ha descarts</li>
+        </template>
       </ul>
     </aside>
 </div>
 
-<script>
-    let MESOS = [];
-    function updateMesosList() {
-        MESOS = i18n.getLanguage() === 'es'
-            ? ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"]
-            : ["Gener","Febrer","Març","Abril","Maig","Juny","Juliol","Agost","Setembre","Octubre","Novembre","Desembre"];
-    }
-    updateMesosList();
+<!-- Modal para Observaciones/Notas -->
+<div id="noteModal" x-show="showNoteModal" x-cloak>
+    <h3 style="color:var(--nyn-verd); margin:0 0 10px 0;">Observacions / Nota</h3>
+    <textarea x-model="noteText" style="width:100%; height:100px; padding:8px; border:1px solid #cbd5e1; border-radius:6px; box-sizing:border-box; margin-bottom:15px; outline:none;" placeholder="Escriu les notes aquí..."></textarea>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+        <button @click="saveNote()" class="btn-action">Guardar</button>
+        <button @click="showNoteModal = false" class="btn-archive">Tancar</button>
+    </div>
+</div>
 
-    function populateMonthSelector() {
-        const mS = document.getElementById('selectMonth');
-        if (!mS) return;
-        const val = mS.value;
-        mS.innerHTML = "";
-        updateMesosList();
-        MESOS.forEach((m, i) => mS.add(new Option(m, i)));
-        if (val !== "") mS.value = val;
-    }
-
-    function getTranslatedTorn(torn) {
-        if (i18n.getLanguage() === 'es') {
-            if (torn === "MATÍ") return "MAÑANA";
-            if (torn === "TARDA") return "TARDE";
-            if (torn === "NIT") return "NOCHE";
-        }
-        return torn;
-    }
-    let LLISTES = {
-        personal: JSON.parse(localStorage.getItem('nyn_personal')) || ["-"],
-        horaris: JSON.parse(localStorage.getItem('nyn_horaris')) || ["-"],
-        parkings: JSON.parse(localStorage.getItem('nyn_parkings')) || ["-"]
-    };
-
-    let currentMonth, currentYear;
-    let currentCoordinator = "";
-    let cacheDades = {}, cellCoords = {}, selectedIds = [], isDragging = false, startId = null;
-    let clipboardData = null; 
-    let historyStack = [];
-
-    const COMUNS = ["0-1", "0-6", "3-3", "3-6", "4-1", "5-24", "7-15", "8-11", "9-12", "11-8", "11-25", "11-26"];
-    const BCN_ONLY = ["4-25", "8-24"]; 
-    const REUS_ONLY = ["5-29", "8-25"];
-
-async function init() {
-        const params = new URLSearchParams(window.location.search);
-        const userRole = params.get('role') || sessionStorage.getItem('userRole') || 'coordinador';
-        let userName = params.get('username') || sessionStorage.getItem('userName') || '';
-        currentCoordinator = userName;
-
-        // Si el rol es jefe de operaciones y no se ha especificado un username de coordinador en la URL (es Administrador)
-        if (userRole === 'jefe operaciones' && (!userName || userName === 'Administrador')) {
-            try {
-                const coordinadores = await window.api.getCoordinadores();
-                if (coordinadores.length > 0) {
-                    // Seleccionar el primer coordinador por defecto
-                    userName = coordinadores[0].nombre;
-                    // Redirigir para inicializar persistence.js y los locks con el coordinador seleccionado
-                    window.location.href = `quadrant.html?role=jefe%20operaciones&username=${userName}`;
-                    return;
-                }
-            } catch (e) {
-                console.error("Error al obtener coordinadores en inicio de administrador:", e);
-            }
-        }
-
-        // Cargar selector de coordinadores para el administrador en el panel superior
-        if (userRole === 'jefe operaciones') {
-            const adminPanel = document.querySelector('.admin-panel');
-            if (adminPanel) {
-                // Crear el select de coordinadores
-                const selectCoord = document.createElement('select');
-                selectCoord.id = 'selectCoordinator';
-                selectCoord.style.marginRight = '8px';
-                selectCoord.style.fontWeight = 'bold';
-                selectCoord.style.color = '#063931';
-                selectCoord.style.borderColor = '#063931';
-                selectCoord.style.height = '22px';
-                selectCoord.onchange = () => {
-                    const selectedCoord = selectCoord.value;
-                    if (selectedCoord) {
-                        window.location.href = `quadrant.html?role=jefe%20operaciones&username=${selectedCoord}`;
-                    }
-                };
-
-                try {
-                    const coordinadores = await window.api.getCoordinadores();
-                    coordinadores.forEach(c => {
-                        const opt = new Option(`${c.nombre} ${c.apellido}`, c.nombre);
-                        if (c.nombre.toLowerCase() === userName.toLowerCase()) {
-                            opt.selected = true;
-                        }
-                        selectCoord.add(opt);
-                    });
-                } catch (e) {
-                    console.error("Error al poblar selector de coordinadores:", e);
-                }
-
-                // Insertarlo al principio del admin-panel
-                adminPanel.insertBefore(selectCoord, adminPanel.firstChild);
-            }
-        }
-
-        // Cargar datos del JSON físico local a localStorage de forma transparente
-        await persistence.syncLoad('quadrant');
-
-        LLISTES.personal = JSON.parse(localStorage.getItem('nyn_personal')) || ["-"];
-        LLISTES.horaris = JSON.parse(localStorage.getItem('nyn_horaris')) || ["-"];
-
-        // Sincronizar LLISTES.parkings desde el archivo maestro aparcamientos.json para el coordinador seleccionado
-        let activeParkings = [];
-        if (userName && userName !== 'Administrador') {
-            try {
-                const allParkings = await window.api.getAparcamientos();
-                const userLower = userName.toLowerCase();
-                activeParkings = allParkings
-                    .filter(ap => ap.coordinadorId === userLower)
-                    .map(ap => ap.nombre);
-            } catch (e) {
-                console.error("Error al obtener aparcamientos desde el catálogo maestro:", e);
-                activeParkings = JSON.parse(localStorage.getItem('nyn_parkings')) || [];
-            }
-        }
-
-        LLISTES.parkings = activeParkings.length > 0 ? activeParkings : ["-"];
-        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
-
-        const mS = document.getElementById('selectMonth'), yS = document.getElementById('selectYear');
-        populateMonthSelector();
-        [2026,2027].forEach(y=> yS.add(new Option(y,y)));
-        const ara = new Date();
-        currentMonth = (currentMonth !== undefined) ? currentMonth : ara.getMonth();
-        currentYear = (currentYear !== undefined) ? currentYear : ara.getFullYear();
-        mS.value = currentMonth; yS.value = currentYear;
-        
-        updateFilterSelects(); changeMonth();
-        setInterval(() => {
-            const araRellotge = new Date();
-            document.getElementById('rellotge').innerText = `(${araRellotge.toLocaleTimeString('ca-ES')})`;
-        }, 1000);
-
-        const lastTime = localStorage.getItem('nyn_last_export_time');
-        const lastExportEl = document.getElementById('lastExport') || document.getElementById('llegendaExport');
-        if (lastTime && lastExportEl) {
-            lastExportEl.innerText = ` | Última exportació: ${lastTime}`;
-        }
-    }
-
-
-
-    function changeMonth() {
-        currentMonth = parseInt(document.getElementById('selectMonth').value);
-        currentYear = parseInt(document.getElementById('selectYear').value);
-        const nextM = (currentMonth + 1) % 12;
-        const exportLabel = i18n.getLanguage() === 'es' ? 'Exportar a' : 'Exportar a';
-        document.getElementById('btnExport').innerText = `🚀 ${exportLabel} ${MESOS[nextM]} `;
-        const displayLabel = i18n.getLanguage() === 'es' ? 'Mes de ' : 'Mes de ';
-        document.getElementById('displayMonth').innerText = `${displayLabel}${MESOS[currentMonth].toUpperCase()} ${currentYear}`;
-        cacheDades = {}; 
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith(`nyn_v12_${currentYear}_${currentMonth}_`)) {
-                cacheDades[key] = JSON.parse(localStorage.getItem(key));
-            }
-        });
-        renderHeader(); renderTable(); updateLockVisuals();
-    }
-
-    function renderHeader() {
-        const hr = document.getElementById('headerRow'); if (!hr) return;
-        const horariLabel = i18n.getLanguage() === 'es' ? 'HORARIO' : 'HORARI';
-        hr.innerHTML = `<th class="col-name">${horariLabel}</th>`;
-        const days = new Date(currentYear, currentMonth + 1, 0).getDate();
-        const NOM_DIES = i18n.getLanguage() === 'es'
-            ? ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"]
-            : ["Diu", "Dill", "Dim", "Dix", "Dij", "Div", "Dis"];
-        for (let d = 1; d <= days; d++) {
-            const dateObj = new Date(currentYear, currentMonth, d);
-            const diaSetmana = NOM_DIES[dateObj.getDay()];
-            const th = document.createElement('th');
-            th.innerHTML = `${diaSetmana} ${d}`;
-            if (dateObj.getDay() === 0 || dateObj.getDay() === 6) th.classList.add('is-weekend-header');
-            if (isFestiu(currentMonth, d, "GENERAL")) th.classList.add('is-festiu-header');
-            hr.appendChild(th);
-        }
-    }
-
-    function renderTable() {
-        const body = document.getElementById('tableBody'); body.innerHTML = "";
-        cellCoords = {}; const days = new Date(currentYear, currentMonth + 1, 0).getDate();
-        const fPark = document.getElementById('filterPark').value;
-        const fWorker = document.getElementById('filterWorker').value;
-        const fHorari = document.getElementById('filterHorari').value;
-        let rowCounter = 0; const fragment = document.createDocumentFragment();
-
-        LLISTES.parkings.sort().forEach((park) => {
-            if (park === "-" || (fPark !== "ALL" && fPark !== park)) return;
-            const isPendent = localStorage.getItem(`nyn_pendent_${currentYear}_${currentMonth}_${park}`) === "true";
-            const safeParkName = park.replace(/\s+/g, '_');
-            let centerRows = [];
-            ["MATÍ", "TARDA", "NIT"].forEach(torn => {
-                if (fHorari.startsWith("T_") && fHorari !== `T_${torn}`) return;
-                let rowMatchesFilter = false; let cellsArr = [];
-                for (let d = 1; d <= days; d++) {
-                    const sId = `nyn_v12_${currentYear}_${currentMonth}_${park}_${torn}_${d}`;
-                    cellCoords[sId] = { r: rowCounter, c: d };
-                    const saved = cacheDades[sId] || {w: "-", h: "-", s: false, n: ""};
-                    const matchW = (fWorker === "ALL" || saved.w === fWorker);
-                    const matchH = (fHorari === "ALL" || fHorari.startsWith("T_") || saved.h === fHorari);
-                    const mesNum = (currentMonth + 1).toString().padStart(2, '0');
-                    const diaNum = d.toString().padStart(2, '0');
-                    const fechaFormateada = `${currentYear}-${mesNum}-${diaNum}`;
-                    
-                    const td = document.createElement('td'); 
-                    td.id = "cell_" + sId;
-                    td.dataset.fecha = fechaFormateada;
-                    td.dataset.parking = park;
-                    td.dataset.sid = sId;
-                    
-
-		if (matchW && matchH) {
-                        rowMatchesFilter = true;
-                        td.style.pointerEvents = "auto"; 
-
-                        // 1. Decorem la cel·la (Festius, Caps de setmana, Notes)
-                        if (isFestiu(currentMonth, d, park)) td.classList.add('is-festiu');
-                        if (new Date(currentYear, currentMonth, d).getDay() % 6 === 0) td.classList.add('is-weekend');
-                        if (saved.n) td.classList.add('has-note');
-
-                        // 2. COMPROVACIÓ DE VACANCES (Amb forçat de color)
-                        if (comprovarSiTeVacances(saved.w, d, currentMonth, currentYear)) {
-                            td.classList.add('is-vacances');
-                            // Forcem el color lila directament per assegurar-nos que es veu
-                            td.style.backgroundColor = "rgba(186, 104, 200, 0.18)"; 
-                        } else {
-                            // Netegem el color si no hi ha vacances (per si es canvia el treballador)
-                            td.style.backgroundColor = ""; 
-                        }
-
-                        const classSub = saved.s ? 'is-substitucio' : '';
-                        const clickHandlerStr = (saved.w === "-" || saved.w === "")
-                            ? `onmousedown="event.preventDefault(); openAssistant('${sId}')"`
-                            : "";
-
-                        // 3. Contingut de la cel·la
-                        td.innerHTML = `<div class="cell-container ${classSub}" style="pointer-events: auto;">
-                            <select class="select-worker" style="pointer-events: auto;" ${clickHandlerStr} onchange="quickSave('${sId}', this, 'w')">
-                                ${LLISTES.personal.map(p => `<option value="${p}" ${saved.w===p?'selected':''}>${p}</option>`).join('')}
-                            </select>
-                            <select class="select-hour" style="pointer-events: auto;" onchange="quickSave('${sId}', this, 'h')">
-                                ${LLISTES.horaris.map(h => `<option value="${h}" ${saved.h===h?'selected':''}>${h}</option>`).join('')}
-                            </select>
-                            <input type="radio" class="sub-radio" style="pointer-events: auto;" ${saved.s?'checked':''} onclick="event.stopPropagation(); quickSave('${sId}', 			this, 's')">
-                        </div>`;
-                    }
-                    
-                    td.onmousedown = (e) => startSelect(sId, e);
-                    td.onmouseenter = () => updateSelection(sId);
-                    td.oncontextmenu = (e) => { e.preventDefault(); openNote(sId); };
-                    td.ondblclick = () => openAssistant(sId);
-                    cellsArr.push(td);
-                }
-                if (rowMatchesFilter) {
-                    const tr = document.createElement('tr');
-                    tr.className = `row-${torn.toLowerCase()} park-row-${safeParkName} ${isPendent ? "parking-section-pendent" : ""}`;
-                    const nameTd = document.createElement('td'); 
-                    nameTd.className = 'col-name'; 
-                    nameTd.innerText = getTranslatedTorn(torn);
-                    tr.appendChild(nameTd); 
-                    cellsArr.forEach(c => tr.appendChild(c));
-                    centerRows.push(tr); 
-                    rowCounter++;
-                }
-            });
-            if (centerRows.length > 0) {
-                const trP = document.createElement('tr');
-                trP.innerHTML = `<td colspan="${days+1}"><div class="center-header">
-                    <input type="checkbox" class="check-marcador" ${isPendent ? 'checked' : ''} onchange="toggleMarcador('${park}', this.checked)">
-                    <div class="center-label">${park}</div>
-                </div></td>`;
-                fragment.appendChild(trP); 
-                centerRows.forEach(r => fragment.appendChild(r));
-            }
-        });
-        body.appendChild(fragment);
-    }
-
-
-
-
-
-   function quickSave(id, el, field) {
-    if (isMonthLocked()) { 
-        const closedMsg = i18n.getLanguage() === 'es' ? "Este mes está cerrado." : "Aquest mes està tancat.";
-        alert(closedMsg); 
-        renderTable(); 
-        return; 
-    }
+<!-- Modal para Gestionar Datos -->
+<div id="deleteModal" x-show="showDeleteModal" x-cloak>
+    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);">GESTIONAR DADES</div>
     
-    // Extraiem dades de l'ID (format: nyn_v12_any_mes_CENTRE_TORN_DIA)
-    const parts = id.split('_');
-    const dia = parts[parts.length - 1];
-    const torn = parts[parts.length - 2];
-    // Agafem el centre (que pot tenir espais com "NN BONANOVA")
-    const centre = parts.slice(4, parts.length - 2).join(" "); 
+    <select x-model="deleteType" style="width:100%; margin-bottom:10px;">
+        <option value="personal">Personal (Llista local)</option>
+        <option value="parkings">Centres (Catàleg mestre)</option>
+        <option value="horaris">Horaris (Llista local)</option>
+    </select>
     
-    pushHistory([id]);
-    let data = cacheDades[id] || {w: "-", h: "-", s: false, n: ""};
+    <div style="display:grid; grid-template-columns: 1fr; gap:5px; margin-top:10px;">
+        <button @click="addNewItem()" class="btn-main">Afegir Nou</button>
+        <button @click="showDeleteModal = false" class="btn-archive" style="margin-top: 10px;">Tancar</button>
+    </div>
+</div>
+
+<!-- Modal para Resumen de Horas -->
+<div id="horesModal" x-show="showHoresModal" x-cloak>
+    <button @click="showHoresModal = false" class="close-btn-top">&times;</button>
+    <div style="font-weight:bold; font-size:14px; margin-bottom:10px; color:var(--nyn-verd);" x-text="'RESUM D\'HORES - ' + ['GENER','FEBRER','MARÇ','ABRIL','MAIG','JUNY','JULIOL','AGOST','SETEMBRE','OCTUBRE','NOVEMBRE','DESEMBRE'][parseInt(filtros.mes)] + ' ' + filtros.anio"></div>
     
-    if (field === 'w') data.w = el.value;
-    if (field === 'h') data.h = el.value;
-    if (field === 's') { 
-        data.s = !data.s; 
-        el.checked = data.s; 
-        el.parentElement.classList.toggle('is-substitucio', data.s); 
-    }
-    
-    localStorage.setItem(id, JSON.stringify(data)); 
-    cacheDades[id] = data;
-
-    // Aquesta frase és la que veuràs al log.html (Tot en una sola fila)
-    const detallAccio = `[${centre} - ${torn} - Dia ${dia}]: ${data.w} | ${data.h}${data.s ? ' (SUB)' : ''}`;
-    
-    // Cridem a la funció de log
-    registrarLog("SISTEMA", detallAccio);
-}
-
-
-
-
-
-    function handleGlobalKey(e) {
-        if (isMonthLocked()) return;
-        if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT") return;
-        if (e.ctrlKey && (e.key === 'z' || e.key === 'Z')) { e.preventDefault(); undo(); }
-        if (e.ctrlKey && (e.key === 'c' || e.key === 'C') && selectedIds.length > 0) {
-            e.preventDefault(); const coords = selectedIds.map(id => cellCoords[id]);
-            const minR = Math.min(...coords.map(c => c.r)), minC = Math.min(...coords.map(c => c.c));
-            const maxR = Math.max(...coords.map(c => c.r)), maxC = Math.max(...coords.map(c => c.c));
-            clipboardData = { rows: maxR - minR + 1, cols: maxC - minC + 1, items: [] };
-            selectedIds.forEach(id => {
-                const pos = cellCoords[id], data = cacheDades[id] || {w: "-", h: "-", s: false};
-                clipboardData.items.push({ relR: pos.r - minR, relC: pos.c - minC, val: {w: data.w, h: data.h, s: data.s} });
-            });
-        }
-        if (e.ctrlKey && (e.key === 'v' || e.key === 'V') && clipboardData && selectedIds.length > 0) {
-            e.preventDefault(); const destCoords = selectedIds.map(id => cellCoords[id]);
-            const minDestR = Math.min(...destCoords.map(c => c.r)), minDestC = Math.min(...destCoords.map(c => c.c));
-            pushHistory(selectedIds);
-            selectedIds.forEach(tId => {
-                const tPos = cellCoords[tId], relR = (tPos.r - minDestR) % clipboardData.rows, relC = (tPos.c - minDestC) % clipboardData.cols;
-                const sourceItem = clipboardData.items.find(i => i.relR === relR && i.relC === relC);
-                if (sourceItem) {
-                    const current = cacheDades[tId] || {n: ""};
-                    const newData = {w: sourceItem.val.w, h: sourceItem.val.h, s: sourceItem.val.s, n: current.n};
-                    localStorage.setItem(tId, JSON.stringify(newData)); cacheDades[tId] = newData;
-                    updateCellVisuals(tId, newData);
-                }
-            });
-        }
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-            if (selectedIds.length === 0) return;
-            pushHistory(selectedIds);
-            selectedIds.forEach(id => {
-                const current = cacheDades[id] || {n: ""};
-                const empty = {w: "-", h: "-", s: false, n: current.n};
-                localStorage.setItem(id, JSON.stringify(empty)); cacheDades[id] = empty;
-                updateCellVisuals(id, empty);
-            });
-        }
-    }
-
-    function pushHistory(ids) {
-        let snapshot = {};
-        ids.forEach(id => { snapshot[id] = JSON.parse(localStorage.getItem(id)) || {w: "-", h: "-", s: false, n: ""}; });
-        historyStack.push(snapshot); if (historyStack.length > 50) historyStack.shift();
-    }
-
-    function undo() {
-        if (historyStack.length === 0) return;
-        const last = historyStack.pop();
-        Object.keys(last).forEach(id => {
-            localStorage.setItem(id, JSON.stringify(last[id])); cacheDades[id] = last[id];
-            updateCellVisuals(id, last[id]);
-        });
-    }
-
-    function updateCellVisuals(id, data) {
-        const td = document.getElementById("cell_" + id); if (!td) return;
-        const sw = td.querySelector('.select-worker'), sh = td.querySelector('.select-hour'), rad = td.querySelector('.sub-radio'), cont = td.querySelector('.cell-container');
-        if(sw) sw.value = data.w || "-"; if(sh) sh.value = data.h || "-";
-        if(rad) rad.checked = data.s || false; if(cont) cont.classList.toggle('is-substitucio', data.s || false);
-        td.classList.toggle('has-note', !!data.n);
-    }
-
-    function startSelect(id, e) {
-     if (e.target.type === "radio") return;
-    isDragging = true; 
-    startId = id; 
-    const cell = document.getElementById("cell_" + id);
-    if (!e.shiftKey) clearSelection(); 
-    updateSelection(id);
-    }
-
-    function updateSelection(currentId) {
-        if (!isDragging) return; clearSelection();
-        const start = cellCoords[startId], end = cellCoords[currentId]; if(!start || !end) return;
-        const minR = Math.min(start.r, end.r), maxR = Math.max(start.r, end.r), minC = Math.min(start.c, end.c), maxC = Math.max(start.c, end.c);
-        for (let r = minR; r <= maxR; r++) {
-            for (let c = minC; c <= maxC; c++) {
-                const id = Object.keys(cellCoords).find(k => cellCoords[k].r === r && cellCoords[k].c === c);
-                if (id) { selectedIds.push(id); document.getElementById("cell_" + id)?.classList.add('selected-cell'); }
-            }
-        }
-    }
-
-    function clearSelection() {
-        selectedIds.forEach(id => document.getElementById("cell_" + id)?.classList.remove('selected-cell'));
-        selectedIds = [];
-    }
-
-    function toggleMarcador(park, checked) {
-        localStorage.setItem(`nyn_pendent_${currentYear}_${currentMonth}_${park}`, checked);
-        const safeName = park.replace(/\s+/g, '_');
-        document.querySelectorAll(`.park-row-${safeName}`).forEach(r => {
-            if (checked) r.classList.add('parking-section-pendent'); else r.classList.remove('parking-section-pendent');
-        });
-    }
-
-    function updateFilterSelects() {
-        const fp = document.getElementById('filterPark'), fw = document.getElementById('filterWorker'), oh = document.getElementById('optHorarisList');
-        fp.innerHTML = '<option value="ALL">Tots els Centres</option>';
-        LLISTES.parkings.sort().forEach(p => { if(p !== "-") fp.add(new Option(p,p)) });
-        fw.innerHTML = '<option value="ALL">Tots els Treballadors</option>';
-        LLISTES.personal.sort().forEach(p => { if(p !== "-") fw.add(new Option(p,p)) });
-        oh.innerHTML = ""; LLISTES.horaris.sort().forEach(h => { if(h !== "-") oh.appendChild(new Option(h,h)) });
-    }
-
-    function resetFilters() {
-        document.getElementById('filterPark').value = "ALL";
-        document.getElementById('filterWorker').value = "ALL";
-        document.getElementById('filterHorari').value = "ALL";
-        renderTable();
-    }
-
-    function isFestiu(m, d, parkName) {
-        const check = `${m}-${d}`; if (COMUNS.includes(check)) return true;
-        const esReus = (parkName || "").toUpperCase().includes("PALLOL") || (parkName || "").toUpperCase().includes("REUS");
-        if (esReus && REUS_ONLY.includes(check)) return true;
-        return !esReus && BCN_ONLY.includes(check);
-    }
-
-    function calcularHoresMes() {
-        const resum = {}; const diesMes = new Date(currentYear, currentMonth + 1, 0).getDate();
-        let horesConveniMes = 0;
-        for (let d = 1; d <= diesMes; d++) {
-            const data = new Date(currentYear, currentMonth, d);
-            if (data.getDay() >= 1 && data.getDay() <= 5 && !isFestiu(currentMonth, d, "GENERAL")) horesConveniMes += 8;
-        }
-        LLISTES.personal.forEach(p => { if (p !== "-") resum[p] = { diurnes: 0, nocturnes: 0, festives: 0, total: 0 }; });
-        
-        Object.keys(cacheDades).forEach(key => {
-            if (!key.startsWith(`nyn_v12_${currentYear}_${currentMonth}_`)) return;
-            const parts = key.split('_'); 
-            const parkNameInKey = parts[4]; 
-            
-            // SOLUCIÓ: Només sumem si el centre existeix a la llista activa
-            if (!LLISTES.parkings.includes(parkNameInKey)) return;
-
-            const cell = cacheDades[key];
-            if (!cell.w || cell.w === "-" || !LLISTES.personal.includes(cell.w)) return;
-            const partsH = cell.h.split('-'); if (partsH.length !== 2) return;
-            let inici = parseInt(partsH[0]), fi = parseInt(partsH[1]);
-            if (fi <= inici) fi += 24; 
-            const diaInt = parseInt(parts.pop());
-            for (let h = inici; h < fi; h++) {
-                let horaReal = h % 24, diaActualCalcul = h >= 24 ? diaInt + 1 : diaInt;
-                let esFestiuRang = (horaReal >= 22) ? isFestiu(currentMonth, diaActualCalcul + 1, parkNameInKey) : isFestiu(currentMonth, diaActualCalcul, parkNameInKey);
-                if (esFestiuRang) resum[cell.w].festives++; else if (horaReal >= 6 && horaReal < 22) resum[cell.w].diurnes++; else resum[cell.w].nocturnes++;
-                resum[cell.w].total++;
-            }
-        });
-        renderitzarResum(resum, horesConveniMes);
-    }
-
-    function renderitzarResum(resum, horesMax) {
-        document.getElementById('titreResum').innerText = `${MESOS[currentMonth].toUpperCase()} ${currentYear}`;
-        const isEs = i18n.getLanguage() === 'es';
-        const labelJornada = isEs ? "Jornada laborable:" : "Jornada laborable:";
-        const labelDiurnas = isEs ? "■ DIURNAS" : "■ DIÜRNES";
-        const labelNocturnas = isEs ? "■ NOCTURNAS" : "■ NOCTURNES";
-        const labelFestivas = isEs ? "■ FESTIVAS" : "■ FESTIVES";
-        document.getElementById('jornadaInfo').innerHTML = `
-            <div><span style="color:#666; font-size:10px;">${labelJornada}</span> <strong style="color:#2e7d32; font-size:12px; margin-left:5px;">${horesMax}h</strong></div>
-            <div style="display:flex; gap:10px; font-size:8px; font-weight:bold;"><span style="color:#4caf50;">${labelDiurnas}</span><span style="color:#9c27b0;">${labelNocturnas}</span><span style="color:#f44336;">${labelFestivas}</span></div>
-        `;
-        const valorsTotals = Object.values(resum).map(r => r.total);
-        const maxVisual = Math.max(horesMax + 20, (valorsTotals.length > 0 ? Math.max(...valorsTotals) : 0) + 10);
-        const pConveni = (horesMax / maxVisual) * 100;
-        const headerTreballador = isEs ? "TRABAJADOR" : "TREBALLADOR";
-        const headerDistribucio = isEs ? "DISTRIBUCIÓN DE HORAS" : "DISTRIBUCIÓ D'HORES";
-        const headerTotal = isEs ? "TOTAL" : "TOTAL";
-        let html = `<table style="width:100%; font-size:9px; border-collapse:collapse; table-layout:fixed;"><thead style="background:#eee;"><tr><th style="border:1px solid #ddd; padding:8px; text-align:left; width:130px;">${headerTreballador}</th><th style="border:1px solid #ddd; padding:8px; text-align:center;">${headerDistribucio}</th><th style="border:1px solid #ddd; padding:8px; background:#e8f5e9; width:60px;">${headerTotal}</th></tr></thead><tbody>`;
-        Object.keys(resum).sort().forEach((p) => {
-            const r = resum[p]; if (r.total === 0) return;
-            const pD = (r.diurnes/maxVisual)*100, pN = (r.nocturnes/maxVisual)*100, pF = (r.festives/maxVisual)*100;
-            html += `<tr><td style="border:1px solid #ddd; padding:4px 8px; font-weight:bold;">${p}</td><td style="border:1px solid #ddd; padding:0 15px; position:relative; background:#fff; height:20px;">
-                <div style="position:absolute; left:${pConveni}%; top:-1px; bottom:-1px; width:2px; background:red; z-index:20;"></div>
-                <div style="width:100%; background:#f5f5f5; height:14px; display:flex; overflow:hidden; border:1px solid #eee;">
-                    <div style="width:${pD}%; background:#4caf50; height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;">${r.diurnes||''}</div>
-                    <div style="width:${pN}%; background:#9c27b0; height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;">${r.nocturnes||''}</div>
-                    <div style="width:${pF}%; background:#f44336; height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;">${r.festives||''}</div>
-                </div></td><td style="border:1px solid #ddd; padding:4px; text-align:center; font-weight:900; color:${r.total>horesMax?'#d32f2f':'#000'}; font-size:12px;">${r.total}h</td></tr>`;
-        });
-        document.getElementById('taulaResumHores').innerHTML = html + `</tbody></table>`;
-        document.getElementById('horesModal').style.display = 'block';
-    }
-
-   
-function exportToNextMonth() {
-    const nMI = (currentMonth + 1) % 12;
-    const nY = (currentMonth === 11) ? currentYear + 1 : currentYear;
-
-    const confirmMsg = i18n.getLanguage() === 'es'
-        ? `⚠️ ¿Deseas exportar la rotación a ${MESOS[nMI]}?\r\nSe respetarán los turnos de fin de semana y no se rellenarán huecos.`
-        : `⚠️ Vols exportar la rotació a ${MESOS[nMI]}?\r\nEs respectaran els torns de cap de setmana i no s'ompliran buits.`;
-    if (confirm(confirmMsg)) {
-        
-        // 1. NETEJA ABSOLUTA DEL MES DE DESTÍ
-        // Primer esborrem tot el febrer per assegurar que no quedi brossa de proves anteriors
-        Object.keys(localStorage).forEach(key => {
-            if (key.startsWith(`nyn_v12_${nY}_${nMI}_`)) {
-                localStorage.removeItem(key);
-            }
-        });
-
-        // 2. RECORREM CADA DIA DEL MES DE DESTÍ (FEBRER)
-        const diesMesSeguent = new Date(nY, nMI + 1, 0).getDate();
-
-        for (let d = 1; d <= diesMesSeguent; d++) {
-            const dObj = new Date(nY, nMI, d);
-            const dS = dObj.getDay(); // 0=Dg, 1=Dl, 2=Dm, 3=Dx, 4=Dj, 5=Dv, 6=Ds
-            
-            LLISTES.parkings.forEach(parkName => {
-                if (parkName === "-") return;
-
-                // Mirem si el dia que volem omplir és vermell o no
-                const esVermellAvui = (dS === 0 || dS === 6 || isFestiu(nMI, d, parkName));
-
-                ["MATÍ", "TARDA", "NIT"].forEach(torn => {
-                    let dadesCopiades = null;
-
-                    // BUSQUEM AL MES ANTERIOR (GENER)
-                    // Busquem un dia que sigui EXACTAMENT el mateix dia de la setmana (ex: Dilluns)
-                    // I que tingui el MATEIX color (laborable o festiu)
-                    for (let diaO = 1; diaO <= 31; diaO++) {
-                        const dObjO = new Date(currentYear, currentMonth, diaO);
-                        if (dObjO.getMonth() !== currentMonth) break;
-
-                        const dSO = dObjO.getDay();
-                        const esVermellO = (dSO === 0 || dSO === 6 || isFestiu(currentMonth, diaO, parkName));
-
-                        // COINCIDÈNCIA ESTRICTA:
-                        // Mateix dia de la setmana (ex: Dilluns a Dilluns) 
-                        // I mateix tipus de dia (Laborable a Laborable / Festiu a Festiu)
-                        if (dS === dSO && esVermellAvui === esVermellO) {
-                            const keyO = `nyn_v12_${currentYear}_${currentMonth}_${parkName}_${torn}_${diaO}`;
-                            const dadesO = localStorage.getItem(keyO);
-                            
-                            if (dadesO) {
-                                const parseO = JSON.parse(dadesO);
-                                // No copiem si és una substitució (groc) o si està buit
-                                if (parseO && parseO.w && parseO.w !== "-" && parseO.s !== true) {
-                                    dadesCopiades = parseO;
-                                    break; // Ja tenim el titular, sortim del bucle de dies
-                                }
-                            }
-                        }
-                    }
-
-                    // 3. SI HEM TROBAT UN TITULAR QUE COMPLEIX EL PERFIL, EL GUARDEM
-                    if (dadesCopiades) {
-                        const idDesti = `nyn_v12_${nY}_${nMI}_${parkName}_${torn}_${d}`;
-                        localStorage.setItem(idDesti, JSON.stringify({
-                            w: dadesCopiades.w,
-                            h: dadesCopiades.h,
-                            s: false,
-                            n: "" // Les notes mai es copien
-                        }));
-                    }
-                    // SI NO HEM TROBAT NINGÚ (Cas Borrell entre setmana), NO FEM RES.
-                    // Com que hem esborrat el mes al principi, la cel·la es queda BUIDA.
-                });
-            });
-        }
-
-        // Forçar actualització de la vista al mes de destí
-        document.getElementById('selectMonth').value = nMI;
-        document.getElementById('selectYear').value = nY;
-        changeMonth();
-        
-        const doneMsg = i18n.getLanguage() === 'es' ? "✅ Exportación realizada" : "✅ Exportació realitzada";
-        alert(doneMsg);
-    }
-}
-
-
-
-
-
-    function isMonthLocked() { return localStorage.getItem(`nyn_locked_${currentYear}_${currentMonth}`) === "true"; }
-  async function toggleLockMonth() {
-    const locked = isMonthLocked();
-    
-    if (!locked) { 
-        // Missatge en tancar
-        const lockConfirmMsg = i18n.getLanguage() === 'es'
-            ? "Si cierras el Mes no podrás editar sus datos hasta que lo vuelvas a abrir y requiere CONTRASEÑA. ¿Deseas continuar?"
-            : "Si tanques el Mes no podràs editar-ne les dades fins que el tornis a obrir i requereix PASSWORD. Vols continuar?";
-        if (confirm(lockConfirmMsg)) { 
-            localStorage.setItem(`nyn_locked_${currentYear}_${currentMonth}`, "true"); 
-            updateLockVisuals(); 
-            
-            // Borrar coberturas requeridas específicas de este mes (coberturas extraordinarias de un día específico)
-            const apiDB = window.parent.dbAPI || window.dbAPI;
-            if (apiDB) {
-                try {
-                    const mesNum = (currentMonth + 1).toString().padStart(2, '0');
-                    const patronFecha = `${currentYear}-${mesNum}-%`;
-                    await apiDB.write('catalogos',
-                        "DELETE FROM coberturas_requeridas WHERE fecha LIKE ? AND dia_semana IS NULL",
-                        [patronFecha]
-                    );
-                    console.log(`[COBERTURAS] Borradas coberturas extraordinarias para el mes ${currentYear}-${mesNum}`);
-                } catch (err) {
-                    console.error("Error al borrar coberturas requeridas temporales:", err);
-                }
-            }
-        } 
-    } 
-    else { 
-        // NOU MISSATGE EN OBRIR:
-        const unlockConfirmMsg = i18n.getLanguage() === 'es'
-            ? "¿Deseas volver a abrir el mes y hacerlo editable? requiere CONTRASEÑA. ¿Deseas continuar?"
-            : "Vols volver a obrir el mes i fer-lo editable? requereix PASSWORD. Vols continuar?";
-        if (confirm(unlockConfirmMsg)) {
-            const codeLabel = i18n.getLanguage() === 'es' ? "Código:" : "Codi:";
-            if (prompt(codeLabel) === "1234") { 
-                localStorage.setItem(`nyn_locked_${currentYear}_${currentMonth}`, "false"); 
-                updateLockVisuals(); 
-            } else {
-                const wrongCodeMsg = i18n.getLanguage() === 'es' ? "Código incorrecto" : "Codi incorrecte";
-                alert(wrongCodeMsg);
-            }
-        }
-    }
-}
-    function updateLockVisuals() {
-        const locked = isMonthLocked(), table = document.getElementById('mainTable'), btn = document.getElementById('btnLockMonth');
-        if (locked) { table.classList.add('month-locked'); btn.innerText = "🔓 Obrir Mes"; btn.className = "btn-main btn-unlock"; }
-        else { table.classList.remove('month-locked'); btn.innerText = "🔒 Tancar Mes"; btn.className = "btn-main btn-lock"; }
-    }
-
-
-// 1. FUNCIÓ RESET (Amb seguretat i LOG)        const dangerMsg1 = i18n.getLanguage() === 'es'
-            ? "⚠️ PELIGRO: Se borrarán todos los datos del mes y por lo tanto perderás todo el trabajo realizado. ¿Estás seguro?"
-            : "⚠️ PERILL: S'esborraran totes les dades del mes i per tant perdràs tota la feina feta. N'estàs segur?";
-        const dangerMsg2 = i18n.getLanguage() === 'es'
-            ? "⚠️ ¿Estás totalmente convencido de querer borrar todos los datos de este mes? Esta acción no se puede deshacer."
-            : "⚠️ Estàs totalment convençut de voler esborrar totes les dades d'aquest mes? Aquesta acció no es pot desfer.";
-        if(confirm(dangerMsg1)) { 
-            if(confirm(dangerMsg2)) {
-                const userPromptMsg = i18n.getLanguage() === 'es'
-                    ? "Por seguridad y registro, introduce tu nombre (ALBERT / LAURA):"
-                    : "Per seguretat i registre, introdueix el teu nom (ALBERT / LAURA):";
-                const usuari = prompt(userPromptMsg);
-                
-                if (usuari && (usuari.toUpperCase() === "ALBERT" || usuari.toUpperCase() === "LAURA")) {
-                    const prefix = `nyn_v12_${currentYear}_${currentMonth}`;
-                    
-                    Object.keys(localStorage).forEach(k => { 
-                        if(k.startsWith(prefix)) localStorage.removeItem(k);
-                    });
-
-                    // REGISTREM L'ACCIÓ
-                    const logMsg = i18n.getLanguage() === 'es'
-                        ? `⚠️ HA BORRADO TODO EL CUADRANTE de ${mesNom} ${currentYear}.`
-                        : `⚠️ HA ESBORRAT TOT EL QUADRANT de ${mesNom} ${currentYear}.`;
-                    registrarLog(usuari, logMsg);
-
-                    const doneMsg = i18n.getLanguage() === 'es' ? "Datos borrados correctamente." : "Dades esborrades correctament.";
-                    alert(doneMsg);
-                    changeMonth(); 
-                } else {
-                    const cancelMsg = i18n.getLanguage() === 'es'
-                        ? "Acción cancelada: Nombre de usuario no válido."
-                        : "Acció cancel·lada: Nom d'usuari no vàlid.";
-                    alert(cancelMsg);
-                }
-            }
-        } angeMonth(); 
-                } else {
-                    alert("Acció cancel·lada: Nom d'usuari no vàlid.");
-                }
-            }
-        } 
-    }
-
-    // 2. FUNCIÓ NOTES (Normal)
-    function openNote(id) { 
-        document.getElementById('currentNoteId').value = id; 
-        document.getElementById('noteText').value = (cacheDades[id] || {}).n || ""; 
-        document.getElementById('noteModal').style.display = 'block'; 
-    }
-
-    // 3. FUNCIÓ GUARDAR NOTA (Opcional: també registra qui posa la nota)
-
-function saveNote() {
-    const id = document.getElementById('currentNoteId').value; 
-    
-    // 1. EXTRAIEM LA INFO DE LA CEL·LA PER AL LOG
-    const parts = id.split('_');
-    const dia = parts[parts.length - 1];
-    const torn = parts[parts.length - 2];
-    const centre = parts[4];
-
-    let data = cacheDades[id] || {w: "-", h: "-", s: false, n: ""};
-    const textNota = document.getElementById('noteText').value;
-    
-    // 2. GUARDEM LA NOTA
-    data.n = textNota; 
-    localStorage.setItem(id, JSON.stringify(data)); 
-    cacheDades[id] = data; 
-    updateCellVisuals(id, data); 
-    
-    // 3. ENVIEM AL LOG EL DETALL
-    // Indiquem el dia, el torn i el centre perquè el log sigui precís
-    const accioNota = `Nota editada [Dia ${dia}, ${torn}, ${centre}]: "${textNota}"`;
-    
-    // Cridem a registrarLog (com que ja tens el fitxer "quadrant.html" dins la funció, sortirà perfecte)
-    registrarLog("SISTEMA-QUADRANT", accioNota);
-    
-    document.getElementById('noteModal').style.display = 'none';
-}
-
-
-    function openDeleteModal() { document.getElementById('deleteModal').style.display = 'block'; updateDeleteOptions(); }
-    function updateDeleteOptions() {
-        const type = document.getElementById('deleteType').value, select = document.getElementById('deleteItem'); select.innerHTML = "";
-        LLISTES[type].forEach(item => { if(item !== "-") select.add(new Option(item, item)) }); document.getElementById('editInput').value = select.value || "";
-    }
-    async function addNewItem() {
-        const type = document.getElementById('deleteType').value;
-        if (type === 'parkings') {
-            const nou = prompt(`Nou centre:`);
-            if (nou && nou.trim()) {
-                const nouTrim = nou.trim().toUpperCase();
-                if (LLISTES.parkings.includes(nouTrim)) {
-                    alert("Aquest centre ja existeix en el teu llistat.");
-                    return;
-                }
-                try {
-                    const allParkings = await window.api.getAparcamientos();
-                    const existing = allParkings.find(ap => ap.nombre.toUpperCase() === nouTrim);
-                    if (existing) {
-                        existing.coordinadorId = currentCoordinator.toLowerCase();
-                    } else {
-                        allParkings.push({
-                            nombre: nouTrim,
-                            coordinadorId: currentCoordinator.toLowerCase()
-                        });
-                    }
-                    const res = await window.api.saveAparcamientos(allParkings);
-                    if (res && res.success) {
-                        LLISTES.parkings.push(nouTrim);
-                        LLISTES.parkings.sort();
-                        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
-                        updateDeleteOptions();
-                        updateFilterSelects();
-                        renderTable();
-                        alert("✅ Centre afegit correctament.");
-                    } else {
-                        alert("Error al desar el centre en el catàleg mestre: " + (res?.error || "desconegut"));
-                    }
-                } catch (e) {
-                    console.error("Error al afegir aparcament:", e);
-                    alert("Error al desar el centre en el catàleg mestre.");
-                }
-            }
-        } else {
-            const nou = prompt(`Nou element:`);
-            if (nou?.trim()) {
-                LLISTES[type].push(nou.trim());
-                LLISTES[type].sort();
-                localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type]));
-                updateDeleteOptions();
-                updateFilterSelects();
-                renderTable();
-            }
-        }
-    }
-    async function saveEditItem() {
-        const type = document.getElementById('deleteType').value;
-        const vell = document.getElementById('deleteItem').value;
-        const nou = document.getElementById('editInput').value.trim();
-        if (nou && vell && vell !== "-" && vell !== nou) {
-            if (type === 'parkings') {
-                const nouUpper = nou.toUpperCase();
-                const vellUpper = vell.toUpperCase();
-                try {
-                    const res = await window.api.renameAparcamiento(vell, nouUpper);
-                    if (res && res.success) {
-                        LLISTES.parkings = LLISTES.parkings.map(i => i.toUpperCase() === vellUpper ? nouUpper : i);
-                        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
-
-                        // Migrar totes les claus de cel·les i configuració en localStorage per a aquest parking
-                        const keysToMigrate = [];
-                        for (let i = 0; i < localStorage.length; i++) {
-                            const key = localStorage.key(i);
-                            if (key.startsWith('nyn_v12_')) {
-                                const parts = key.split('_');
-                                if (parts.length >= 6) {
-                                    const dia = parts[parts.length - 1];
-                                    const torn = parts[parts.length - 2];
-                                    const park = parts.slice(4, parts.length - 2).join('_');
-                                    if (park.toUpperCase() === vellUpper) {
-                                        keysToMigrate.push({
-                                            oldKey: key,
-                                            newKey: `nyn_v12_${parts[2]}_${parts[3]}_${nouUpper}_${torn}_${dia}`
-                                        });
-                                    }
-                                }
-                            }
-                            if (key.startsWith('nyn_pendent_')) {
-                                const parts = key.split('_');
-                                if (parts.length >= 5) {
-                                    const park = parts.slice(4).join('_');
-                                    if (park.toUpperCase() === vellUpper) {
-                                        keysToMigrate.push({
-                                            oldKey: key,
-                                            newKey: `nyn_pendent_${parts[2]}_${parts[3]}_${nouUpper}`
-                                        });
-                                    }
-                                }
-                            }
-                        }
-
-                        keysToMigrate.forEach(({ oldKey, newKey }) => {
-                            const val = localStorage.getItem(oldKey);
-                            localStorage.setItem(newKey, val);
-                            localStorage.removeItem(oldKey);
-                        });
-
-                        updateDeleteOptions();
-                        updateFilterSelects();
-                        changeMonth();
-                        alert("✅ Centre modificat correctament en tota la base de dades.");
-                    } else {
-                        alert("Error al renombrar el centre en la base de dades: " + (res?.error || "desconegut"));
-                    }
-                } catch (e) {
-                    console.error("Error al renombrar aparcament:", e);
-                    alert("Error al modificar el centre.");
-                }
-            } else {
-                LLISTES[type] = LLISTES[type].map(i => i === vell ? nou : i);
-                localStorage.setItem('nyn_' + type, JSON.stringify(LLISTES[type]));
-                if (type === 'personal') {
-                    Object.keys(localStorage).forEach(key => {
-                        if (key.startsWith('nyn_v12_')) {
-                            let d = JSON.parse(localStorage.getItem(key));
-                            if (d && d.w === vell) {
-                                d.w = nou;
-                                localStorage.setItem(key, JSON.stringify(d));
-                                cacheDades[key] = d;
-                            }
-                        }
-                    });
-                }
-                updateDeleteOptions();
-                updateFilterSelects();
-                renderTable();
-            }
-        }
-    }
-    async function confirmDelete() {
-        const type = document.getElementById('deleteType').value;
-        const val = document.getElementById('deleteItem').value;
-        if (val && val !== "-" && confirm(`Eliminar "${val}"?`)) {
-            if (type === 'parkings') {
-                try {
-                    const allParkings = await window.api.getAparcamientos();
-                    const updated = allParkings.filter(ap => ap.nombre.toUpperCase() !== val.toUpperCase());
-                    const res = await window.api.saveAparcamientos(updated);
-                    if (res && res.success) {
-                        LLISTES.parkings = LLISTES.parkings.filter(i => i.toUpperCase() !== val.toUpperCase());
-                        localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
-                        updateDeleteOptions();
-                        updateFilterSelects();
-                        renderTable();
-                        alert("✅ Centre eliminat del catàleg mestre.");
-                    } else {
-                        alert("Error al eliminar el centre del catàleg mestre: " + (res?.error || "desconegut"));
-                    }
-                } catch (e) {
-                    console.error("Error al eliminar aparcament:", e);
-                    alert("Error al eliminar el centre.");
-                }
-            } else {
-                LLISTES[type] = LLISTES[type].filter(i => i !== val);
-                localStorage.setItem('nyn_'+type, JSON.stringify(LLISTES[type]));
-                updateDeleteOptions();
-                updateFilterSelects();
-                renderTable();
-            }
-        }
-    }
- 
-
-
-function exportarExcel() {
-    registrarLog("QUADRANT: Generat fitxer Excel");
-    const taulaOriginal = document.getElementById("mainTable");
-    const clonTaula = taulaOriginal.cloneNode(true);
-    
-    clonTaula.querySelectorAll('tr').forEach(tr => {
-        // 1. Files de Centre (Verdes)
-        const headerCentre = tr.querySelector('.center-header');
-        if (headerCentre) {
-            tr.innerHTML = `<td colspan="32" style="background-color:#2e7d32; color:white; font-weight:bold; text-align:center; height:20px; font-size:9pt; border:1px solid #000;">${headerCentre.innerText.trim()}</td>`;
-            return;
-        }
-
-        tr.querySelectorAll('td').forEach(td => {
-            // Columna de torn (MATÍ/TARDA/NIT)
-            if (td.classList.contains('col-name')) {
-                td.style.width = "45px";
-                td.style.fontSize = "7pt";
-                return;
-            }
-            
-            const worker = td.querySelector('.select-worker')?.value || "-";
-            const hour = td.querySelector('.select-hour')?.value || "-";
-            
-            // 2. Estructura Vertical Equilibrada (45px d'ample)
-            td.style.width = "45px"; 
-            td.innerHTML = `
-                <div style="font-weight:bold; font-size:7.5pt; line-height:1; white-space:normal; width:28px; word-wrap:break-word;">${worker}</div>
-                <div style="font-size:6.5pt; margin-top:2px; color:#444; border-top:1px solid #eee;">${hour}</div>
-            `;
-            td.querySelectorAll('input, button, select').forEach(el => el.remove());
-        });
-    });
-
-    const css = `
-        <style>
-
- table { 
-    width: 100% !important; 
-    table-layout: fixed !important; /* Això obliga a que totes les columnes mesurin el mateix */
-    border-collapse: collapse !important; 
-    min-width: 1400px; /* <--- Augmentem el valor per assegurar espai per als 31 dies */
-    font-family: Arial, sans-serif;
-}
-            th, td { border: 1px solid #ced4da; text-align: center; padding: 2px; overflow: hidden; }
-            
-            /* DIES DEL MES: 28px permet veure els 31 dies en Landscape sense tallar */
-            th { 
-    background-color: #454d55; 
-    color: white; 
-    font-size: 7.5pt; 
-    width: 28px; 
-    height: 18px; 
-    /* AFEGEIX AIXÒ */
-    position: sticky;
-    top: 0;
-    z-index: 10;
-}
-            
-           
-
-            /* Colors idèntics a la teva web */
-            .is-festiu { background-color: #ffcccc !important; }
-            .is-weekend { background-color: #ebebeb !important; }
-           
-            
-            .row-mati { background-color: #fffef0; } 
-            .row-tarda { background-color: #f6faf2; } 
-            .row-nit { background-color: #fcfcfc; }
-        </style>
-    `;
-
-    const contingut = `
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-        <head>
-            <meta charset="UTF-8">
-            ${css}
-            </head>
-        <body>
-            <h2 style="text-align:center; color:#008d36; font-family:Arial; font-size:11pt; margin-bottom:10px;">QUADRANT ${MESOS[currentMonth].toUpperCase()} ${currentYear}</h2>
-            <table>${clonTaula.innerHTML}</table>
-        </body>
-        </html>
-    `;
-
-    const blob = new Blob([contingut], { type: "application/vnd.ms-excel" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `QUADRANT_${MESOS[currentMonth].toUpperCase()}_${currentYear}.xls`;
-    a.click();
-}
-
-
-function exportarBackupJSON() {
-    // 1. IDENTIFIQUEM L'AUTOR AUTOMÀTICAMENT
-    const userSession = sessionStorage.getItem('userName') || "";
-    let usuari = userSession.toUpperCase() || "SISTEMA";
-
-    let dadesExportar = {};
-    
-    // 2. Recollim les dades del localStorage
-    for (let i = 0; i < localStorage.length; i++) {
-        let clau = localStorage.key(i);
-        if (clau.startsWith('nyn_')) {
-           dadesExportar[clau] = localStorage.getItem(clau);
-        }
-    }
-
-    // 3. GENEREM LA DATA I HORA
-    const ara = new Date();
-    const dataFormatada = ara.toLocaleString('ca-ES', { 
-        day: '2-digit', month: '2-digit', year: 'numeric', 
-        hour: '2-digit', minute: '2-digit' 
-    });
-    
-    // 4. AFEGIM LES METADADES AL FITXER
-    dadesExportar["METADATA_EXPORT_DATA"] = dataFormatada;
-    dadesExportar["METADATA_EXPORT_AUTOR"] = usuari;
-
-    // 5. GENEREM EL FITXER
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dadesExportar));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", `quadrant_${usuari}.json`);
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-
-    // 6. REGISTREM I ACTUALITZEM LLEGENDA USANT LA TEVA FUNCIÓ
-    // --- CANVI NOMÉS DE LES CLAUS PER A QUADRANT ---
-localStorage.setItem('nyn_quadrant_export_data', dataFormatada);
-localStorage.setItem('nyn_quadrant_export_autor', usuari);
-localStorage.setItem('nyn_quadrant_last_time', dataFormatada);
-
-    if (typeof registrarLog === 'function') {
-        registrarLog(usuari, "Ha generat una EXPORTACIÓ GENERAL (Backup JSON)");
-    }
-
-    // CRIDEM LA TEVA FUNCIÓ PERQUÈ PINTI EL NOM I LA DATA
-    if (typeof refrescarLlegendaGlobal === 'function') {
-        refrescarLlegendaGlobal();
-    }
-    
-    alert(`✅ Backup de ${usuari} generat correctament.\nData: ${dataFormatada}`);
-}
-
-
-
-
-let dadesPendentImportacio = null;
-let metadataPendentImportacio = null;
-
-function trobarCoincidenciaAproximada(nomInput, llista) {
-    if (!nomInput) return "";
-    const cleanStr = (s) => s.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9]/g, "").trim();
-    const cleanInput = cleanStr(nomInput);
-    
-    let millorCoincidencia = "";
-    let maxSimilarity = 0;
-    
-    llista.forEach(item => {
-        const cleanItem = cleanStr(item);
-        if (cleanItem === cleanInput) {
-            millorCoincidencia = item;
-            maxSimilarity = 1.0;
-            return;
-        }
-        if (cleanItem.includes(cleanInput) || cleanInput.includes(cleanItem)) {
-            const sim = Math.min(cleanItem.length, cleanInput.length) / Math.max(cleanItem.length, cleanInput.length);
-            if (sim > maxSimilarity) {
-                maxSimilarity = sim;
-                millorCoincidencia = item;
-            }
-        }
-    });
-    
-    return maxSimilarity > 0.4 ? millorCoincidencia : "";
-}
-
-function importarBackupJSON(input) {
-    const file = input.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const dades = JSON.parse(e.target.result);
-            
-            // Analizar discrepancias de centros y trabajadores
-            const centresImportats = new Set();
-            const treballadorsImportats = new Set();
-            
-            Object.keys(dades).forEach(key => {
-                if (key.startsWith('nyn_v12_') || key.startsWith('nyn_v9_')) {
-                    const parts = key.split('_');
-                    if (parts.length >= 6) {
-                        const park = parts.slice(4, parts.length - 2).join(' ');
-                        if (park && park !== "-") {
-                            centresImportats.add(park);
-                        }
-                    }
-                    let cellVal;
-                    try {
-                        cellVal = typeof dades[key] === 'string' ? JSON.parse(dades[key]) : dades[key];
-                    } catch(e) {
-                        cellVal = null;
-                    }
-                    if (cellVal && cellVal.w && cellVal.w !== "-") {
-                        treballadorsImportats.add(cellVal.w);
-                    }
-                }
-            });
-            
-            // Comparar con el catálogo local actual
-            const discrepanciesCentres = [];
-            centresImportats.forEach(c => {
-                if (!LLISTES.parkings.includes(c)) {
-                    discrepanciesCentres.push(c);
-                }
-            });
-            
-            const discrepanciesTreballadors = [];
-            treballadorsImportats.forEach(t => {
-                if (!LLISTES.personal.includes(t)) {
-                    discrepanciesTreballadors.push(t);
-                }
-            });
-            
-            // Si hay discrepancias, abrir modal de mapeo
-            if (discrepanciesCentres.length > 0 || discrepanciesTreballadors.length > 0) {
-                dadesPendentImportacio = dades;
-                metadataPendentImportacio = {
-                    data: dades.METADATA_EXPORT_DATA || "",
-                    autor: dades.METADATA_EXPORT_AUTOR || ""
-                };
-                
-                mostrarModalMapeig(discrepanciesCentres, discrepanciesTreballadors);
-            } else {
-                // Importación directa clásica
-                await aplicarImportacioDades(dades);
-            }
-        } catch (err) {
-            console.error("Error al carregar:", err);
-            alert("❌ El fitxer no és un backup vàlid o no s'ha pogut parsejar.");
-        }
-    };
-    reader.readAsText(file);
-}
-
-function mostrarModalMapeig(discrepanciesCentres, discrepanciesTreballadors) {
-    const listCentres = document.getElementById('mappingParkingsList');
-    const listWorkers = document.getElementById('mappingWorkersList');
-    const isEs = i18n.getLanguage() === 'es';
-    
-    // Centros
-    if (discrepanciesCentres.length > 0) {
-        document.getElementById('mappingParkingsSection').style.display = 'block';
-        listCentres.innerHTML = discrepanciesCentres.map((c, idx) => {
-            const coincidencia = trobarCoincidenciaAproximada(c, LLISTES.parkings);
-            const createText = isEs ? `➕ [Crear nuevo centro: "${c}"]` : `➕ [Crear nou centre: "${c}"]`;
-            const ignoreText = isEs ? `❌ [Ignorar datos de este centro]` : `❌ [Ignorar dades d'aquest centre]`;
-            const associateText = isEs ? `Asociar a:` : `Associar a:`;
-            return `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; padding: 6px; background: #fafafa; border-radius: 4px; border: 1px solid #eee; margin-bottom: 4px;">
-                    <span style="font-weight: 600; color: #334155; word-break: break-all;">${c}</span>
-                    <select class="map-centre-select" data-original="${c}" style="width: 250px; font-size: 11px; height: 26px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                        <option value="_CREATE_NEW_">${createText}</option>
-                        <option value="_IGNORE_">${ignoreText}</option>
-                        ${LLISTES.parkings.filter(p => p !== "-").map(p => `
-                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>${associateText} ${p}</option>
-                        `).join('')}
-                    </select>
-                </div>
-            `;
-        }).join('');
-    } else {
-        document.getElementById('mappingParkingsSection').style.display = 'none';
-        listCentres.innerHTML = '';
-    }
-    
-    // Trabajadores
-    if (discrepanciesTreballadors.length > 0) {
-        document.getElementById('mappingWorkersSection').style.display = 'block';
-        listWorkers.innerHTML = discrepanciesTreballadors.map((t, idx) => {
-            const coincidencia = trobarCoincidenciaAproximada(t, LLISTES.personal);
-            const createText = isEs ? `➕ [Crear nuevo trabajador: "${t}"]` : `➕ [Crear nou treballador: "${t}"]`;
-            const ignoreText = isEs ? `❌ [Ignorar datos de este trabajador]` : `❌ [Ignorar dades d'aquest treballador]`;
-            const associateText = isEs ? `Asociar a:` : `Associar a:`;
-            return `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: 11px; padding: 6px; background: #fafafa; border-radius: 4px; border: 1px solid #eee; margin-bottom: 4px;">
-                    <span style="font-weight: 600; color: #334155; word-break: break-all;">${t}</span>
-                    <select class="map-treballador-select" data-original="${t}" style="width: 250px; font-size: 11px; height: 26px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                        <option value="_CREATE_NEW_">${createText}</option>
-                        <option value="_IGNORE_">${ignoreText}</option>
-                        ${LLISTES.personal.filter(p => p !== "-").map(p => `
-                            <option value="${p}" ${p === coincidencia ? 'selected' : ''}>${associateText} ${p}</option>
-                        `).join('')}
-                    </select>
-                </div>
-            `;
-        }).join('');
-    } else {
-        document.getElementById('mappingWorkersSection').style.display = 'none';
-        listWorkers.innerHTML = '';
-    }
-    
-    document.getElementById('importMappingModal').style.display = 'block';
-}
-
-function cancelarImportacioMapejada() {
-    document.getElementById('importMappingModal').style.display = 'none';
-    dadesPendentImportacio = null;
-    metadataPendentImportacio = null;
-    document.getElementById('importFile').value = '';
-}
-
-async function confirmarImportacioMapejada() {
-    if (!dadesPendentImportacio) return;
-    
-    const btn = document.getElementById('btnConfirmarImport');
-    btn.disabled = true;
-    btn.innerText = 'Processant...';
-    
-    try {
-        const mapaCentres = {};
-        const mapaTreballadors = {};
-        
-        // 1. Processar Mapeig de Centres
-        const selectsCentres = document.querySelectorAll('.map-centre-select');
-        let allParkings = [];
-        try {
-            allParkings = await window.api.getAparcamientos();
-        } catch(e) {
-            allParkings = [];
-        }
-        
-        let catalogChanged = false;
-        
-        for (const sel of selectsCentres) {
-            const original = sel.getAttribute('data-original');
-            const desti = sel.value;
-            
-            if (desti === '_CREATE_NEW_') {
-                const nouUpper = original.toUpperCase().trim();
-                if (!allParkings.some(ap => ap.nombre.toUpperCase() === nouUpper)) {
-                    allParkings.push({
-                        nombre: nouUpper,
-                        coordinadorId: currentCoordinator.toLowerCase()
-                    });
-                    catalogChanged = true;
-                }
-                if (!LLISTES.parkings.includes(nouUpper)) {
-                    LLISTES.parkings.push(nouUpper);
-                }
-                mapaCentres[original] = nouUpper;
-            } else {
-                mapaCentres[original] = desti;
-            }
-        }
-        
-        if (catalogChanged) {
-            await window.api.saveAparcamientos(allParkings);
-            LLISTES.parkings.sort();
-            localStorage.setItem('nyn_parkings', JSON.stringify(LLISTES.parkings));
-        }
-        
-        // 2. Processar Mapeig de Treballadors
-        const selectsTreballadors = document.querySelectorAll('.map-treballador-select');
-        let personalChanged = false;
-        
-        for (const sel of selectsTreballadors) {
-            const original = sel.getAttribute('data-original');
-            const desti = sel.value;
-            
-            if (desti === '_CREATE_NEW_') {
-                const nouTrim = original.trim();
-                if (!LLISTES.personal.includes(nouTrim)) {
-                    LLISTES.personal.push(nouTrim);
-                    personalChanged = true;
-                }
-                mapaTreballadors[original] = nouTrim;
-            } else {
-                mapaTreballadors[original] = desti;
-            }
-        }
-        
-        if (personalChanged) {
-            LLISTES.personal.sort();
-            localStorage.setItem('nyn_personal', JSON.stringify(LLISTES.personal));
-        }
-        
-        // 3. Transformar i guardar les dades
-        const dadesTransformades = {};
-        
-        Object.keys(dadesPendentImportacio).forEach(clau => {
-            if (clau.startsWith('nyn_v12_') || clau.startsWith('nyn_v9_')) {
-                const parts = clau.split('_');
-                if (parts.length >= 6) {
-                    const any = parts[2];
-                    const mes = parts[3];
-                    const torn = parts[parts.length - 2];
-                    const dia = parts[parts.length - 1];
-                    const centreOriginal = parts.slice(4, parts.length - 2).join(' ');
-                    
-                    const centreMapejat = mapaCentres[centreOriginal] !== undefined ? mapaCentres[centreOriginal] : centreOriginal;
-                    
-                    if (centreMapejat !== '_IGNORE_') {
-                        let cellVal;
-                        try {
-                            cellVal = typeof dadesPendentImportacio[clau] === 'string' 
-                                ? JSON.parse(dadesPendentImportacio[clau]) 
-                                : dadesPendentImportacio[clau];
-                        } catch(e) {
-                            cellVal = null;
-                        }
-                        
-                        if (cellVal) {
-                            const workerOriginal = cellVal.w;
-                            const workerMapejat = mapaTreballadors[workerOriginal] !== undefined ? mapaTreballadors[workerOriginal] : workerOriginal;
-                            
-                            if (workerMapejat === '_IGNORE_') {
-                                cellVal.w = "-";
-                            } else {
-                                cellVal.w = workerMapejat;
-                            }
-                            
-                            const novaClau = `nyn_v12_${any}_${mes}_${centreMapejat}_${torn}_${dia}`;
-                            dadesTransformades[novaClau] = JSON.stringify(cellVal);
-                        }
-                    }
-                }
-            } else if (clau.startsWith('nyn_') && clau !== 'nyn_personal' && clau !== 'nyn_parkings') {
-                dadesTransformades[clau] = dadesPendentImportacio[clau];
-            }
-        });
-        
-        if (metadataPendentImportacio.data) {
-            localStorage.setItem('nyn_ultima_export_data', metadataPendentImportacio.data);
-            localStorage.setItem('nyn_ultima_export_autor', metadataPendentImportacio.autor);
-            localStorage.setItem('nyn_last_export_time', metadataPendentImportacio.data);
-        }
-        
-        Object.keys(dadesTransformades).forEach(clau => {
-            localStorage.setItem(clau, dadesTransformades[clau]);
-        });
-        
-        await persistence.syncSave();
-        
-        const successMsg = i18n.getLanguage() === 'es' ? "✅ ¡Backup importado y mapeado correctamente!" : "✅ Backup importat i mapejat correctament!";
-        alert(successMsg);
-        location.reload();
-        
-    } catch(err) {
-        console.error("Error en la importació mapejada:", err);
-        const errorMsg = i18n.getLanguage() === 'es' ? "❌ Se ha producido un error al procesar la importación mapeada." : "❌ S'ha produït un error al processar l'importació mapejada.";
-        alert(errorMsg);
-    } finally {
-        btn.disabled = false;
-        btn.innerText = 'Confirmar Importació';
-    }
-}
-
-async function aplicarImportacioDades(dades) {
-    if (dades.METADATA_EXPORT_DATA) {
-        localStorage.setItem('nyn_ultima_export_data', dades.METADATA_EXPORT_DATA);
-        localStorage.setItem('nyn_ultima_export_autor', dades.METADATA_EXPORT_AUTOR);
-        localStorage.setItem('nyn_last_export_time', dades.METADATA_EXPORT_DATA);
-    }
-
-    Object.keys(dades).forEach(clau => {
-        if (clau.startsWith('nyn_')) {
-            localStorage.setItem(clau, dades[clau]);
-        }
-    });
-
-    await persistence.syncSave();
-    alert("✅ Backup restaurat correctament!");
-    location.reload();
-}
-
-
-
-function registrarLog(usuari, accio) {
-    const ara = new Date();
-    const dataFormatada = ara.toLocaleString('ca-ES', { 
-        day: '2-digit', month: '2-digit', year: 'numeric', 
-        hour: '2-digit', minute: '2-digit', second: '2-digit' 
-    });
-
-    const nouLog = {
-        data: dataFormatada,
-        usuari: usuari.toUpperCase(),
-        fitxer: "quadrant.html", 
-        accio: accio
-    };
-
-    let logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
-    logs.unshift(nouLog);
-    if (logs.length > 500) logs.pop(); // Aquesta és millor perquè guarda fins a 500
-    localStorage.setItem('nyn_logs', JSON.stringify(logs));
-}
-
-function comprovarSiTeVacances(nomTreballador, dia, mes, any) {
-    if (!nomTreballador || nomTreballador === "-" || nomTreballador === "") return false;
-
-    // IMPORTANT: Mira que la clau del localStorage sigui la mateixa que uses per importar
-    // Si la importació de vacances la guardes a 'nyn_vacances', deixa-ho així:
-    const dadesRaw = localStorage.getItem('nyn_vacances'); 
-    if (!dadesRaw) return false;
-
-    let llistaVacances = [];
-    try {
-        llistaVacances = JSON.parse(dadesRaw);
-    } catch(e) { return false; }
-    
-    // Creem la data de la cel·la que estem avaluant
-    const dataCel = new Date(any, mes, dia);
-    dataCel.setHours(0, 0, 0, 0);
-
-    const netejar = (t) => t ? t.toString().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().trim() : "";
-    const nomNetQuadrant = netejar(nomTreballador);
-
-    // Busquem el treballador a la llista
-    return llistaVacances.some(v => {
-        if (netejar(v.n) !== nomNetQuadrant) return false;
-        
-        // REVISAR LES DUES POSSIBLES COLUMNES (p i p2)
-        const periodes = [];
-        if (v.p && v.p !== "" && v.p !== "PENDENTS") periodes.push(v.p);
-        if (v.p2 && v.p2 !== "" && v.p2 !== "PENDENTS") periodes.push(v.p2);
-
-        // Per a cada període (columna), comprovem si la data hi cau dins
-        return periodes.some(textPeriode => {
-            // Si el text conté " to ", és un rang. Si no, és un dia solt.
-            let dInici, dFi;
-            
-            if (textPeriode.includes(" to ")) {
-                const parts = textPeriode.split(" to ");
-                dInici = parsearDataCustom(parts[0]);
-                dFi = parsearDataCustom(parts[1]);
-            } else {
-                dInici = parsearDataCustom(textPeriode);
-                dFi = new Date(dInici);
-            }
-
-            // Verificació final: la data de la cel·la està entre l'inici i el fi d'AQUEST període?
-            return (dataCel >= dInici && dataCel <= dFi);
-        });
-    });
-}
-
-
-
-
-// Funció auxiliar imprescindible
-function parsearDataCustom(str) {
-    const p = str.trim().split('/'); // "17/03/2026"
-    const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
-
-
-
-
-// Funció vital per transformar "17/03/2026" en objecte Date
-function crearData(textData) {
-    const p = textData.trim().split('/'); // Divideix per la barra /
-    // p[0]=dia, p[1]=mes, p[2]=any. Restem 1 al mes perquè Gener és 0.
-    const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
-    d.setHours(0, 0, 0, 0);
-    return d;
-}
-
-
-
-
-// Funció auxiliar per convertir "17/03/2026" en una Data real de JS
-function parsearData(str) {
-    const parts = str.split('/');
-    // Atenció: mes - 1 perquè a JS els mesos van de 0 a 11
-    return new Date(parseInt(parts[2]), parseInt(parts[1]) - 1, parseInt(parts[0]), 0, 0, 0);
-}
-
-function importarVacances(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async function(e) {
-        try {
-            const jsonComplet = JSON.parse(e.target.result);
-            
-            // Segons el teu JSON, la llista de treballadors està a jsonComplet.dades
-            const llistaAEmmagatzemar = jsonComplet.dades || [];
-
-            if (llistaAEmmagatzemar.length === 0) {
-                alert("⚠️ Atenció: No s'han trobat dades a la clau 'dades' del fitxer.");
-                return;
-            }
-
-            // Guardem la llista de treballadors (amb els seus camps n, p, p2...)
-            localStorage.setItem('nyn_vacances', JSON.stringify(llistaAEmmagatzemar));
-            
-            // Guardar inmediatamente de forma asíncrona en SQLite/Disco
-            await persistence.syncSave();
-
-            alert("✅ Vacances actualitzades correctament! Ara es pintaran les caselles liles.");
-            
-            // Recarreguem o cridem a la funció de dibuixar
-            if (typeof renderTable === "function") {
-                renderTable();
-            } else {
-                location.reload();
-            }
-
-        } catch (err) {
-            console.error("Error en la importació:", err);
-            alert("❌ El fitxer seleccionat no és un JSON de vacances vàlid.");
-        }
-    };
-    reader.readAsText(file);
-}
-
-
-
-
-
-
-function generarDatesEntre(inici, fi) {
-    const dates = [];
-    let [d1, m1, y1] = inici.trim().split('/');
-    let [d2, m2, y2] = fi.trim().split('/');
-    
-    let curr = new Date(y1, m1 - 1, d1);
-    let end = new Date(y2, m2 - 1, d2);
-    
-    while (curr <= end) {
-        // Formatem la data com a "DD/MM/YYYY" per poder fer el split('/') després
-        let dia = String(curr.getDate()).padStart(2, '0');
-        let mes = String(curr.getMonth() + 1).padStart(2, '0');
-        let any = curr.getFullYear();
-        
-        dates.push(`${dia}/${mes}/${any}`);
-        curr.setDate(curr.getDate() + 1);
-    }
-    return dates;
-}
-
-
-
-
-init();
-
-
-function refrescarLlegendaGlobal() {
-    // Anem a buscar les claus específiques del quadrant
-    const data = localStorage.getItem('nyn_quadrant_export_data');
-    const autor = localStorage.getItem('nyn_quadrant_export_autor');
-    const el = document.getElementById('llegendaExport');
-    
-    if (el) {
-        if (data && autor) {
-            el.innerHTML = ` | Darrera exportació quadrant: ${data} (per ${autor})`;
-        } else {
-            el.innerHTML = " | Darrera exportació quadrant: Cap dada encara";
-        }
-    }
-}
-
-// === INTEGRACIÓ EN CALIENTE DE ALERTES DE NEGOCI I ASSISTENT INTEL·LIGENT ===
-
-// Registrar listener de canvis en localStorage (despatxats des de persistence.js)
-window.addEventListener('localStorage-changed', (e) => {
-    actualitzarAlertes();
-});
-
-// Executar actualització d'alertes en inicialitzar
-const originalChangeMonth = changeMonth;
-changeMonth = function() {
-    originalChangeMonth.apply(this, arguments);
-    actualitzarAlertes();
-};
-
-async function actualitzarAlertes() {
-    // Desactivado por limpieza completa de alertas
-    const btnAlertes = document.getElementById('btnAlertes');
-    if (btnAlertes) btnAlertes.style.display = 'none';
-}
-
-function toggleAlertsPanel() {
-    const panel = document.getElementById('alertsPanel');
-    if (panel) {
-        const isHidden = panel.style.display === 'none';
-        panel.style.display = isHidden ? 'block' : 'none';
-        
-        const btn = document.getElementById('btnAlertes');
-        if (btn) {
-            btn.style.outline = isHidden ? '2px solid #b91c1c' : '';
-        }
-    }
-}
-
-// --- LÓGICA FRONTEND DEL ASISTENTE ---
-let celdaSeleccionadaActual = null;
-let idCeldaSeleccionadaActual = null;
-
-document.addEventListener('DOMContentLoaded', () => {
-    const panelAsistente = document.getElementById('panel-asistente');
-    const btnCerrarAsistente = document.getElementById('cerrar-asistente');
-    const btnDesasignar = document.getElementById('btn-desasignar-asistente');
-
-    if (btnCerrarAsistente) {
-        btnCerrarAsistente.addEventListener('click', () => {
-            if (panelAsistente) panelAsistente.classList.add('hidden');
-            celdaSeleccionadaActual = null;
-            idCeldaSeleccionadaActual = null;
-            clearSelection();
-        });
-    }
-
-    if (btnDesasignar) {
-        btnDesasignar.addEventListener('click', () => {
-            if (idCeldaSeleccionadaActual) {
-                asignarAgenteACelda('-');
-            }
-        });
-    }
-});
-
-function loadAparcamientos() {
-    return window.api.getAparcamientos();
-}
-
-// --- FIX: DELEGACIÓN DE EVENTOS PARA EL CUADRANTE ---
-document.addEventListener('click', (e) => {
-    // 1. Buscamos si el clic se hizo dentro de una celda interactiva del calendario
-    const celda = e.target.closest('td'); 
-    
-    // Si no es un TD, o es una celda vacía de relleno del calendario (ej. gris), no hacemos nada
-    if (!celda || celda.classList.contains('bg-gray-200') || !celda.dataset.fecha) return;
-
-    // Si el mes está cerrado, no hacer nada
-    if (isMonthLocked()) return;
-
-    // Para evitar interferir con la edición manual del select en celdas asignadas
-    const sId = celda.dataset.sid;
-    if (sId) {
-        const saved = cacheDades[sId] || {w: "-", h: "-", s: false, n: ""};
-        if (saved.w !== "-" && saved.w !== "") {
-            // Si ya hay un trabajador asignado, permitimos que el usuario interactúe con el selector directamente
-            return;
-        }
-    }
-
-    // 2. Extraemos los datos ocultos que debería tener la celda
-    const fechaSQL = celda.dataset.fecha; 
-    const parkingNombre = celda.dataset.parking;
-
-    // 3. Abrimos el asistente si tenemos los datos necesarios
-    if (fechaSQL && parkingNombre) {
-        // Recuperar el ID del parking desde los catálogos cargados en memoria
-        loadAparcamientos().then(parkings => {
-            const parkingObj = parkings.find(p => p.nombre === parkingNombre);
-            if (parkingObj) {
-                // Llamamos a la función que abre y rellena el panel lateral
-                abrirAsistente(fechaSQL, parkingObj.id, parkingNombre, celda);
-            } else {
-                // Fallback si no está en el catálogo
-                abrirAsistente(fechaSQL, null, parkingNombre, celda);
-            }
-        }).catch(err => {
-            console.error("Error al cargar aparcamientos en delegación de eventos:", err);
-            abrirAsistente(fechaSQL, null, parkingNombre, celda);
-        });
-    }
-});
-
-async function abrirAsistente(fechaSQL, parkingId, parkingNombre, celdaDOM) {
-    if (celdaDOM) {
-        const sId = celdaDOM.id.replace("cell_", "");
-        await openAssistant(sId);
-    }
-}
-
-async function openAssistant(sId) {
-    if (isMonthLocked()) { 
-        const closedMsg = i18n.getLanguage() === 'es' ? "Este mes está cerrado." : "Aquest mes està tancat.";
-        alert(closedMsg); 
-        return; 
-    }
-    
-    // Marcar visualmente la celda seleccionada
-    clearSelection();
-    selectedIds = [sId];
-    const td = document.getElementById("cell_" + sId);
-    if (td) {
-        td.classList.add('selected-cell');
-    }
-    
-    idCeldaSeleccionadaActual = sId;
-    celdaSeleccionadaActual = td;
-    
-    const panelAsistente = document.getElementById('panel-asistente');
-    if (!panelAsistente) return;
-    
-    panelAsistente.classList.remove('hidden');
-    
-    try {
-        const parts = sId.split('_');
-        const dia = parts[parts.length - 1];
-        const torn = parts[parts.length - 2];
-        const park = parts.slice(4, parts.length - 2).join(' ');
-
-        const mesNum = (currentMonth + 1).toString().padStart(2, '0');
-        const diaNum = parseInt(dia).toString().padStart(2, '0');
-        const fecha = `${currentYear}-${mesNum}-${diaNum}`;
-
-        const infoCelda = document.getElementById('info-celda-asistente');
-        const ulSugeridos = document.getElementById('lista-sugeridos');
-        const ulDescartados = document.getElementById('lista-descartados');
-        
-        if (infoCelda) {
-            infoCelda.innerHTML = `
-                <div class="font-bold text-gray-800">🏢 ${park.toUpperCase()}</div>
-                <div class="text-xs text-gray-500 mt-1">📅 ${diaNum}/${mesNum}/${currentYear} | ⏰ ${getTranslatedTorn(torn)}</div>
-            `;
-        }
-        
-        if (ulSugeridos) {
-            ulSugeridos.innerHTML = '<li class="text-center text-gray-500 py-4"><i class="fas fa-spinner fa-spin text-2xl text-orange-500"></i></li>';
-        }
-        if (ulDescartados) {
-            ulDescartados.innerHTML = '';
-        }
-
-        // Obtenir ID de l'aparcament des de la DB única
-        const dbPark = await window.dbAPI.read('catalogos', "SELECT id FROM aparcamientos WHERE nombre = ?", [park.toUpperCase()]);
-        if (!dbPark || dbPark.length === 0) {
-            alert("No s'ha trobat el centre al catàleg de la base de dades única.");
-            return;
-        }
-        const aparcamientoId = dbPark[0].id;
-
-        // Cridar assistent al backend
-        const res = await obtenerAsistenteAsignacion(fecha, aparcamientoId);
-        
-        if (ulSugeridos) {
-            ulSugeridos.innerHTML = '';
-            if (res.sugeridos && res.sugeridos.length > 0) {
-                res.sugeridos.forEach(agente => {
-                    const li = document.createElement('li');
-                    li.className = "bg-white p-3 rounded-lg border border-green-200 shadow-sm hover:shadow-md cursor-pointer transition-all flex flex-col gap-1.5 group relative";
-                    
-                    let badge = '';
-                    if (agente.tipo === 'EMPRESA SEGURIDAD') badge = `<span class="text-[9px] bg-purple-100 text-purple-800 px-1.5 py-0.5 rounded font-bold ml-2">${i18n.t('asistenteExterno')}</span>`;
-                    else if (agente.ranking_score >= 80) badge = '<span class="text-[9px] bg-yellow-100 text-yellow-800 px-1.5 py-0.5 rounded font-bold ml-2">TOP</span>';
-
-                    const warningsHtml = agente.advertencias && agente.advertencias.length > 0
-                        ? agente.advertencias.map(adv => `<span class="bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded text-[9px] font-medium inline-block">⚠️ ${adv}</span>`).join(' ')
-                        : `<span class="bg-emerald-50 text-emerald-800 border border-emerald-100 px-1.5 py-0.5 rounded text-[9px] font-medium inline-block">✅ ${i18n.t('asistenteConflictosOk')}</span>`;
-
-                    li.innerHTML = `
-                        <div class="flex justify-between items-start w-100" style="display: flex; justify-content: space-between; align-items: start; width: 100%;">
-                            <div>
-                                <div class="font-bold text-gray-800 text-xs">${agente.nombre}${badge}</div>
-                                <div class="text-[10px] text-gray-500 mt-0.5">${i18n.t('asistenteRanking')}: ${agente.ranking_score} | ${i18n.t('asistenteHorasMes')}: ${agente.dias_mes_actual * 8}h</div>
-                            </div>
-                            <button class="bg-green-600 text-white px-2 py-1 rounded text-[10px] opacity-0 group-hover:opacity-100 font-bold transition-opacity" style="border: none; padding: 3px 8px; cursor: pointer; border-radius: 4px;">${i18n.t('asistenteAsignar')}</button>
+    <div style="margin-bottom:16px;">
+        <div><span style="color:#666; font-size:10px;">Jornada laborable:</span> <strong style="color:#2e7d32; font-size:12px; margin-left:5px;" x-text="horesConveni + 'h'"></strong></div>
+        <div style="display:flex; gap:10px; font-size:8px; font-weight:bold;"><span style="color:#4caf50;">■ DIÜRNES</span><span style="color:#9c27b0;">■ NOCTURNES</span><span style="color:#f44336;">■ FESTIVES</span></div>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th style="border:1px solid #ddd; padding:8px; text-align:left; width:130px;">TREBALLADOR</th>
+                <th style="border:1px solid #ddd; padding:8px; text-align:center;">DISTRIBUCIÓ D'HORES</th>
+                <th style="border:1px solid #ddd; padding:8px; background:#e8f5e9; width:60px;">TOTAL</th>
+            </tr>
+        </thead>
+        <tbody>
+            <template x-for="(r, p) in resumTreballadors" :key="p">
+                <tr x-show="r.total > 0">
+                    <td style="border:1px solid #ddd; padding:4px 8px; font-weight:bold;" x-text="p"></td>
+                    <td style="border:1px solid #ddd; padding:0 15px; position:relative; background:#fff; height:20px;">
+                        <div style="width:100%; background:#f5f5f5; height:14px; display:flex; overflow:hidden; border:1px solid #eee;">
+                            <div :style="'width: ' + ((r.diurnes / (horesConveni + 20)) * 100) + '%; background:#4caf50;'" style="height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;" x-text="r.diurnes || ''"></div>
+                            <div :style="'width: ' + ((r.nocturnes / (horesConveni + 20)) * 100) + '%; background:#9c27b0;'" style="height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;" x-text="r.nocturnes || ''"></div>
+                            <div :style="'width: ' + ((r.festives / (horesConveni + 20)) * 100) + '%; background:#f44336;'" style="height:100%; display:flex; align-items:center; justify-content:center; color:white; font-size:8px;" x-text="r.festives || ''"></div>
                         </div>
-                        <div class="flex flex-wrap gap-1 mt-1 border-t border-gray-100 pt-1.5" style="display: flex; flex-wrap: wrap; gap: 4px; border-top: 1px solid #f1f5f9; padding-top: 6px;">${warningsHtml}</div>
-                    `;
-                    
-                    li.addEventListener('click', () => asignarAgenteACelda(agente.nombre));
-                    ulSugeridos.appendChild(li);
-                });
-            } else {
-                ulSugeridos.innerHTML = `<li class="text-sm text-gray-500 bg-white p-3 rounded-lg border border-gray-200 text-center">${i18n.t('asistenteNoSugeridos')}</li>`;
-            }
-        }
-
-        if (ulDescartados) {
-            ulDescartados.innerHTML = '';
-            const descartados = res.restringidos || res.descartados || [];
-            if (descartados.length > 0) {
-                descartados.forEach(agente => {
-                    const li = document.createElement('li');
-                    li.className = "bg-red-50/50 p-2.5 rounded-lg border border-red-100 flex flex-col gap-1 text-left";
-                    const motivo = agente.motivo_bloqueo || agente.motivo_descarte || 'No disponible';
-                    li.innerHTML = `
-                        <div class="font-bold text-gray-700 text-xs">${agente.nombre}</div>
-                        <div class="text-[9.5px] text-red-700 font-medium flex items-start gap-1"><i class="fas fa-exclamation-triangle mt-0.5 flex-shrink-0"></i> <span>${motivo}</span></div>
-                    `;
-                    ulDescartados.appendChild(li);
-                });
-            } else {
-                ulDescartados.innerHTML = `<li class="text-xs text-gray-400 text-center py-2">${i18n.t('asistenteNoDescartados')}</li>`;
-            }
-        }
-    } catch (e) {
-        console.error("Error en openAssistant:", e);
-    }
-}
-
-function asignarAgenteACelda(nombreTrabajador) {
-    if (idCeldaSeleccionadaActual && celdaSeleccionadaActual) {
-        const selectEl = celdaSeleccionadaActual.querySelector('.select-worker');
-        if (selectEl) {
-            selectEl.value = nombreTrabajador;
-            quickSave(idCeldaSeleccionadaActual, selectEl, 'w');
-            
-            // Ocultar panel
-            const panelAsistente = document.getElementById('panel-asistente');
-            if (panelAsistente) {
-                panelAsistente.classList.add('hidden');
-            }
-            
-            celdaSeleccionadaActual = null;
-            idCeldaSeleccionadaActual = null;
-            clearSelection();
-            
-            renderTable();
-        }
-    }
-}
-window.addEventListener('languageChanged', () => {
-    i18n.translatePage();
-    populateMonthSelector();
-    changeMonth();
-});
-
-</script>
-
-<div id="noteModal">
-    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);" data-i18n="vacancesObservaciones">OBSERVACIÓ</div>
-    <input type="hidden" id="currentNoteId"><textarea id="noteText"></textarea>
-    <div style="display:flex; justify-content:flex-end; gap:5px;"><button onclick="saveNote()" class="btn-main" data-i18n="btnSaveRules">Guardar</button><button onclick="document.getElementById('noteModal').style.display='none'" data-i18n="vacancesBtnClose">Tancar</button></div>
-</div>
-
-<div id="deleteModal">
-    <div style="font-weight:bold; margin-bottom:10px; color:var(--nyn-verd);" data-i18n="vacancesManageDataModal">GESTIONAR DADES</div>
-    <select id="deleteType" onchange="updateDeleteOptions()" style="width:100%; margin-bottom:8px;"><option value="parkings" data-i18n="vacancesOptCentres">Centres</option><option value="personal" data-i18n="vacancesOptTreballadors">Treballadors</option><option value="horaris" data-i18n="quadrantOptFrangesHoraries">Franges Horàries</option></select>
-    <select id="deleteItem" onchange="document.getElementById('editInput').value = this.value" style="width:100%; margin-bottom:8px;"></select>
-    <input type="text" id="editInput" class="input-edit">
-    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px; margin-top:10px;"><button onclick="addNewItem()" class="btn-main" data-i18n="vacancesBtnAddNew">Afegir Nou</button><button onclick="saveEditItem()" style="background:#ff9800; color:white; border:none;" data-i18n="btnSaveRules">Guardar</button><button onclick="confirmDelete()" style="background:#f44336; color:white; border:none;" data-i18n="vacancesBtnDelete">Eliminar</button><button onclick="document.getElementById('deleteModal').style.display='none'" data-i18n="vacancesBtnClose">Tancar</button></div>
-</div>
-
-<div id="horesModal">
-    <div class="hores-modal-header">
-        <button onclick="document.getElementById('horesModal').style.display='none'" class="close-btn-top">&times;</button>
-        <div class="hores-title-box"><span style="font-weight:900; font-size:12px; color:var(--nyn-verd-centre);" data-i18n="quadrantTitleRecompte">📊 RECOMPTE D'HORES - </span><span id="titreResum" style="font-weight:900; font-size:12px; color:var(--nyn-verd-centre);"></span></div>
-        <div id="jornadaInfo" style="background:#f8f9fa; padding:10px; border-radius:4px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center; margin-bottom:5px;"></div>
-    </div>
-    <div id="taulaResumHores"></div>
-    <div style="margin-top:20px; text-align:right;"><button onclick="document.getElementById('horesModal').style.display='none'" class="btn-tancar-resum" data-i18n="vacancesBtnClose">Tancar Resum</button></div>
-</div>
-
-<div id="importMappingModal" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #ffffff; border: 1px solid var(--border); padding: 24px; z-index: 2050; border-radius: 12px; width: 90%; max-width: 580px; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-lg); font-family: inherit;">
-    <div style="font-weight: 800; font-size: 14px; margin-bottom: 12px; color: var(--nyn-verd); border-bottom: 2px solid var(--nyn-verd-accent); padding-bottom: 8px; display: flex; align-items: center; gap: 8px;" data-i18n="mappingModalTitle">
-        📂 MAPEIG DE DADES D'IMPORTACIÓ
-    </div>
-    <p style="font-size: 11px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4;" data-i18n="mappingModalDesc">
-        S'han detectat discrepàncies entre els centres/treballadors del fitxer seleccionat i el teu catàleg local. Si us plau, indica com s'han d'associar aquests elements:
-    </p>
-
-    <!-- Discrepàncies de Centres -->
-    <div id="mappingParkingsSection" style="margin-bottom: 18px;">
-        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #e6f4ea; padding: 4px 8px; border-radius: 4px; display: inline-block;" data-i18n="mappingModalCentres">
-            🏢 centres no coincidents
-        </div>
-        <div id="mappingParkingsList" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
-            <!-- Elementos generados dinámicamente -->
-        </div>
-    </div>
-
-    <!-- Discrepàncies de Treballadors -->
-    <div id="mappingWorkersSection" style="margin-bottom: 20px;">
-        <div style="font-weight: 700; font-size: 10px; text-transform: uppercase; color: var(--nyn-verd); margin-bottom: 8px; background: #fef9c3; color: var(--nyn-substitucio-text); padding: 4px 8px; border-radius: 4px; display: inline-block;" data-i18n="mappingModalTreballadors">
-            👤 treballadors no coincidents
-        </div>
-        <div id="mappingWorkersList" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
-            <!-- Elementos generados dinámicamente -->
-        </div>
-    </div>
-
-    <!-- Botones de Acción -->
-    <div style="display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid var(--border); padding-top: 14px; margin-top: 10px;">
-        <button class="btn-main" onclick="cancelarImportacioMapejada()" data-i18n="mappingModalBtnCancel">Cancel·lar</button>
-        <button class="btn-main btn-action" id="btnConfirmarImport" onclick="confirmarImportacioMapejada()" data-i18n="mappingModalBtnConfirm">Confirmar Importació</button>
+                    </td>
+                    <td style="border:1px solid #ddd; padding:4px; text-align:center; font-weight:900; font-size:12px;" :style="r.total > horesConveni ? 'color:#d32f2f;' : 'color:#000;'" x-text="r.total + 'h'"></td>
+                </tr>
+            </template>
+        </tbody>
+    </table>
+    
+    <div style="margin-top:20px; text-align:right;">
+        <button @click="showHoresModal = false" class="btn-tancar-resum">Tancar Resum</button>
     </div>
 </div>
 
-
+<script src="./js/quadrant.js"></script>
 </body>
 </html>
