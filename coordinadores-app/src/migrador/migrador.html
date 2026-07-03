@@ -2564,11 +2564,17 @@
             ],
             empleados: [
                 {
-                    nombre: "Ejemplo Empleado",
-                    email: "empleado@empresa.com",
-                    rol: "Coordinador",
-                    activo: 1,
-                    json_preferencias: "{}"
+                    agent:          "Nom Cognom",
+                    centre:         "NN CONCEPT",
+                    societat:       "ABCN",
+                    torn:           "MATÍ",
+                    zona:           "Zona 1",
+                    coneixements:   7.5,
+                    atencio:        8.0,
+                    disponibilitat: 9.0,
+                    actitud:        8.5,
+                    valoracio:      8.25,
+                    observacions:   "Sense observacions"
                 }
             ]
         };
@@ -2662,20 +2668,31 @@
                         throw new Error('El JSON no contiene un array de registros válido.');
                     }
 
-                    // Normalizar para empleados: asignar campos por defecto si vienen de un JSON legacy
+                    // Normalizar para empleados: mapear desde el formato real del JSON
+                    // (campo 'agent' como nombre, campos de métricas de evaluación)
                     if (tabla === 'empleados') {
                         datos = datos.map(item => {
-                            const nombre = item.nombre || item.name || item.nom || String(item);
+                            // El campo nombre puede venir como 'agent', 'nombre', 'name' o 'nom'
+                            const nombre = item.agent || item.nombre || item.name || item.nom || '';
                             return {
+                                // Campos para catalogos.empleados
                                 nombre:            nombre,
                                 email:             item.email || item.mail || null,
                                 rol:               item.rol || item.role || 'Coordinador',
                                 activo:            item.activo !== undefined ? item.activo : 1,
-                                json_preferencias: item.json_preferencias
-                                                    ? (typeof item.json_preferencias === 'string'
-                                                        ? item.json_preferencias
-                                                        : JSON.stringify(item.json_preferencias))
-                                                    : null
+                                json_preferencias: JSON.stringify({
+                                    centre:   item.centre   || null,
+                                    societat: item.societat || null,
+                                    torn:     item.torn     || null,
+                                    zona:     item.zona     || null
+                                }),
+                                // Campos de métricas para operativa.ranking
+                                coneixements:   parseFloat(item.coneixements)   || 0,
+                                atencio:        parseFloat(item.atencio)        || 0,
+                                disponibilitat: parseFloat(item.disponibilitat) || 0,
+                                actitud:        parseFloat(item.actitud)        || 0,
+                                valoracio:      parseFloat(item.valoracio)      || 0,
+                                observacions:   item.observacions || null
                             };
                         }).filter(r => r.nombre && r.nombre.trim() !== '');
                     }
@@ -2759,6 +2776,7 @@
 
         /**
          * Importa los datos del JSON seleccionado en la tabla maestros indicada.
+         * Para empleados: doble inserción en catalogos.empleados + operativa.ranking.
          * Respeta el modo add/overwrite.
          */
         async function importarDatosMaestros(tabla) {
@@ -2779,8 +2797,11 @@
 
             // Confirmación para modo sobrescribir
             if (modo === 'overwrite') {
+                const tablasMensaje = tabla === 'empleados'
+                    ? '"empleados" (catalogos) y "ranking" (operativa)'
+                    : `"${tabla}" (catalogos)`;
                 const confirmar = confirm(
-                    `⚠️ ATENCIÓN: Se borrarán TODOS los registros de la tabla "${tabla}" antes de importar.\n` +
+                    `⚠️ ATENCIÓN: Se borrarán TODOS los registros de ${tablasMensaje} antes de importar.\n` +
                     `Se insertarán ${datos.length} nuevo(s) registro(s).\n\n¿Deseas continuar?`
                 );
                 if (!confirmar) return;
@@ -2790,39 +2811,112 @@
             btnEl.innerHTML = '<span class="spinner"></span> Importando...';
             mostrarLogMaestros(logEl, 'info', '⏳ Iniciando importación...');
 
-            let exitos  = 0;
-            let errores = 0;
+            let exitosCatalogos  = 0;
+            let exitosOperativa  = 0;
+            let errores          = 0;
 
             try {
-                // 1. Si modo overwrite, borrar tabla primero
-                if (modo === 'overwrite') {
-                    await dbApi.write('catalogos', `DELETE FROM ${tabla}`, []);
-                    mostrarLogMaestros(logEl, 'info', `🗑️ Tabla ${tabla} vaciada. Insertando ${datos.length} registro(s)...`);
-                }
-
-                // 2. Insertar fila a fila
+                // ── EMPLEADOS (doble inserción: catalogos + operativa) ──────────────────────
                 if (tabla === 'empleados') {
+
+                    // 0. Asegurar que la tabla ranking existe en operativa
+                    await dbApi.write('operativa',
+                        `CREATE TABLE IF NOT EXISTS ranking (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            id_trabajador TEXT,
+                            coneixements   REAL,
+                            atencio        REAL,
+                            disponibilitat REAL,
+                            actitud        REAL,
+                            valoracio      REAL,
+                            observacions   TEXT
+                        )`, []
+                    );
+
+                    // 1. Overwrite: borrar ambas tablas primero
+                    if (modo === 'overwrite') {
+                        await dbApi.write('catalogos', 'DELETE FROM empleados', []);
+                        await dbApi.write('operativa', 'DELETE FROM ranking', []);
+                        mostrarLogMaestros(logEl, 'info',
+                            `🗑️ Tablas vaciadas. Insertando ${datos.length} registro(s) en ambas BDs...`);
+                    }
+
+                    // 2. Insertar fila a fila en ambas BDs
                     for (const r of datos) {
                         try {
+                            // A) catalogos.empleados
                             await dbApi.write('catalogos',
-                                `INSERT OR IGNORE INTO empleados (nombre, email, rol, activo, json_preferencias)
+                                `INSERT OR IGNORE INTO empleados
+                                 (nombre, email, rol, activo, json_preferencias)
                                  VALUES (?, ?, ?, ?, ?)`,
-                                [r.nombre, r.email || null, r.rol || 'Coordinador', r.activo !== undefined ? r.activo : 1, r.json_preferencias || null]
+                                [
+                                    r.nombre,
+                                    r.email || null,
+                                    r.rol   || 'Coordinador',
+                                    r.activo !== undefined ? r.activo : 1,
+                                    r.json_preferencias || null
+                                ]
                             );
-                            exitos++;
-                        } catch(errFila) {
-                            console.error('[Maestros/empleados] Error en fila:', errFila, r);
+                            exitosCatalogos++;
+                        } catch(errCat) {
+                            console.error('[Maestros/empleados → catalogos] Error:', errCat, r);
+                            errores++;
+                        }
+
+                        try {
+                            // B) operativa.ranking
+                            await dbApi.write('operativa',
+                                `INSERT INTO ranking
+                                 (id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                                [
+                                    r.nombre,
+                                    r.coneixements   || 0,
+                                    r.atencio        || 0,
+                                    r.disponibilitat || 0,
+                                    r.actitud        || 0,
+                                    r.valoracio      || 0,
+                                    r.observacions   || null
+                                ]
+                            );
+                            exitosOperativa++;
+                        } catch(errOp) {
+                            console.error('[Maestros/empleados → operativa.ranking] Error:', errOp, r);
                             errores++;
                         }
                     }
+
+                    // 3. Mostrar resultado final con alert
+                    const resumen =
+                        `✅ Importación de Empleados completada:\n` +
+                        `  • catalogos.empleados — ${exitosCatalogos} inserciones correctas\n` +
+                        `  • operativa.ranking   — ${exitosOperativa} inserciones correctas\n` +
+                        (errores > 0 ? `  • Errores: ${errores}\n` : '') +
+                        `\nTotal trabajadores procesados: ${datos.length}`;
+                    alert(resumen);
+
+                    mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
+                        `✅ Completado — ${exitosCatalogos} en catalogos, ${exitosOperativa} en ranking` +
+                        (errores > 0 ? `, ${errores} error(es)` : ''));
                 }
 
+                // ── APARCAMIENTOS ──────────────────────────────────────────────────────────
                 else if (tabla === 'aparcamientos') {
+
+                    // 1. Overwrite: borrar tabla primero
+                    if (modo === 'overwrite') {
+                        await dbApi.write('catalogos', 'DELETE FROM aparcamientos', []);
+                        mostrarLogMaestros(logEl, 'info',
+                            `🗑️ Tabla aparcamientos vaciada. Insertando ${datos.length} registro(s)...`);
+                    }
+
+                    // 2. Insertar fila a fila
                     for (const r of datos) {
                         try {
                             await dbApi.write('catalogos',
                                 `INSERT OR IGNORE INTO aparcamientos
-                                 (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+                                 (numero_obra, nombre, zona, es_remotizado, tipo_gestion,
+                                  permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
                                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
                                 [
                                     r.numero_obra || null,
@@ -2836,18 +2930,25 @@
                                     r.activo !== undefined ? r.activo : 1
                                 ]
                             );
-                            exitos++;
+                            exitosCatalogos++;
                         } catch(errFila) {
                             console.error('[Maestros/aparcamientos] Error en fila:', errFila, r);
                             errores++;
                         }
                     }
-                }
 
-                // 3. Mostrar resultado
-                const msg = `✅ Importación completada:\n  • Éxitos: ${exitos}\n  • Errores: ${errores}`;
-                mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
-                    `✅ Importación completada — ${exitos} inserción(es) correctas${errores > 0 ? `, ${errores} error(es)` : ''}.`);
+                    // 3. Mostrar resultado final con alert
+                    const resumen =
+                        `✅ Importación de Aparcamientos completada:\n` +
+                        `  • Éxitos: ${exitosCatalogos}\n` +
+                        (errores > 0 ? `  • Errores: ${errores}\n` : '') +
+                        `\nTotal procesados: ${datos.length}`;
+                    alert(resumen);
+
+                    mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
+                        `✅ Importación completada — ${exitosCatalogos} inserción(es) correctas` +
+                        (errores > 0 ? `, ${errores} error(es)` : ''));
+                }
 
                 // Recargar catálogos del migrador de históricos
                 await loadCatalogos();
@@ -2855,6 +2956,7 @@
             } catch(errGlobal) {
                 console.error(`[Maestros/${tabla}] Error global:`, errGlobal);
                 mostrarLogMaestros(logEl, 'error', `❌ Error inesperado: ${errGlobal.message}`);
+                alert(`❌ Error al ejecutar la importación: ${errGlobal.message}`);
             } finally {
                 btnEl.disabled = false;
                 btnEl.innerHTML = '🚀 Importar';
