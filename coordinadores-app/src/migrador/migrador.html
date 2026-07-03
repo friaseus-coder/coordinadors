@@ -1203,8 +1203,8 @@
         async function loadCatalogos() {
             try {
                 if (dbApi) {
-                    // Cargar agentes
-                    catalogosLocales.agentes = await dbApi.read('catalogos', "SELECT id, nombre FROM agentes WHERE activo = 1", []);
+                    // Cargar agentes (empleados con rol Trabajador)
+                    catalogosLocales.agentes = await dbApi.read('catalogos', "SELECT id, nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador'", []);
                     // Cargar aparcamientos
                     catalogosLocales.aparcamientos = await dbApi.read('catalogos', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
                 }
@@ -2416,7 +2416,7 @@
                     await dbApi.write('catalogos', "BEGIN TRANSACTION;", []);
                     
                     for (const name of nuevosAgentes) {
-                        await dbApi.write('catalogos', "INSERT OR IGNORE INTO agentes (nombre, activo) VALUES (?, 1)", [name]);
+                        await dbApi.write('catalogos', "INSERT OR IGNORE INTO empleados (nombre, rol, activo) VALUES (?, 'Trabajador', 1)", [name]);
                     }
                     for (const name of nuevosParkings) {
                         await dbApi.write('catalogos', "INSERT OR IGNORE INTO aparcamientos (nombre, sociedad_id, activo) VALUES (?, 1, 1)", [name]);

@@ -7,7 +7,7 @@ document.addEventListener('alpine:init', () => {
             magatzems: ["OFICINES", "PROVENÇA", "CÒRSEGA"],
             categories: ["CONSUMIBLES IMPRESSORA", "MATERIAL OFIMÀTIC", "MANTENIMENT I VARIS", "MOBILIARI I ERGONOMIA"]
         },
-        centresLlista: ["NN ARAGÓ", "NN BONANOVA", "NN BORRELL", "NN BRUC", "NN CONCEPT", "NN CORSEGA", "NN DIAGONAL", "NN EL PALLOL", "NN ESPRONCEDA", "NN ESTEVE TARRADAS", "NN GEIGLE", "NN GRAN VIA", "NN HERCEGOVINA", "NN MASTER CATALONIA", "NN LA ROTONDA", "NN PEDRALBES", "NN ROCAFORT", "NN SANTALÓ", "NN SANT GERVASI", "NN SENTMENAT 2", "NN TAMARITA", "NN TARRAGONA", "NN TRAVESSERA", "NN URGELL", "NN URGELL 2", "NN VALENCIA", "NN VALENCIA 2", "NN VALENCIA 3", "NN VIA AUGUSTA", "ZONA FRANCA", "OFICINA CENTRAL"].sort(),
+        centresLlista: [],
         
         showModalGestio: false,
         newRef: '',
@@ -18,7 +18,22 @@ document.addEventListener('alpine:init', () => {
         userRole: sessionStorage.getItem('userRole') || 'coordinador',
 
         async init() {
+            await this.cargarCentres();
             await this.carregar();
+        },
+
+        async cargarCentres() {
+            try {
+                if (window.dbAPI) {
+                    const rows = await window.dbAPI.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+                    this.centresLlista = [...rows.map(r => r.nombre), "OFICINA CENTRAL"].sort();
+                } else {
+                    this.centresLlista = ["OFICINES", "PROVENÇA", "CÒRSEGA", "OFICINA CENTRAL"].sort();
+                }
+            } catch (err) {
+                console.error("Error al cargar centros de la BD en inventario:", err);
+                this.centresLlista = ["OFICINA CENTRAL"];
+            }
         },
 
         async carregar() {

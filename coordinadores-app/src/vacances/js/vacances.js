@@ -24,7 +24,7 @@ document.addEventListener('alpine:init', () => {
 
         async cargarCatalogos() {
             try {
-                const rows = await window.dbAPI.read('catalogos', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+                const rows = await window.dbAPI.read('catalogos', "SELECT nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador' ORDER BY nombre ASC", []);
                 this.listaAgentes = rows.map(r => r.nombre);
             } catch (err) {
                 console.error("Error al cargar agentes:", err);

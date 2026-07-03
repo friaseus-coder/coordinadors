@@ -56,8 +56,8 @@ document.addEventListener('alpine:init', () => {
 
         async cargarCatalogos() {
             try {
-                // Gracias a ATTACH en main.js, podemos consultar agentes y aparcamientos desde 'operativa'
-                this.listaTrabajadores = await window.dbAPI.read('operativa', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+                // Gracias a ATTACH en main.js, podemos consultar empleados y aparcamientos desde 'operativa'
+                this.listaTrabajadores = await window.dbAPI.read('operativa', "SELECT nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador' ORDER BY nombre ASC", []);
                 this.listaParkings = await window.dbAPI.read('operativa', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
             } catch (err) {
                 console.error("Error al cargar catálogos:", err);
@@ -73,7 +73,7 @@ document.addEventListener('alpine:init', () => {
                 const query = `
                     SELECT q.*, a.nombre as agente_nombre, ap.nombre as aparcamiento_nombre 
                     FROM quadrant q
-                    LEFT JOIN agentes a ON q.agente_id = a.id
+                    LEFT JOIN empleados a ON q.agente_id = a.id
                     JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
                     WHERE q.fecha LIKE ?
                 `;
@@ -262,7 +262,7 @@ document.addEventListener('alpine:init', () => {
                 if (workerName === "-" || workerName === "") {
                     await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
                 } else {
-                    const aRow = await window.dbAPI.read('operativa', "SELECT id FROM agentes WHERE nombre = ?", [workerName]);
+                    const aRow = await window.dbAPI.read('operativa', "SELECT id FROM empleados WHERE nombre = ?", [workerName]);
                     if (!aRow || aRow.length === 0) return;
                     const agenteId = aRow[0].id;
 

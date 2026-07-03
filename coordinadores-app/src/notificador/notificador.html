@@ -147,9 +147,32 @@
     </style>
     <script src="../js/i18n.js"></script>
     <script>
-       // Forzar traducción inmediata al cargar
-       document.addEventListener('DOMContentLoaded', () => {
+       async function cargarAparcamientosNotificador() {
+           const selectEl = document.getElementById('notif-parking');
+           if (!selectEl) return;
+           try {
+               if (window.dbAPI) {
+                   const rows = await window.dbAPI.read('catalogos', "SELECT numero_obra, nombre, zona FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+                   if (rows && rows.length > 0) {
+                       selectEl.innerHTML = '';
+                       rows.forEach(p => {
+                           const val = `${p.numero_obra ? p.numero_obra + ' - ' : ''}${p.nombre}${p.zona ? ' - ' + p.zona : ''}`;
+                           const opt = document.createElement('option');
+                           opt.value = val;
+                           opt.textContent = val;
+                           selectEl.appendChild(opt);
+                       });
+                   }
+               }
+           } catch (err) {
+               console.error("Error al cargar aparcamientos en notificador:", err);
+           }
+       }
+
+       // Forzar traducción inmediata al cargar y poblar aparcamientos
+       document.addEventListener('DOMContentLoaded', async () => {
            if(typeof applyTranslations === 'function') applyTranslations();
+           await cargarAparcamientosNotificador();
        });
     </script>
 </head>
