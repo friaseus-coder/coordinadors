@@ -1,329 +1,921 @@
 <!DOCTYPE html>
 <html lang="ca">
 <head>
-    <meta charset="UTF-8">
-    <title>NyN Pàrquings | Rutes Comercials</title>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-      tailwind.config = {
-        corePlugins: {
-          preflight: false,
-        }
-      }
-    </script>
-    <script src="../js/persistence.js"></script>
-    <script src="../js/i18n.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script>
-       document.addEventListener('DOMContentLoaded', () => {
-           if(typeof applyTranslations === 'function') applyTranslations();
-       });
-    </script>
-    
+<meta charset="UTF-8" />
+<title data-i18n="rutaTitle">Fulla de Visites 2026</title>
+<script src="../js/persistence.js"></script>
+<script src="../js/i18n.js"></script>
+<script>
+    // Forzar traducción inmediata al cargar
+    document.addEventListener('DOMContentLoaded', () => {
+        if(typeof applyTranslations === 'function') applyTranslations();
+    });
+</script>
+
 <style>
-    [x-cloak] { display: none !important; }
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
 
-    :root {
-        --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
-        --nyn-verd-accent: #008d36; /* Verde acento */
-        --border: #e2e8f0;
-        --text-main: #0f2d4a;
-        --text-muted: #64748b;
-        --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    }
+body {
+    font-family: 'Outfit', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 12px; 
+    font-size: 12px;
+    overflow-y: auto; 
+    overflow-x: hidden;
+    height: auto; 
+    min-height: 100vh;
+    background-color: #f8fafc;
+    color: #1e293b;
+}
 
-    body { 
-        font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
-        background: #f8fafc; 
-        color: #1e293b;
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-    }
-    
-    header { 
-        background-color: var(--nyn-verd); 
-        color: white; 
-        padding: 8px 24px; 
-        display: flex;        
-        justify-content: center; 
-        align-items: center; 
-        height: 48px; 
-        border-bottom: 2px solid var(--nyn-verd-accent);
-        box-sizing: border-box;
-    }
+.btn-nyn {
+    border: none; padding: 4px 16px; cursor: pointer; border-radius: 9999px;
+    font-weight: 600; font-size: 11px; text-transform: uppercase;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 5px;
+    background: #0f2d4a; color: white;
+    height: 26px; 
+    box-sizing: border-box;
+    font-family: inherit;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn-nyn:hover { background: #1e3a5f; transform: translateY(-0.5px); }
 
-    .header-center { 
-        font-size: 15px; 
-        font-weight: 700; 
-        text-transform: uppercase; 
-        letter-spacing: 1px; 
-    }
+.calendar-container {
+    background-color: #ffffff;
+    padding: 16px; 
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    flex: 1 1 48%;
+    box-sizing: border-box;
+    overflow: hidden;
+    box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.05);
+}
 
-    .main-container {
-        display: flex;
-        flex: 1;
-        gap: 20px;
-        padding: 24px;
-        box-sizing: border-box;
-    }
+header { 
+    background-color: #063931; 
+    color: white; 
+    padding: 8px 24px; 
+    display: flex;        
+    justify-content: center; 
+    align-items: center; 
+    height: 48px; 
+    border-bottom: 2px solid #008d36;
+    box-sizing: border-box;
+}
 
-    .form-panel {
-        width: 380px;
-        background: #ffffff;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: var(--shadow-md);
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-        height: fit-content;
-    }
+.header-center { 
+    font-size: 15px; 
+    font-weight: 700; 
+    text-transform: uppercase; 
+    text-align: center; 
+    letter-spacing: 1px; 
+}
 
-    .list-panel {
-        flex: 1;
-        background: #ffffff;
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: var(--shadow-md);
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-    }
+.admin-panel { 
+    padding: 10px 24px; 
+    display: flex; 
+    flex-wrap: wrap;
+    gap: 12px; 
+    align-items: center; 
+    border-bottom: 1px solid #e2e8f0; 
+    background: #ffffff; 
+    margin-bottom: 16px;
+}
 
-    h2 {
-        font-size: 14px;
-        font-weight: 700;
-        color: var(--text-main);
-        text-transform: uppercase;
-        border-bottom: 2px solid var(--border);
-        padding-bottom: 8px;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
+.toolbar-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ffffff;
+    padding: 6px 12px;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
 
-    label {
-        font-weight: 700;
-        color: var(--nyn-verd);
-        font-size: 10.5px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
+.filter-label { 
+    font-weight: 700; 
+    color: #063931; 
+    font-size: 10px; 
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+}
 
-    input, select, button {
-        font-family: inherit;
-        font-size: 11.5px;
-        box-sizing: border-box;
-    }
+.admin-panel input[type="month"] {
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-family: inherit;
+    font-weight: 500;
+    color: #0f2d4a;
+    outline: none;
+    height: 26px;
+    box-sizing: border-box;
+}
 
-    input[type="text"], input[type="date"], select {
-        padding: 6px 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        width: 100%;
-        background: #ffffff;
-        outline: none;
-        transition: border-color 0.2s;
-    }
+.admin-panel input[type="month"]:focus {
+    border-color: #0f2d4a;
+    box-shadow: 0 0 0 2px rgba(15, 45, 74, 0.1);
+}
 
-    input[type="text"]:focus, input[type="date"]:focus, select:focus {
-        border-color: var(--nyn-verd-accent);
-    }
+.btn-action {
+    background: #063931;
+    color: #ffffff;
+    border: 1px solid #063931;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 6px;
+    font-size: 11px;
+    cursor: pointer;
+    height: 26px;
+    box-sizing: border-box;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
 
-    .btn-nyn {
-        background: var(--nyn-verd);
-        color: white;
-        border: 1px solid var(--nyn-verd);
-        font-weight: 700;
-        padding: 8px 16px;
-        border-radius: 6px;
-        cursor: pointer;
-        transition: all 0.2s;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        gap: 6px;
-    }
+.btn-action:hover {
+    background: #0b4e43;
+    border-color: #0b4e43;
+}
 
-    .btn-nyn:hover {
-        background: #0b4e43;
-        border-color: #0b4e43;
-    }
+.wrapper {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 5px; 
+}
 
-    .btn-secondary {
-        background: #f1f5f9;
-        color: #475569;
-        border: 1px solid #e2e8f0;
-    }
+#container-albert {
+    border-top: 4px solid #007bff;
+    padding-top: 8px;
+}
+#container-albert h2 {
+    color: #007bff;
+}
 
-    .btn-secondary:hover {
-        background: #e2e8f0;
-    }
+#container-laura {
+    border-top: 4px solid #ec4899;
+    padding-top: 8px;
+}
+#container-laura h2 {
+    color: #ec4899;
+}
 
-    .btn-danger-icon {
-        color: #ef4444;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        font-size: 12px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
+h2 {
+    margin: 0 0 12px 0;
+    font-size: 16px;
+    font-weight: 800;
+    text-align: center;
+    letter-spacing: 0.5px;
+}
 
-    .btn-danger-icon:hover {
-        color: #b91c1c;
-    }
+table {
+    border-collapse: collapse;
+    width: 100%;
+    table-layout: fixed;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    overflow: hidden;
+}
+th, td {
+    border: 1px solid #e2e8f0;
+    padding: 3px;
+    vertical-align: top;
+}
+th {
+    background: #f1f5f9;
+    font-size: 11px;
+    color: #475569;
+    font-weight: 600;
+    text-transform: uppercase;
+    padding: 6px 4px;
+}
+td {
+    height: 105px;
+    background: #ffffff;
+}
 
-    /* Tabla */
-    table {
-        width: 100%;
-        border-collapse: collapse;
-    }
+.day-number {
+    font-weight: 700;
+    color: #1e293b;
+    font-size: 11px;
+    line-height: 14px;
+    height: 16px;
+    margin-bottom: 4px;
+}
 
-    th {
-        background: #f8fafc;
-        color: var(--text-main);
-        font-weight: 700;
-        font-size: 10px;
-        text-transform: uppercase;
-        padding: 10px 12px;
-        border-bottom: 2px solid var(--border);
-        text-align: left;
-    }
+.weekend { background: #f8fafc; }
 
-    td {
-        padding: 12px;
-        border-bottom: 1px solid var(--border);
-        font-size: 11px;
-        vertical-align: middle;
-    }
+/* Festivos con colores pastel suaves */
+.national { background: #fee2e2 !important; }
+.national .day-number { color: #991b1b; }
 
-    tr:hover td {
-        background-color: #f8fafc;
-    }
+.local { background: #dbeafe !important; }
+.local .day-number { color: #1e40af; }
 
-    .badge-parada {
-        background-color: var(--nyn-verd-light);
-        color: var(--nyn-verd);
-        padding: 3px 8px;
-        border-radius: 9999px;
-        font-weight: 600;
-        font-size: 9px;
-        display: inline-block;
-        margin-right: 4px;
-        margin-bottom: 4px;
-        border: 1px solid rgba(0, 141, 54, 0.2);
-    }
+.convenio { background: #f3e8ff !important; }
+.convenio .day-number { color: #6b21a8; }
+
+.empresa { background: #d1fae5 !important; }
+.empresa .day-number { color: #065f46; }
+
+.vigilia { background: #fef9c3 !important; }
+.vigilia .day-number { color: #854d0e; }
+
+.chart-container { width: 100%; height: 160px; margin: 0 auto 12px; }
+
+.legend-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  margin-left: 20px; 
+  flex-grow: 1;
+}
+
+.legend-item { display: flex; align-items: center; gap: 4px; font-weight: 500; color: #475569; }
+.legend-box { width: 12px; height: 12px; border-radius: 3px; border: 1px solid #cbd5e1; }
+
+.visit-row { position: relative; display: flex; align-items: center; width: 100%; margin-bottom: 2px; }
+.visit-row select {
+    height: 18px;
+    padding: 0 16px 0 4px;
+    font-size: 9px;
+    font-family: inherit;
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="%2364748b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 4px center;
+    background-size: 8px;
+    background-color: #ffffff;
+    color: #334155;
+    width: 100%;
+    box-sizing: border-box;
+    transition: all 0.15s;
+}
+.visit-row select:focus {
+    border-color: #0f2d4a;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(15, 45, 74, 0.1);
+}
+
+.night-btn, .holiday-btn {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 10px; height: 10px; border-radius: 50%; border: 1px solid #cbd5e1;
+    background: #ffffff; cursor: pointer; padding: 0; display: flex; align-items: center; justify-content: center; z-index: 5;
+    transition: all 0.15s;
+}
+.holiday-btn { right: 24px; } .night-btn { right: 12px; }
+.night-btn::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background-color: #38bdf8; }
+.holiday-btn::after { content: ''; width: 4px; height: 4px; border-radius: 50%; background-color: #f87171; }
+.night-btn.active { border-color: #0284c7; background-color: #0284c7; }
+.night-btn.active::after { background-color: #ffffff; }
+.holiday-btn.active { border-color: #ef4444; background-color: #ef4444; }
+.holiday-btn.active::after { background-color: #ffffff; }
+
+.night-select { background-color: #e0f2fe !important; border-color: #7dd3fc !important; color: #0369a1 !important; }
+.holiday-select { background-color: #ffe4e6 !important; border-color: #fca5a5 !important; color: #b91c1c !important; }
+
+.legend-box.night-circle::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background-color: #0284c7; }
+.legend-box.holiday-circle::after { content: ''; width: 5px; height: 5px; border-radius: 50%; background-color: #ef4444; }
+.legend-box.night-circle, .legend-box.holiday-circle { display: flex; justify-content: center; align-items: center; border-radius: 50%; }
+
+.foreign-select {
+    background-color: #ffedd5 !important;
+    border: 1px solid #fdba74 !important;
+    color: #c2410c !important;
+}
+
+#panelGestio {
+    display: none; position: absolute; top: 50px; left: 20px; background: #ffffff;
+    border: 1px solid #cbd5e1; padding: 16px; border-radius: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    z-index: 10000; width: 280px;
+}
+#panelGestio h3 {
+    margin-top: 0;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 8px;
+    color: #0f2d4a;
+}
+
+.btn-reset {
+    border: 1px solid #fca5a5;
+    background: #ffffff;
+    color: #ef4444;
+    padding: 4px 14px;
+    cursor: pointer;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+.btn-reset:hover {
+    background: #fee2e2;
+    border-color: #ef4444;
+    transform: translateY(-0.5px);
+}
+
+.btn-auto {
+    border: none;
+    background: #0f2d4a;
+    color: #ffffff;
+    padding: 4px 14px;
+    cursor: pointer;
+    border-radius: 9999px;
+    font-weight: 600;
+    font-size: 10px;
+    text-transform: uppercase;
+    font-family: inherit;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+.btn-auto:hover {
+    background: #1e3a5f;
+    transform: translateY(-0.5px);
+}
 </style>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 </head>
-<body x-data="moduloRutas()" x-init="init()">
+<body data-required-roles="coordinador,jefe_operaciones">
 
 <header>
-    <div class="header-center"><i class="fas fa-route mr-2"></i> RUTES COMERCIALS</div>
+    <div class="header-center" data-i18n="rutaTitle">Fulla de Visites 2026</div>
 </header>
 
-<div class="main-container">
-    <!-- Panel Izquierdo: Formulario de Nueva Ruta -->
-    <div class="form-panel">
-        <h2><i class="fas fa-plus-circle"></i> Nueva Ruta</h2>
-        
-        <div class="flex flex-col gap-1.5">
-            <label>Fecha</label>
-            <input type="date" x-model="nuevaRuta.fecha">
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-            <label>Concepto / Nombre Ruta</label>
-            <input type="text" x-model="nuevaRuta.concepto" placeholder="Ej: Ruta Zona Norte, Visitas Albert...">
-        </div>
-
-        <div class="flex flex-col gap-1.5">
-            <div class="flex justify-between items-center mb-1">
-                <label>Paradas / Aparcamientos</label>
-                <button class="btn-nyn btn-secondary text-[10px] px-2 py-1 h-auto" @click="agregarParada()" style="padding: 2px 6px;">+ Añadir</button>
-            </div>
-            
-            <div class="flex flex-col gap-2 max-h-60 overflow-y-auto pr-1">
-                <template x-for="(parada, index) in nuevaRuta.paradas" :key="index">
-                    <div class="flex gap-2 items-center">
-                        <select x-model="nuevaRuta.paradas[index]" class="flex-grow">
-                            <option value="">-- Selecciona Centre --</option>
-                            <template x-for="p in listaParkings" :key="p">
-                                <option :value="p" x-text="p"></option>
-                            </template>
-                        </select>
-                        <button class="btn-danger-icon" @click="eliminarParada(index)">
-                            <i class="fas fa-trash-alt"></i>
-                        </button>
-                    </div>
-                </template>
-            </div>
-        </div>
-
-        <button class="btn-nyn w-full mt-2" @click="guardarRuta()">
-            <i class="fas fa-save"></i> Guardar Ruta
-        </button>
+<div class="admin-panel">
+    <div class="toolbar-group">
+        <label for="monthPicker" class="filter-label" data-i18n="rutaLabelMes">Mes:</label>
+        <input type="month" id="monthPicker" />
     </div>
 
-    <!-- Panel Derecho: Listado Histórico -->
-    <div class="list-panel">
-        <h2><i class="fas fa-history"></i> Historial de Rutes</h2>
+    <div class="toolbar-group">
+        <button class="btn-action" id="btnGestioCentres" onclick="obrirGestio()" data-i18n="rutaBtnManage">⚙️ Editar Centres / Backup</button>
         
-        <div class="overflow-x-auto">
-            <table>
-                <thead>
-                    <tr>
-                        <th width="100">Fecha</th>
-                        <th width="100">Usuario</th>
-                        <th>Concepto / Descripción</th>
-                        <th>Itinerario / Paradas</th>
-                        <th width="60" class="text-center">Acciones</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <template x-for="ruta in rutas" :key="ruta.id">
-                        <tr>
-                            <td class="font-semibold text-gray-800" x-text="ruta.fecha"></td>
-                            <td class="text-gray-600 font-medium" x-text="ruta.id_usuario"></td>
-                            <td class="font-bold text-gray-700" x-text="ruta.concepto"></td>
-                            <td>
-                                <template x-for="p in ruta.paradas" :key="p">
-                                    <span class="badge-parada" x-text="p"></span>
-                                </template>
-                            </td>
-                            <td class="text-center">
-                                <button class="btn-danger-icon" @click="eliminarRuta(ruta.id)">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                    </template>
-                    <template x-if="rutas.length === 0">
-                        <tr>
-                            <td colspan="5" class="text-center py-8 text-gray-400">
-                                <i class="fas fa-info-circle mb-1 text-lg"></i><br>
-                                No hay rutas comerciales registradas.
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
+        <div id="panelGestio">
+            <h3 style="margin-top:0; font-size:12px; text-transform:uppercase; border-bottom:1px solid #e2e8f0; padding-bottom:5px; color: #0f2d4a;" data-i18n="rutaManageTitle">Gestió de Centres</h3>
+            <div style="margin-bottom:10px; display: flex; gap: 6px;">
+                <input type="text" id="nouNomInput" style="flex: 1; border:1px solid #cbd5e1; padding:4px 8px; border-radius:6px; font-family:inherit; font-size:11px;">
+                <button onclick="afegirC()" style="background:#0f2d4a; color:white; border:none; padding:4px 12px; cursor:pointer; font-weight:bold; border-radius:6px; font-family:inherit;">+</button>
+            </div>
+            <div style="margin-bottom:10px">
+                <select id="selGestio" style="width:100%; border:1px solid #cbd5e1; padding:4px; border-radius:6px; font-family:inherit; font-size:11px; height:24px;"></select>
+            </div>
+            <div style="display:flex; gap:6px; margin-bottom:12px;">
+                <button onclick="editarC()" style="background:#f1f5f9; color:#0f2d4a; border:1px solid #cbd5e1; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:6px; font-family:inherit; font-size:11px;" data-i18n="rutaBtnEdit">📝 Editar</button>
+                <button onclick="borrarC()" style="background:#fee2e2; color:#ef4444; border:1px solid #fca5a5; flex:1; padding:6px; cursor:pointer; font-weight:bold; border-radius:6px; font-family:inherit; font-size:11px;" data-i18n="rutaBtnDelete">🗑️ Eliminar</button>
+            </div>
+            <button onclick="document.getElementById('panelGestio').style.display='none'" style="display:block; width:100%; background:#0f2d4a; color:white; border:none; padding:8px; cursor:pointer; font-weight:bold; text-transform:uppercase; border-radius:6px; font-family:inherit; font-size:11px;" data-i18n="rutaBtnClose">Tancar</button>
+        </div>
+    </div>
+
+    <div class="toolbar-group" style="flex-grow: 1;">
+        <div class="legend-wrapper">
+          <div style="display: flex; gap: 10px; align-items: center; justify-content: space-between; width: 100%;">
+            <div class="legend-item"><div class="legend-box national"></div><span data-i18n="rutaLegendNational">Festiu nacional</span></div>
+            <div class="legend-item"><div class="legend-box local"></div><span data-i18n="rutaLegendLocal">Festiu local</span></div>
+            <div class="legend-item"><div class="legend-box convenio"></div><span data-i18n="rutaLegendConvenio">Festiu conveni</span></div>
+            <div class="legend-item"><div class="legend-box empresa"></div><span data-i18n="rutaLegendEmpresa">Festiu empresa</span></div>
+            <div class="legend-item"><div class="legend-box vigilia"></div><span data-i18n="rutaLegendVigilia">Vigília</span></div>
+            <div class="legend-item"><div class="legend-box night-circle"></div><span data-i18n="rutaLegendNight"> Visita nocturna</span></div>
+            <div class="legend-item"><div class="legend-box holiday-circle"></div><span data-i18n="rutaLegendHoliday">Festiu</span></div>
+          </div>
         </div>
     </div>
 </div>
 
-<script src="./js/ruta.js"></script>
+<div class="wrapper">
+    <div class="calendar-container">
+        <div id="container-albert">
+            <h2>ALBERT</h2>
+            <div class="chart-container"><canvas id="chartAlbert"></canvas></div>
+            <div id="calendar-albert"></div>
+            <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center; justify-content: flex-end;">
+                <button id="resetAlbertBtn" class="btn-reset" data-i18n="rutaBtnResetAlbert">⚠️ Reset Albert</button>
+                <button class="btn-auto" onclick="obrirAutoRuta('Albert')" data-i18n="rutaBtnAutoAlbert">⚡ Auto Albert</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="calendar-container">
+        <div id="container-laura">
+            <h2>LAURA</h2>
+            <div class="chart-container"><canvas id="chartLaura"></canvas></div>
+            <div id="calendar-laura"></div>
+            <div style="display: flex; gap: 8px; margin-top: 12px; align-items: center; justify-content: flex-end;">
+                <button id="resetLauraBtn" class="btn-reset" data-i18n="rutaBtnResetLaura">⚠️ Reset Laura</button>
+                <button class="btn-auto" onclick="obrirAutoRuta('Laura')" data-i18n="rutaBtnAutoLaura">⚡ Auto Laura</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function registrarLog(usuari, accio) {
+    const logs = JSON.parse(localStorage.getItem('nyn_logs') || "[]");
+    const locale = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? 'es-ES' : 'ca-ES';
+    logs.unshift({ data: new Date().toLocaleString(locale), usuari: usuari, fitxer: "ruta.html", accio: accio });
+    localStorage.setItem('nyn_logs', JSON.stringify(logs));
+}
+
+// --- RESTA DE LÒGICA (CENTRES, CALENDARIS, CHARTS) SENSE CANVIS ---
+
+const baseAddresses = ["--- >", "ARAGÓ 182", "ARIBAU 225", "AV. ROMA 120", "AV. ROMA 210", "AV. ROMA 69", "BEJAR 63", "BISBE LAGUARDA", "BONANOVA 59", "BORRELL 26", "BRUC 103", "CAP DE SETMANA", "COLLBLANC 101", "CONCEPT", "CÒRSEGA 344", "CURSO PRL", "DIA CONVENI", "DIAGONAL 593", "DOS DE MAIG 218", "ESPRONCEDA 254", "ASPY", "ESPRONCEDA 348", "ESTEVE TARRADAS 17", "FESTIU", "GEIGLE", "GRAN VÍA 641", "HERCEGOVINA 19", "LA ROTONDA", "LA TAMARITA", "LEPANTO 199", "LLIURE", "LLORENS BARBA 66", "LLULL 17", "MALLORCA 508", "MALLORCA 51", "MASTER CATALONIA", "MELCIOR PALAU", "MORAGAS 15", "MOSSOS ESQUADRA", "OFICINES", "PAU ALSINA 74", "PAU ALSINA 32", "PEDRALBES", "PONS GALLARZA", "PROVENÇA 111", "REINA AMALIA", "ROCAFORT 64", "SANTA CAROLINA", "SANTALÓ 14", "SENTMENAT 2", "SENTMENAT 54", "SEPÚLVEDA 65", "TARRAGONA 141", "TORRAS BAGES", "TRAV. GRACIA 183", "URGELL 154", "URGELL 234", "VACANCES", "VALENCIA 243", "VALENCIA 375", "VALENCIA 511", "VIA AUGUSTA 349", "ZONA FRANCA 131"];
+let addresses = [];
+const fixedAuxiliary = ["CAP DE SETMANA", "CURSO PRL", "DIA CONVENI", "FESTIU", "ASPY", "LLIURE", "OFICINES", "VACANCES"];
+
+let aparcamientosInfo = []; // Array de { nombre, coordinador_responsable }
+
+async function loadAddresses() {
+    try {
+        let dbApi = window.dbAPI;
+        if (!dbApi && window.parent && window.parent.dbAPI) {
+            dbApi = window.parent.dbAPI;
+        }
+        if (dbApi) {
+            aparcamientosInfo = await dbApi.read('catalogos', "SELECT nombre, coordinador_responsable FROM aparcamientos WHERE activo = 1", []);
+            const nombresAparcamientos = aparcamientosInfo.map(ap => ap.nombre);
+            addresses = ["--- >", ...Array.from(new Set([...nombresAparcamientos, ...fixedAuxiliary]))].sort((a, b) => {
+                if (a === "--- >") return -1;
+                if (b === "--- >") return 1;
+                return a.localeCompare(b, 'ca');
+            });
+        } else {
+            addresses = [...new Set([...baseAddresses, ...JSON.parse(localStorage.getItem("customCenters") || "[]")])];
+        }
+    } catch (e) {
+        console.error('Error cargando direcciones de aparcamientos:', e);
+        addresses = [...new Set([...baseAddresses, ...JSON.parse(localStorage.getItem("customCenters") || "[]")])];
+    }
+}
+
+const holidays = { national:["2026-01-01","2026-01-06","2026-04-03","2026-04-06","2026-05-01","2026-06-24","2026-08-15","2026-09-11","2026-10-12","2026-12-08","2026-12-25","2026-12-26"], local:["2026-05-25","2026-09-24"], convenio:["2026-06-15","2026-12-28","2026-12-29","2026-12-30","2026-12-31"], empresa:["2026-01-02","2026-04-02","2026-09-25","2026-12-07"], vigilia:["2026-01-05","2026-12-24"] };
+
+function generateCalendars(){ generateCalendar("calendar-albert","Albert"); generateCalendar("calendar-laura","Laura"); updateCharts(); }
+function generateCalendar(containerId, person){
+    const container = document.getElementById(containerId); container.innerHTML = "";
+    const date = new Date(monthPicker.value); const year = date.getFullYear(), month = date.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const headerRow = document.createElement("tr");
+    const diesSetmana = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') 
+        ? ["Lu","Ma","Mi","Ju","Vi","Sá","Do"] 
+        : ["Dl","Dm","Dc","Dj","Dv","Ds","Dg"];
+    diesSetmana.forEach(d=>{ const th = document.createElement("th"); th.textContent = d; headerRow.appendChild(th); });
+    table.appendChild(headerRow);
+    let row = document.createElement("tr");
+    let firstDay = new Date(year, month, 1).getDay() || 7;
+    for(let i=1; i<firstDay; i++) row.appendChild(document.createElement("td"));
+    for(let day=1; day<=daysInMonth; day++){
+        const isoDate = `${year}-${String(month+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        const cell = document.createElement("td");
+        if((new Date(year, month, day).getDay() || 7) >= 6) cell.classList.add("weekend");
+        
+        if(holidays.national.includes(isoDate)) cell.classList.add("national");
+        else if(holidays.local.includes(isoDate)) cell.classList.add("local");
+        else if(holidays.convenio.includes(isoDate)) cell.classList.add("convenio");
+        else if(holidays.empresa.includes(isoDate)) cell.classList.add("empresa");
+        else if(holidays.vigilia.includes(isoDate)) cell.classList.add("vigilia");
+        
+        const title = document.createElement("div"); title.className = "day-number"; title.textContent = day; cell.appendChild(title);
+        for(let i=0;i<6;i++){
+            const key = `${person}-${year}-${month}-${day}-${i}`, nKey = `${key}-night`, hKey = `${key}-holiday`;
+            const rowDiv = document.createElement("div"); rowDiv.className = "visit-row";
+            const sel = document.createElement("select");
+            sel.innerHTML = '<option value="">--- ></option>';
+            
+            const aparcaments = [];
+            const especials = [];
+            addresses.forEach(a => {
+                if (a === "--- >" || !a) return;
+                if (fixedAuxiliary.includes(a)) {
+                    especials.push(a);
+                } else {
+                    aparcaments.push(a);
+                }
+            });
+            aparcaments.sort((a, b) => a.localeCompare(b, 'ca'));
+            especials.sort((a, b) => a.localeCompare(b, 'ca'));
+            
+            if (aparcaments.length > 0) {
+                const optGroupAp = document.createElement("optgroup");
+                optGroupAp.label = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? "Aparcamientos" : "Aparcaments";
+                aparcaments.forEach(ap => {
+                    const opt = document.createElement("option");
+                    opt.value = ap;
+                    opt.textContent = ap;
+                    optGroupAp.appendChild(opt);
+                });
+                sel.appendChild(optGroupAp);
+            }
+            if (especials.length > 0) {
+                const optGroupEsp = document.createElement("optgroup");
+                optGroupEsp.label = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? "Eventos Especiales" : "Esdeveniments Especials";
+                especials.forEach(es => {
+                    const opt = document.createElement("option");
+                    opt.value = es;
+                    opt.textContent = es;
+                    optGroupEsp.appendChild(opt);
+                });
+                sel.appendChild(optGroupEsp);
+            }
+            const val = localStorage.getItem(key) || "";
+            sel.value = val;
+            
+            // Pintar si es ajeno en carga inicial
+            const apInfoCarga = (aparcamientosInfo || []).find(ap => ap.nombre === val);
+            if (apInfoCarga && apInfoCarga.coordinador_responsable && apInfoCarga.coordinador_responsable !== person && apInfoCarga.coordinador_responsable !== 'Ambos') {
+                sel.classList.add('foreign-select');
+            }
+            
+            const nBtn = document.createElement("button"); nBtn.className = "night-btn";
+            if(localStorage.getItem(nKey)){ nBtn.classList.add("active"); sel.classList.add("night-select"); }
+            const hBtn = document.createElement("button"); hBtn.className = "holiday-btn";
+            if(localStorage.getItem(hKey)){ hBtn.classList.add("active"); sel.classList.add("holiday-select"); }
+
+            sel.onchange = () => {
+                localStorage.setItem(key, sel.value);
+                // Pintar si es ajeno en cambio manual
+                const apInfo = (aparcamientosInfo || []).find(ap => ap.nombre === sel.value);
+                if (apInfo && apInfo.coordinador_responsable && apInfo.coordinador_responsable !== person && apInfo.coordinador_responsable !== 'Ambos') {
+                    sel.classList.add('foreign-select');
+                } else {
+                    sel.classList.remove('foreign-select');
+                }
+                updateCharts();
+            };
+            nBtn.onclick = () => {
+                if(localStorage.getItem(nKey)){ localStorage.removeItem(nKey); nBtn.classList.remove("active"); sel.classList.remove("night-select"); }
+                else { localStorage.setItem(nKey, "1"); nBtn.classList.add("active"); sel.classList.add("night-select"); }
+            };
+            hBtn.onclick = () => {
+                if(localStorage.getItem(hKey)){ localStorage.removeItem(hKey); hBtn.classList.remove("active"); sel.classList.remove("holiday-select"); }
+                else { localStorage.setItem(hKey, "1"); hBtn.classList.add("active"); sel.classList.add("holiday-select"); }
+            };
+            rowDiv.append(sel, hBtn, nBtn); cell.appendChild(rowDiv);
+        }
+        row.appendChild(cell);
+        if((new Date(year, month, day).getDay() || 7) === 7){ table.appendChild(row); row = document.createElement("tr"); }
+    }
+    table.appendChild(row); container.appendChild(table);
+}
+
+function obrirGestio() { document.getElementById('panelGestio').style.display = 'block'; omplirGestio(); }
+function omplirGestio() {
+    const sel = document.getElementById("selGestio"); sel.innerHTML = "";
+    addresses.filter(a => a !== "--- >").sort((a,b)=>a.localeCompare(b,'ca')).forEach(a => { sel.innerHTML += `<option value="${a}">${a}</option>`; });
+}
+function afegirC() {
+    const nou = document.getElementById("nouNomInput").value.trim().toUpperCase();
+    if(nou && !addresses.includes(nou)) {
+        let custom = JSON.parse(localStorage.getItem("customCenters") || "[]"); custom.push(nou);
+        localStorage.setItem("customCenters", JSON.stringify(custom));
+        addresses.push(nou); document.getElementById("nouNomInput").value = ""; omplirGestio(); generateCalendars();
+    }
+}
+function borrarC() {
+    const sel = document.getElementById("selGestio").value;
+    const confirmMsg = (typeof i18n !== 'undefined' && i18n.getLanguage() === 'es') ? `¿Eliminar ${sel}?` : `Eliminar ${sel}?`;
+    if(sel && confirm(confirmMsg)) {
+        let custom = JSON.parse(localStorage.getItem("customCenters") || "[]").filter(c => c !== sel);
+        localStorage.setItem("customCenters", JSON.stringify(custom));
+        addresses = [...new Set([...baseAddresses, ...custom])]; omplirGestio(); generateCalendars();
+    }
+}
+
+let chartA, chartL;
+function updateCharts(){
+    const labs = addresses.filter(a=>a!=="--- >").sort();
+    const [selYear, selMonth] = monthPicker.value.split("-");
+    const monthIdx = parseInt(selMonth) - 1;
+    const count = (p) => {
+        let res = {}; labs.forEach(l=>res[l]=0);
+        Object.keys(localStorage).forEach(k=>{
+            if(k.startsWith(`${p}-${selYear}-${monthIdx}-`) && !k.endsWith("-night") && !k.endsWith("-holiday")){
+                let v = localStorage.getItem(k); if(res[v]!==undefined) res[v]++;
+            }
+        });
+        return labs.map(l=>res[l]);
+    };
+    if(chartA) chartA.destroy(); if(chartL) chartL.destroy();
+    const opt = (id, label, data, col) => new Chart(document.getElementById(id), {
+        type: 'bar', 
+        data: {
+            labels: labs, 
+            datasets: [{label, data, backgroundColor: col}]
+        },
+        options: { 
+            responsive: true, 
+            maintainAspectRatio: false, 
+            scales: { 
+                x: {
+                    ticks: {
+                        font: { size: 7 }, // Una mica més petita per encabir-ho tot
+                        maxRotation: 90,
+                        minRotation: 90,   // Força la verticalitat
+                        autoSkip: false    // NO et saltis cap centre (com Rocafort)
+                    }
+                }, 
+                y: {
+                    beginAtZero: true, 
+                    ticks: { stepSize: 1 }
+                } 
+            } 
+        }
+    });
+    chartA = opt("chartAlbert", "Albert", count("Albert"), "rgba(54, 162, 235, 0.8)");
+    chartL = opt("chartLaura", "Laura", count("Laura"), "rgba(255, 99, 132, 0.8)");
+}
+
+const monthPicker = document.getElementById("monthPicker");
+const avui = new Date();
+monthPicker.value = avui.getFullYear() + "-" + String(avui.getMonth() + 1).padStart(2, '0');
+monthPicker.onchange = generateCalendars;
+
+function resetMesUsuari(person) {
+    const [selYear, selMonth] = monthPicker.value.split("-");
+    const monthIdx = parseInt(selMonth) - 1;
+    const prefixMes = `${person}-${selYear}-${monthIdx}-`;
+    
+    const confirmMsg = i18n.t('rutaConfirmReset', { person: person, mes: selMonth, any: selYear });
+    
+    if(confirm(confirmMsg)){ 
+        Object.keys(localStorage).forEach(k => {
+            if(k.startsWith(prefixMes)) localStorage.removeItem(k);
+        }); 
+        const logMsg = i18n.t('rutaLogReset', { mes: selMonth, any: selYear });
+        registrarLog(person.toUpperCase(), logMsg);
+        generateCalendars(); updateCharts(); 
+    } 
+}
+
+document.getElementById("resetAlbertBtn").onclick = () => resetMesUsuari("Albert");
+document.getElementById("resetLauraBtn").onclick = () => resetMesUsuari("Laura");
+
+async function initRuta() {
+    await persistence.syncLoad('ruta');
+    await loadAddresses();
+    
+    // Ocultar botón de gestión local si el rol es coordinador o comercial
+    const role = sessionStorage.getItem('userRole') || (window.parent && window.parent.sessionStorage.getItem('userRole'));
+    if (role === 'coordinador' || role === 'comercial') {
+        const btn = document.getElementById('btnGestioCentres');
+        if (btn) btn.style.display = 'none';
+    }
+    
+    generateCalendars();
+}
+initRuta();
+
+// --- LOGICA DE RUTA AUTOMATICA CON LIMITE DE VISITAS ---
+let personaAutoRuta = '';
+
+function obrirAutoRuta(person) {
+    personaAutoRuta = person;
+    const titleText = i18n.t('rutaModalAutoTitle', { coordinador: person.toUpperCase() });
+    document.getElementById('modalAutoTitle').innerText = titleText;
+    document.getElementById('modalAutoRuta').style.display = 'flex';
+}
+
+function cerrarAutoRutaModal() {
+    document.getElementById('modalAutoRuta').style.display = 'none';
+}
+
+async function ejecutarGeneracionAuto() {
+    const person = personaAutoRuta;
+    const dateStr = monthPicker.value;
+    const [year, monthPart] = dateStr.split("-");
+    const yearNum = parseInt(year);
+    const monthIdx = parseInt(monthPart) - 1;
+    
+    // Obtener parámetros
+    const dlVis = parseInt(document.getElementById('autoDl').value) || 0;
+    const dmVis = parseInt(document.getElementById('autoDm').value) || 0;
+    const dcVis = parseInt(document.getElementById('autoDc').value) || 0;
+    const djVis = parseInt(document.getElementById('autoDj').value) || 0;
+    const dvVis = parseInt(document.getElementById('autoDv').value) || 0;
+    const wndCount = parseInt(document.getElementById('autoFinsSetmana').value) || 0;
+    const wndTorn = document.getElementById('autoTornWeekend').value;
+    const maxVisitas = parseInt(document.getElementById('autoMaxVisitasPorCentro').value) || 4;
+
+    const visitasDia = [0, dlVis, dmVis, dcVis, djVis, dvVis, 0]; // 0=Dom, 1=Lun... 6=Sab
+
+    // Obtener aparcamientos propios
+    const propios = (aparcamientosInfo || []).filter(ap => 
+        ap.coordinador_responsable === person || ap.coordinador_responsable === 'Ambos'
+    ).map(ap => ap.nombre);
+
+    if (propios.length === 0) {
+        const errorMsg = i18n.t('rutaErrorNoAparcamientos');
+        alert(errorMsg);
+        cerrarAutoRutaModal();
+        return;
+    }
+
+    // Inicializar contadores de visitas
+    const visitasCount = {};
+    propios.forEach(p => visitasCount[p] = 0);
+
+    // Función inteligente de selección con límite y balanceo
+    let lastSelectedIndex = -1;
+    const getSiguienteAparcamientoInteligente = () => {
+        // Filtrar cuáles están por debajo del límite
+        let candidatos = propios.filter(p => visitasCount[p] < maxVisitas);
+        
+        // Si no quedan candidatos por debajo del límite, seleccionamos los que tengan el menor número de visitas registradas
+        if (candidatos.length === 0) {
+            let minVisits = Infinity;
+            propios.forEach(p => {
+                if (visitasCount[p] < minVisits) minVisits = visitasCount[p];
+            });
+            candidatos = propios.filter(p => visitasCount[p] === minVisits);
+        }
+
+        // De los candidatos elegibles, seleccionamos secuencialmente (rotativo) para no repetir de forma inmediata si es posible
+        let chosen = candidatos[0];
+        // Intentar que no sea el mismo que el anterior si hay más opciones
+        if (candidatos.length > 1) {
+            let nextIndex = (lastSelectedIndex + 1) % propios.length;
+            let found = false;
+            for (let i = 0; i < propios.length; i++) {
+                let idx = (nextIndex + i) % propios.length;
+                let name = propios[idx];
+                if (candidatos.includes(name)) {
+                    chosen = name;
+                    lastSelectedIndex = idx;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                chosen = candidatos[0];
+                lastSelectedIndex = propios.indexOf(chosen);
+            }
+        } else {
+            chosen = candidatos[0];
+            lastSelectedIndex = propios.indexOf(chosen);
+        }
+
+        visitasCount[chosen]++;
+        return chosen;
+    };
+
+    const daysInMonth = new Date(yearNum, monthIdx + 1, 0).getDate();
+
+    // Identificar fines de semana
+    const finesDeSemana = [];
+    let sabadoActivo = null;
+    for (let day = 1; day <= daysInMonth; day++) {
+        const dayOfWeek = new Date(yearNum, monthIdx, day).getDay();
+        if (dayOfWeek === 6) {
+            sabadoActivo = day;
+        } else if (dayOfWeek === 0 && sabadoActivo !== null) {
+            finesDeSemana.push({ sabado: sabadoActivo, domingo: day });
+            sabadoActivo = null;
+        }
+    }
+
+    const wndSeleccionados = [];
+    const wndDisponibles = [...finesDeSemana];
+    for (let k = 0; k < wndCount && wndDisponibles.length > 0; k++) {
+        const randIndex = Math.floor(Math.random() * wndDisponibles.length);
+        wndSeleccionados.push(wndDisponibles.splice(randIndex, 1)[0]);
+    }
+
+    // Confirmación
+    const confirmMsg = i18n.t("confirmGenAuto", { person, monthPart, year });
+    if (!confirm(confirmMsg)) {
+        return;
+    }
+
+    // 1. Limpiar datos del mes
+    const prefixMes = `${person}-${yearNum}-${monthIdx}-`;
+    Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(prefixMes)) {
+            localStorage.removeItem(k);
+        }
+    });
+
+    // 2. Planificar diario
+    for (let day = 1; day <= daysInMonth; day++) {
+        const isoDate = `${yearNum}-${String(monthIdx+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+        const esFestivo = holidays.national.includes(isoDate) || 
+                          holidays.local.includes(isoDate) || 
+                          holidays.convenio.includes(isoDate) || 
+                          holidays.empresa.includes(isoDate);
+
+        if (esFestivo) continue;
+
+        const dayOfWeek = new Date(yearNum, monthIdx, day).getDay();
+        if (dayOfWeek >= 1 && dayOfWeek <= 5) {
+            const numVisitas = visitasDia[dayOfWeek];
+            for (let i = 0; i < numVisitas; i++) {
+                const key = `${person}-${yearNum}-${monthIdx}-${day}-${i}`;
+                const ap = getSiguienteAparcamientoInteligente();
+                localStorage.setItem(key, ap);
+            }
+        }
+    }
+
+    // Planificar fines de semana
+    wndSeleccionados.forEach(wnd => {
+        [wnd.sabado, wnd.domingo].forEach(day => {
+            const numVisitas = 3; // Por defecto 3 visitas por día de fin de semana
+            for (let i = 0; i < numVisitas; i++) {
+                const key = `${person}-${yearNum}-${monthIdx}-${day}-${i}`;
+                const ap = getSiguienteAparcamientoInteligente();
+                localStorage.setItem(key, ap);
+                
+                if (wndTorn === 'nit') {
+                    localStorage.setItem(`${key}-night`, "1");
+                }
+            }
+        });
+    });
+
+    // Sincronizar en red
+    await persistence.syncSave();
+
+    const successMsg = i18n.t('rutaSuccessAuto', { person: person });
+    alert(successMsg);
+    cerrarAutoRutaModal();
+    generateCalendars();
+    updateCharts();
+}
+
+window.addEventListener('languageChanged', () => {
+    i18n.translatePage();
+    generateCalendars();
+});
+</script>
+
+<!-- Modal de Ruta Automática con límites de visitas -->
+<div id="modalAutoRuta" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); z-index: 20000; justify-content: center; align-items: center;">
+    <div style="background: #ffffff; padding: 24px; border-radius: 16px; width: 360px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04); border: 1px solid #e2e8f0; font-family: inherit;">
+        <h3 id="modalAutoTitle" style="margin-top: 0; color: #0f2d4a; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; text-transform: uppercase; font-size: 14px; font-weight: 700; letter-spacing: 0.5px;">Generar Ruta Automàtica</h3>
+        
+        <!-- Visitas por día -->
+        <h4 style="margin: 16px 0 8px; font-size: 11px; font-weight: 600; color: #475569;" data-i18n="rutaVisitasDiariasLabel">Visites diàries per dia de la setmana:</h4>
+        <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 16px;">
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dl</label>
+                <input type="number" id="autoDl" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dm</label>
+                <input type="number" id="autoDm" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dc</label>
+                <input type="number" id="autoDc" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dj</label>
+                <input type="number" id="autoDj" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
+            </div>
+            <div style="text-align: center;">
+                <label style="font-size: 9px; font-weight: bold; display: block; margin-bottom: 4px; color: #64748b;">Dv</label>
+                <input type="number" id="autoDv" min="0" max="6" value="3" style="width: 100%; text-align: center; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 4px 0; font-family: inherit; font-weight: 500;">
+            </div>
+        </div>
+
+        <!-- Fines de semana -->
+        <div style="margin-bottom: 16px; display: flex; gap: 12px;">
+            <div style="flex: 1;">
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;" data-i18n="rutaFinsSetmanaLabel">Fins de setmana (0-4):</label>
+                <input type="number" id="autoFinsSetmana" min="0" max="4" value="1" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-weight: 500;">
+            </div>
+            <div style="flex: 1;">
+                <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;" data-i18n="rutaTornWndLabel">Torn WND:</label>
+                <select id="autoTornWeekend" style="width: 100%; padding: 6px; font-size: 11px; height: 29px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; background-color: #fff;">
+                    <option value="mati" data-i18n="rutaOptMati">Matí</option>
+                    <option value="tarda" data-i18n="rutaOptTarda">Tarda</option>
+                    <option value="nit" data-i18n="rutaOptNit">Nit</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Veces máximas que se irá a cada aparcamiento en el mes -->
+        <div style="margin-bottom: 20px;">
+            <label style="font-size: 10px; font-weight: bold; display: block; margin-bottom: 6px; color: #475569;" data-i18n="rutaMaxVisitasCentroLabel">Visites màximes per centre al mes:</label>
+            <input type="number" id="autoMaxVisitasPorCentro" min="1" max="31" value="4" style="width: 100%; padding: 6px; box-sizing: border-box; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 6px; font-family: inherit; font-weight: 500; margin-bottom: 4px;">
+            <span style="font-size: 9px; color: #64748b; display: block; line-height: 1.2;" data-i18n="rutaMaxVisitasCentroHelp">(Evita la repetició excessiva dels mateixos aparcaments)</span>
+        </div>
+
+        <div style="display: flex; gap: 10px;">
+            <button onclick="ejecutarGeneracionAuto()" data-i18n="btnAutoRutaGenerate" style="background: #0f2d4a; color: white; border: none; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: background 0.2s;">Generar</button>
+            <button onclick="cerrarAutoRutaModal()" data-i18n="btnAutoRutaCancel" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 10px; font-weight: 700; flex: 1; cursor: pointer; border-radius: 8px; font-size: 11px; text-transform: uppercase; font-family: inherit; transition: all 0.2s;">Cancelar</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
