@@ -25,6 +25,31 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             await this.carregar();
+
+            // Sincronizar el redibujado de gráficos cuando los datos filtrados cambien
+            this.$watch('dadesFiltrades', (newVal) => {
+                this.$nextTick(() => {
+                    this.renderizarGraficos(newVal);
+                });
+            });
+
+            // Redibujar gráficos si cambia el idioma en caliente
+            window.addEventListener('languageChanged', () => {
+                this.$nextTick(() => {
+                    this.renderizarGraficos(this.dadesFiltrades);
+                });
+            });
+
+            // Renderizado inicial
+            this.$nextTick(() => {
+                this.renderizarGraficos(this.dadesFiltrades);
+            });
+        },
+
+        renderizarGraficos(arr) {
+            if (typeof renderCentreChart === 'function') renderCentreChart(arr);
+            if (typeof renderScatterChart === 'function') renderScatterChart(arr);
+            if (typeof renderSunburstChart === 'function') renderSunburstChart(arr);
         },
 
         async carregar() {

@@ -1,5 +1,6 @@
 let centreChart;
 let sunburstChart;
+let scatterChart;
 
 
 
@@ -183,4 +184,120 @@ function renderSunburstChart(arr) {
 
 
   sunburstChart.setOption(option);
+}
+
+// ------------------- Gràfica de dispersió / burbulles (Volum aptituds) -------------------
+function renderScatterChart(arr) {
+  const canvas = document.getElementById('scatterChart');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+
+  const top3 = arr.slice().sort((a,b)=>b.valoracio - a.valoracio).slice(0,3);
+
+  const bubbleData = arr.map(d => {
+    const isTop = top3.includes(d);
+    return {
+      x: d.coneixements,
+      y: d.atencio,
+      r: d.disponibilitat * 2 + 4,
+      disponibilitatReal: d.disponibilitat,
+      actitud: d.actitud,
+      agent: d.agent,
+      valoracio: d.valoracio,
+      borderWidth: isTop ? 3 : 1,
+      borderColor: isTop ? 'gold' : 'rgba(0,0,0,0.2)'
+    };
+  });
+
+  if (scatterChart) scatterChart.destroy();
+
+  // Plugin per dibuixar llegenda dins del canvas
+  const bubbleLegendPlugin = {
+    id: 'bubbleLegendPlugin',
+    afterDraw(chart) {
+      const { ctx, scales, chartArea } = chart;
+      ctx.save();
+
+      const dotRadius = 6;
+      const gap = 25; // més espai entre elements
+      const yPixel = scales.y.getPixelForValue(10) - 12; // posició vertical
+      let xPixel = chartArea.left + 10;
+
+      const legendItems = [
+        { color: 'rgba(218,165,32,0.8)', label: i18n.t('rankingLegendActitud8') },
+        { color: 'rgba(0,128,0,0.7)', label: i18n.t('rankingLegendActitud5') },
+        { color: 'rgba(255,0,0,0.6)', label: i18n.t('rankingLegendActitud2') },
+        { color: 'rgba(0,0,0,0.5)', label: i18n.t('rankingLegendActitud0') }
+      ];
+
+      legendItems.forEach(item => {
+        // cercle
+        ctx.fillStyle = item.color;
+        ctx.beginPath();
+        ctx.arc(xPixel + dotRadius, yPixel, dotRadius, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // text
+        ctx.fillStyle = '#555';
+        ctx.font = '11px Arial';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(item.label, xPixel + dotRadius * 2 + 6, yPixel);
+
+        xPixel += ctx.measureText(item.label).width + dotRadius * 2 + gap;
+      });
+
+      // Text final de la mida
+      ctx.font = '11px Arial italic';
+      ctx.fillText(i18n.t('rankingLegendMidaDispo'), xPixel, yPixel);
+
+      ctx.restore();
+    }
+  };
+
+  scatterChart = new Chart(ctx, {
+    type: 'bubble',
+    data: {
+      datasets: [{
+        label: '', // label buit per evitar llegenda automàtica
+        data: bubbleData,
+        backgroundColor: bubbleData.map(d => {
+          if (d.actitud >= 8) return 'rgba(218,165,32,0.8)';
+          if (d.actitud >= 5) return 'rgba(0,128,0,0.7)';
+          if (d.actitud >= 2) return 'rgba(255,0,0,0.6)';
+          return 'rgba(0,0,0,0.5)';
+        }),
+        borderWidth: bubbleData.map(d => d.borderWidth),
+        borderColor: bubbleData.map(d => d.borderColor)
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: { top: 10, bottom: 45 } },
+      scales: {
+        x: { min: 0, max: 10, title: { display: true, text: i18n.t('rankingThConeixements') }, ticks: { padding: 10 } },
+        y: { min: 0, max: 10, title: { display: true, text: i18n.t('rankingThAtencio') } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const d = context.raw;
+              return [
+                d.agent,
+                `${i18n.t('rankingThConeixements')}: ${d.x}`,
+                `${i18n.t('rankingThAtencio')}: ${d.y}`,
+                `${i18n.t('rankingThDisponibilitat')}: ${d.disponibilitatReal}`,
+                `${i18n.t('rankingThActitud')}: ${d.actitud}`,
+                `${i18n.t('rankingThValoracio')}: ${d.valoracio}`
+              ];
+            }
+          }
+        }
+      }
+    },
+    plugins: [ bubbleLegendPlugin ]
+  });
 }

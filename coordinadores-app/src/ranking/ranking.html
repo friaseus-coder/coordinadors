@@ -16,6 +16,9 @@
     </script>
     <script src="../js/persistence.js"></script>
     <script src="../js/i18n.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="js/charts.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script>
        document.addEventListener('DOMContentLoaded', () => {
@@ -226,40 +229,40 @@
 <body x-data="moduloRanking()" x-init="init()">
 
 <header>
-    <div class="header-center"><i class="fas fa-star mr-2"></i> RÀNQUING I VALORACIÓ D'AGENTS</div>
+    <div class="header-center" data-i18n="rankingTitle"><i class="fas fa-star mr-2"></i> RÀNQUING I VALORACIÓ D'AGENTS</div>
 </header>
 
 <div class="admin-panel">
     <div class="toolbar-group">
-        <span class="filter-label">Cerca:</span>
-        <input type="text" x-model="busqueda" placeholder="Cerca agent, centre..." style="width: 200px;">
+        <span class="filter-label" data-i18n="chklstExplorar">Cerca:</span>
+        <input type="text" x-model="busqueda" placeholder="Cerca per agent..." data-i18n="rankingSearchPlaceholder" style="width: 200px;">
     </div>
 
     <div class="toolbar-group">
-        <span class="filter-label">Filtres:</span>
+        <span class="filter-label" data-i18n="rankingLabelFiltres">Filtres:</span>
         <select x-model="filtros.centre">
-            <option value="">Tots els centres</option>
+            <option value="" data-i18n="rankingAllCentres">Tots els centres</option>
             <template x-for="c in centresUnics" :key="c">
                 <option :value="c" x-text="c"></option>
             </template>
         </select>
 
         <select x-model="filtros.torn">
-            <option value="">Tots els torns</option>
+            <option value="" data-i18n="rankingAllTorns">Tots els torns</option>
             <template x-for="t in opcionsTorn" :key="t">
                 <option :value="t" x-text="t"></option>
             </template>
         </select>
 
         <select x-model="filtros.zona">
-            <option value="">Totes les zones</option>
+            <option value="" data-i18n="rankingAllZones">Totes les zones</option>
             <template x-for="z in opcionsZona" :key="z">
                 <option :value="z" x-text="z"></option>
             </template>
         </select>
 
         <select x-model="filtros.nota">
-            <option value="">Totes les notes</option>
+            <option value="" data-i18n="rankingAllNotes">Totes les notes</option>
             <template x-for="n in notesOptions" :key="n.value">
                 <option :value="n.value" x-text="n.label"></option>
             </template>
@@ -267,18 +270,43 @@
     </div>
 
     <div class="toolbar-group">
-        <button class="btn-nyn btn-secondary" @click="viewMode = 'table'" :class="viewMode === 'table' ? 'bg-slate-200' : ''"><i class="fas fa-table"></i> Tabla</button>
-        <button class="btn-nyn btn-secondary" @click="viewMode = 'card'" :class="viewMode === 'card' ? 'bg-slate-200' : ''"><i class="fas fa-th-large"></i> Cards</button>
+        <button class="btn-nyn btn-secondary" @click="viewMode = 'table'" :class="viewMode === 'table' ? 'bg-slate-200' : ''" data-i18n="rankingBtnShowTable"><i class="fas fa-table"></i> Tabla</button>
+        <button class="btn-nyn btn-secondary" @click="viewMode = 'card'" :class="viewMode === 'card' ? 'bg-slate-200' : ''" data-i18n="rankingBtnShowCards"><i class="fas fa-th-large"></i> Cards</button>
     </div>
 
     <div class="toolbar-group" x-show="userRole === 'jefe operaciones'">
-        <button class="btn-nyn" @click="afegirFila()"><i class="fas fa-plus mr-1"></i> Afegir Fila</button>
+        <button class="btn-nyn" @click="afegirFila()" data-i18n="rankingAddRow"><i class="fas fa-plus mr-1"></i> Afegir Fila</button>
     </div>
 
     <div class="toolbar-group" style="margin-left: auto;">
-        <button class="btn-nyn btn-secondary" @click="exportarBackupJSON()"><i class="fas fa-download mr-1"></i> Exportar</button>
-        <button class="btn-nyn btn-secondary" @click="document.getElementById('importFile').click()"><i class="fas fa-upload mr-1"></i> Importar</button>
+        <button class="btn-nyn btn-secondary" @click="exportarBackupJSON()" data-i18n="vacancesExportJSON"><i class="fas fa-download mr-1"></i> Exportar</button>
+        <button class="btn-nyn btn-secondary" @click="document.getElementById('importFile').click()" data-i18n="vacancesImportJSON"><i class="fas fa-upload mr-1"></i> Importar</button>
         <input type="file" id="importFile" style="display:none" accept=".json" @change="importarBackupJSON($event)">
+    </div>
+</div>
+
+<!-- GRÀFICS DE RÀNQUING (En línia/Grid) -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6 p-6 flex-shrink-0" x-show="viewMode === 'table'" style="background: #f8fafc;">
+    <!-- Gràfic 1: Mitjana per centre -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+        <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide" data-i18n="rankingChartAverageCentre">Mitjana per centre</h3>
+        <div style="width: 100%; height: 220px; position: relative;">
+            <canvas id="centreChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Gràfic 2: Volum aptituds (Scatter/Bubble) -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+        <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide" data-i18n="rankingChartAptitudeVolume">Volum aptituds</h3>
+        <div style="width: 100%; height: 220px; position: relative;">
+            <canvas id="scatterChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Gràfic 3: Comparativa rendiment (Radar ECharts) -->
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-col items-center justify-center">
+        <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide" data-i18n="rankingChartPerformanceCompare">Comparativa rendiment</h3>
+        <div id="sunburstChart" style="width: 100%; height: 220px; width: 100%;"></div>
     </div>
 </div>
 
@@ -287,19 +315,19 @@
     <table>
         <thead>
             <tr>
-                <th width="50" class="text-center">Ordre</th>
-                <th>Treballador / Agent</th>
-                <th>Centre</th>
-                <th>Societat</th>
-                <th width="90">Torn</th>
-                <th width="80">Zona</th>
-                <th width="60" class="text-center">Coneix.</th>
-                <th width="60" class="text-center">Atenció</th>
-                <th width="60" class="text-center">Dispo.</th>
-                <th width="60" class="text-center">Actitud</th>
-                <th width="70" class="text-center">Valoració</th>
-                <th>Observacions</th>
-                <th x-show="userRole === 'jefe operaciones'" width="50" class="text-center">Acció</th>
+                <th width="50" class="text-center" data-i18n="rankingThPosicio">Ordre</th>
+                <th data-i18n="rankingThAgent">Treballador / Agent</th>
+                <th data-i18n="rankingThCentre">Centre</th>
+                <th data-i18n="rankingThSocietat">Societat</th>
+                <th width="90" data-i18n="rankingThTorn">Torn</th>
+                <th width="80" data-i18n="rankingThZona">Zona</th>
+                <th width="60" class="text-center" data-i18n="rankingThConeixements">Coneix.</th>
+                <th width="60" class="text-center" data-i18n="rankingThAtencio">Atenció</th>
+                <th width="60" class="text-center" data-i18n="rankingThDisponibilitat">Dispo.</th>
+                <th width="60" class="text-center" data-i18n="rankingThActitud">Actitud</th>
+                <th width="70" class="text-center" data-i18n="rankingThValoracio">Valoració</th>
+                <th data-i18n="rankingThObservacions">Observacions</th>
+                <th x-show="userRole === 'jefe operaciones'" width="50" class="text-center" data-i18n="colCobAcciones">Acció</th>
             </tr>
         </thead>
         <tbody>
@@ -371,12 +399,12 @@
             <div class="text-xs text-gray-500"><i class="fas fa-building mr-1 text-slate-400"></i> <span x-text="d.societat"></span></div>
             
             <div class="grid grid-cols-2 gap-2 mt-2 text-xs">
-                <div><strong>Torn:</strong> <span x-text="d.torn"></span></div>
-                <div><strong>Zona:</strong> <span x-text="d.zona"></span></div>
-                <div><strong>Coneix.:</strong> <span x-text="d.coneixements"></span>/10</div>
-                <div><strong>Atenció:</strong> <span x-text="d.atencio"></span>/10</div>
-                <div><strong>Dispo.:</strong> <span x-text="d.disponibilitat"></span>/10</div>
-                <div><strong>Actitud:</strong> <span x-text="d.actitud"></span>/10</div>
+                <div><strong x-text="i18n.t('rankingThTorn') + ':'">Torn:</strong> <span x-text="d.torn"></span></div>
+                <div><strong x-text="i18n.t('rankingThZona') + ':'">Zona:</strong> <span x-text="d.zona"></span></div>
+                <div><strong x-text="i18n.t('rankingThConeixements') + ':'">Coneix.:</strong> <span x-text="d.coneixements"></span>/10</div>
+                <div><strong x-text="i18n.t('rankingThAtencio') + ':'">Atenció:</strong> <span x-text="d.atencio"></span>/10</div>
+                <div><strong x-text="i18n.t('rankingThDisponibilitat') + ':'">Dispo.:</strong> <span x-text="d.disponibilitat"></span>/10</div>
+                <div><strong x-text="i18n.t('rankingThActitud') + ':'">Actitud:</strong> <span x-text="d.actitud"></span>/10</div>
             </div>
             
             <div class="mt-2 text-[10.5px] text-gray-500 italic border-t pt-1.5" x-text="d.observacions || 'Sense observacions.'"></div>

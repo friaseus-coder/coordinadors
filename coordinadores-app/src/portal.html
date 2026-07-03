@@ -528,6 +528,7 @@
                 <div class="dropdown-admin-content" id="adminDropdownContent">
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
+                    <button class="dropdown-admin-item" onclick="openTrabajadorModal(); closeAdminDropdown();" data-i18n="btnManageTrabajadores">👥 Treballadors</button>
                     <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();" data-i18n="adminMigratorTitle">📊 Assistent de Càrrega d'Històrics</button>
                     <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
                     <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
@@ -586,6 +587,32 @@
                     <input type="file" id="importAparcamentsCsvFile" accept=".csv" style="display:none" onchange="importarAparcamentsCSV(this)">
                 </div>
                 <button class="btn-close-modal" onclick="closeAparcamentModal()" data-i18n="btnClose">Tancar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Gestión de Trabajadores (Empleados) -->
+    <div id="trabajadorModal" class="modal-overlay" onclick="if(event.target===this) closeTrabajadorModal()">
+        <div class="modal-box" style="min-width: 520px; max-width: 600px; position: relative;">
+            <!-- Overlay de Carga -->
+            <div id="trabajadorLoadingOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); border-radius: 16px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #063931; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div style="margin-top: 12px; font-weight: 600; color: #0f2d4a; font-size: 13px;">Actualitzant base de dades...</div>
+            </div>
+            <div class="modal-title" data-i18n="modalTrabajadorTitle">👥 Gestió de Treballadors</div>
+            <div class="modal-add-form" style="gap: 8px; display: flex;">
+                <input type="text" id="newTrabajadorNom" placeholder="Nom del treballador (ex: Joan Pujol)" data-i18n="inputTrabajadorPlaceholder" style="flex: 2;">
+                <select id="newTrabajadorRol" style="flex: 1.2; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: inherit; outline: none; background: white;">
+                    <option value="Trabajador" selected>Trabajador</option>
+                    <option value="Coordinador">Coordinador</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Admin">Admin</option>
+                </select>
+                <button class="btn-add-coord" onclick="addTrabajador()" data-i18n="btnAdd" style="flex: 0.8;">➕ Afegir</button>
+            </div>
+            <div id="trabajadorList" class="modal-list" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;"></div>
+            <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+                <button class="btn-close-modal" onclick="closeTrabajadorModal()" data-i18n="btnClose">Tancar</button>
             </div>
         </div>
     </div>
@@ -1338,6 +1365,204 @@
                 }
             };
             reader.readAsText(file);
+        }
+
+        // ========== GESTIÓN DE TRABAJADORES / EMPLEADOS (Modal) ==========
+        async function openTrabajadorModal() {
+            document.getElementById('trabajadorModal').classList.add('active');
+            await refreshTrabajadorList();
+        }
+
+        function closeTrabajadorModal() {
+            document.getElementById('trabajadorModal').classList.remove('active');
+        }
+
+        async function refreshTrabajadorList() {
+            const list = document.getElementById('trabajadorList');
+            list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
+            
+            try {
+                const trabajadores = await window.dbAPI.read('catalogos', "SELECT id, nombre, email, rol, activo FROM empleados ORDER BY nombre ASC", []);
+                list.innerHTML = '';
+                
+                if (trabajadores.length === 0) {
+                    list.innerHTML = `<div style="padding:12px;color:#999;font-size:12px;text-align:center;">No hi ha treballadors registrats.</div>`;
+                    return;
+                }
+                
+                trabajadores.forEach(t => {
+                    const item = document.createElement('div');
+                    item.className = 'modal-list-item';
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+                    item.style.alignItems = 'center';
+                    item.style.padding = '8px 12px';
+                    item.style.borderBottom = '1px solid #f1f5f9';
+                    
+                    const roles = ['Trabajador', 'Coordinador', 'Comercial', 'Admin'];
+                    let options = '';
+                    roles.forEach(r => {
+                        options += `<option value="${r}" ${t.rol === r ? 'selected' : ''}>${r}</option>`;
+                    });
+                    
+                    item.innerHTML = `
+                        <div style="flex: 1.5; display: flex; align-items: center; min-width: 0;">
+                            <input type="text" value="${t.nombre}" onchange="renameTrabajador(${t.id}, this.value)" style="font-weight: 600; color: #334155; border: 1px solid transparent; background: transparent; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box; outline: none; transition: all 0.2s;" onfocus="this.style.borderColor='#cbd5e1'; this.style.background='white'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';" onblur="this.style.borderColor='transparent'; this.style.background='transparent'; this.style.boxShadow='none';" placeholder="Nom del treballador">
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; flex: 1.5; justify-content: flex-end; flex-shrink: 0;">
+                            <select onchange="updateTrabajadorRol(${t.id}, this.value)" style="padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-family: inherit; background: white; width: 110px;">
+                                ${options}
+                            </select>
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #475569; cursor: pointer;">
+                                <input type="checkbox" ${t.activo ? 'checked' : ''} onchange="updateTrabajadorActivo(${t.id}, this.checked)" style="cursor: pointer;"> Actiu
+                            </label>
+                            <button class="btn-remove-coord" onclick="removeTrabajador(${t.id}, '${t.nombre.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Error al cargar la lista de trabajadores:", err);
+                list.innerHTML = '<div style="padding:8px;color:#dc2626;font-size:12px;">Error al carregar les dades.</div>';
+            }
+        }
+
+        async function addTrabajador() {
+            const nom = document.getElementById('newTrabajadorNom').value.trim();
+            const rol = document.getElementById('newTrabajadorRol').value;
+            
+            if (!nom) { alert('⚠️ Has d\'escriure un nom per al treballador.'); return; }
+            
+            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                const exists = await window.dbAPI.read('catalogos', "SELECT id FROM empleados WHERE LOWER(nombre) = LOWER(?)", [nom]);
+                if (exists && exists.length > 0) {
+                    if (loadingOverlay) loadingOverlay.style.display = 'none';
+                    alert(`⚠️ El treballador "${nom}" ja existeix.`);
+                    return;
+                }
+                
+                await window.dbAPI.write('catalogos', "INSERT INTO empleados (nombre, rol, activo) VALUES (?, ?, 1)", [nom, rol]);
+                
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                document.getElementById('newTrabajadorNom').value = '';
+                
+                await refreshTrabajadorList();
+                
+                const activeContent = document.querySelector('.tab-content.active');
+                if (activeContent) {
+                    const iframe = activeContent.querySelector('iframe');
+                    if (iframe) iframe.src = iframe.src;
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.error("Error al añadir trabajador:", err);
+                alert("❌ Error: " + err.message);
+            }
+        }
+
+        async function renameTrabajador(id, newName) {
+            const newNameTrimmed = newName.trim();
+            if (!newNameTrimmed) {
+                alert('⚠️ El nom no pot ser buit.');
+                await refreshTrabajadorList();
+                return;
+            }
+            
+            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                await window.dbAPI.write('catalogos', "UPDATE empleados SET nombre = ? WHERE id = ?", [newNameTrimmed, id]);
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                await refreshTrabajadorList();
+                
+                const activeContent = document.querySelector('.tab-content.active');
+                if (activeContent) {
+                    const iframe = activeContent.querySelector('iframe');
+                    if (iframe) iframe.src = iframe.src;
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.error("Error al renombrar trabajador:", err);
+                alert("❌ Error: " + err.message);
+                await refreshTrabajadorList();
+            }
+        }
+
+        async function updateTrabajadorRol(id, newRol) {
+            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                await window.dbAPI.write('catalogos', "UPDATE empleados SET rol = ? WHERE id = ?", [newRol, id]);
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                await refreshTrabajadorList();
+                
+                const activeContent = document.querySelector('.tab-content.active');
+                if (activeContent) {
+                    const iframe = activeContent.querySelector('iframe');
+                    if (iframe) iframe.src = iframe.src;
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.error("Error al actualizar rol de trabajador:", err);
+                alert("❌ Error: " + err.message);
+                await refreshTrabajadorList();
+            }
+        }
+
+        async function updateTrabajadorActivo(id, isChecked) {
+            const valActivo = isChecked ? 1 : 0;
+            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                await window.dbAPI.write('catalogos', "UPDATE empleados SET activo = ? WHERE id = ?", [valActivo, id]);
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                await refreshTrabajadorList();
+                
+                const activeContent = document.querySelector('.tab-content.active');
+                if (activeContent) {
+                    const iframe = activeContent.querySelector('iframe');
+                    if (iframe) iframe.src = iframe.src;
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.error("Error al actualizar estado activo de trabajador:", err);
+                alert("❌ Error: " + err.message);
+                await refreshTrabajadorList();
+            }
+        }
+
+        async function removeTrabajador(id, name) {
+            const msg = i18n.t('confirmRemoveTrabajador', { name });
+            if (!confirm(msg)) return;
+            
+            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+            
+            try {
+                await window.dbAPI.write('catalogos', "DELETE FROM empleados WHERE id = ?", [id]);
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                
+                await refreshTrabajadorList();
+                
+                const activeContent = document.querySelector('.tab-content.active');
+                if (activeContent) {
+                    const iframe = activeContent.querySelector('iframe');
+                    if (iframe) iframe.src = iframe.src;
+                }
+            } catch (err) {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+                console.error("Error al eliminar trabajador:", err);
+                alert("❌ Error: " + err.message);
+            }
         }
 
         function registrarLog(usuari, accio) {
