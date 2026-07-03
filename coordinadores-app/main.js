@@ -1080,9 +1080,9 @@ function validateSecurity(dbKey, query, userRole, userName) {
   }
 
   // --- REGLA 2: Protección de Borrado ---
-  // Solo los administradores pueden ejecutar DELETE FROM.
+  // Solo los administradores y el Jefe de Operaciones pueden ejecutar DELETE FROM.
   if (queryUpper.includes('DELETE FROM')) {
-    if (role !== 'admin') {
+    if (role !== 'admin' && role !== 'jefe operaciones') {
       throw new Error(
         'Permisos insuficientes: Solo los administradores pueden borrar registros.'
       );
