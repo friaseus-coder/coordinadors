@@ -430,9 +430,357 @@
             color: var(--success);
             margin-bottom: 12px;
         }
+
+        /* ============================================================
+           PANELES DE DATOS MAESTROS
+        ============================================================ */
+        .maestros-panel {
+            width: 100%;
+            max-width: 850px;
+            background: var(--card);
+            border-radius: 16px;
+            border: 1px solid #d4b896;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+
+        .maestros-header {
+            background: linear-gradient(135deg, #7c4a00, #c47a2b);
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .maestros-header:hover {
+            background: linear-gradient(135deg, #6b3f00, #ad6b24);
+        }
+
+        .maestros-header h2 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .maestros-header .badge-db {
+            font-size: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .maestros-toggle-icon {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .maestros-toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        .maestros-body {
+            padding: 20px 24px;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            border-top: 2px solid #e8c98a;
+        }
+
+        .maestros-body.open {
+            display: flex;
+        }
+
+        .maestros-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .maestros-col {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .maestros-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #7c4a00;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .maestros-radio-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .maestros-radio-option {
+            flex: 1;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #fff;
+        }
+
+        .maestros-radio-option:hover {
+            border-color: #c47a2b;
+            background: #fef9f0;
+        }
+
+        .maestros-radio-option.selected {
+            border-color: #7c4a00;
+            background: rgba(124, 74, 0, 0.05);
+            box-shadow: 0 0 0 2px rgba(124, 74, 0, 0.12);
+        }
+
+        .maestros-radio-option input[type="radio"] {
+            pointer-events: none;
+            margin: 0;
+        }
+
+        .btn-amber {
+            background: linear-gradient(135deg, #c47a2b, #e5982f);
+            color: white;
+            border-color: #c47a2b;
+        }
+
+        .btn-amber:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7c4a00, #c47a2b);
+            border-color: #7c4a00;
+        }
+
+        .btn-amber-outline {
+            background: #fff;
+            color: #7c4a00;
+            border-color: #c47a2b;
+        }
+
+        .btn-amber-outline:hover:not(:disabled) {
+            background: #fef9f0;
+        }
+
+        .maestros-status-log {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .maestros-status-log.success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid #bbf7d0;
+        }
+
+        .maestros-status-log.error {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid #fca5a5;
+        }
+
+        .maestros-status-log.info {
+            background: var(--info-bg);
+            color: var(--info);
+            border: 1px solid #bfdbfe;
+        }
+
+        .maestros-file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .maestros-file-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .maestros-divider {
+            border: none;
+            border-top: 1px dashed #e8c98a;
+            margin: 4px 0;
+        }
     </style>
 </head>
 <body>
+
+    <!-- ============================================================
+         PANEL: DATOS MAESTROS — APARCAMIENTOS
+    ============================================================ -->
+    <div class="maestros-panel" id="panelMaestrosAparcamientos">
+        <div class="maestros-header" onclick="toggleMaestrosPanel('aparcamientos')">
+            <h2>
+                🚗 Aparcamientos
+                <span class="badge-db">catalogos.db</span>
+            </h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:10px; font-weight:600; opacity:0.8;">Dades Mestres</span>
+                <span class="maestros-toggle-icon" id="toggleIconAparcamientos">▼</span>
+            </div>
+        </div>
+        <div class="maestros-body" id="maestrosBodyAparcamientos">
+
+            <!-- Fila 1: Descarga -->
+            <div>
+                <span class="maestros-label">📥 Exportar / Plantilla</span>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('aparcamientos')">
+                        ⬇ Descargar Datos Actuales
+                    </button>
+                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>aparcamientos</strong>, o una plantilla JSON si está vacía.</span>
+                </div>
+            </div>
+
+            <hr class="maestros-divider">
+
+            <!-- Fila 2: Modo importación + archivo + botón importar -->
+            <div class="maestros-row">
+                <div class="maestros-col">
+                    <span class="maestros-label">⚙️ Modo de Importación</span>
+                    <div class="maestros-radio-group">
+                        <div class="maestros-radio-option selected" id="modoAparcamientos-add"
+                             onclick="seleccionarModoMaestros('aparcamientos', 'add')">
+                            <input type="radio" name="modoAparcamientos" value="add" checked>
+                            <span>Añadir</span>
+                        </div>
+                        <div class="maestros-radio-option" id="modoAparcamientos-overwrite"
+                             onclick="seleccionarModoMaestros('aparcamientos', 'overwrite')">
+                            <input type="radio" name="modoAparcamientos" value="overwrite">
+                            <span>Sobrescribir</span>
+                        </div>
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;" id="hintModoAparcamientos">
+                        🔵 Añadir: inserta sin borrar los existentes.
+                    </div>
+                </div>
+
+                <div class="maestros-col">
+                    <span class="maestros-label">📂 Archivo JSON a Importar</span>
+                    <div class="maestros-file-input-wrapper">
+                        <input type="file" accept=".json"
+                               id="inputAparcamientosJson" style="display:none;"
+                               onchange="onArchivoMaestrosSeleccionado('aparcamientos', this)">
+                        <button class="btn btn-secondary"
+                                onclick="document.getElementById('inputAparcamientosJson').click()">
+                            📂 Seleccionar JSON...
+                        </button>
+                        <button class="btn btn-amber" id="btnImportarAparcamientos" disabled
+                                onclick="importarDatosMaestros('aparcamientos')">
+                            🚀 Importar
+                        </button>
+                    </div>
+                    <div class="maestros-file-label" id="lblArchivoAparcamientos">Ningún archivo seleccionado.</div>
+                </div>
+            </div>
+
+            <!-- Log de resultado -->
+            <div class="maestros-status-log" id="logAparcamientos"></div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PANEL: DATOS MAESTROS — EMPLEADOS
+    ============================================================ -->
+    <div class="maestros-panel" id="panelMaestrosEmpleados">
+        <div class="maestros-header" onclick="toggleMaestrosPanel('empleados')">
+            <h2>
+                👥 Empleados
+                <span class="badge-db">catalogos.db</span>
+            </h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:10px; font-weight:600; opacity:0.8;">Dades Mestres</span>
+                <span class="maestros-toggle-icon" id="toggleIconEmpleados">▼</span>
+            </div>
+        </div>
+        <div class="maestros-body" id="maestrosBodyEmpleados">
+
+            <!-- Fila 1: Descarga -->
+            <div>
+                <span class="maestros-label">📥 Exportar / Plantilla</span>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('empleados')">
+                        ⬇ Descargar Datos Actuales
+                    </button>
+                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>empleados</strong>, o una plantilla JSON si está vacía.</span>
+                </div>
+            </div>
+
+            <hr class="maestros-divider">
+
+            <!-- Fila 2: Modo importación + archivo + botón importar -->
+            <div class="maestros-row">
+                <div class="maestros-col">
+                    <span class="maestros-label">⚙️ Modo de Importación</span>
+                    <div class="maestros-radio-group">
+                        <div class="maestros-radio-option selected" id="modoEmpleados-add"
+                             onclick="seleccionarModoMaestros('empleados', 'add')">
+                            <input type="radio" name="modoEmpleados" value="add" checked>
+                            <span>Añadir</span>
+                        </div>
+                        <div class="maestros-radio-option" id="modoEmpleados-overwrite"
+                             onclick="seleccionarModoMaestros('empleados', 'overwrite')">
+                            <input type="radio" name="modoEmpleados" value="overwrite">
+                            <span>Sobrescribir</span>
+                        </div>
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;" id="hintModoEmpleados">
+                        🔵 Añadir: inserta sin borrar los existentes.
+                    </div>
+                </div>
+
+                <div class="maestros-col">
+                    <span class="maestros-label">📂 Archivo JSON a Importar</span>
+                    <div class="maestros-file-input-wrapper">
+                        <input type="file" accept=".json"
+                               id="inputEmpleadosJson" style="display:none;"
+                               onchange="onArchivoMaestrosSeleccionado('empleados', this)">
+                        <button class="btn btn-secondary"
+                                onclick="document.getElementById('inputEmpleadosJson').click()">
+                            📂 Seleccionar JSON...
+                        </button>
+                        <button class="btn btn-amber" id="btnImportarEmpleados" disabled
+                                onclick="importarDatosMaestros('empleados')">
+                            🚀 Importar
+                        </button>
+                    </div>
+                    <div class="maestros-file-label" id="lblArchivoEmpleados">Ningún archivo seleccionado.</div>
+                </div>
+            </div>
+
+            <!-- Log de resultado -->
+            <div class="maestros-status-log" id="logEmpleados"></div>
+
+        </div>
+    </div>
 
     <div class="migrator-container">
         <header>
@@ -2188,6 +2536,340 @@
             dlAnchorElem.setAttribute("download", `Dades_Excloses_Migracio_${Date.now()}.json`);
             dlAnchorElem.click();
         }
+
+        // ============================================================
+        //  DATOS MAESTROS — Aparcamientos y Empleados
+        // ============================================================
+
+        // Estado interno para los paneles maestros
+        const _maestros = {
+            aparcamientos: { modo: 'add', parsedData: null },
+            empleados:     { modo: 'add', parsedData: null }
+        };
+
+        // Plantillas vacías por tabla
+        const _maestrosPlantillas = {
+            aparcamientos: [
+                {
+                    numero_obra: "OB-0001",
+                    nombre: "Parking Ejemplo",
+                    zona: "Zona 1",
+                    es_remotizado: 0,
+                    tipo_gestion: "propio",
+                    permitir_vacio_laborables: 0,
+                    sociedad_id: 1,
+                    coordinador_responsable: "Albert",
+                    activo: 1
+                }
+            ],
+            empleados: [
+                {
+                    nombre: "Ejemplo Empleado",
+                    email: "empleado@empresa.com",
+                    rol: "Coordinador",
+                    activo: 1,
+                    json_preferencias: "{}"
+                }
+            ]
+        };
+
+        /**
+         * Colapsa / expande un panel maestro.
+         */
+        function toggleMaestrosPanel(tabla) {
+            const body = document.getElementById(`maestrosBody${capitalizar(tabla)}`);
+            const icon = document.getElementById(`toggleIcon${capitalizar(tabla)}`);
+            const isOpen = body.classList.contains('open');
+            if (isOpen) {
+                body.classList.remove('open');
+                icon.classList.remove('open');
+            } else {
+                body.classList.add('open');
+                icon.classList.add('open');
+            }
+        }
+
+        function capitalizar(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        /**
+         * Cambia el modo de importación (add / overwrite) para un panel maestro.
+         */
+        function seleccionarModoMaestros(tabla, modo) {
+            _maestros[tabla].modo = modo;
+
+            const addEl      = document.getElementById(`modo${capitalizar(tabla)}-add`);
+            const overwriteEl = document.getElementById(`modo${capitalizar(tabla)}-overwrite`);
+            const hintEl     = document.getElementById(`hintModo${capitalizar(tabla)}`);
+
+            addEl.classList.toggle('selected', modo === 'add');
+            overwriteEl.classList.toggle('selected', modo === 'overwrite');
+            addEl.querySelector('input').checked = (modo === 'add');
+            overwriteEl.querySelector('input').checked = (modo === 'overwrite');
+
+            if (hintEl) {
+                hintEl.textContent = modo === 'add'
+                    ? '🔵 Añadir: inserta sin borrar los existentes.'
+                    : '🔴 Sobrescribir: borrará TODOS los registros antes de importar.';
+                hintEl.style.color = modo === 'overwrite' ? 'var(--danger)' : 'var(--text-muted)';
+            }
+        }
+
+        /**
+         * Gestiona la selección de archivo JSON para un panel maestro.
+         */
+        function onArchivoMaestrosSeleccionado(tabla, inputEl) {
+            const file = inputEl.files[0];
+            const lblEl = document.getElementById(`lblArchivo${capitalizar(tabla)}`);
+            const btnImportar = document.getElementById(`btnImportar${capitalizar(tabla)}`);
+            const logEl = document.getElementById(`log${capitalizar(tabla)}`);
+
+            _maestros[tabla].parsedData = null;
+            btnImportar.disabled = true;
+            mostrarLogMaestros(logEl, 'info', `⏳ Leyendo archivo...`);
+
+            if (!file) {
+                lblEl.textContent = 'Ningún archivo seleccionado.';
+                logEl.style.display = 'none';
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+
+                    // Aceptar array directo o intentar extraer desde un objeto legacy
+                    let datos = null;
+                    if (Array.isArray(parsed)) {
+                        datos = parsed;
+                    } else if (parsed && typeof parsed === 'object') {
+                        // Compatibilidad con coordinadores.json (objeto con claves = nombres)
+                        const candidato = Object.values(parsed).find(v => Array.isArray(v));
+                        if (candidato) {
+                            datos = candidato;
+                        } else {
+                            // Intentar construir array desde las claves del objeto
+                            datos = Object.entries(parsed).map(([key, val]) => {
+                                if (typeof val === 'object' && val !== null) return { nombre: key, ...val };
+                                return { nombre: key };
+                            });
+                        }
+                    }
+
+                    if (!datos || datos.length === 0) {
+                        throw new Error('El JSON no contiene un array de registros válido.');
+                    }
+
+                    // Normalizar para empleados: asignar campos por defecto si vienen de un JSON legacy
+                    if (tabla === 'empleados') {
+                        datos = datos.map(item => {
+                            const nombre = item.nombre || item.name || item.nom || String(item);
+                            return {
+                                nombre:            nombre,
+                                email:             item.email || item.mail || null,
+                                rol:               item.rol || item.role || 'Coordinador',
+                                activo:            item.activo !== undefined ? item.activo : 1,
+                                json_preferencias: item.json_preferencias
+                                                    ? (typeof item.json_preferencias === 'string'
+                                                        ? item.json_preferencias
+                                                        : JSON.stringify(item.json_preferencias))
+                                                    : null
+                            };
+                        }).filter(r => r.nombre && r.nombre.trim() !== '');
+                    }
+
+                    // Normalizar para aparcamientos: solo campos del schema
+                    if (tabla === 'aparcamientos') {
+                        datos = datos.map(item => ({
+                            numero_obra:                item.numero_obra || null,
+                            nombre:                     item.nombre || item.name || item.nom || '',
+                            zona:                       item.zona || null,
+                            es_remotizado:              item.es_remotizado !== undefined ? item.es_remotizado : 0,
+                            tipo_gestion:               item.tipo_gestion || null,
+                            permitir_vacio_laborables:  item.permitir_vacio_laborables !== undefined ? item.permitir_vacio_laborables : 0,
+                            sociedad_id:                item.sociedad_id || null,
+                            coordinador_responsable:    item.coordinador_responsable || null,
+                            activo:                     item.activo !== undefined ? item.activo : 1
+                        })).filter(r => r.nombre && r.nombre.trim() !== '');
+                    }
+
+                    _maestros[tabla].parsedData = datos;
+                    lblEl.textContent = `✅ ${file.name} — ${datos.length} registro(s) listos.`;
+                    lblEl.style.color = 'var(--success)';
+                    btnImportar.disabled = false;
+                    mostrarLogMaestros(logEl, 'info', `📋 ${datos.length} registro(s) parseados correctamente. Haz clic en "Importar" para confirmar.`);
+
+                } catch(err) {
+                    console.error(`[Maestros/${tabla}] Error al parsear JSON:`, err);
+                    lblEl.textContent = `❌ Error al leer el archivo: ${err.message}`;
+                    lblEl.style.color = 'var(--danger)';
+                    btnImportar.disabled = true;
+                    mostrarLogMaestros(logEl, 'error', `❌ Error al parsear el JSON: ${err.message}`);
+                }
+            };
+            reader.onerror = () => {
+                mostrarLogMaestros(logEl, 'error', '❌ Error al leer el archivo.');
+            };
+            reader.readAsText(file);
+        }
+
+        /**
+         * Descarga los datos actuales de una tabla maestros o una plantilla si está vacía.
+         */
+        async function descargarDatosMaestros(tabla) {
+            if (!dbApi) {
+                alert('API de base de datos no disponible.');
+                return;
+            }
+
+            const logEl = document.getElementById(`log${capitalizar(tabla)}`);
+            mostrarLogMaestros(logEl, 'info', `⏳ Leyendo tabla ${tabla}...`);
+
+            try {
+                const filas = await dbApi.read('catalogos', `SELECT * FROM ${tabla}`, []);
+
+                let contenido;
+                let nombreArchivo;
+
+                if (filas && filas.length > 0) {
+                    contenido = JSON.stringify(filas, null, 2);
+                    nombreArchivo = `${tabla}_${new Date().toISOString().slice(0,10)}.json`;
+                    mostrarLogMaestros(logEl, 'success', `✅ ${filas.length} registro(s) exportados desde la tabla ${tabla}.`);
+                } else {
+                    contenido = JSON.stringify(_maestrosPlantillas[tabla], null, 2);
+                    nombreArchivo = `plantilla_${tabla}.json`;
+                    mostrarLogMaestros(logEl, 'info', `ℹ️ La tabla ${tabla} está vacía. Se descarga una plantilla de estructura.`);
+                }
+
+                const blob = new Blob([contenido], { type: 'application/json' });
+                const url  = URL.createObjectURL(blob);
+                const a    = document.createElement('a');
+                a.href     = url;
+                a.download = nombreArchivo;
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+
+            } catch(err) {
+                console.error(`[Maestros/${tabla}] Error al descargar:`, err);
+                mostrarLogMaestros(logEl, 'error', `❌ Error al leer la base de datos: ${err.message}`);
+            }
+        }
+
+        /**
+         * Importa los datos del JSON seleccionado en la tabla maestros indicada.
+         * Respeta el modo add/overwrite.
+         */
+        async function importarDatosMaestros(tabla) {
+            if (!dbApi) {
+                alert('API de base de datos no disponible.');
+                return;
+            }
+
+            const datos    = _maestros[tabla].parsedData;
+            const modo     = _maestros[tabla].modo;
+            const logEl    = document.getElementById(`log${capitalizar(tabla)}`);
+            const btnEl    = document.getElementById(`btnImportar${capitalizar(tabla)}`);
+
+            if (!datos || datos.length === 0) {
+                mostrarLogMaestros(logEl, 'error', '❌ No hay datos válidos para importar.');
+                return;
+            }
+
+            // Confirmación para modo sobrescribir
+            if (modo === 'overwrite') {
+                const confirmar = confirm(
+                    `⚠️ ATENCIÓN: Se borrarán TODOS los registros de la tabla "${tabla}" antes de importar.\n` +
+                    `Se insertarán ${datos.length} nuevo(s) registro(s).\n\n¿Deseas continuar?`
+                );
+                if (!confirmar) return;
+            }
+
+            btnEl.disabled = true;
+            btnEl.innerHTML = '<span class="spinner"></span> Importando...';
+            mostrarLogMaestros(logEl, 'info', '⏳ Iniciando importación...');
+
+            let exitos  = 0;
+            let errores = 0;
+
+            try {
+                // 1. Si modo overwrite, borrar tabla primero
+                if (modo === 'overwrite') {
+                    await dbApi.write('catalogos', `DELETE FROM ${tabla}`, []);
+                    mostrarLogMaestros(logEl, 'info', `🗑️ Tabla ${tabla} vaciada. Insertando ${datos.length} registro(s)...`);
+                }
+
+                // 2. Insertar fila a fila
+                if (tabla === 'empleados') {
+                    for (const r of datos) {
+                        try {
+                            await dbApi.write('catalogos',
+                                `INSERT OR IGNORE INTO empleados (nombre, email, rol, activo, json_preferencias)
+                                 VALUES (?, ?, ?, ?, ?)`,
+                                [r.nombre, r.email || null, r.rol || 'Coordinador', r.activo !== undefined ? r.activo : 1, r.json_preferencias || null]
+                            );
+                            exitos++;
+                        } catch(errFila) {
+                            console.error('[Maestros/empleados] Error en fila:', errFila, r);
+                            errores++;
+                        }
+                    }
+                }
+
+                else if (tabla === 'aparcamientos') {
+                    for (const r of datos) {
+                        try {
+                            await dbApi.write('catalogos',
+                                `INSERT OR IGNORE INTO aparcamientos
+                                 (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                                [
+                                    r.numero_obra || null,
+                                    r.nombre,
+                                    r.zona || null,
+                                    r.es_remotizado !== undefined ? r.es_remotizado : 0,
+                                    r.tipo_gestion || null,
+                                    r.permitir_vacio_laborables !== undefined ? r.permitir_vacio_laborables : 0,
+                                    r.sociedad_id || null,
+                                    r.coordinador_responsable || null,
+                                    r.activo !== undefined ? r.activo : 1
+                                ]
+                            );
+                            exitos++;
+                        } catch(errFila) {
+                            console.error('[Maestros/aparcamientos] Error en fila:', errFila, r);
+                            errores++;
+                        }
+                    }
+                }
+
+                // 3. Mostrar resultado
+                const msg = `✅ Importación completada:\n  • Éxitos: ${exitos}\n  • Errores: ${errores}`;
+                mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
+                    `✅ Importación completada — ${exitos} inserción(es) correctas${errores > 0 ? `, ${errores} error(es)` : ''}.`);
+
+                // Recargar catálogos del migrador de históricos
+                await loadCatalogos();
+
+            } catch(errGlobal) {
+                console.error(`[Maestros/${tabla}] Error global:`, errGlobal);
+                mostrarLogMaestros(logEl, 'error', `❌ Error inesperado: ${errGlobal.message}`);
+            } finally {
+                btnEl.disabled = false;
+                btnEl.innerHTML = '🚀 Importar';
+            }
+        }
+
+        /**
+         * Muestra un mensaje en el log inline de un panel maestro.
+         */
+        function mostrarLogMaestros(logEl, tipo, mensaje) {
+            logEl.textContent = mensaje;
+            logEl.className = `maestros-status-log ${tipo}`;
+            logEl.style.display = 'block';
+        }
+
     </script>
 </body>
 </html>
