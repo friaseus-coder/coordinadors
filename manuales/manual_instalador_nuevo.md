@@ -1,7 +1,187 @@
-# Manual de Creación y Uso del Nuevo Instalador Automático
+# Manual de Creación y Uso del Instalador Automático
 ## Intranet de Coordinadores - Aplicación Portable de Escritorio
 
-Este manual detalla los pasos para crear, configurar y utilizar un instalador automático ejecutable (`.exe`) para la aplicación de Coordinadores. En lugar de copiar y pegar manualmente la carpeta compilada de 180MB en los PCs de los usuarios, este sistema genera un asistente de instalación estándar de Windows (Setup Wizard) utilizando la herramienta gratuita y profesional **Inno Setup**.
+Este manual detalla los pasos para crear, configurar y distribuir el ejecutable portable (`.exe`) de la aplicación de Coordinadores, usando `electron-packager` para el empaquetado portable y **Inno Setup** para la creación de un instalador de Windows con asistente visual.
+
+---
+
+## 1. Ventajas del Instalador Automático
+
+*   **Distribución simplificada:** Un único archivo ejecutable (`Coordinadores_Setup_vX.X.X.exe`) que el usuario descarga y ejecuta.
+*   **Sin privilegios de Administrador (Opcional):** Configurado para instalarse en el directorio de usuario (`LocalAppData`), evitando bloqueos de políticas de IT corporativas.
+*   **Accesos directos automáticos:** Crea automáticamente el acceso directo en el Escritorio del usuario con el nombre e icono correctos.
+*   **Rendimiento en Red (Caché Local Híbrida):** La aplicación trabaja con una copia caché local de alto rendimiento y escribe en red de forma atómica y segura mediante Mutex. Esto previene bloqueos de red y pérdidas de datos.
+*   **Inyección del archivo de configuración:** Se puede preconfigurar la ruta del servidor de red compartida para que el usuario no deba editar manualmente el archivo [config.json](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/config.json).
+*   **Cargador Híbrido (Actualizaciones en Caliente):** Si se copia la carpeta `src/` al lado del `.exe`, la aplicación la prioriza sobre el código interno del `.asar`, permitiendo actualizar pantallas sin recompilar.
+
+---
+
+## 2. Changelog de Versiones
+
+### v1.1.0 — 2026-07-03 (Actual)
+*   **NUEVO — Módulo de Datos Maestros en el Migrador (`migrador.html`):**
+    *   Panel colapsable **🚗 Aparcamientos**: descarga de datos actuales o plantilla, importación con modo Añadir / Sobrescribir sobre `catalogos.aparcamientos`.
+    *   Panel colapsable **👥 Empleados**: descarga de datos actuales o plantilla, importación con **doble inserción simultánea**:
+        *   `catalogos.empleados` — nombre, rol, activo, json_preferencias `{centre, societat, torn, zona}`
+        *   `operativa.ranking` — id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions
+    *   Creación automática de la tabla `ranking` en `operativa` (`CREATE TABLE IF NOT EXISTS`) si no existe.
+    *   Compatibilidad con JSON legacy: acepta campo `agent` como fuente del nombre, normaliza métricas ausentes a `0`.
+    *   Confirmación de Sobrescribir avisa explícitamente de las dos BDs afectadas.
+    *   Log de resultado inline bajo cada panel + `alert()` final con desglose de inserciones por BD.
+
+### v1.0.0 — Versión base
+*   Arquitectura Electron v31 con SQLite y sharding en 4 BDs.
+*   Migrador guiado de 5 pasos (Cuadrante, Vacaciones, Deudas, Comerciales, Rutas, Gastos).
+*   Sistema de Mutex físico en red con auto-caducidad de 3 minutos.
+*   RBAC con tres roles: Comercial, Coordinador, Jefe de Operaciones.
+*   Cargador Híbrido para actualizaciones en caliente sin recompilar el `.exe`.
+
+---
+
+## 3. Requisitos Previos para el Desarrollador
+
+Para generar el archivo de distribución, el desarrollador o administrador de sistemas debe contar con:
+
+1.  **Node.js y npm:** Instalados en el entorno del proyecto.
+2.  **Dependencias del proyecto:** Ejecutar una vez en la raíz de `coordinadores-app`:
+    ```powershell
+    npm install
+    ```
+3.  **Inno Setup Compiler** *(solo si se quiere generar instalador con Setup Wizard)*: Herramienta gratuita para generar instaladores en Windows.
+    *   *Descarga:* [Inno Setup Downloads](https://jrsoftware.org/isdl.php) (se recomienda instalar la versión estable más reciente).
+
+---
+
+## 4. Generar el Ejecutable Portable (`npm run package-win`)
+
+Este es el **paso obligatorio** para actualizar el `.exe` después de cualquier cambio en el código fuente.
+
+```powershell
+cd "c:\Users\Usuario\Documents\Javier Frias\Antigravity\coordinadors\coordinadores-app"
+npm run package-win
+```
+
+El script definido en [package.json](file:///c:/Users/Usuario/Documents/Javier%20Frias/Antigravity/coordinadors/coordinadores-app/package.json) ejecuta los siguientes pasos en cadena:
+
+| Paso | Herramienta | Acción |
+|---|---|---|
+| 1 | `electron-packager` | Empaqueta la app para Windows x64 en `dist/coordinadores-win32-x64/` |
+| 2 | `xcopy` | Copia la carpeta `dades/` (JSONs y DB locales) al directorio de salida |
+| 3 | `copy` | Copia `config.json` al directorio de salida |
+
+### Estructura de salida generada
+
+```
+dist/coordinadores-win32-x64/
+├── coordinadores.exe        ← Ejecutable portable principal
+├── config.json              ← Configuración de red (editar ruta_compartida)
+├── dades/
+│   ├── aparcamientos.json   ← Catálogo de contingencia
+│   ├── coordinadores.json   ← Registro de coordinadores
+│   └── dades.db             ← BD local de fallback
+└── resources/
+    └── app.asar             ← Código fuente empaquetado y protegido
+```
+
+> [!TIP]
+> Para distribuir actualizaciones menores de HTML/CSS/JS **sin recompilar**, copia solo la carpeta `src/` al lado de `coordinadores.exe`. El Cargador Híbrido la detecta y la prioriza automáticamente sobre el código interno del `.asar`.
+
+---
+
+## 5. Script de Inno Setup — Instalador con Setup Wizard (`instalador.iss`)
+
+Para generar un instalador estándar de Windows, cree un archivo `instalador.iss` en la raíz del proyecto:
+
+```ini
+; Script de Inno Setup para la Intranet de Coordinadores
+#define MyAppName "Intranet de Coordinadores"
+#define MyAppVersion "1.1.0"
+#define MyAppPublisher "Núñez i Navarro"
+#define MyAppExeName "coordinadores.exe"
+#define MyAppSrcDir "c:\Users\Usuario\Documents\Javier Frias\Antigravity\coordinadors\coordinadores-app\dist\coordinadores-win32-x64"
+
+[Setup]
+AppId={{5A8E19B2-C1A4-4DCE-9FA3-94EE2D2BE1C2}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+DefaultDirName={localappdata}\IntranetCoordinadores
+DisableProgramGroupPage=yes
+OutputBaseFilename=Coordinadores_Setup_v1.1.0
+Compression=lzma
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=lowest
+
+[Languages]
+Name: "spanish"; MessagesFile: "compiler:Default.isl"
+Name: "catalan"; MessagesFile: "compiler:Languages\Catalan.isl"
+
+[Tasks]
+Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+
+[Files]
+Source: "{#MyAppSrcDir}\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#MyAppSrcDir}\config.json"; DestDir: "{app}"; Flags: ignoreversion onlyifdoesntexist
+
+[Icons]
+Name: "{userprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
+Name: "{userdesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
+```
+
+Para compilar el instalador: abrir el archivo `.iss` en **Inno Setup Compiler** y pulsar `F9` (Build > Compile). El instalador resultante se genera en la subcarpeta `Output/` con el nombre `Coordinadores_Setup_v1.1.0.exe`.
+
+---
+
+## 6. Instrucciones de Instalación para el Usuario Final
+
+1.  **Ejecutar el archivo:** Doble clic sobre `Coordinadores_Setup_v1.1.0.exe`.
+2.  **Seleccionar Idioma:** El asistente ofrecerá elegir entre **Español** y **Catalán**.
+3.  **Destino:** Se instala automáticamente en `C:\Users\[Usuario]\AppData\Local\IntranetCoordinadores\` *(sin permisos de administrador)*.
+4.  **Acceso directo:** Marcar la casilla si se desea acceso directo en el Escritorio.
+5.  **Finalizar:** Pulsar *Instalar* y, opcionalmente, marcar *"Ejecutar Intranet de Coordinadores"* al finalizar.
+
+---
+
+## 7. Configuración del Entorno de Red Post-Instalación
+
+Editar el archivo `config.json` en la carpeta de instalación con el Bloc de notas:
+
+```json
+{
+  "coordinador": "ALBERT",
+  "role": "coordinador",
+  "theme": "light",
+  "language": "es",
+  "dadesPath": "P:\\parkings\\dades",
+  "backupsPath": "P:\\parkings\\Backups",
+  "ruta_compartida": "P:\\parkings\\db"
+}
+```
+
+Al abrir la aplicación, el sistema inicializará automáticamente en `ruta_compartida` los 4 shards de base de datos si no existieran:
+
+| Archivo | Contenido |
+|---|---|
+| `operativa_rrhh.db` | Turnos diarios, vacaciones, deudas de horas, tabla `ranking` |
+| `finanzas_inventario.db` | Gastos mensuales, inventario de material |
+| `comercial.db` | Tarifas y precios de comerciales |
+| `catalogos_maestros.db` | Catálogos maestros (aparcamientos, empleados, sociedades, contratos) |
+
+> [!IMPORTANT]
+> La tabla `ranking` en `operativa_rrhh.db` se crea automáticamente en la primera importación de empleados desde el Migrador. No es necesaria ninguna acción manual.
+
+---
+
+## 8. Desinstalación
+
+1.  Ir al **Menú Inicio → Configuración → Aplicaciones**.
+2.  Buscar **Intranet de Coordinadores** en la lista.
+3.  Hacer clic en **Desinstalar** y seguir las instrucciones. El desinstalador elimina todos los archivos del programa de la estación de trabajo local, dejando intactas la base de datos y copias de seguridad de la red.
+
 
 ---
 

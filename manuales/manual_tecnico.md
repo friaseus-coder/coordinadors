@@ -322,11 +322,151 @@ Durante la sincronización de archivos de configuración (`coordinadores.json`),
 
 ---
 
-## 8. Asistente Guiado de Carga de Históricos
+## 8. Asistente Guiado de Carga de Históricos y Datos Maestros
+
 Con la implantación de la **Fase 10**, SQLite es la fuente de verdad única absoluta en la aplicación, habiéndose eliminado los antiguos fallbacks locales y archivos JSON en la edición diaria. Las migraciones de datos legados se canalizan a través de un asistente premium interactivo y seguro, habiéndose eliminado por completo el Panel de Administración heredado (`admin.html`) por redundancia.
 
-### A. Asistente Guiado de Carga de Históricos (`migrador.html`)
-Se ha diseñado una interfaz de asistente guiada por pasos (`src/migrador/migrador.html`) que permite importar históricos de manera segura para los módulos de **Cuadrantes**, **Vacaciones**, **Deudas**, **Precios Comerciales**, **Rutas Comerciales** y **Gastos y Kilometraje**. El flujo de trabajo consta de 5 pasos consecutivos:
+El archivo `src/migrador/migrador.html` alberga **dos bloques funcionales independientes** organizados verticalmente en la pantalla:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  🚗 APARCAMIENTOS  [catalogos.db]    Dades Mestres  ▼   │
+│  ├─ ⬇ Descargar Datos Actuales / Plantilla              │
+│  ├─ ⚙️ Modo: [Añadir] | [Sobrescribir]                  │
+│  └─ 📂 Seleccionar JSON → 🚀 Importar → Log inline      │
+├─────────────────────────────────────────────────────────┤
+│  👥 EMPLEADOS  [catalogos.db]        Dades Mestres  ▼   │
+│  └─ (misma estructura, con escritura doble BD)          │
+├─────────────────────────────────────────────────────────┤
+│  MIGRADOR DE HISTÓRICOS — Flujo de 5 pasos              │
+│  (Cuadrante, Vacaciones, Deudas, Comerciales, etc.)     │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+### A. Módulo de Gestión de Datos Maestros (Paneles Colapsables)
+
+Incorporado en la parte superior de `migrador.html`, este módulo permite gestionar los catálogos base del sistema sin interferir con el flujo de migración de históricos. Cada panel es colapsable mediante clic en la cabecera.
+
+#### A.1 Panel de Aparcamientos
+
+Gestiona la tabla `aparcamientos` de la base de datos `catalogos`.
+
+**Exportar / Plantilla:**
+Al pulsar *Descargar Datos Actuales*, se ejecuta `SELECT * FROM aparcamientos` sobre `catalogos`. Si la tabla tiene datos, se descarga el JSON completo con la fecha. Si está vacía, se descarga una plantilla de ejemplo con la estructura exacta del schema:
+
+```json
+[
+  {
+    "numero_obra": "OB-0001", "nombre": "Parking Ejemplo",
+    "zona": "Zona 1", "es_remotizado": 0, "tipo_gestion": "propio",
+    "permitir_vacio_laborables": 0, "sociedad_id": 1,
+    "coordinador_responsable": "Albert", "activo": 1
+  }
+]
+```
+
+**Importar (Modo Añadir):**
+Ejecuta `INSERT OR IGNORE INTO aparcamientos` para cada fila, preservando los registros existentes.
+
+**Importar (Modo Sobrescribir):**
+```sql
+DELETE FROM catalogos.aparcamientos;
+-- Luego por cada fila del JSON:
+INSERT OR IGNORE INTO aparcamientos (numero_obra, nombre, zona, es_remotizado,
+  tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+```
+
+#### A.2 Panel de Empleados — Doble Inserción (CRÍTICO)
+
+Este panel implementa una **doble escritura sincrónica** por cada fila del JSON: una inserción en `catalogos.empleados` y otra en `operativa.ranking`.
+
+**Formato del JSON de entrada:**
+```json
+[
+  {
+    "agent": "Nom Cognom",
+    "centre": "NN CONCEPT", "societat": "ABCN",
+    "torn": "MATÍ", "zona": "Zona 1",
+    "coneixements": 7.5, "atencio": 8.0,
+    "disponibilitat": 9.0, "actitud": 8.5,
+    "valoracio": 8.25, "observacions": "Sense observacions"
+  }
+]
+```
+
+**Distribución de datos por BD:**
+
+| Campo JSON | Base de datos | Tabla | Campo destino |
+|---|---|---|---|
+| `agent` | `catalogos` | `empleados` | `nombre` |
+| *(constante)* | `catalogos` | `empleados` | `rol = 'Coordinador'` |
+| *(constante)* | `catalogos` | `empleados` | `activo = 1` |
+| `centre`, `societat`, `torn`, `zona` | `catalogos` | `empleados` | `json_preferencias` (JSON stringify) |
+| `agent` | `operativa` | `ranking` | `id_trabajador` |
+| `coneixements` | `operativa` | `ranking` | `coneixements` |
+| `atencio` | `operativa` | `ranking` | `atencio` |
+| `disponibilitat` | `operativa` | `ranking` | `disponibilitat` |
+| `actitud` | `operativa` | `ranking` | `actitud` |
+| `valoracio` | `operativa` | `ranking` | `valoracio` |
+| `observacions` | `operativa` | `ranking` | `observacions` |
+
+**Inicialización automática de la tabla `ranking`:**
+Antes de insertar, el sistema garantiza la existencia de la tabla en `operativa`:
+```sql
+CREATE TABLE IF NOT EXISTS ranking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_trabajador TEXT,
+    coneixements   REAL,
+    atencio        REAL,
+    disponibilitat REAL,
+    actitud        REAL,
+    valoracio      REAL,
+    observacions   TEXT
+);
+```
+
+**Flujo completo en modo Sobrescribir:**
+```javascript
+// 1. Borrar ambas tablas
+await dbApi.write('catalogos', 'DELETE FROM empleados', []);
+await dbApi.write('operativa', 'DELETE FROM ranking', []);
+
+// 2. Por cada fila del JSON (try/catch independiente por BD):
+// A) catalogos.empleados
+await dbApi.write('catalogos',
+  'INSERT OR IGNORE INTO empleados (nombre, email, rol, activo, json_preferencias) VALUES (?, ?, ?, ?, ?)',
+  [r.nombre, null, 'Coordinador', 1, JSON.stringify({centre, societat, torn, zona})]
+);
+// B) operativa.ranking
+await dbApi.write('operativa',
+  'INSERT INTO ranking (id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions) VALUES (?, ?, ?, ?, ?, ?, ?)',
+  [r.nombre, r.coneixements, r.atencio, r.disponibilitat, r.actitud, r.valoracio, r.observacions]
+);
+
+// 3. Alert final con resumen de éxitos en cada BD
+```
+
+**Compatibilidad con JSON legacy:**
+
+| Situación | Comportamiento |
+|---|---|
+| Array directo `[{...}]` | Se usa directamente |
+| Objeto con array anidado | Se extrae el primer array encontrado |
+| Campo `agent` presente | Se mapea a `nombre` |
+| Sin campo `rol` | Se asigna `'Coordinador'` |
+| Sin campo `activo` | Se asigna `1` |
+| Métricas ausentes | Se asigna `0` por defecto |
+
+**Log de resultado:** Aparece un `alert()` con el desglose de inserciones correctas en cada BD, más un log inline de color bajo el panel (verde = éxito total, rojo = errores parciales).
+
+---
+
+### B. Asistente Guiado de Carga de Históricos — Flujo de 5 Pasos
+
+Permite importar históricos de manera segura para los módulos de **Cuadrantes**, **Vacaciones**, **Deudas**, **Precios Comerciales**, **Rutas Comerciales** y **Gastos y Kilometraje**:
 
 1.  **Configuración de la Carga (Paso 1):** El usuario selecciona la base de datos a modificar y la estrategia de carga:
     *   *Afegir i Combinar Dades:* Conserva los datos existentes e inyecta los nuevos registros.
@@ -339,12 +479,12 @@ Se ha diseñado una interfaz de asistente guiada por pasos (`src/migrador/migrad
 4.  **Previsualización y Escritura Atómica (Paso 4):** Muestra una cuadrícula de control con los primeros 100 registros formateados tras aplicar los mapeos de catálogos y resolver los IDs de las entidades. En el caso de comerciales, se limita a una previsualización de los primeros 15 registros. Si el usuario confirma, Electron ejecuta una transacción relacional en bloque o una escritura atómica segura.
 5.  **Descarga de Datos Excluidos (Paso 5):** Notifica del resultado numérico de la migración. Si el usuario decidió omitir registros en el Paso 3 o había filas erróneas, habilita un botón para descargar dichos datos en un archivo JSON independiente para su corrección y posterior reintento.
 
-### B. Mapeo y Persistencia Clave-Valor en Comerciales Legacy
+### C. Mapeo y Persistencia Clave-Valor en Comerciales Legacy
 *   **Comerciales:** La migración toma los datos legacy del tipo `nn_A_...` o `nn_L_...` y los transforma automáticamente a las claves modernas tipo `dades Albert/comercials_albert_...json` estructurando la matriz de tarifas e inyectándola en la base de datos `comercial.db` -> tabla `kv_store`.
 *   **Doble Encapsulado**: Para respetar el esquema original de lectura del frontend (`comercials.html`), el valor se almacena como un objeto JSON que contiene la firma dinámica del mes, y cuyo valor a su vez es el string JSON de la matriz de datos (`double-stringification`), garantizando que la aplicación lea e interprete los datos migrados de forma directa.
 *   **Importaciones Manuales KV**: Se mantiene un botón alternativo en la pantalla de inicio para la carga directa de JSONs a la base de datos clave-valor simple sin validación de catálogos relacionales, reservado para soporte técnico.
 
-### C. Carga Histórica de Rutas y Gastos/Kilometraje en Base de Datos de Finanzas
+### D. Carga Histórica de Rutas y Gastos/Kilometraje en Base de Datos de Finanzas
 *   **Rutas Comerciales:** Este importador analiza un JSON con paradas fragmentadas y atributos de festivos por trabajador. Agrupa secuencialmente las paradas por cada día y trabajador, generando un recorrido formateado (ej. "PROVENÇA 111 ➤ VALENCIA 243") e inserta el resultado de manera transaccional y atómica en la tabla `movimientos_economicos` de `finanzas_inventario.db` (tipo_movimiento = 'Ruta Comercial').
 *   **Gastos y Kilometraje:** Extrae de manera global el trabajador del campo `"nyn_nom_empleat"`, analiza las llaves de meses válidos con prefijo `"nyn_despeses_"`, ignora filas con fecha vacía, y mapea el trayecto, kilómetros, tarifa y peajes a la tabla `movimientos_economicos` (tipo_movimiento = 'Kilometraje') en `finanzas_inventario.db`, guardando los detalles estructurados en el campo flexible `json_detalles`.
 *   **Idempotencia e Integridad:** Ambos importadores requieren de confirmación explícita mediante un cuadro de confirmación interactiva. En el modo de sobrescribir, limpian los registros existentes en la tabla unificada del usuario antes de importar; en el modo de añadir, eliminan registros individuales con las mismas coincidencias para evitar la generación accidental de filas duplicadas en caso de reintentos.
