@@ -26,15 +26,6 @@ CREATE TABLE IF NOT EXISTS inventari (
     activo INTEGER DEFAULT 1
 );
 
--- Almacenamiento clave-valor legacy (Tickets, Rutas)
-CREATE TABLE IF NOT EXISTS kv_store (
-    key TEXT PRIMARY KEY,
-    value TEXT,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
-
--- Versión del esquema
-CREATE TABLE IF NOT EXISTS schema_version (
-    version INTEGER PRIMARY KEY,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+-- Índices de rendimiento
+CREATE INDEX IF NOT EXISTS idx_mov_economicos_filtro ON movimientos_economicos(tipo_movimiento, fecha);
+CREATE INDEX IF NOT EXISTS idx_mov_economicos_usuario ON movimientos_economicos(id_usuario);

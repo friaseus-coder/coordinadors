@@ -2745,15 +2745,76 @@
             mostrarLogMaestros(logEl, 'info', `⏳ Leyendo tabla ${tabla}...`);
 
             try {
-                const filas = await dbApi.read('catalogos', `SELECT * FROM ${tabla}`, []);
+                let datosExport = [];
+
+                if (tabla === 'empleados') {
+                    // Leer empleados de catalogos + ranking de operativa
+                    const filas = await dbApi.read('catalogos', `SELECT * FROM empleados`, []);
+
+                    let rankingMap = {};
+                    try {
+                        const rankingRows = await dbApi.read('operativa',
+                            `SELECT id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions FROM ranking`, []);
+                        if (rankingRows) {
+                            for (const r of rankingRows) {
+                                rankingMap[r.id_trabajador] = r;
+                            }
+                        }
+                    } catch(e) {
+                        console.warn('[Descarga Maestros] No se pudo leer ranking:', e.message);
+                    }
+
+                    if (filas && filas.length > 0) {
+                        datosExport = filas.map(emp => {
+                            // Deserializar json_preferencias
+                            let prefs = {};
+                            try {
+                                if (emp.json_preferencias) {
+                                    prefs = JSON.parse(emp.json_preferencias);
+                                }
+                            } catch(e) { /* ignorar JSON inválido */ }
+
+                            // Buscar datos de ranking para este empleado
+                            const rk = rankingMap[emp.nombre] || {};
+
+                            return {
+                                agent:          emp.nombre,
+                                email:          emp.email || null,
+                                rol:            emp.rol || 'Coordinador',
+                                activo:         emp.activo !== undefined ? emp.activo : 1,
+                                centre:         prefs.centre || null,
+                                societat:       prefs.societat || null,
+                                torn:           prefs.torn || null,
+                                zona:           prefs.zona || null,
+                                coneixements:   rk.coneixements || 0,
+                                atencio:        rk.atencio || 0,
+                                disponibilitat: rk.disponibilitat || 0,
+                                actitud:        rk.actitud || 0,
+                                valoracio:      rk.valoracio || 0,
+                                observacions:   rk.observacions || null
+                            };
+                        });
+                    }
+
+                } else if (tabla === 'aparcamientos') {
+                    // Leer aparcamientos excluyendo el id interno (no necesario para reimportación)
+                    const filas = await dbApi.read('catalogos',
+                        `SELECT numero_obra, nombre, zona, es_remotizado, tipo_gestion,
+                                permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo
+                         FROM aparcamientos`, []);
+
+                    if (filas && filas.length > 0) {
+                        datosExport = filas;
+                    }
+                }
 
                 let contenido;
                 let nombreArchivo;
 
-                if (filas && filas.length > 0) {
-                    contenido = JSON.stringify(filas, null, 2);
+                if (datosExport.length > 0) {
+                    contenido = JSON.stringify(datosExport, null, 2);
                     nombreArchivo = `${tabla}_${new Date().toISOString().slice(0,10)}.json`;
-                    mostrarLogMaestros(logEl, 'success', `✅ ${filas.length} registro(s) exportados desde la tabla ${tabla}.`);
+                    mostrarLogMaestros(logEl, 'success', `✅ ${datosExport.length} registro(s) exportados en formato compatible con importación.`);
                 } else {
                     contenido = JSON.stringify(_maestrosPlantillas[tabla], null, 2);
                     nombreArchivo = `plantilla_${tabla}.json`;

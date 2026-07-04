@@ -23,10 +23,10 @@ coordinadores-app/
 ├── preload.js              # Script puente (window.dbAPI expuesta en Context Isolation)
 ├── package.json            # Metadatos del proyecto y dependencias (sqlite3, electron)
 ├── config.json             # Configuración dinámica (coordinador, rol, ruta_compartida)
-├── schema_operativa.sql    # Esquema relacional de operativa, turnos y vacaciones
-├── schema_finanzas.sql     # Esquema relacional de gastos e inventarios
-├── schema_comercial.sql    # Esquema relacional de kv_store comercial
-├── schema_catalogos.sql    # Esquema relacional de aparcamientos, sociedades y agentes
+├── schema_operativa.sql    # Esquema: quadrant, incidencias_horarias, ranking + índices
+├── schema_finanzas.sql     # Esquema: movimientos_economicos, inventari + índices
+├── schema_comercial.sql    # Esquema: kv_store comercial
+├── schema_catalogos.sql    # Esquema: empleados, aparcamientos, sociedades, agentes, reglas
 ├── dades/                  # Carpeta de datos local (Fallback de configuración)
 │   ├── coordinadores.json  # Registro de coordinadores creados dinámicamente
 │   └── aparcamientos.json  # Catálogo maestro de aparcamientos (Resiliencia)
@@ -150,6 +150,7 @@ Para evitar la corrupción de datos que ocurre cuando múltiples instancias de S
     *   **Override manual (Modo Dios)**: El canal IPC `force-unlock-db` permite a usuarios con privilegios de "Jefe de Operaciones" forzar la eliminación del candado de red independientemente de su antigüedad.
 3.  **Escritura Directa en Red**: Una vez adquirido el candado, Electron:
     *   Abre una conexión directa exclusiva a la base de datos correspondiente en red.
+    *   Ejecuta `PRAGMA foreign_keys = ON;` para garantizar la integridad referencial de claves foráneas en cada conexión.
     *   Ejecuta `PRAGMA journal_mode = DELETE;` para desactivar el diario de transacciones en red, escribiendo directamente sobre el archivo principal.
     *   Ejecuta la consulta SQL con los parámetros proporcionados.
     *   Cierra la conexión física a la base de datos de red de forma limpia.
@@ -202,8 +203,19 @@ Contiene la información diaria de turnos, vacaciones y control de ausencias o d
     *   `coordinador` (TEXT - coordinador responsable)
     *   `estado` (TEXT - estado de la incidencia, por defecto 'Aprobado')
     *   `comentarios` (TEXT - observaciones y detalles libres)
-*   **`kv_store`**: Almacén clave-valor heredado operativo.
-*   **`schema_version`**: Control de versión de estructura del shard operativo.
+*   **`ranking`**: Tabla de rendimiento y valoración del personal.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `id_trabajador` (TEXT - nombre del empleado evaluado)
+    *   `coneixements` (REAL - calificación conocimientos 0.0-10.0)
+    *   `atencio` (REAL - calificación atención 0.0-10.0)
+    *   `disponibilitat` (REAL - calificación disponibilidad 0.0-10.0)
+    *   `actitud` (REAL - calificación actitud 0.0-10.0)
+    *   `valoracio` (REAL - media matemática de las notas)
+    *   `observacions` (TEXT - comentario sobre el desempeño)
+*   **Índices de rendimiento:**
+    *   `idx_cuadrantes_filtro` ON `quadrant(fecha, aparcamiento_id)` — Optimiza filtrados por fecha y parking.
+    *   `idx_cuadrantes_trabajador` ON `quadrant(agente_id)` — Optimiza búsquedas por trabajador.
+    *   `idx_incidencias_fechas` ON `incidencias_horarias(fecha_inicio, fecha_fin)` — Optimiza consultas de rango de fechas.
 
 #### 2. `finanzas_inventario.db`
 Centraliza el registro contable de caja chica (gastos) y el control de materiales entregados (uniformes).
@@ -223,8 +235,9 @@ Centraliza el registro contable de caja chica (gastos) y el control de materiale
     *   `estado` (TEXT)
     *   `observaciones` (TEXT)
     *   `activo` (INTEGER - 0 o 1)
-*   **`kv_store`**: Almacén clave-valor de finanzas.
-*   **`schema_version`**: Versión del shard de finanzas.
+*   **Índices de rendimiento:**
+    *   `idx_mov_economicos_filtro` ON `movimientos_economicos(tipo_movimiento, fecha)` — Optimiza filtrados por tipo y fecha.
+    *   `idx_mov_economicos_usuario` ON `movimientos_economicos(id_usuario)` — Optimiza búsquedas por usuario.
 
 #### 3. `comercial.db`
 Almacena la parametrización de precios, tarifas y datos específicos del módulo comercial.
@@ -353,8 +366,8 @@ Incorporado en la parte superior de `migrador.html`, este módulo permite gestio
 
 Gestiona la tabla `aparcamientos` de la base de datos `catalogos`.
 
-**Exportar / Plantilla:**
-Al pulsar *Descargar Datos Actuales*, se ejecuta `SELECT * FROM aparcamientos` sobre `catalogos`. Si la tabla tiene datos, se descarga el JSON completo con la fecha. Si está vacía, se descarga una plantilla de ejemplo con la estructura exacta del schema:
+**Exportar / Plantilla (formato compatible con reimportación):**
+Al pulsar *Descargar Datos Actuales*, se ejecuta una consulta sobre `catalogos.aparcamientos` excluyendo la columna `id` interna (autoincremental, no necesaria para reimportación). Si la tabla tiene datos, se descarga el JSON con la fecha en un formato directamente compatible con la importación y con Excel. Si está vacía, se descarga una plantilla de ejemplo con la estructura exacta:
 
 ```json
 [
@@ -383,11 +396,17 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 Este panel implementa una **doble escritura sincrónica** por cada fila del JSON: una inserción en `catalogos.empleados` y otra en `operativa.ranking`.
 
-**Formato del JSON de entrada:**
+**Exportar / Plantilla (formato bidireccional):**
+Al pulsar *Descargar Datos Actuales*, se fusionan automáticamente los datos de `catalogos.empleados` con los de `operativa.ranking`, se deserializa `json_preferencias` en campos planos (`centre`, `societat`, `torn`, `zona`) y se produce un JSON en el formato exacto de la plantilla. Esto permite el ciclo completo: **Descargar → Editar en Excel → Reimportar**.
+
+**Formato del JSON (exportación e importación usan el mismo formato):**
 ```json
 [
   {
     "agent": "Nom Cognom",
+    "email": null,
+    "rol": "Coordinador",
+    "activo": 1,
     "centre": "NN CONCEPT", "societat": "ABCN",
     "torn": "MATÍ", "zona": "Zona 1",
     "coneixements": 7.5, "atencio": 8.0,

@@ -338,6 +338,13 @@ async function safeWriteCombined(dbKey, query, params) {
     });
 
     await new Promise((resolve, reject) => {
+      netDb.run("PRAGMA foreign_keys = ON;", (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    await new Promise((resolve, reject) => {
       netDb.run("PRAGMA journal_mode = DELETE;", (err) => {
         if (err) reject(err);
         else resolve();

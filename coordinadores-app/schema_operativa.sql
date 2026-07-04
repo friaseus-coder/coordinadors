@@ -32,15 +32,19 @@ CREATE TABLE IF NOT EXISTS incidencias_horarias (
     comentarios TEXT
 );
 
--- Almacenamiento clave-valor legacy
-CREATE TABLE IF NOT EXISTS kv_store (
-    key TEXT PRIMARY KEY,
-    value TEXT,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+-- Tabla de rendimiento y valoración del personal
+CREATE TABLE IF NOT EXISTS ranking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    id_trabajador TEXT,
+    coneixements REAL,       -- Calificación conocimientos (0.0 - 10.0)
+    atencio REAL,            -- Calificación atención (0.0 - 10.0)
+    disponibilitat REAL,     -- Calificación disponibilidad (0.0 - 10.0)
+    actitud REAL,            -- Calificación actitud (0.0 - 10.0)
+    valoracio REAL,          -- Media matemática de las notas
+    observacions TEXT        -- Comentario sobre el desempeño
 );
 
--- Versión del esquema
-CREATE TABLE IF NOT EXISTS schema_version (
-    version INTEGER PRIMARY KEY,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-);
+-- Índices de rendimiento
+CREATE INDEX IF NOT EXISTS idx_cuadrantes_filtro ON quadrant(fecha, aparcamiento_id);
+CREATE INDEX IF NOT EXISTS idx_cuadrantes_trabajador ON quadrant(agente_id);
+CREATE INDEX IF NOT EXISTS idx_incidencias_fechas ON incidencias_horarias(fecha_inicio, fecha_fin);
