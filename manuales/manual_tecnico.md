@@ -245,28 +245,59 @@ Almacena la parametrización de precios, tarifas y datos específicos del módul
 *   **`schema_version`**: Versión del shard comercial.
 
 #### 4. `catalogos_maestros.db`
-Contiene la parametrización global del grupo (sociedades, parkings, contratos y agentes). Es de vital importancia ya que actúa como base de datos de solo lectura unida (`ATTACH`) en el resto de shards.
-*   **`sociedades`**: Razón social de empresas (id, nombre_fiscal, codigo_corto, activo).
-*   **`aparcamientos`**: Catálogo de centros de trabajo.
+Contiene la parametrización global del grupo (sociedades, parkings, contratos, personal y reglas de negocio). Es el shard de catálogos compartidos que el cargador adjunta mediante `ATTACH DATABASE` al resto de shards.
+*   **`sociedades`**: Define las razones sociales del grupo que gestionan los parkings.
     *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
-    *   `numero_obra` (TEXT UNIQUE)
-    *   `nombre` (TEXT NOT NULL)
-    *   `zona` (TEXT)
-    *   `es_remotizado` (INTEGER - 0 o 1)
-    *   `tipo_gestion` (TEXT - 'propio' o 'socios')
-    *   `permitir_vacio_laborables` (INTEGER - 0 o 1)
-    *   `sociedad_id` (INTEGER - FK sociedades)
-    *   `coordinador_responsable` (TEXT - 'Albert', 'Laura' o 'Ambos')
+    *   `nombre_fiscal` (TEXT NOT NULL) — Nombre oficial (ej: "Aparcamientos BCN, S.L.")
+    *   `codigo_corto` (TEXT NOT NULL UNIQUE) — Iniciales de referencia en la UI (ej: "ABCN")
+    *   `activo` (INTEGER DEFAULT 1) — Borrado lógico (0 = inactiva, 1 = activa)
+*   **`aparcamientos`**: Catálogo maestro de centros de trabajo.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `numero_obra` (TEXT UNIQUE) — Código de facturación contable (ej: "OB-2301")
+    *   `nombre` (TEXT NOT NULL) — Nombre comercial
+    *   `zona` (TEXT) — Zona asignada
+    *   `es_remotizado` (INTEGER - 0 o 1) — 1 si no requiere presencia física
+    *   `tipo_gestion` (TEXT) — 'propio' (gestión directa) o 'socios' (concesión)
+    *   `permitir_vacio_laborables` (INTEGER - 0 o 1) — Override de controles de cobertura
+    *   `sociedad_id` (INTEGER - FK sociedades.id)
+    *   `coordinador_responsable` (TEXT) — 'Albert', 'Laura' o 'Ambos'
     *   `activo` (INTEGER - 0 o 1)
 *   **`coberturas_requeridas`**: Turnos obligatorios por aparcamiento (recurrente o extraordinario).
-*   **`agentes`**: Catálogo de personal de plantilla y empresas externas.
-*   **`empleados`**: Tabla unificada de todo el personal de la empresa (coordinadores, administradores, comerciales y trabajadores), incluyendo sus preferencias y configuraciones (`json_preferencias` en formato JSON).
-*   **`contratos_agentes`**: Vinculación temporal de trabajadores con sociedades para control de cruces.
-*   **`reglas_config`**: Reglas de negocio globales (horas_maximas_semanales, descanso_minimo_horas, etc.).
-*   **`historico_aparcamientos`**: Tabla de auditoría interna de cambios en los centros.
-*   **`schema_version`**: Versión del shard de catálogos.
+*   **`agentes`**: Catálogo relacional de personal para el algoritmo inteligente de cuadrantes.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `nombre` (TEXT NOT NULL) — Nombre identificativo del agente
+    *   `zona_habitual` (TEXT) — Zona preferente
+    *   `ranking_score` (INTEGER DEFAULT 50) — Prioridad de asignación (0-100)
+    *   `es_empresa_externa` (INTEGER DEFAULT 0) — 1 para proveedores subcontratados sin límites de jornada
+    *   `activo` (INTEGER DEFAULT 1)
+*   **`empleados`**: Tabla unificada de todo el personal de la empresa (administradores, coordinadores, comerciales y trabajadores), incluyendo credenciales, emails y preferencias operativas.
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `nombre` (TEXT NOT NULL) — Nombre completo
+    *   `email` (TEXT) — Dirección de correo
+    *   `rol` (TEXT NOT NULL) — Rol de acceso ('Trabajador', 'Coordinador', 'Comercial', 'Admin')
+    *   `activo` (INTEGER DEFAULT 1)
+    *   `json_preferencias` (TEXT) — Preferencias operativas: `{"centre": "...", "torn": "...", "zona": "..."}`
+*   **`contratos_agentes`**: Historial de vinculaciones de sociedades con agentes (para control de incompatibilidades en cuadrante).
+    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
+    *   `agente_id` (INTEGER NOT NULL - FK agentes.id)
+    *   `sociedad_id` (INTEGER NOT NULL - FK sociedades.id)
+    *   `fecha_inicio` (TEXT NOT NULL) — Inicio de contrato (YYYY-MM-DD)
+    *   `fecha_fin` (TEXT) — Fin de vigencia (YYYY-MM-DD). `NULL` indica activo/vigente actualmente.
+*   **`reglas_config`**: Parámetros globales del motor de cuadrantes.
+*   **`historico_aparcamientos`**: Auditoría automática de cambios.
+*   **`schema_version`**: Versión actual de catálogos.
 
-### B. Trigger de Auditoría en Aparcamientos
+### B. Lógica de Sincronización de Personal y Filtro de Roles Operativos
+Dado que la base de datos mantiene a los usuarios administrativos (`empleados`) separados de los recursos de cuadrante (`agentes`), la aplicación implementa una sincronización por rol en caliente para garantizar la coherencia:
+1.  **Condición de Rol Operativo (`Trabajador`)**: Únicamente los empleados cuyo campo `rol` es igual a `'Trabajador'` se consideran "agentes" aptos para cubrir turnos y por lo tanto aptos para poseer historial de sociedades.
+2.  **Sincronización en Alta y Modificación**:
+    *   Si se añade o edita un empleado con rol `'Trabajador'`, la aplicación comprueba si existe en la tabla `agentes`. Si no existe, realiza un `INSERT` automático asignándole su zona habitual y activándolo. Si ya existía, realiza un `UPDATE` de su nombre y estado.
+    *   Si a un empleado se le modifica el rol a uno no-operativo (ej: se le asciende de `Trabajador` a `Coordinador` o `Admin`), la aplicación ejecuta de forma transparente un `DELETE` sobre la tabla `agentes` para retirarlo de los algoritmos de asignación automática de turnos.
+3.  **Gestión de Vinculación de Sociedades (Contratos)**:
+    *   La sección de contratos y asignación de sociedades en la interfaz está condicionada a empleados de rol `'Trabajador'`.
+    *   Al asociar un empleado a una sociedad con una `fecha_inicio`, se registra en `contratos_agentes` vinculándolo a su ID en `agentes`. El backend cierra automáticamente el contrato previo vigente del agente asignándole como `fecha_fin` el día de inicio del nuevo contrato, garantizando la consistencia temporal de la base de datos relacional.
+
+### C. Trigger de Auditoría en Aparcamientos
 Para garantizar un rastreo histórico completo de cambios en los centros, SQLite ejecuta un trigger automático dentro de `catalogos_maestros.db`:
 ```sql
 CREATE TRIGGER IF NOT EXISTS log_cambios_aparcamientos

@@ -10,8 +10,10 @@ Físicamente, la aplicación implementa **sharding** dividiendo la información 
 
 ---
 
-## 1. Módulo: Gestión de Personal (Trabajadores)
-Gestionado desde el modal de administración de trabajadores en `portal.html`.
+## 1. Módulo: Gestión de Personal (Trabajadores y Sociedades)
+Gestionado desde el modal de administración de trabajadores en `portal.html` y el modal de sociedades.
+
+### A. Catálogo Unificado de Empleados y Preferencias
 
 | Campo en Interfaz (UI) | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones / Valores |
 | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -19,7 +21,25 @@ Gestionado desde el modal de administración de trabajadores en `portal.html`.
 | **Email** | `catalogos_maestros.db` | `empleados` | `email` | `TEXT` | Correo electrónico de contacto. |
 | **Rol** | `catalogos_maestros.db` | `empleados` | `rol` | `TEXT` | Roles válidos: `Trabajador`, `Coordinador`, `Comercial`, `Admin`. |
 | **Activo / Estado** | `catalogos_maestros.db` | `empleados` | `activo` | `INTEGER` | `1` = Activo, `0` = Inactivo / Baja. |
-| **Preferencia Centro/Sociedad/Turno/Zona** | `catalogos_maestros.db` | `empleados` | `json_preferencias` | `TEXT` | Objeto JSON flexible: `{"centre": "...", "societat": "...", "torn": "...", "zona": "..."}`. |
+| **Preferencia Centro/Turno/Zona** | `catalogos_maestros.db` | `empleados` | `json_preferencias` | `TEXT` | Objeto JSON: `{"centre": "...", "torn": "...", "zona": "..."}`. |
+
+### B. Gestión de Sociedades (Empresas del Grupo)
+
+| Campo en Interfaz (UI) | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones / Valores |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Nombre Fiscal** | `catalogos_maestros.db` | `sociedades` | `nombre_fiscal` | `TEXT` | Razón social de la sociedad (ej: `Aparcamientos BCN S.L.`). |
+| **Código Corto** | `catalogos_maestros.db` | `sociedades` | `codigo_corto` | `TEXT` | Código abreviado único (ej: `ABCN`). |
+| **Activo / Estado** | `catalogos_maestros.db` | `sociedades` | `activo` | `INTEGER` | `1` = Activa, `0` = Inactiva (Desactivada). |
+
+### C. Histórico de Contratos y Vinculaciones Temporales (Solo Rol: 'Trabajador')
+La asignación de contratos se restringe a empleados con rol operativo (`Trabajador`). Al cambiar un empleado a este rol, se le crea un homólogo en `agentes` para posibilitar su asignación y contratos. Si se le quita dicho rol, se borra de `agentes`.
+
+| Campo en Interfaz (UI) | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones / Valores |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **ID del Trabajador** | `catalogos_maestros.db` | `contratos_agentes`| `agente_id` | `INTEGER` | ID relacional que apunta a `agentes.id`. |
+| **Sociedad Asignada** | `catalogos_maestros.db` | `contratos_agentes`| `sociedad_id` | `INTEGER` | ID relacional que apunta a `sociedades.id`. |
+| **Fecha de Inicio** | `catalogos_maestros.db` | `contratos_agentes`| `fecha_inicio` | `TEXT` | Fecha de entrada en vigor (`YYYY-MM-DD`). |
+| **Fecha de Fin** | `catalogos_maestros.db` | `contratos_agentes`| `fecha_fin` | `TEXT` | Cierre de vinculación (`YYYY-MM-DD`). `NULL` indica contrato activo. |
 
 ---
 
