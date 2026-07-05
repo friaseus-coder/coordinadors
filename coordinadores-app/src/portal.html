@@ -522,13 +522,13 @@
                     <option value="es">Español</option>
                 </select>
             </div>
-            <div id="userDisplayBadge" class="user-badge"></div>
-                   <div class="dropdown-admin menu-item" id="adminDropdown" data-roles="jefe_operaciones" style="display: none;">
+                      <div class="dropdown-admin menu-item" id="adminDropdown" data-roles="jefe_operaciones" style="display: none;">
                 <button class="btn-manage-coord" onclick="toggleAdminDropdown(event)" data-i18n="btnAdministration">⚙️ Administració</button>
                 <div class="dropdown-admin-content" id="adminDropdownContent">
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
                     <button class="dropdown-admin-item" onclick="openTrabajadorModal(); closeAdminDropdown();" data-i18n="btnManageTrabajadores">👥 Treballadors</button>
+                    <button class="dropdown-admin-item" onclick="openSociedadModal(); closeAdminDropdown();">🏢 Societats</button>
                     <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();" data-i18n="adminMigratorTitle">📊 Assistent de Càrrega d'Històrics</button>
                     <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
                     <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
@@ -560,7 +560,7 @@
 
     <!-- Modal de Gestión de Aparcamientos -->
     <div id="aparcamentModal" class="modal-overlay" onclick="if(event.target===this) closeAparcamentModal()">
-        <div class="modal-box" style="min-width: 520px; max-width: 600px; position: relative;">
+        <div class="modal-box" style="min-width: 540px; max-width: 620px; position: relative;">
             <!-- Overlay de Carga Premium / Barra de Espera -->
             <div id="aparcamentLoadingOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); border-radius: 16px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
                 <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #063931; border-radius: 50%; animation: spin 1s linear infinite;"></div>
@@ -568,14 +568,69 @@
                 <div style="margin-top: 4px; color: #64748b; font-size: 11px;">Processant fitxers en xarxa, esperi un moment.</div>
             </div>
             <div class="modal-title" data-i18n="modalAparcamentTitle">🚗 Gestió d'Aparcaments</div>
-            <div class="modal-add-form" style="gap: 8px;">
-                <input type="text" id="newAparcamentNom" placeholder="Nom de l'aparcament (ex: BEJAR 63)" data-i18n="inputAparcamentPlaceholder" style="flex: 2;">
-                <select id="newAparcamentCoord" style="flex: 1.5; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: inherit; outline: none; background: white;">
-                    <option value="" disabled selected data-i18n="selectCoordPlaceholder">-- Coordinador --</option>
-                </select>
-                <button class="btn-add-coord" onclick="addAparcament()" data-i18n="btnAdd" style="flex: 0.8;">➕ Afegir</button>
+            
+            <!-- Formulario completo de aparcamiento -->
+            <div class="aparcament-form-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
+                <input type="hidden" id="editAparcamentId" value="">
+                
+                <div style="display: grid; grid-template-columns: 1fr 2.2fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NÚM. OBRA</label>
+                        <input type="text" id="newAparcamentObra" placeholder="OB-0001" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NOM APARCAMENT</label>
+                        <input type="text" id="newAparcamentNom" placeholder="BEJAR 63" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">ZONA</label>
+                        <input type="text" id="newAparcamentZona" placeholder="Zona 1" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">SOCIETAT</label>
+                        <select id="newAparcamentSociedad" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
+                            <!-- Cargado dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">TIPUS GESTIÓ</label>
+                        <select id="newAparcamentGestion" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
+                            <option value="propio" selected>Propio</option>
+                            <option value="concesion">Concesión</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">COORDINADOR RESPONSABLE</label>
+                        <select id="newAparcamentCoord" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
+                            <!-- Cargado dinámicamente -->
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 20px; align-items: center; padding-top: 4px; flex-wrap: wrap;">
+                    <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="newAparcamentRemoto" value="1">
+                        Es Remotitzat
+                    </label>
+                    <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                        <input type="checkbox" id="newAparcamentVacio" value="1">
+                        Permetre Buit Laborables
+                    </label>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+                    <button class="btn-close-modal" id="btnCancelAparcamentEdit" onclick="cancelarAparcamentEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;">Cancel·lar</button>
+                    <button class="btn-add-coord" id="btnAddAparcamentSubmit" onclick="addAparcament()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;">➕ Afegir</button>
+                </div>
             </div>
-            <div id="aparcamentList" class="modal-list" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;"></div>
+
+            <div id="aparcamentList" class="modal-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 16px;"></div>
             <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div style="display: flex; gap: 8px;">
                     <button class="btn-manage-coord" style="background: #e2f0d9; color: #385723; border-color: #c5e0b4;" onclick="exportarAparcamentsCSV()">
@@ -591,26 +646,143 @@
         </div>
     </div>
 
+    <!-- Modal de Gestión de Sociedades -->
+    <div id="sociedadModal" class="modal-overlay" onclick="if(event.target===this) closeSociedadModal()">
+        <div class="modal-box" style="min-width: 520px; max-width: 600px; position: relative;">
+            <!-- Overlay de Carga -->
+            <div id="sociedadLoadingOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); border-radius: 16px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
+                <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #063931; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+                <div style="margin-top: 12px; font-weight: 600; color: #0f2d4a; font-size: 13px;">Actualitzant base de dades...</div>
+            </div>
+            
+            <div class="modal-title">🏢 Gestió de Societats</div>
+            
+            <!-- Formulario de Sociedades -->
+            <div class="sociedad-form-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
+                <input type="hidden" id="editSociedadId" value="">
+                
+                <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NOM FISCAL</label>
+                        <input type="text" id="newSociedadNombre" placeholder="Núñez i Navarro S.L." style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">CÒDIG CORT</label>
+                        <input type="text" id="newSociedadCodigo" placeholder="NN_SL" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                </div>
+                
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+                    <button class="btn-close-modal" id="btnCancelSociedadEdit" onclick="cancelarSociedadEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;">Cancel·lar</button>
+                    <button class="btn-add-coord" id="btnAddSociedadSubmit" onclick="saveSociedad()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;">➕ Afegir</button>
+                </div>
+            </div>
+            
+            <div id="sociedadList" class="modal-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 16px;"></div>
+            
+            <div class="modal-footer" style="display: flex; justify-content: flex-end;">
+                <button class="btn-close-modal" onclick="closeSociedadModal()">Tancar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal de Gestión de Trabajadores (Empleados) -->
     <div id="trabajadorModal" class="modal-overlay" onclick="if(event.target===this) closeTrabajadorModal()">
-        <div class="modal-box" style="min-width: 520px; max-width: 600px; position: relative;">
+        <div class="modal-box" style="min-width: 560px; max-width: 650px; position: relative;">
             <!-- Overlay de Carga -->
             <div id="trabajadorLoadingOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); border-radius: 16px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
                 <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #063931; border-radius: 50%; animation: spin 1s linear infinite;"></div>
                 <div style="margin-top: 12px; font-weight: 600; color: #0f2d4a; font-size: 13px;">Actualitzant base de dades...</div>
             </div>
             <div class="modal-title" data-i18n="modalTrabajadorTitle">👥 Gestió de Treballadors</div>
-            <div class="modal-add-form" style="gap: 8px; display: flex;">
-                <input type="text" id="newTrabajadorNom" placeholder="Nom del treballador (ex: Joan Pujol)" data-i18n="inputTrabajadorPlaceholder" style="flex: 2;">
-                <select id="newTrabajadorRol" style="flex: 1.2; padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 12px; font-family: inherit; outline: none; background: white;">
-                    <option value="Trabajador" selected>Trabajador</option>
-                    <option value="Coordinador">Coordinador</option>
-                    <option value="Comercial">Comercial</option>
-                    <option value="Admin">Admin</option>
-                </select>
-                <button class="btn-add-coord" onclick="addTrabajador()" data-i18n="btnAdd" style="flex: 0.8;">➕ Afegir</button>
+            
+            <!-- Formulario completo de trabajador -->
+            <div class="trabajador-form-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
+                <input type="hidden" id="editTrabajadorId" value="">
+                
+                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NOM COMPLET</label>
+                        <input type="text" id="newTrabajadorNom" placeholder="Joan Pujol" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">EMAIL</label>
+                        <input type="email" id="newTrabajadorEmail" placeholder="joan.pujol@nyn.es" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
+                    <div>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">ROL ACCÉS</label>
+                        <select id="newTrabajadorRol" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
+                            <option value="Trabajador" selected>Trabajador</option>
+                            <option value="Coordinador">Coordinador</option>
+                            <option value="Comercial">Comercial</option>
+                            <option value="Admin">Admin</option>
+                        </select>
+                    </div>
+                    <div style="display: flex; align-items: flex-end; padding-bottom: 8px;">
+                        <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
+                            <input type="checkbox" id="newTrabajadorActivo" checked>
+                            Trabajador en Actiu (Alta)
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Preferencias operativas -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
+                    <div>
+                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">CENTRE PREFERENT</label>
+                        <input type="text" id="newTrabajadorCentre" placeholder="NN CONCEPT" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                    <div>
+                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">TORN PREFERENT</label>
+                        <select id="newTrabajadorTorn" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
+                            <option value="" selected>-- Cap --</option>
+                            <option value="MATÍ">MATÍ</option>
+                            <option value="TARDA">TARDA</option>
+                            <option value="NIT">NIT</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">ZONA HABITUAL</label>
+                        <input type="text" id="newTrabajadorZona" placeholder="Zona 1" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                    </div>
+                </div>
+
+                <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+                    <button class="btn-close-modal" id="btnCancelTrabajadorEdit" onclick="cancelarTrabajadorEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;">Cancel·lar</button>
+                    <button class="btn-add-coord" id="btnAddTrabajadorSubmit" onclick="saveTrabajador()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;">➕ Afegir</button>
+                </div>
             </div>
-            <div id="trabajadorList" class="modal-list" style="max-height: 280px; overflow-y: auto; margin-bottom: 16px;"></div>
+
+            <!-- Sección de Histórico de Sociedades (Contratos) -->
+            <div id="trabajadorContratosSection" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px; margin-bottom: 16px; flex-direction: column; gap: 10px;">
+                <h4 style="margin: 0; font-size: 12px; color: #166534; font-weight: 700;">🏢 Historial de Societats Vinculades (Contractes)</h4>
+                
+                <!-- Formulario de nueva vinculación -->
+                <div style="display: flex; gap: 8px; align-items: flex-end;">
+                    <div style="flex: 1.5;">
+                        <label style="font-size: 9px; font-weight: 700; color: #166534; display: block; margin-bottom: 2px;">SOCIETAT</label>
+                        <select id="newContratoSociedad" style="width: 100%; padding: 5px 8px; border: 1px solid #86efac; border-radius: 6px; font-size: 11px; background: white; font-family: inherit; outline: none;">
+                            <!-- Sociedades cargadas dinámicamente -->
+                        </select>
+                    </div>
+                    <div style="flex: 1.2;">
+                        <label style="font-size: 9px; font-weight: 700; color: #166534; display: block; margin-bottom: 2px;">DATA INICI</label>
+                        <input type="date" id="newContratoFechaInicio" style="width: 100%; padding: 4px 8px; border: 1px solid #86efac; border-radius: 6px; font-size: 11px; font-family: inherit; box-sizing: border-box;">
+                    </div>
+                    <button class="btn-add-coord" onclick="addContratoTrabajador()" style="background: #15803d; border-color: #166534; color: white; padding: 5px 12px; font-size: 11px; margin: 0; flex: 0.8;">Vincular</button>
+                </div>
+
+                <!-- Tabla/Lista de contratos históricos -->
+                <div id="trabajadorContratosList" style="max-height: 120px; overflow-y: auto; background: white; border: 1px solid #dcfce7; border-radius: 6px; font-size: 11px;">
+                    <!-- Contratos cargados dinámicamente -->
+                </div>
+            </div>
+
+            <div id="trabajadorList" class="modal-list" style="max-height: 160px; overflow-y: auto; margin-bottom: 16px;"></div>
+            
             <div class="modal-footer" style="display: flex; justify-content: flex-end;">
                 <button class="btn-close-modal" onclick="closeTrabajadorModal()" data-i18n="btnClose">Tancar</button>
             </div>
@@ -938,21 +1110,23 @@
         }
 
         // ========== GESTIÓN DE APARCAMIENTOS (Modal) ==========
+        let _aparcamientosCache = []; // Cache para edición
+        let _sociedadesCache = []; // Cache de sociedades
+
         async function openAparcamentModal() {
             document.getElementById('aparcamentModal').classList.add('active');
+            cancelarAparcamentEdit();
             
             // Cargar selector de coordinadores en el formulario de añadir
-            const select = document.getElementById('newAparcamentCoord');
-            select.innerHTML = `<option value="" disabled selected>${i18n.t('selectCoordPlaceholder')}</option>`;
+            const selectCoord = document.getElementById('newAparcamentCoord');
+            selectCoord.innerHTML = `
+                <option value="Ambos" selected>Ambos (Albert i Laura)</option>
+                <option value="Albert">Albert</option>
+                <option value="Laura">Laura</option>
+            `;
             
-            const coordinadores = await window.api.getCoordinadores();
-            coordinadores.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.id;
-                opt.textContent = `${c.nombre} ${c.apellido}`;
-                select.appendChild(opt);
-            });
-            
+            // Cargar selector de sociedades dinámico
+            await cargarSociedadesEnSelects();
             await refreshAparcamentList();
         }
 
@@ -960,188 +1134,181 @@
             document.getElementById('aparcamentModal').classList.remove('active');
         }
 
+        async function cargarSociedadesEnSelects() {
+            const selectSoc = document.getElementById('newAparcamentSociedad');
+            selectSoc.innerHTML = '';
+            
+            try {
+                const sociedades = await window.api.getSociedades();
+                _sociedadesCache = sociedades;
+                
+                if (sociedades.length === 0) {
+                    const opt = document.createElement('option');
+                    opt.value = "1";
+                    opt.textContent = "Empresa Principal (Default)";
+                    selectSoc.appendChild(opt);
+                } else {
+                    sociedades.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = `${s.codigo_corto} - ${s.nombre_fiscal}`;
+                        selectSoc.appendChild(opt);
+                    });
+                }
+            } catch (err) {
+                console.error("Error al cargar sociedades para selects:", err);
+                const opt = document.createElement('option');
+                opt.value = "1";
+                opt.textContent = "Empresa Principal (Error)";
+                selectSoc.appendChild(opt);
+            }
+        }
+
         async function refreshAparcamentList() {
             const list = document.getElementById('aparcamentList');
             list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
             
-            const [aparcamientos, coordinadores] = await Promise.all([
-                window.api.getAparcamientos(),
-                window.api.getCoordinadores()
-            ]);
-            
-            list.innerHTML = '';
-            
-            if (aparcamientos.length === 0) {
-                list.innerHTML = `<div style="padding:12px;color:#999;font-size:12px;text-align:center;">No hi ha aparcaments registrats.</div>`;
-                return;
-            }
-            
-            // Ordenar alfabéticamente
-            aparcamientos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'ca'));
-            
-            aparcamientos.forEach(ap => {
-                const item = document.createElement('div');
-                item.className = 'modal-list-item';
-                item.style.display = 'flex';
-                item.style.justifyContent = 'space-between';
-                item.style.alignItems = 'center';
-                item.style.padding = '8px 12px';
-                item.style.borderBottom = '1px solid #f1f5f9';
-                
-                // Generar dropdown de coordinadores para cambiar asignación
-                let options = `<option value="" ${!ap.coordinadorId ? 'selected' : ''}>-- Sense Coordinador --</option>`;
-                coordinadores.forEach(c => {
-                    options += `<option value="${c.id}" ${ap.coordinadorId === c.id ? 'selected' : ''}>${c.nombre} ${c.apellido}</option>`;
-                });
-                
-                item.innerHTML = `
-                    <div style="flex: 1.5; display: flex; align-items: center; min-width: 0;">
-                        <input type="text" value="${ap.nombre}" onchange="renameAparcament('${ap.nombre.replace(/'/g, "\\'")}', this.value)" style="font-weight: 600; color: #334155; border: 1px solid transparent; background: transparent; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box; outline: none; transition: all 0.2s;" onfocus="this.style.borderColor='#cbd5e1'; this.style.background='white'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';" onblur="this.style.borderColor='transparent'; this.style.background='transparent'; this.style.boxShadow='none';" placeholder="Nom de l'aparcament">
-                    </div>
-                    <div style="display: flex; gap: 8px; align-items: center; flex: 1.5; justify-content: flex-end; flex-shrink: 0;">
-                        <select onchange="updateAparcamentCoordinador('${ap.nombre.replace(/'/g, "\\'")}', this.value)" style="padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-family: inherit; background: white; width: 140px;">
-                            ${options}
-                        </select>
-                        <button class="btn-remove-coord" onclick="removeAparcament('${ap.nombre.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
-                    </div>
-                `;
-                list.appendChild(item);
-            });
-        }
-
-        // Renombrar un aparcamiento de forma global (catálogo maestro, ficheros compartidos en red y localStorage local)
-        async function renameAparcament(oldName, newName) {
-            const oldNameUpper = oldName.trim().toUpperCase();
-            const newNameUpper = newName.trim().toUpperCase();
-            
-            if (!newNameUpper) {
-                alert('⚠️ El nom de l\'aparcament no pot ser buit.');
-                await refreshAparcamentList();
-                return;
-            }
-            if (oldNameUpper === newNameUpper) return;
-
-            // Confirmación antes de propagar cambios globales
-            if (!confirm(`⚠️ Estàs segur que vols renombrar "${oldNameUpper}" a "${newNameUpper}"?\n\nAquest canvi es propagarà automàticament en tots els registres històrics (Comercials, Despeses i Rutes).`)) {
-                await refreshAparcamentList();
-                return;
-            }
-
-            const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
             try {
-                // Activar overlay de carga y bloquear interacción
-                if (loadingOverlay) loadingOverlay.style.display = 'flex';
-
-                // Modificar la base de datos de red (ficheros físicos)
-                const result = await window.api.renameAparcamiento(oldNameUpper, newNameUpper);
+                const aparcamientos = await window.api.getAparcamientos();
+                _aparcamientosCache = aparcamientos;
                 
-                if (result.success) {
-                    // Modificar el localStorage local del portal de forma reactiva
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        try {
-                            const dataStr = localStorage.getItem(key);
-                            if (dataStr && (dataStr.startsWith('{') || dataStr.startsWith('['))) {
-                                const data = JSON.parse(dataStr);
-                                const updatedData = replaceValueRecursivelyFrontend(data, oldNameUpper, newNameUpper);
-                                if (JSON.stringify(data) !== JSON.stringify(updatedData)) {
-                                    localStorage.setItem(key, JSON.stringify(updatedData));
-                                }
-                            } else if (dataStr && dataStr.toUpperCase() === oldNameUpper) {
-                                localStorage.setItem(key, newNameUpper);
-                            }
-                        } catch (e) {
-                            // Ignorar si no es parseable o es clave no relacionada
-                        }
-                    }
-
-                    // Recargar todos los iframes activos en la UI para reflejar el cambio en tiempo real
-                    document.querySelectorAll('iframe').forEach(iframe => {
-                        if (iframe.src) {
-                            iframe.src = iframe.src;
-                        }
-                    });
-
-                    await refreshAparcamentList();
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
-                    alert(`✅ Aparcament "${oldNameUpper}" renombrat a "${newNameUpper}" i actualitzat en toda la base de dades.`);
-                } else {
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
-                    alert('❌ Error al reanomenar l\'aparcament: ' + result.error);
-                    await refreshAparcamentList();
+                list.innerHTML = '';
+                
+                if (aparcamientos.length === 0) {
+                    list.innerHTML = `<div style="padding:12px;color:#999;font-size:12px;text-align:center;">No hi ha aparcaments registrats.</div>`;
+                    return;
                 }
-            } catch (err) {
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                alert('❌ Error en el procés de reanomenat: ' + err.message);
-                await refreshAparcamentList();
+                
+                // Ordenar alfabéticamente
+                aparcamientos.sort((a, b) => a.nombre.localeCompare(b.nombre, 'ca'));
+                
+                aparcamientos.forEach(ap => {
+                    const item = document.createElement('div');
+                    item.className = 'modal-list-item';
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+                    item.style.alignItems = 'center';
+                    item.style.padding = '8px 12px';
+                    item.style.borderBottom = '1px solid #f1f5f9';
+                    
+                    const remotoBadge = ap.es_remotizado ? '<span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 5px;">REMOTO</span>' : '<span style="background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 5px;">PRESENCIAL</span>';
+                    const socNombre = ap.sociedad_codigo || (ap.sociedad_id === 1 ? 'EMP_01' : `SOC_${ap.sociedad_id}`);
+                    
+                    item.innerHTML = `
+                        <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                            <div style="font-weight: 600; color: #334155; font-size: 13px;">
+                                ${ap.nombre}
+                                ${remotoBadge}
+                            </div>
+                            <div style="font-size: 10px; color: #64748b;">
+                                Obra: <strong>${ap.numero_obra || 'S/N'}</strong> | Zona: <strong>${ap.zona || 'Gral'}</strong> | Soc: <strong>${socNombre}</strong> | Coord: <strong>${ap.coordinador_responsable || 'Ambos'}</strong>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                            <button class="btn-manage-coord" onclick="cargarAparcamentEnFormulario(${ap.id})" style="background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
+                            <button class="btn-remove-coord" onclick="removeAparcament('${ap.nombre.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch(e) {
+                console.error(e);
+                list.innerHTML = `<div style="padding:12px;color:red;font-size:12px;text-align:center;">Error al carregar listado: ${e.message}</div>`;
             }
         }
 
-        // Función recursiva helper para el renombrado en el localStorage local
-        function replaceValueRecursivelyFrontend(val, oldVal, newVal) {
-            if (typeof val === 'string') {
-                if (val.trim().toUpperCase() === oldVal.toUpperCase()) {
-                    return newVal;
-                }
-                if (val.includes("  ➤  ")) {
-                    const parts = val.split("  ➤  ");
-                    let changed = false;
-                    const newParts = parts.map(part => {
-                        if (part.trim().toUpperCase() === oldVal.toUpperCase()) {
-                            changed = true;
-                            return newVal;
-                        }
-                        return part;
-                    });
-                    if (changed) {
-                        return newParts.join("  ➤  ");
-                    }
-                }
-                return val;
-            }
-            if (Array.isArray(val)) {
-                return val.map(item => replaceValueRecursivelyFrontend(item, oldVal, newVal));
-            }
-            if (val !== null && typeof val === 'object') {
-                const res = {};
-                for (const key in val) {
-                    if (Object.prototype.hasOwnProperty.call(val, key)) {
-                        res[key] = replaceValueRecursivelyFrontend(val[key], oldVal, newVal);
-                    }
-                }
-                return res;
-            }
-            return val;
+        function cargarAparcamentEnFormulario(id) {
+            const ap = _aparcamientosCache.find(a => a.id === id);
+            if (!ap) return;
+            
+            document.getElementById('editAparcamentId').value = ap.id;
+            document.getElementById('newAparcamentObra').value = ap.numero_obra || '';
+            document.getElementById('newAparcamentNom').value = ap.nombre || '';
+            document.getElementById('newAparcamentZona').value = ap.zona || '';
+            document.getElementById('newAparcamentSociedad').value = ap.sociedad_id || 1;
+            document.getElementById('newAparcamentGestion').value = ap.tipo_gestion || 'propio';
+            document.getElementById('newAparcamentCoord').value = ap.coordinador_responsable || 'Ambos';
+            document.getElementById('newAparcamentRemoto').checked = ap.es_remotizado === 1;
+            document.getElementById('newAparcamentVacio').checked = ap.permitir_vacio_laborables === 1;
+            
+            document.getElementById('btnCancelAparcamentEdit').style.display = 'inline-block';
+            document.getElementById('btnAddAparcamentSubmit').textContent = '💾 Desar';
+        }
+
+        function cancelarAparcamentEdit() {
+            document.getElementById('editAparcamentId').value = '';
+            document.getElementById('newAparcamentObra').value = '';
+            document.getElementById('newAparcamentNom').value = '';
+            document.getElementById('newAparcamentZona').value = '';
+            document.getElementById('newAparcamentSociedad').selectedIndex = 0;
+            document.getElementById('newAparcamentGestion').value = 'propio';
+            document.getElementById('newAparcamentCoord').value = 'Ambos';
+            document.getElementById('newAparcamentRemoto').checked = false;
+            document.getElementById('newAparcamentVacio').checked = false;
+            
+            document.getElementById('btnCancelAparcamentEdit').style.display = 'none';
+            document.getElementById('btnAddAparcamentSubmit').textContent = '➕ Afegir';
         }
 
         async function addAparcament() {
+            const editId = document.getElementById('editAparcamentId').value;
+            const obra = document.getElementById('newAparcamentObra').value.trim();
             const nom = document.getElementById('newAparcamentNom').value.trim();
-            const coordId = document.getElementById('newAparcamentCoord').value;
+            const zona = document.getElementById('newAparcamentZona').value.trim();
+            const sociedadId = document.getElementById('newAparcamentSociedad').value;
+            const gestion = document.getElementById('newAparcamentGestion').value;
+            const responsable = document.getElementById('newAparcamentCoord').value;
+            const esRemoto = document.getElementById('newAparcamentRemoto').checked ? 1 : 0;
+            const vacioLab = document.getElementById('newAparcamentVacio').checked ? 1 : 0;
             
             if (!nom) { alert('⚠️ Has d\'escriure un nom d\'aparcament.'); return; }
-            if (!coordId) { alert('⚠️ Selecciona un coordinador.'); return; }
+            if (!obra) { alert('⚠️ Has d\'escriure un número d\'obra.'); return; }
             
             const nomUpper = nom.toUpperCase();
-            
             const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
             
             try {
-                const aparcamientos = await window.api.getAparcamientos();
-                if (aparcamientos.some(ap => ap.nombre.toLowerCase() === nomUpper.toLowerCase())) {
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
-                    alert(`⚠️ L'aparcament "${nomUpper}" ja existeix.`);
-                    return;
+                let aparcamientos = await window.api.getAparcamientos();
+                
+                // Mapear coordinadorId heredado
+                let coordId = '';
+                if (responsable === 'Albert') coordId = 'albert';
+                else if (responsable === 'Laura') coordId = 'laura';
+                
+                const newAp = {
+                    id: editId ? Number(editId) : undefined,
+                    numero_obra: obra,
+                    nombre: nomUpper,
+                    zona: zona,
+                    sociedad_id: Number(sociedadId),
+                    tipo_gestion: gestion,
+                    coordinador_responsable: responsable,
+                    coordinadorId: coordId,
+                    es_remotizado: esRemoto,
+                    permitir_vacio_laborables: vacioLab,
+                    activo: 1
+                };
+                
+                if (editId) {
+                    // Reemplazar existente
+                    aparcamientos = aparcamientos.map(a => a.id === Number(editId) ? newAp : a);
+                } else {
+                    // Verificar duplicado por nombre en activos
+                    if (aparcamientos.some(ap => ap.nombre.toLowerCase() === nomUpper.toLowerCase())) {
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        alert(`⚠️ L'aparcament "${nomUpper}" ja existeix.`);
+                        return;
+                    }
+                    aparcamientos.push(newAp);
                 }
                 
-                aparcamientos.push({ nombre: nomUpper, coordinadorId: coordId });
                 const result = await window.api.saveAparcamientos(aparcamientos);
                 
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
                 
                 if (result.success) {
-                    document.getElementById('newAparcamentNom').value = '';
-                    document.getElementById('newAparcamentCoord').value = '';
+                    cancelarAparcamentEdit();
                     await refreshAparcamentList();
                     
                     // Recargar el iframe activo para actualizar listados
@@ -1151,39 +1318,9 @@
                         if (iframe) iframe.src = iframe.src;
                     }
                     
-                    alert(`✅ Aparcament "${nomUpper}" afegit correctament.`);
+                    alert(editId ? `✅ Aparcament actualitzat correctament.` : `✅ Aparcament "${nomUpper}" afegit correctament.`);
                 } else {
                     alert('❌ Error al desar l\'aparcament: ' + result.error);
-                }
-            } catch (err) {
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                alert('❌ Error: ' + err.message);
-            }
-        }
-
-        async function updateAparcamentCoordinador(aparcamentNombre, nuevoCoordId) {
-            const loadingOverlay = document.getElementById('aparcamentLoadingOverlay');
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            
-            try {
-                const aparcamientos = await window.api.getAparcamientos();
-                const ap = aparcamientos.find(a => a.nombre.toLowerCase() === aparcamentNombre.toLowerCase());
-                if (ap) {
-                    ap.coordinadorId = nuevoCoordId;
-                    const result = await window.api.saveAparcamientos(aparcamientos);
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
-                    if (result.success) {
-                        // Recargar el iframe activo para actualizar visualización
-                        const activeContent = document.querySelector('.tab-content.active');
-                        if (activeContent) {
-                            const iframe = activeContent.querySelector('iframe');
-                            if (iframe) iframe.src = iframe.src;
-                        }
-                    } else {
-                        alert('❌ Error al reassignar: ' + result.error);
-                    }
-                } else {
-                    if (loadingOverlay) loadingOverlay.style.display = 'none';
                 }
             } catch (err) {
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
@@ -1367,9 +1504,142 @@
             reader.readAsText(file);
         }
 
+        // ========== GESTIÓN DE SOCIEDADES (Modal) ==========
+        async function openSociedadModal() {
+            document.getElementById('sociedadModal').classList.add('active');
+            cancelarSociedadEdit();
+            await refreshSociedadList();
+        }
+
+        function closeSociedadModal() {
+            document.getElementById('sociedadModal').classList.remove('active');
+        }
+
+        async function refreshSociedadList() {
+            const list = document.getElementById('sociedadList');
+            list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
+            
+            try {
+                const sociedades = await window.api.getSociedades();
+                _sociedadesCache = sociedades;
+                list.innerHTML = '';
+                
+                if (sociedades.length === 0) {
+                    list.innerHTML = '<div style="padding:12px;color:#999;font-size:12px;text-align:center;">No hi ha societats registrades.</div>';
+                    return;
+                }
+                
+                sociedades.forEach(s => {
+                    const item = document.createElement('div');
+                    item.className = 'modal-list-item';
+                    item.style.display = 'flex';
+                    item.style.justifyContent = 'space-between';
+                    item.style.alignItems = 'center';
+                    item.style.padding = '8px 12px';
+                    item.style.borderBottom = '1px solid #f1f5f9';
+                    
+                    item.innerHTML = `
+                        <div style="flex: 1; min-width: 0;">
+                            <span style="font-weight: 700; color: #0f2d4a; font-size: 13px;">${s.codigo_corto}</span>
+                            <span style="color: #475569; font-size: 12px; margin-left: 8px;">${s.nombre_fiscal}</span>
+                        </div>
+                        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                            <button class="btn-manage-coord" onclick="cargarSociedadEnFormulario(${s.id})" style="background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
+                            <button class="btn-remove-coord" onclick="deactivateSociedad(${s.id}, '${s.codigo_corto}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
+                        </div>
+                    `;
+                    list.appendChild(item);
+                });
+            } catch (err) {
+                console.error("Error al listar sociedades:", err);
+                list.innerHTML = `<div style="padding:12px;color:red;font-size:12px;text-align:center;">Error: ${err.message}</div>`;
+            }
+        }
+
+        function cargarSociedadEnFormulario(id) {
+            const soc = _sociedadesCache.find(s => s.id === id);
+            if (!soc) return;
+            
+            document.getElementById('editSociedadId').value = soc.id;
+            document.getElementById('newSociedadNombre').value = soc.nombre_fiscal;
+            document.getElementById('newSociedadCodigo').value = soc.codigo_corto;
+            
+            document.getElementById('btnCancelSociedadEdit').style.display = 'inline-block';
+            document.getElementById('btnAddSociedadSubmit').textContent = '💾 Desar';
+        }
+
+        function cancelarSociedadEdit() {
+            document.getElementById('editSociedadId').value = '';
+            document.getElementById('newSociedadNombre').value = '';
+            document.getElementById('newSociedadCodigo').value = '';
+            
+            document.getElementById('btnCancelSociedadEdit').style.display = 'none';
+            document.getElementById('btnAddSociedadSubmit').textContent = '➕ Afegir';
+        }
+
+        async function saveSociedad() {
+            const id = document.getElementById('editSociedadId').value;
+            const nombre = document.getElementById('newSociedadNombre').value.trim();
+            const codigo = document.getElementById('newSociedadCodigo').value.trim();
+            
+            if (!nombre) { alert("⚠️ Has d'escriure un nom fiscal."); return; }
+            if (!codigo) { alert("⚠️ Has d'escriure un codi curt."); return; }
+            
+            const overlay = document.getElementById('sociedadLoadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+            
+            try {
+                let result;
+                if (id) {
+                    result = await window.api.updateSociedad(Number(id), { nombre_fiscal: nombre, codigo_corto: codigo });
+                } else {
+                    result = await window.api.addSociedad({ nombre_fiscal: nombre, codigo_corto: codigo });
+                }
+                
+                if (overlay) overlay.style.display = 'none';
+                
+                if (result.success) {
+                    cancelarSociedadEdit();
+                    await refreshSociedadList();
+                    alert(id ? "✅ Societat actualizada correctament." : "✅ Societat afegida correctament.");
+                } else {
+                    alert("❌ Error: " + result.error);
+                }
+            } catch (err) {
+                if (overlay) overlay.style.display = 'none';
+                alert("❌ Error en desar la societat: " + err.message);
+            }
+        }
+
+        async function deactivateSociedad(id, codigoCorto) {
+            if (!confirm(`⚠️ Estàs segur que vols desactivar la societat "${codigoCorto}"?\n\nNo es podrà desactivar si té aparcaments actius vinculats.`)) return;
+            
+            const overlay = document.getElementById('sociedadLoadingOverlay');
+            if (overlay) overlay.style.display = 'flex';
+            
+            try {
+                const result = await window.api.deactivateSociedad(id);
+                if (overlay) overlay.style.display = 'none';
+                
+                if (result.success) {
+                    await refreshSociedadList();
+                    alert(`✅ Societat "${codigoCorto}" desactivada correctament.`);
+                } else {
+                    alert("❌ Error: " + result.error);
+                }
+            } catch (err) {
+                if (overlay) overlay.style.display = 'none';
+                alert("❌ Error al desactivar: " + err.message);
+            }
+        }
+
         // ========== GESTIÓN DE TRABAJADORES / EMPLEADOS (Modal) ==========
+        let _trabajadoresCache = [];
+        let _selectedAgenteId = null; // ID correspondiente en la tabla 'agentes'
+
         async function openTrabajadorModal() {
             document.getElementById('trabajadorModal').classList.add('active');
+            cancelarTrabajadorEdit();
             await refreshTrabajadorList();
         }
 
@@ -1382,7 +1652,8 @@
             list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
             
             try {
-                const trabajadores = await window.dbAPI.read('catalogos', "SELECT id, nombre, email, rol, activo FROM empleados ORDER BY nombre ASC", []);
+                const trabajadores = await window.dbAPI.read('catalogos', "SELECT * FROM empleados ORDER BY nombre ASC", []);
+                _trabajadoresCache = trabajadores;
                 list.innerHTML = '';
                 
                 if (trabajadores.length === 0) {
@@ -1399,23 +1670,32 @@
                     item.style.padding = '8px 12px';
                     item.style.borderBottom = '1px solid #f1f5f9';
                     
-                    const roles = ['Trabajador', 'Coordinador', 'Comercial', 'Admin'];
-                    let options = '';
-                    roles.forEach(r => {
-                        options += `<option value="${r}" ${t.rol === r ? 'selected' : ''}>${r}</option>`;
-                    });
+                    let prefs = {};
+                    try {
+                        if (t.json_preferencias) {
+                            prefs = JSON.parse(t.json_preferencias);
+                        }
+                    } catch (e) {}
+
+                    const extraInfo = [];
+                    if (t.email) extraInfo.push(t.email);
+                    if (prefs.centre) extraInfo.push(`📍 ${prefs.centre}`);
+                    if (prefs.torn) extraInfo.push(`⏰ ${prefs.torn}`);
+                    if (prefs.zona) extraInfo.push(`🗺️ ${prefs.zona}`);
+                    
+                    const extraStr = extraInfo.length > 0 ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">${extraInfo.join(' | ')}</div>` : '';
                     
                     item.innerHTML = `
-                        <div style="flex: 1.5; display: flex; align-items: center; min-width: 0;">
-                            <input type="text" value="${t.nombre}" onchange="renameTrabajador(${t.id}, this.value)" style="font-weight: 600; color: #334155; border: 1px solid transparent; background: transparent; padding: 4px 8px; border-radius: 6px; font-size: 13px; font-family: inherit; width: 100%; box-sizing: border-box; outline: none; transition: all 0.2s;" onfocus="this.style.borderColor='#cbd5e1'; this.style.background='white'; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)';" onblur="this.style.borderColor='transparent'; this.style.background='transparent'; this.style.boxShadow='none';" placeholder="Nom del treballador">
+                        <div style="flex: 1; min-width: 0; padding-right: 12px;">
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <span style="font-weight: 700; color: #0f2d4a; font-size: 13px;">${t.nombre}</span>
+                                <span style="background: #e2e8f0; color: #475569; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px;">${t.rol}</span>
+                                ${!t.activo ? '<span style="background: #fee2e2; color: #b91c1c; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px;">Inactiu</span>' : ''}
+                            </div>
+                            ${extraStr}
                         </div>
-                        <div style="display: flex; gap: 8px; align-items: center; flex: 1.5; justify-content: flex-end; flex-shrink: 0;">
-                            <select onchange="updateTrabajadorRol(${t.id}, this.value)" style="padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 11px; font-family: inherit; background: white; width: 110px;">
-                                ${options}
-                            </select>
-                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: #475569; cursor: pointer;">
-                                <input type="checkbox" ${t.activo ? 'checked' : ''} onchange="updateTrabajadorActivo(${t.id}, this.checked)" style="cursor: pointer;"> Actiu
-                            </label>
+                        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
+                            <button class="btn-manage-coord" onclick="cargarTrabajadorEnFormulario(${t.id})" style="background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
                             <button class="btn-remove-coord" onclick="removeTrabajador(${t.id}, '${t.nombre.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
                         </div>
                     `;
@@ -1427,116 +1707,184 @@
             }
         }
 
-        async function addTrabajador() {
-            const nom = document.getElementById('newTrabajadorNom').value.trim();
-            const rol = document.getElementById('newTrabajadorRol').value;
+        async function cargarTrabajadorEnFormulario(id) {
+            const t = _trabajadoresCache.find(x => x.id === id);
+            if (!t) return;
             
-            if (!nom) { alert('⚠️ Has d\'escriure un nom per al treballador.'); return; }
+            document.getElementById('editTrabajadorId').value = t.id;
+            document.getElementById('newTrabajadorNom').value = t.nombre;
+            document.getElementById('newTrabajadorEmail').value = t.email || '';
+            document.getElementById('newTrabajadorRol').value = t.rol;
+            document.getElementById('newTrabajadorActivo').checked = t.activo === 1;
             
-            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            
+            let prefs = {};
             try {
-                const exists = await window.dbAPI.read('catalogos', "SELECT id FROM empleados WHERE LOWER(nombre) = LOWER(?)", [nom]);
-                if (exists && exists.length > 0) {
+                if (t.json_preferencias) {
+                    prefs = JSON.parse(t.json_preferencias);
+                }
+            } catch (e) {}
+
+            document.getElementById('newTrabajadorCentre').value = prefs.centre || '';
+            document.getElementById('newTrabajadorTorn').value = prefs.torn || '';
+            document.getElementById('newTrabajadorZona').value = prefs.zona || '';
+
+            document.getElementById('btnCancelTrabajadorEdit').style.display = 'inline-block';
+            document.getElementById('btnAddTrabajadorSubmit').textContent = '💾 Desar';
+
+            // Cargar e iniciar sección de histórico de contratos de sociedades (solo para rol Trabajador)
+            if (t.rol === 'Trabajador') {
+                const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+                if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+                try {
+                    // Asegurar que exista en la tabla 'agentes' (vinculada por nombre)
+                    let agenteRow = await window.dbAPI.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [t.nombre]);
+                    let agenteId = null;
+                    
+                    if (agenteRow && agenteRow.length > 0) {
+                        agenteId = agenteRow[0].id;
+                    } else {
+                        // Creamos el agente
+                        await window.dbAPI.write('catalogos', "INSERT INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)", [t.nombre, t.activo]);
+                        const newRow = await window.dbAPI.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [t.nombre]);
+                        if (newRow && newRow.length > 0) {
+                            agenteId = newRow[0].id;
+                        }
+                    }
+
+                    _selectedAgenteId = agenteId;
+
+                    if (_selectedAgenteId) {
+                        await cargarSociedadesEnDesplegableContratos();
+                        await refreshContratosTrabajadorList();
+                        document.getElementById('trabajadorContratosSection').style.display = 'flex';
+                    } else {
+                        document.getElementById('trabajadorContratosSection').style.display = 'none';
+                    }
+                } catch (err) {
+                    console.error("Error al vincular con tabla agentes:", err);
+                    document.getElementById('trabajadorContratosSection').style.display = 'none';
+                } finally {
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
-                    alert(`⚠️ El treballador "${nom}" ja existeix.`);
-                    return;
                 }
-                
-                await window.dbAPI.write('catalogos', "INSERT INTO empleados (nombre, rol, activo) VALUES (?, ?, 1)", [nom, rol]);
-                
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                document.getElementById('newTrabajadorNom').value = '';
-                
-                await refreshTrabajadorList();
-                
-                const activeContent = document.querySelector('.tab-content.active');
-                if (activeContent) {
-                    const iframe = activeContent.querySelector('iframe');
-                    if (iframe) iframe.src = iframe.src;
-                }
-            } catch (err) {
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                console.error("Error al añadir trabajador:", err);
-                alert("❌ Error: " + err.message);
+            } else {
+                _selectedAgenteId = null;
+                document.getElementById('trabajadorContratosSection').style.display = 'none';
             }
         }
 
-        async function renameTrabajador(id, newName) {
-            const newNameTrimmed = newName.trim();
-            if (!newNameTrimmed) {
-                alert('⚠️ El nom no pot ser buit.');
-                await refreshTrabajadorList();
-                return;
-            }
-            
-            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            
-            try {
-                await window.dbAPI.write('catalogos', "UPDATE empleados SET nombre = ? WHERE id = ?", [newNameTrimmed, id]);
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                
-                await refreshTrabajadorList();
-                
-                const activeContent = document.querySelector('.tab-content.active');
-                if (activeContent) {
-                    const iframe = activeContent.querySelector('iframe');
-                    if (iframe) iframe.src = iframe.src;
-                }
-            } catch (err) {
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                console.error("Error al renombrar trabajador:", err);
-                alert("❌ Error: " + err.message);
-                await refreshTrabajadorList();
-            }
+        function cancelarTrabajadorEdit() {
+            document.getElementById('editTrabajadorId').value = '';
+            document.getElementById('newTrabajadorNom').value = '';
+            document.getElementById('newTrabajadorEmail').value = '';
+            document.getElementById('newTrabajadorRol').value = 'Trabajador';
+            document.getElementById('newTrabajadorActivo').checked = true;
+            document.getElementById('newTrabajadorCentre').value = '';
+            document.getElementById('newTrabajadorTorn').value = '';
+            document.getElementById('newTrabajadorZona').value = '';
+
+            document.getElementById('btnCancelTrabajadorEdit').style.display = 'none';
+            document.getElementById('btnAddTrabajadorSubmit').textContent = '➕ Afegir';
+
+            document.getElementById('trabajadorContratosSection').style.display = 'none';
+            _selectedAgenteId = null;
         }
 
-        async function updateTrabajadorRol(id, newRol) {
-            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
-            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+        async function saveTrabajador() {
+            const id = document.getElementById('editTrabajadorId').value;
+            const nom = document.getElementById('newTrabajadorNom').value.trim();
+            const email = document.getElementById('newTrabajadorEmail').value.trim();
+            const rol = document.getElementById('newTrabajadorRol').value;
+            const activo = document.getElementById('newTrabajadorActivo').checked ? 1 : 0;
             
-            try {
-                await window.dbAPI.write('catalogos', "UPDATE empleados SET rol = ? WHERE id = ?", [newRol, id]);
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                
-                await refreshTrabajadorList();
-                
-                const activeContent = document.querySelector('.tab-content.active');
-                if (activeContent) {
-                    const iframe = activeContent.querySelector('iframe');
-                    if (iframe) iframe.src = iframe.src;
-                }
-            } catch (err) {
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                console.error("Error al actualizar rol de trabajador:", err);
-                alert("❌ Error: " + err.message);
-                await refreshTrabajadorList();
-            }
-        }
+            const centre = document.getElementById('newTrabajadorCentre').value.trim();
+            const torn = document.getElementById('newTrabajadorTorn').value;
+            const zona = document.getElementById('newTrabajadorZona').value.trim();
 
-        async function updateTrabajadorActivo(id, isChecked) {
-            const valActivo = isChecked ? 1 : 0;
+            if (!nom) { alert('⚠️ Has d\'escriure un nom per al treballador.'); return; }
+
             const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
-            
+
             try {
-                await window.dbAPI.write('catalogos', "UPDATE empleados SET activo = ? WHERE id = ?", [valActivo, id]);
-                if (loadingOverlay) loadingOverlay.style.display = 'none';
-                
+                // Serializar preferencias
+                const prefsObj = { centre, torn, zona };
+                const jsonPrefs = JSON.stringify(prefsObj);
+
+                if (id) {
+                    // Obtener nombre anterior antes de actualizar
+                    const oldWorker = _trabajadoresCache.find(x => x.id === Number(id));
+                    
+                    // Actualizar en empleados
+                    await window.dbAPI.write('catalogos', 
+                        "UPDATE empleados SET nombre = ?, email = ?, rol = ?, activo = ?, json_preferencias = ? WHERE id = ?",
+                        [nom, email, rol, activo, jsonPrefs, Number(id)]
+                    );
+
+                    // Sincronizar en la tabla agentes
+                    if (oldWorker) {
+                        if (rol === 'Trabajador') {
+                            const existsAg = await window.dbAPI.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [oldWorker.nombre]);
+                            if (existsAg && existsAg.length > 0) {
+                                await window.dbAPI.write('catalogos',
+                                    "UPDATE agentes SET nombre = ?, activo = ? WHERE LOWER(nombre) = LOWER(?)",
+                                    [nom, activo, oldWorker.nombre]
+                                );
+                            } else {
+                                await window.dbAPI.write('catalogos',
+                                    "INSERT INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)",
+                                    [nom, activo]
+                                );
+                            }
+                        } else {
+                            // Si el rol ya no es Trabajador, lo eliminamos de la tabla agentes
+                            await window.dbAPI.write('catalogos',
+                                "DELETE FROM agentes WHERE LOWER(nombre) = LOWER(?)",
+                                [oldWorker.nombre]
+                            );
+                        }
+                    }
+                    
+                    alert("✅ Treballador actualitzat correctament.");
+                } else {
+                    // Crear nuevo
+                    const exists = await window.dbAPI.read('catalogos', "SELECT id FROM empleados WHERE LOWER(nombre) = LOWER(?)", [nom]);
+                    if (exists && exists.length > 0) {
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        alert(`⚠️ El treballador "${nom}" ja existeix.`);
+                        return;
+                    }
+
+                    await window.dbAPI.write('catalogos', 
+                        "INSERT INTO empleados (nombre, email, rol, activo, json_preferencias) VALUES (?, ?, ?, ?, ?)",
+                        [nom, email, rol, activo, jsonPrefs]
+                    );
+
+                    if (rol === 'Trabajador') {
+                        // Crear preventivamente en agentes
+                        await window.dbAPI.write('catalogos',
+                            "INSERT OR IGNORE INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)",
+                            [nom, activo]
+                        );
+                    }
+
+                    alert("✅ Treballador afegit correctament.");
+                }
+
+                cancelarTrabajadorEdit();
                 await refreshTrabajadorList();
-                
+
+                // Recargar iframe activo si existe
                 const activeContent = document.querySelector('.tab-content.active');
                 if (activeContent) {
                     const iframe = activeContent.querySelector('iframe');
                     if (iframe) iframe.src = iframe.src;
                 }
             } catch (err) {
+                console.error("Error al guardar trabajador:", err);
+                alert("❌ Error en desar: " + err.message);
+            } finally {
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
-                console.error("Error al actualizar estado activo de trabajador:", err);
-                alert("❌ Error: " + err.message);
-                await refreshTrabajadorList();
             }
         }
 
@@ -1548,9 +1896,15 @@
             if (loadingOverlay) loadingOverlay.style.display = 'flex';
             
             try {
+                // Eliminar de empleados
                 await window.dbAPI.write('catalogos', "DELETE FROM empleados WHERE id = ?", [id]);
+                
+                // Eliminar de agentes
+                await window.dbAPI.write('catalogos', "DELETE FROM agentes WHERE LOWER(nombre) = LOWER(?)", [name]);
+
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
                 
+                cancelarTrabajadorEdit();
                 await refreshTrabajadorList();
                 
                 const activeContent = document.querySelector('.tab-content.active');
@@ -1562,6 +1916,147 @@
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
                 console.error("Error al eliminar trabajador:", err);
                 alert("❌ Error: " + err.message);
+            }
+        }
+
+        // ---------- HISTÓRICO DE CONTRATOS (Sociedades) ----------
+        async function cargarSociedadesEnDesplegableContratos() {
+            const select = document.getElementById('newContratoSociedad');
+            select.innerHTML = '';
+            
+            try {
+                // Cargar sociedades activas
+                const sociedades = await window.api.getSociedades();
+                sociedades.forEach(s => {
+                    if (s.activo) {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = `${s.codigo_corto} - ${s.nombre_fiscal}`;
+                        select.appendChild(opt);
+                    }
+                });
+
+                // Inicializar fecha de inicio con el día de hoy en YYYY-MM-DD
+                const hoy = new Date().toISOString().split('T')[0];
+                document.getElementById('newContratoFechaInicio').value = hoy;
+            } catch (err) {
+                console.error("Error cargando sociedades para contratos:", err);
+            }
+        }
+
+        async function refreshContratosTrabajadorList() {
+            const container = document.getElementById('trabajadorContratosList');
+            container.innerHTML = '<div style="padding:6px; color:#999;">Carregant historial de societats...</div>';
+
+            if (!_selectedAgenteId) return;
+
+            try {
+                const contratos = await window.api.getContratosAgente(_selectedAgenteId);
+                
+                if (!contratos || contratos.length === 0) {
+                    container.innerHTML = '<div style="padding:10px; color:#64748b; text-align:center; font-style:italic;">Sense societats vinculades històricament.</div>';
+                    return;
+                }
+
+                let html = `
+                    <table style="width:100%; border-collapse:collapse; text-align:left;">
+                        <thead>
+                            <tr style="background:#f1f5f9; border-bottom:1px solid #cbd5e1; color:#475569; font-size:10px; font-weight:700;">
+                                <th style="padding:6px 8px;">SOCIETAT</th>
+                                <th style="padding:6px 8px;">DATA INICI</th>
+                                <th style="padding:6px 8px;">DATA FI</th>
+                                <th style="padding:6px 8px; text-align:right;">ACCIONS</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                contratos.forEach(c => {
+                    const fechaFinStr = c.fecha_fin ? c.fecha_fin : '<span style="color:#16a34a; font-weight:700;">Vigente (Activa)</span>';
+                    const btnCerrar = !c.fecha_fin 
+                        ? `<button onclick="cerrarContratoTrabajador(${c.id})" style="background:#fee2e2; color:#b91c1c; border:none; border-radius:4px; padding:2px 6px; font-size:9px; cursor:pointer; font-weight:600;">Cerrar contrato</button>`
+                        : '';
+
+                    html += `
+                        <tr style="border-bottom:1px solid #f1f5f9;">
+                            <td style="padding:6px 8px; font-weight:600; color:#0f2d4a;">${c.sociedad_codigo}</td>
+                            <td style="padding:6px 8px; color:#475569;">${c.fecha_inicio}</td>
+                            <td style="padding:6px 8px; color:#475569;">${fechaFinStr}</td>
+                            <td style="padding:6px 8px; text-align:right;">${btnCerrar}</td>
+                        </tr>
+                    `;
+                });
+
+                html += '</tbody></table>';
+                container.innerHTML = html;
+            } catch (err) {
+                console.error("Error al refrescar lista de contratos:", err);
+                container.innerHTML = '<div style="padding:6px; color:#b91c1c;">Error al carregar l\'historial.</div>';
+            }
+        }
+
+        async function addContratoTrabajador() {
+            if (!_selectedAgenteId) return;
+
+            const sociedadId = document.getElementById('newContratoSociedad').value;
+            const fechaInicio = document.getElementById('newContratoFechaInicio').value;
+
+            if (!sociedadId) { alert("⚠️ Has de seleccionar una societat."); return; }
+            if (!fechaInicio) { alert("⚠️ Has de seleccionar una data d'inici."); return; }
+
+            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+            try {
+                const res = await window.api.addContratoAgente({
+                    agente_id: _selectedAgenteId,
+                    sociedad_id: Number(sociedadId),
+                    fecha_inicio: fechaInicio
+                });
+
+                if (res.success) {
+                    await refreshContratosTrabajadorList();
+                    // Refrescar cuadrante / iframes
+                    const activeContent = document.querySelector('.tab-content.active');
+                    if (activeContent) {
+                        const iframe = activeContent.querySelector('iframe');
+                        if (iframe) iframe.src = iframe.src;
+                    }
+                } else {
+                    alert("❌ Error: " + res.error);
+                }
+            } catch (err) {
+                console.error("Error al añadir vinculación de sociedad:", err);
+                alert("❌ Error al vincular: " + err.message);
+            } finally {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
+            }
+        }
+
+        async function cerrarContratoTrabajador(contratoId) {
+            if (!confirm("Estàs segur de tancar la vinculació d'aquesta societat?\nSe li assignarà com a data de fi el dia d'avui.")) return;
+
+            const loadingOverlay = document.getElementById('trabajadorLoadingOverlay');
+            if (loadingOverlay) loadingOverlay.style.display = 'flex';
+
+            try {
+                const res = await window.api.cerrarContratoAgente(contratoId);
+
+                if (res.success) {
+                    await refreshContratosTrabajadorList();
+                    const activeContent = document.querySelector('.tab-content.active');
+                    if (activeContent) {
+                        const iframe = activeContent.querySelector('iframe');
+                        if (iframe) iframe.src = iframe.src;
+                    }
+                } else {
+                    alert("❌ Error: " + res.error);
+                }
+            } catch (err) {
+                console.error("Error al cerrar vinculación de sociedad:", err);
+                alert("❌ Error al tancar vinculació: " + err.message);
+            } finally {
+                if (loadingOverlay) loadingOverlay.style.display = 'none';
             }
         }
 

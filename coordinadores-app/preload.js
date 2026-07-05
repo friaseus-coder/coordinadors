@@ -23,7 +23,16 @@ contextBridge.exposeInMainWorld('api', {
   seleccionarArchivosMigracion: () => ipcRenderer.invoke('seleccionar-archivos-migracion'),
   crearBackupMigracion: (tipo) => ipcRenderer.invoke('crear-backup-migracion', { tipo }),
   // Cerrar aplicación
-  closeApp: () => ipcRenderer.invoke('app-close')
+  closeApp: () => ipcRenderer.invoke('app-close'),
+  // Gestión de sociedades
+  getSociedades: () => ipcRenderer.invoke('get-sociedades'),
+  addSociedad: (datos) => ipcRenderer.invoke('add-sociedad', datos),
+  updateSociedad: (id, datos) => ipcRenderer.invoke('update-sociedad', id, datos),
+  deactivateSociedad: (id) => ipcRenderer.invoke('deactivate-sociedad', id),
+  // Gestión de contratos de trabajadores
+  getContratosAgente: (agenteId) => ipcRenderer.invoke('get-contratos-agente', agenteId),
+  addContratoAgente: (datos) => ipcRenderer.invoke('add-contrato-agente', datos),
+  cerrarContratoAgente: (contratoId) => ipcRenderer.invoke('cerrar-contrato-agente', contratoId)
 });
 
 contextBridge.exposeInMainWorld('databaseAPI', {

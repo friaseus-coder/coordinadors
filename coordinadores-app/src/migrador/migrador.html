@@ -655,7 +655,7 @@
                     <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('aparcamientos')">
                         ⬇ Descargar Datos Actuales
                     </button>
-                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>aparcamientos</strong>, o una plantilla JSON si está vacía.</span>
+                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>aparcamientos</strong> en formato CSV (Excel), o una plantilla si está vacía.</span>
                 </div>
             </div>
 
@@ -683,14 +683,14 @@
                 </div>
 
                 <div class="maestros-col">
-                    <span class="maestros-label">📂 Archivo JSON a Importar</span>
+                    <span class="maestros-label">📂 Archivo a Importar (CSV o JSON)</span>
                     <div class="maestros-file-input-wrapper">
-                        <input type="file" accept=".json"
-                               id="inputAparcamientosJson" style="display:none;"
+                        <input type="file" accept=".csv,.json"
+                               id="inputAparcamientosArchivo" style="display:none;"
                                onchange="onArchivoMaestrosSeleccionado('aparcamientos', this)">
                         <button class="btn btn-secondary"
-                                onclick="document.getElementById('inputAparcamientosJson').click()">
-                            📂 Seleccionar JSON...
+                                onclick="document.getElementById('inputAparcamientosArchivo').click()">
+                            📂 Seleccionar Archivo...
                         </button>
                         <button class="btn btn-amber" id="btnImportarAparcamientos" disabled
                                 onclick="importarDatosMaestros('aparcamientos')">
@@ -730,7 +730,7 @@
                     <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('empleados')">
                         ⬇ Descargar Datos Actuales
                     </button>
-                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>empleados</strong>, o una plantilla JSON si está vacía.</span>
+                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>empleados</strong> en formato CSV (Excel), o una plantilla si está vacía.</span>
                 </div>
             </div>
 
@@ -758,14 +758,14 @@
                 </div>
 
                 <div class="maestros-col">
-                    <span class="maestros-label">📂 Archivo JSON a Importar</span>
+                    <span class="maestros-label">📂 Archivo a Importar (CSV o JSON)</span>
                     <div class="maestros-file-input-wrapper">
-                        <input type="file" accept=".json"
-                               id="inputEmpleadosJson" style="display:none;"
+                        <input type="file" accept=".csv,.json"
+                               id="inputEmpleadosArchivo" style="display:none;"
                                onchange="onArchivoMaestrosSeleccionado('empleados', this)">
                         <button class="btn btn-secondary"
-                                onclick="document.getElementById('inputEmpleadosJson').click()">
-                            📂 Seleccionar JSON...
+                                onclick="document.getElementById('inputEmpleadosArchivo').click()">
+                            📂 Seleccionar Archivo...
                         </button>
                         <button class="btn btn-amber" id="btnImportarEmpleados" disabled
                                 onclick="importarDatosMaestros('empleados')">
@@ -2623,7 +2623,120 @@
         }
 
         /**
-         * Gestiona la selección de archivo JSON para un panel maestro.
+         * Parsea un texto CSV con separador ; en un array de objetos.
+         * La primera fila debe ser la cabecera con los nombres de campos.
+         * Soporta valores entrecomillados con " que contengan ; o saltos de línea.
+         */
+        function parsearCSV(texto) {
+            const SEP = ';';
+            const lineas = [];
+            let current = '';
+            let inQuotes = false;
+
+            // Parseo robusto respetando comillas
+            for (let i = 0; i < texto.length; i++) {
+                const ch = texto[i];
+                if (inQuotes) {
+                    if (ch === '"') {
+                        if (i + 1 < texto.length && texto[i + 1] === '"') {
+                            current += '"'; // comilla escapada
+                            i++;
+                        } else {
+                            inQuotes = false;
+                        }
+                    } else {
+                        current += ch;
+                    }
+                } else {
+                    if (ch === '"') {
+                        inQuotes = true;
+                    } else if (ch === '\n') {
+                        lineas.push(current);
+                        current = '';
+                    } else if (ch === '\r') {
+                        // ignorar \r
+                    } else {
+                        current += ch;
+                    }
+                }
+            }
+            if (current.trim()) lineas.push(current);
+
+            if (lineas.length < 2) return []; // solo cabecera o vacío
+
+            const cabeceras = lineas[0].split(SEP).map(h => h.trim());
+            const resultados = [];
+
+            for (let i = 1; i < lineas.length; i++) {
+                const linea = lineas[i].trim();
+                if (!linea) continue;
+
+                // Parsear campos respetando comillas
+                const campos = [];
+                let campo = '';
+                let enComillas = false;
+                for (let j = 0; j < linea.length; j++) {
+                    const c = linea[j];
+                    if (enComillas) {
+                        if (c === '"') {
+                            if (j + 1 < linea.length && linea[j + 1] === '"') {
+                                campo += '"';
+                                j++;
+                            } else {
+                                enComillas = false;
+                            }
+                        } else {
+                            campo += c;
+                        }
+                    } else {
+                        if (c === '"') {
+                            enComillas = true;
+                        } else if (c === SEP) {
+                            campos.push(campo.trim());
+                            campo = '';
+                        } else {
+                            campo += c;
+                        }
+                    }
+                }
+                campos.push(campo.trim());
+
+                const obj = {};
+                cabeceras.forEach((cab, idx) => {
+                    obj[cab] = campos[idx] !== undefined ? campos[idx] : '';
+                });
+                resultados.push(obj);
+            }
+            return resultados;
+        }
+
+        /**
+         * Convierte un array de objetos a texto CSV con separador ;.
+         * Primera fila = cabeceras, resto = datos.
+         */
+        function generarCSV(datos, columnas) {
+            const SEP = ';';
+            // Escapar valores que contengan ; o comillas o saltos de línea
+            function escaparCampo(val) {
+                if (val === null || val === undefined) return '';
+                const str = String(val);
+                if (str.includes(SEP) || str.includes('"') || str.includes('\n')) {
+                    return '"' + str.replace(/"/g, '""') + '"';
+                }
+                return str;
+            }
+
+            const cabecera = columnas.join(SEP);
+            const filas = datos.map(obj =>
+                columnas.map(col => escaparCampo(obj[col])).join(SEP)
+            );
+            // BOM UTF-8 para que Excel abra bien los acentos
+            return '\uFEFF' + cabecera + '\n' + filas.join('\n');
+        }
+
+        /**
+         * Gestiona la selección de archivo CSV o JSON para un panel maestro.
+         * Detecta la extensión y aplica el parseo adecuado.
          */
         function onArchivoMaestrosSeleccionado(tabla, inputEl) {
             const file = inputEl.files[0];
@@ -2641,52 +2754,69 @@
                 return;
             }
 
+            const nombreArchivoMinusculas = file.name.toLowerCase();
+            const esJson = nombreArchivoMinusculas.endsWith('.json');
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const parsed = JSON.parse(e.target.result);
-
-                    // Aceptar array directo o intentar extraer desde un objeto legacy
                     let datos = null;
-                    if (Array.isArray(parsed)) {
-                        datos = parsed;
-                    } else if (parsed && typeof parsed === 'object') {
-                        // Compatibilidad con coordinadores.json (objeto con claves = nombres)
-                        const candidato = Object.values(parsed).find(v => Array.isArray(v));
-                        if (candidato) {
-                            datos = candidato;
-                        } else {
-                            // Intentar construir array desde las claves del objeto
-                            datos = Object.entries(parsed).map(([key, val]) => {
-                                if (typeof val === 'object' && val !== null) return { nombre: key, ...val };
-                                return { nombre: key };
-                            });
+
+                    if (esJson) {
+                        // Parsear como JSON (recupera compatibilidad con formato antiguo)
+                        const parsed = JSON.parse(e.target.result);
+
+                        if (Array.isArray(parsed)) {
+                            datos = parsed;
+                        } else if (parsed && typeof parsed === 'object') {
+                            // Compatibilidad con coordinadores.json antiguos (objeto con claves = nombres)
+                            const candidato = Object.values(parsed).find(v => Array.isArray(v));
+                            if (candidato) {
+                                datos = candidato;
+                            } else {
+                                // Intentar construir array desde las claves del objeto
+                                datos = Object.entries(parsed).map(([key, val]) => {
+                                    if (typeof val === 'object' && val !== null) return { nombre: key, ...val };
+                                    return { nombre: key };
+                                });
+                            }
                         }
+                    } else {
+                        // Parsear como CSV
+                        datos = parsearCSV(e.target.result);
                     }
 
                     if (!datos || datos.length === 0) {
-                        throw new Error('El JSON no contiene un array de registros válido.');
+                        throw new Error(esJson 
+                            ? 'El JSON no contiene un array de registros válido.' 
+                            : 'El CSV no contiene registros válidos. Asegúrate de que la primera fila sean las cabeceras.');
                     }
 
-                    // Normalizar para empleados: mapear desde el formato real del JSON
-                    // (campo 'agent' como nombre, campos de métricas de evaluación)
+                    // Normalizar para empleados: mapear a la estructura de la base de datos
                     if (tabla === 'empleados') {
                         datos = datos.map(item => {
-                            // El campo nombre puede venir como 'agent', 'nombre', 'name' o 'nom'
+                            // En el JSON o CSV el campo de nombre puede ser 'agent', 'nombre', 'name' o 'nom'
                             const nombre = item.agent || item.nombre || item.name || item.nom || '';
-                            return {
-                                // Campos para catalogos.empleados
-                                nombre:            nombre,
-                                email:             item.email || item.mail || null,
-                                rol:               item.rol || item.role || 'Coordinador',
-                                activo:            item.activo !== undefined ? item.activo : 1,
-                                json_preferencias: JSON.stringify({
+                            
+                            // json_preferencias puede venir ya serializado o estructurado
+                            let jsonPrefs = null;
+                            if (esJson && item.json_preferencias) {
+                                jsonPrefs = item.json_preferencias;
+                            } else {
+                                jsonPrefs = JSON.stringify({
                                     centre:   item.centre   || null,
                                     societat: item.societat || null,
                                     torn:     item.torn     || null,
                                     zona:     item.zona     || null
-                                }),
-                                // Campos de métricas para operativa.ranking
+                                });
+                            }
+
+                            return {
+                                nombre:            nombre,
+                                email:             item.email || item.mail || null,
+                                rol:               item.rol || item.role || 'Coordinador',
+                                activo:            item.activo !== undefined && item.activo !== '' ? Number(item.activo) : 1,
+                                json_preferencias: jsonPrefs,
                                 coneixements:   parseFloat(item.coneixements)   || 0,
                                 atencio:        parseFloat(item.atencio)        || 0,
                                 disponibilitat: parseFloat(item.disponibilitat) || 0,
@@ -2697,18 +2827,18 @@
                         }).filter(r => r.nombre && r.nombre.trim() !== '');
                     }
 
-                    // Normalizar para aparcamientos: solo campos del schema
+                    // Normalizar para aparcamientos
                     if (tabla === 'aparcamientos') {
                         datos = datos.map(item => ({
                             numero_obra:                item.numero_obra || null,
                             nombre:                     item.nombre || item.name || item.nom || '',
                             zona:                       item.zona || null,
-                            es_remotizado:              item.es_remotizado !== undefined ? item.es_remotizado : 0,
+                            es_remotizado:              item.es_remotizado !== undefined && item.es_remotizado !== '' ? Number(item.es_remotizado) : 0,
                             tipo_gestion:               item.tipo_gestion || null,
-                            permitir_vacio_laborables:  item.permitir_vacio_laborables !== undefined ? item.permitir_vacio_laborables : 0,
+                            permitir_vacio_laborables:  item.permitir_vacio_laborables !== undefined && item.permitir_vacio_laborables !== '' ? Number(item.permitir_vacio_laborables) : 0,
                             sociedad_id:                item.sociedad_id || null,
                             coordinador_responsable:    item.coordinador_responsable || null,
-                            activo:                     item.activo !== undefined ? item.activo : 1
+                            activo:                     item.activo !== undefined && item.activo !== '' ? Number(item.activo) : 1
                         })).filter(r => r.nombre && r.nombre.trim() !== '');
                     }
 
@@ -2716,20 +2846,20 @@
                     lblEl.textContent = `✅ ${file.name} — ${datos.length} registro(s) listos.`;
                     lblEl.style.color = 'var(--success)';
                     btnImportar.disabled = false;
-                    mostrarLogMaestros(logEl, 'info', `📋 ${datos.length} registro(s) parseados correctamente. Haz clic en "Importar" para confirmar.`);
+                    mostrarLogMaestros(logEl, 'info', `📋 ${datos.length} registro(s) parseados correctamente desde ${esJson ? 'JSON' : 'CSV'}. Haz clic en "Importar" para confirmar.`);
 
                 } catch(err) {
-                    console.error(`[Maestros/${tabla}] Error al parsear JSON:`, err);
+                    console.error(`[Maestros/${tabla}] Error al parsear el archivo:`, err);
                     lblEl.textContent = `❌ Error al leer el archivo: ${err.message}`;
                     lblEl.style.color = 'var(--danger)';
                     btnImportar.disabled = true;
-                    mostrarLogMaestros(logEl, 'error', `❌ Error al parsear el JSON: ${err.message}`);
+                    mostrarLogMaestros(logEl, 'error', `❌ Error al parsear el archivo: ${err.message}`);
                 }
             };
             reader.onerror = () => {
                 mostrarLogMaestros(logEl, 'error', '❌ Error al leer el archivo.');
             };
-            reader.readAsText(file);
+            reader.readAsText(file, 'UTF-8');
         }
 
         /**
@@ -2808,20 +2938,28 @@
                     }
                 }
 
+                // Definir las columnas CSV para cada tabla
+                const columnasCSV = {
+                    aparcamientos: ['numero_obra','nombre','zona','es_remotizado','tipo_gestion','permitir_vacio_laborables','sociedad_id','coordinador_responsable','activo'],
+                    empleados:     ['agent','email','rol','activo','centre','societat','torn','zona','coneixements','atencio','disponibilitat','actitud','valoracio','observacions']
+                };
+
                 let contenido;
                 let nombreArchivo;
+                const columnas = columnasCSV[tabla];
 
                 if (datosExport.length > 0) {
-                    contenido = JSON.stringify(datosExport, null, 2);
-                    nombreArchivo = `${tabla}_${new Date().toISOString().slice(0,10)}.json`;
-                    mostrarLogMaestros(logEl, 'success', `✅ ${datosExport.length} registro(s) exportados en formato compatible con importación.`);
+                    contenido = generarCSV(datosExport, columnas);
+                    nombreArchivo = `${tabla}_${new Date().toISOString().slice(0,10)}.csv`;
+                    mostrarLogMaestros(logEl, 'success', `✅ ${datosExport.length} registro(s) exportados en formato CSV (compatible con Excel).`);
                 } else {
-                    contenido = JSON.stringify(_maestrosPlantillas[tabla], null, 2);
-                    nombreArchivo = `plantilla_${tabla}.json`;
-                    mostrarLogMaestros(logEl, 'info', `ℹ️ La tabla ${tabla} está vacía. Se descarga una plantilla de estructura.`);
+                    // Plantilla vacía: cabecera + fila de ejemplo
+                    contenido = generarCSV(_maestrosPlantillas[tabla], columnas);
+                    nombreArchivo = `plantilla_${tabla}.csv`;
+                    mostrarLogMaestros(logEl, 'info', `ℹ️ La tabla ${tabla} está vacía. Se descarga una plantilla CSV con estructura y ejemplo.`);
                 }
 
-                const blob = new Blob([contenido], { type: 'application/json' });
+                const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8' });
                 const url  = URL.createObjectURL(blob);
                 const a    = document.createElement('a');
                 a.href     = url;
@@ -2918,6 +3056,52 @@
                                     r.json_preferencias || null
                                 ]
                             );
+                            
+                            // B) Sincronizar en la tabla agentes
+                            await dbApi.write('catalogos', 
+                                "INSERT OR IGNORE INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)",
+                                [r.nombre, r.activo !== undefined ? r.activo : 1]
+                            );
+
+                            // C) Obtener el ID del agente e insertar su contrato inicial si tiene sociedad en json_preferencias
+                            const agRow = await dbApi.read('catalogos', "SELECT id FROM agentes WHERE nombre = ?", [r.nombre]);
+                            if (agRow && agRow.length > 0) {
+                                const agenteId = agRow[0].id;
+                                let prefs = {};
+                                try {
+                                    if (r.json_preferencias) {
+                                        prefs = typeof r.json_preferencias === 'string' 
+                                            ? JSON.parse(r.json_preferencias) 
+                                            : r.json_preferencias;
+                                    }
+                                } catch(e) {}
+
+                                const socRef = prefs.societat;
+                                if (socRef) {
+                                    let querySoc = "SELECT id FROM sociedades WHERE codigo_corto = ? OR nombre_fiscal = ?";
+                                    let paramsSoc = [socRef, socRef];
+                                    if (!isNaN(socRef)) {
+                                        querySoc += " OR id = ?";
+                                        paramsSoc.push(Number(socRef));
+                                    }
+                                    const socRow = await dbApi.read('catalogos', querySoc, paramsSoc);
+                                    if (socRow && socRow.length > 0) {
+                                        const sociedadId = socRow[0].id;
+                                        // Cerrar cualquier contrato abierto anterior
+                                        await dbApi.write('catalogos',
+                                            "UPDATE contratos_agentes SET fecha_fin = date('now') WHERE agente_id = ? AND fecha_fin IS NULL AND sociedad_id <> ?",
+                                            [agenteId, sociedadId]
+                                        );
+                                        // Crear el nuevo
+                                        await dbApi.write('catalogos',
+                                            `INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio)
+                                             VALUES (?, ?, date('now', 'start of month'))`,
+                                            [agenteId, sociedadId]
+                                        );
+                                    }
+                                }
+                            }
+                            
                             exitosCatalogos++;
                         } catch(errCat) {
                             console.error('[Maestros/empleados → catalogos] Error:', errCat, r);
