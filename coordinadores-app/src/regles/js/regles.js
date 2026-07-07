@@ -126,6 +126,53 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        onClaveChange() {
+            const presets = {
+                max_horas_semanales: {
+                    categoria: 'VALIDACIÓN',
+                    tipo: 'numero',
+                    value: '40',
+                    descripcion: 'Límite máximo de horas que un agente propio puede trabajar a la semana.'
+                },
+                max_dias_mensuales: {
+                    categoria: 'VALIDACIÓN',
+                    tipo: 'numero',
+                    value: '22',
+                    descripcion: 'Tope de días de trabajo que un agente estándar puede tener asignados en el mes.'
+                },
+                permitir_vacio_laborables: {
+                    categoria: 'VALIDACIÓN',
+                    tipo: 'booleano',
+                    value: '0',
+                    descripcion: 'Permitir dejar un aparcamiento presencial obligatorio vacío durante 24h de lunes a viernes (0 = Alerta, 1 = Permitido).'
+                },
+                bloquear_cruce_sociedades: {
+                    categoria: 'VALIDACIÓN',
+                    tipo: 'booleano',
+                    value: '0',
+                    descripcion: 'Controlar traslados de agentes a parkings que pertenezcan a sociedades ajenas a su contrato (0 = Aviso, 1 = Bloquear).'
+                },
+                min_horas_descanso_entre_turnos: {
+                    categoria: 'VALIDACIÓN',
+                    tipo: 'numero',
+                    value: '12',
+                    descripcion: 'Horas de descanso mínimo obligatorio requeridas entre la hora de fin de un turno y la hora de inicio del siguiente.'
+                }
+            };
+            const preset = presets[this.nuevaRegla.clave];
+            if (preset) {
+                this.nuevaRegla.categoria = preset.categoria;
+                this.nuevaRegla.tipo = preset.tipo;
+                this.nuevaRegla.value = preset.value;
+                this.nuevaRegla.descripcion = preset.descripcion;
+            } else {
+                this.nuevaRegla.categoria = 'GENERAL';
+                this.nuevaRegla.tipo = 'texto';
+                this.nuevaRegla.value = '';
+                this.nuevaRegla.descripcion = '';
+            }
+        },
+
         async loadAparcamientos() {
             try {
                 const rows = await window.dbAPI.read('catalogos', "SELECT id, nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);

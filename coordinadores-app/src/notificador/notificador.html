@@ -152,11 +152,25 @@
            if (!selectEl) return;
            try {
                if (window.dbAPI) {
-                   const rows = await window.dbAPI.read('catalogos', "SELECT numero_obra, nombre, zona FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+                   const query = `
+                       SELECT a.numero_obra, a.nombre, a.zona, s.nombre_fiscal
+                       FROM aparcamientos a
+                       LEFT JOIN sociedades s ON a.sociedad_id = s.id
+                       WHERE a.activo = 1
+                       ORDER BY a.nombre ASC
+                   `;
+                   const rows = await window.dbAPI.read('catalogos', query, []);
                    if (rows && rows.length > 0) {
                        selectEl.innerHTML = '';
                        rows.forEach(p => {
-                           const val = `${p.numero_obra ? p.numero_obra + ' - ' : ''}${p.nombre}${p.zona ? ' - ' + p.zona : ''}`;
+                           const partes = [];
+                           if (p.numero_obra) partes.push(p.numero_obra);
+                           if (p.nombre) partes.push(p.nombre);
+                           if (p.zona) partes.push(p.zona);
+                           let val = partes.join(' - ');
+                           if (p.nombre_fiscal) {
+                               val += ` (${p.nombre_fiscal})`;
+                           }
                            const opt = document.createElement('option');
                            opt.value = val;
                            opt.textContent = val;
@@ -187,38 +201,6 @@
     <div class="formulari-app">
         <label data-i18n="notificadorWorkCenterLabel">1. Centre de Treball:</label>
         <select id="notif-parking">
-            <option value="567 - N.N. ARAGO - Aragón, 182">567 - N.N. ARAGO - Aragón, 182</option>
-            <option value="427 - N.N. BONANOVA - Pg. Bonanova, 59-Escoles Pies, 102">427 - N.N. BONANOVA - Pg. Bonanova, 59-Escoles Pies, 102</option>
-            <option value="675 - N.N. BORRELL - Comte Borrell, 28">675 - N.N. BORRELL - Comte Borrell, 28</option>
-            <option value="667 - N.N. BRUC - Bruc, 103-Valencia, 299">667 - N.N. BRUC - Bruc, 103-Valencia, 299</option>
-            <option value="51 - N.N. CONCEPT - Valencia, 307-313">51 - N.N. CONCEPT - Valencia, 307-313</option>
-            <option value="1335 - N.N. CORSEGA - Còrsega, 344-352">1335 - N.N. CORSEGA - Còrsega, 344-352</option>
-            <option value="304 - N.N. DIAGONAL - Av. Diagonal, 593">304 - N.N. DIAGONAL - Av. Diagonal, 593</option>
-            <option value="1471 - N.N. EL PALLOL - Raval del Pallol, 1 (Reus)">1471 - N.N. EL PALLOL - Raval del Pallol, 1 (Reus)</option>
-            <option value="1460 - N.N. ESTEVE TERRADAS - Esteve Terradas, 17-31">1460 - N.N. ESTEVE TERRADAS - Esteve Terradas, 17-31</option>
-            <option value="1202 - N.N. ESPRONCEDA - Victoria Kent, 1">1202 - N.N. ESPRONCEDA - Victoria Kent, 1</option>
-            <option value="626 - N.N. GEIGLE - Dr. Roux, 69-Via Agusta, 281">626 - N.N. GEIGLE - Dr. Roux, 69-Via Agusta, 281</option>
-            <option value="412 - N.N. HERCEGOVINA - Hercegovina, 19-23">412 - N.N. HERCEGOVINA - Hercegovina, 19-23</option>
-            <option value="1340 - N.N. ILLA AUGUSTA - Via Augusta, 349-355">1340 - N.N. ILLA AUGUSTA - Via Augusta, 349-355</option>
-            <option value="1424 - N.N. LA ROTONDA - Passeig de Sant Gervasi, 51-53">1424 - N.N. LA ROTONDA - Passeig de Sant Gervasi, 51-53</option>
-            <option value="424 - N.N. LA TAMARITA - Passeig de Sant Gervasi, 39">424 - N.N. LA TAMARITA - Passeig de Sant Gervasi, 39</option>
-            <option value="2001 - N.N. MASTER CATALONIA - Roselló, 1-13">2001 - N.N. MASTER CATALONIA - Roselló, 1-13</option>
-            <option value="1126 - N.N. PAU ALSINA - Providència, 160 - Pau Alsina, 74">1126 - N.N. PAU ALSINA - Providència, 160 - Pau Alsina, 74</option>
-            <option value="2004 - N.N. PEDRALBES - Lluis Pericot, 12">2004 - N.N. PEDRALBES - Lluis Pericot, 12</option>
-            <option value="655 - N.N. ROCAFORT - Rocafort, 64-Sepúlveda, 63">655 - N.N. ROCAFORT - Rocafort, 64-Sepúlveda, 63</option>
-            <option value="507 - N.N. SABADELL - Gracia, 51 (Sabadell)">507 - N.N. SABADELL - Gracia, 51 (Sabadell)</option>
-            <option value="974 - N.N. SANT GERVASI - Moragas, 15">974 - N.N. SANT GERVASI - Moragas, 15</option>
-            <option value="656 - N.N. SANTALÓ - Santaló, 14-Avenir, 39">656 - N.N. SANTALÓ - Santaló, 14-Avenir, 39</option>
-            <option value="977 - N.N. SENMENAT-2 - Marques Sentmenat, 6">977 - N.N. SENMENAT-2 - Marques Sentmenat, 6</option>
-            <option value="2003 - N.N. TORRE NIN - Tarragona, 141-157">2003 - N.N. TORRE NIN - Tarragona, 141-157</option>
-            <option value="2002 - N.N. TRAVESSERA - Travessera de Gracia, 183-185">2002 - N.N. TRAVESSERA - Travessera de Gracia, 183-185</option>
-            <option value="653 - N.N. URGELL - Córcega, 171-Comte Urgell, 234">653 - N.N. URGELL - Córcega, 171-Comte Urgell, 234</option>
-            <option value="674 - N.N. URGELL-2 - Comte d'Urgell, 154-156">674 - N.N. URGELL-2 - Comte d'Urgell, 154-156</option>
-            <option value="657 - N.N. VALENCIA - Valencia, 375-377 -Nápoles, 216">657 - N.N. VALENCIA - Valencia, 375-377 -Nápoles, 216</option>
-            <option value="260 - N.N. VALENCIA 3 - Valencia, 511-P. Vilaret">260 - N.N. VALENCIA 3 - Valencia, 511-P. Vilaret</option>
-            <option value="670 - N.N. VALENCIA-2 - Valencia, 245-P-Domingo">670 - N.N. VALENCIA-2 - Valencia, 245-P-Domingo</option>
-            <option value="799 - N.N. ZONA FRANCA - Pg. Zona Franca, 131-139">799 - N.N. ZONA FRANCA - Pg. Zona Franca, 131-139</option>
-            <option value="566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641">566 - N.N.GRAN VIA - Gran Via Corts Catalanes, 641</option>
         </select>
 
         <label data-i18n="notificadorContractTypeLabel">2. Tipus de Contracte:</label>

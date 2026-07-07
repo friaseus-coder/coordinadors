@@ -289,7 +289,14 @@
             <div class="grid grid-cols-4 gap-4">
                 <div class="flex flex-col gap-1">
                     <label>Clave</label>
-                    <input type="text" x-model="nuevaRegla.clave" placeholder="Ej: max_horas_semanales">
+                    <select x-model="nuevaRegla.clave" @change="onClaveChange()">
+                        <option value="">-- Selecciona una clave --</option>
+                        <option value="max_horas_semanales">max_horas_semanales</option>
+                        <option value="max_dias_mensuales">max_dias_mensuales</option>
+                        <option value="permitir_vacio_laborables">permitir_vacio_laborables</option>
+                        <option value="bloquear_cruce_sociedades">bloquear_cruce_sociedades</option>
+                        <option value="min_horas_descanso_entre_turnos">min_horas_descanso_entre_turnos</option>
+                    </select>
                 </div>
                 <div class="flex flex-col gap-1">
                     <label>Categoria</label>

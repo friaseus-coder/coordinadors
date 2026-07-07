@@ -617,3 +617,33 @@ Una vez completado el proceso con éxito, la carpeta resultante [dist/coordinado
 *   `dades/`: Carpeta que almacena las copias locales de contingencia para coordinadores y aparcamientos.
 *   `resources/app.asar`: Archivo comprimido ASAR que contiene todo el código fuente empaquetado y protegido de la aplicación (`src/`, `main.js`, `preload.js`, etc.).
 
+---
+
+## 12. Carga Dinámica de Centros y Robustez en Reglas de Negocio
+
+Con el fin de centralizar la base de datos como fuente única de verdad y evitar redundancias y errores humanos de entrada de datos, se han implementado las siguientes mejoras:
+
+### A. Selectores Dinámicos de Aparcamientos (SAC y Notificador)
+Anteriormente, el **Gestor de Incidencias (SAC)** y el **Gestor de Comunicaciones de Clientes (Notificador)** disponían de un selector estático hardcoded con la lista de aparcamientos en sus respectivos archivos HTML. Esto se ha modificado para:
+1.  **Cargar desde DB**: Realizar una consulta SQL asíncrona a la base de datos de catálogos cruzándola con la de sociedades para extraer la razón social fiscal de la empresa propietaria:
+    ```sql
+    SELECT a.numero_obra, a.nombre, a.zona, s.nombre_fiscal
+    FROM aparcamientos a
+    LEFT JOIN sociedades s ON a.sociedad_id = s.id
+    WHERE a.activo = 1
+    ORDER BY a.nombre ASC
+    ```
+2.  **Formateo Dinámico**: Concatenar los valores en el formato: `{numero_obra} - {nombre} - {zona} ({nombre_fiscal})`.
+3.  **Mantenimiento de la Compatibilidad**: Asegurar que las lógicas de procesamiento de correos electrónicos y guardado de logs continúen funcionando de forma transparente al recuperar la cadena en el mismo formato estructurado con guiones.
+
+### B. Formulario de Reglas con Restricción y Autocompletado
+En la pantalla de administración de reglas de negocio (`regles.html`), se permitía la introducción libre de la clave de la regla. Esto se ha restringido de la siguiente forma:
+1.  **Selector Desplegable**: El input de texto se ha sustituido por un desplegable (`<select>`) con las 5 claves reales que el motor lógico de validación de `main.js` entiende (`max_horas_semanales`, `max_dias_mensuales`, `permitir_vacio_laborables`, `bloquear_cruce_sociedades` y `min_horas_descanso_entre_turnos`).
+2.  **Autocompletado de Campos**: Al elegir una clave, un listener de cambio (`@change="onClaveChange()"`) de Alpine.js pre-rellena automáticamente los campos asociados:
+    *   **Categoría**: Marcada como `VALIDACIÓN`.
+    *   **Tipo**: Se ajusta a `numero` o `booleano` de acuerdo a la naturaleza de la regla.
+    *   **Valor inicial**: Propone el valor sugerido por defecto del sistema (ej. `40` para horas semanales, `12` para descanso).
+    *   **Descripción**: Añade la descripción aclaratoria por defecto de la base de datos para guiar al administrador.
+3.  **Adaptabilidad**: La interfaz de Alpine.js expone de forma reactiva el control de introducción de valor de acuerdo con el tipo pre-rellenado (un select Sí/No para booleanos o un campo de tipo numérico para números).
+
+
