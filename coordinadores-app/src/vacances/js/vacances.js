@@ -24,7 +24,7 @@ document.addEventListener('alpine:init', () => {
 
         async cargarCatalogos() {
             try {
-                const rows = await window.dbAPI.read('catalogos', "SELECT nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador' ORDER BY nombre ASC", []);
+                const rows = await window.AppServices.Maestros.obtenerTrabajadores();
                 this.listaAgentes = rows.map(r => r.nombre);
             } catch (err) {
                 console.error("Error al cargar agentes:", err);
@@ -33,13 +33,7 @@ document.addEventListener('alpine:init', () => {
 
         async cargarIncidencias() {
             try {
-                const query = `
-                    SELECT * FROM incidencias_horarias 
-                    WHERE tipo_incidencia = 'Vacaciones'
-                    ORDER BY fecha_inicio DESC
-                `;
-                const rows = await window.dbAPI.read('operativa', query, []);
-                this.incidencias = rows;
+                this.incidencias = await window.AppServices.Operativa.obtenerIncidenciasVacaciones();
             } catch (err) {
                 console.error("Error al cargar incidencias:", err);
             }
@@ -64,21 +58,17 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const query = `
-                INSERT INTO incidencias_horarias (id_trabajador, fecha_inicio, fecha_fin, tipo_incidencia, impacto_horas, coordinador, estado, comentarios)
-                VALUES (?, ?, ?, 'Vacaciones', 0, ?, ?, ?)
-            `;
-            const params = [
-                this.nuevaSolicitud.agente,
-                this.nuevaSolicitud.fecha_inicio,
-                this.nuevaSolicitud.fecha_fin || null,
-                this.usuarioActual,
-                this.nuevaSolicitud.estado,
-                this.nuevaSolicitud.comentarios.trim()
-            ];
-
             try {
-                await window.dbAPI.write('operativa', query, params);
+                await window.AppServices.Operativa.guardarIncidencia({
+                    id_trabajador: this.nuevaSolicitud.agente,
+                    fecha_inicio: this.nuevaSolicitud.fecha_inicio,
+                    fecha_fin: this.nuevaSolicitud.fecha_fin || null,
+                    tipo_incidencia: 'Vacaciones',
+                    impacto_horas: 0,
+                    coordinador: this.usuarioActual,
+                    estado: this.nuevaSolicitud.estado,
+                    comentarios: this.nuevaSolicitud.comentarios.trim()
+                });
                 // Limpiar formulario
                 this.nuevaSolicitud.agente = '';
                 this.nuevaSolicitud.fecha_inicio = '';
@@ -94,7 +84,7 @@ document.addEventListener('alpine:init', () => {
 
         async cambiarEstado(id, nuevoEstado) {
             try {
-                await window.dbAPI.write('operativa', "UPDATE incidencias_horarias SET estado = ? WHERE id = ?", [nuevoEstado, id]);
+                await window.AppServices.Operativa.cambiarEstadoIncidencia(id, nuevoEstado);
                 await this.cargarIncidencias();
             } catch (err) {
                 console.error("Error al cambiar estado:", err);
@@ -105,7 +95,7 @@ document.addEventListener('alpine:init', () => {
         async eliminarSolicitud(id) {
             if (!confirm("¿Estás seguro de que deseas eliminar esta solicitud de vacaciones?")) return;
             try {
-                await window.dbAPI.write('operativa', "DELETE FROM incidencias_horarias WHERE id = ?", [id]);
+                await window.AppServices.Operativa.eliminarIncidencia(id);
                 await this.cargarIncidencias();
             } catch (err) {
                 console.error("Error al eliminar solicitud:", err);

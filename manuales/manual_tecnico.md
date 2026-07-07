@@ -646,4 +646,21 @@ En la pantalla de administración de reglas de negocio (`regles.html`), se permi
     *   **Descripción**: Añade la descripción aclaratoria por defecto de la base de datos para guiar al administrador.
 3.  **Adaptabilidad**: La interfaz de Alpine.js expone de forma reactiva el control de introducción de valor de acuerdo con el tipo pre-rellenado (un select Sí/No para booleanos o un campo de tipo numérico para números).
 
+### C. Resiliencia de Red y Aviso de Desconexión (Modo Solo Lectura)
+Para evitar que una desconexión o caída de la ruta de red (`NETWORK_DIR`) cause bloqueos o detenciones bruscas del sistema, se ha implementado la resiliencia de red en las escrituras:
+1.  **Captura en Escrituras de Mutex**: Toda la lógica física en `safeWriteCombined` (main.js) está envuelta en un bloque de control de excepciones `try/catch`.
+2.  **Detección de Errores de Red**: Si se produce un error derivado de falta de conexión a red (como códigos `ENOENT` por ruta inaccesible o `EBUSY` por recurso ocupado), el proceso principal captura la excepción.
+4.  **Toast Flotante en la UI**: En `portal.html`, el script puente `preload.js` expone el método `onNetworkStatus` en el objeto global `window.dbAPI`. Al recibir la desconexión, la interfaz muestra un Toast no bloqueante rojo vibrante en la esquina inferior derecha notificando al usuario: *"Red inaccesible. Modo de solo lectura activado."* y ocultándose automáticamente a los 5 segundos.
+
+### D. Capa de Servicios en el Frontend (Repository Pattern)
+Con el objetivo de desacoplar la interfaz de usuario de las consultas SQL directas, se ha implementado una capa de servicios en el frontend (`services.js`):
+1.  **Objeto Global de Servicios**: Se ha creado `window.AppServices`, que agrupa la lógica de persistencia por dominios de negocio:
+    *   `Operativa`: Maneja cuadrantes, turnos, reglas e incidencias de vacaciones.
+    *   `Finanzas`: Encapsula los gastos y movimientos de caja y rutas.
+    *   `Maestros`: Gestiona los catálogos relacionales de empleados, trabajadores y aparcamientos.
+2.  **Integración en Arquitectura Híbrida**: El script se importa en la cabecera del portal (`portal.html`) y de las vistas que operan en iframes (como `vacances.html`), exponiéndose localmente de forma uniforme.
+3.  **Prueba de Concepto y Desacoplamiento**: El módulo de vacaciones (`vacances.js`) ha sido refactorizado para sustituir el uso directo del puente IPC `window.dbAPI` por llamadas directas parametrizadas a `window.AppServices.Operativa` y `window.AppServices.Maestros`. Esto centraliza las consultas en un solo punto, facilitando futuras modificaciones en el esquema SQL o la base de datos sin alterar los archivos de la interfaz gráfica.
+
+
+
 

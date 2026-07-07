@@ -6,6 +6,7 @@
     <title>Portal NyN | Coordinadors</title>
     <script src="js/calendari.js"></script>
     <script src="js/i18n.js"></script>
+    <script src="js/services.js"></script>
     <script>
        // Forzar traducción inmediata al cargar
        document.addEventListener('DOMContentLoaded', () => {
@@ -459,6 +460,30 @@
             background: rgba(255,255,255,0.4);
             color: #0f2d4a;
         }
+
+        /* Estilos de Toast de Error por Red Caída */
+        .toast-error {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background-color: #ef4444; /* Rojo vibrante */
+            color: #ffffff;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(239, 68, 68, 0.3), 0 4px 6px -4px rgba(239, 68, 68, 0.3);
+            font-size: 14px;
+            font-weight: 600;
+            z-index: 100000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            border: 1px solid #fca5a5;
+            animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @keyframes toastIn {
+            from { transform: translateY(20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
     </style>
 </head>
 <body data-required-roles="comercial,coordinador,jefe_operaciones">
@@ -471,6 +496,9 @@
             window.location.href = 'index.html';
         }
     </script>
+
+    <!-- Contenedor del Toast de error de red -->
+    <div id="network-error-toast" class="toast-error"></div>
 
     <nav class="portal-nav">
         <!-- Logo Corporativo basado en la Imagen 2 -->
@@ -2433,6 +2461,24 @@
                 }
             } catch (e) {
                 console.error('[PORTAL] Error al aplicar filtrado de roles:', e);
+            }
+
+            // Registrar listener de estado de red
+            try {
+                if (window.dbAPI && typeof window.dbAPI.onNetworkStatus === 'function') {
+                    window.dbAPI.onNetworkStatus((data) => {
+                        const toast = document.getElementById('network-error-toast');
+                        if (toast) {
+                            toast.innerText = data.message;
+                            toast.style.display = 'flex';
+                            setTimeout(() => {
+                                toast.style.display = 'none';
+                            }, 5000);
+                        }
+                    });
+                }
+            } catch (err) {
+                console.error('[PORTAL] Error al registrar listener de red:', err);
             }
         });
 

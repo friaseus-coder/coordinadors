@@ -383,6 +383,14 @@ async function safeWriteCombined(dbKey, query, params) {
     if (lockDir) {
       await releaseLock(lockDir);
     }
+    
+    // Capturar caída de red y notificar al frontend
+    if (error.code === 'ENOENT' || error.message.includes('EBUSY') || error.message.includes('ENOENT')) {
+      BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('network-status', { error: true, message: 'Red inaccesible. Modo de solo lectura activado.' });
+      });
+    }
+    
     throw error;
   }
 }
