@@ -484,6 +484,19 @@
             from { transform: translateY(20px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
+
+        /* Estils per a inputs i select en modal de Societats per assegurar que es pot escriure i ressaltar el focus */
+        .sociedad-form-container input {
+            background-color: #ffffff !important;
+            color: #0f2d4a !important;
+            border: 1px solid #cbd5e1 !important;
+            outline: none !important;
+            transition: border-color 0.2s, box-shadow 0.2s !important;
+        }
+        .sociedad-form-container input:focus {
+            border-color: #063931 !important;
+            box-shadow: 0 0 0 3px rgba(6, 57, 49, 0.15) !important;
+        }
     </style>
 </head>
 <body data-required-roles="comercial,coordinador,jefe_operaciones">
@@ -693,11 +706,11 @@
                 <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 10px;">
                     <div>
                         <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NOM FISCAL</label>
-                        <input type="text" id="newSociedadNombre" placeholder="Núñez i Navarro S.L." style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                        <input type="text" id="newSociedadNombre" placeholder="Escriu el nom fiscal..." style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                     <div>
                         <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">CÒDIG CORT</label>
-                        <input type="text" id="newSociedadCodigo" placeholder="NN_SL" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                        <input type="text" id="newSociedadCodigo" placeholder="Escriu el codi (ex: NN_SL)..." style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                 </div>
                 
