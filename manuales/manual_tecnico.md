@@ -661,6 +661,16 @@ Con el objetivo de desacoplar la interfaz de usuario de las consultas SQL direct
 2.  **Integración en Arquitectura Híbrida**: El script se importa en la cabecera del portal (`portal.html`) y de las vistas que operan en iframes (como `vacances.html`), exponiéndose localmente de forma uniforme.
 3.  **Prueba de Concepto y Desacoplamiento**: El módulo de vacaciones (`vacances.js`) ha sido refactorizado para sustituir el uso directo del puente IPC `window.dbAPI` por llamadas directas parametrizadas a `window.AppServices.Operativa` y `window.AppServices.Maestros`. Esto centraliza las consultas en un solo punto, facilitando futuras modificaciones en el esquema SQL o la base de datos sin alterar los archivos de la interfaz gráfica.
 
+### E. Módulo de Reportes Operativos y Estadísticas (Rotación y Carga de Trabajo)
+Dirigido a directivos y al Jefe de Operaciones para la consulta de información agregada "a mes vencido":
+1.  **Rotación por Aparcamiento**: Muestra los turnos y horas acumulados de todos los trabajadores asignados en el mes seleccionado. Realiza un cruce de `quadrant` con `aparcamientos` y `empleados` para resolver los nombres de las entidades en lugar de utilizar datos obsoletos.
+2.  **Carga Laboral por Trabajador con Desglose por Aparcamiento**:
+    *   Calcula retroactivamente el mes seleccionado y los 3 meses anteriores (cómputo de 4 meses en total) con soporte de cambio de año.
+    *   Desglosa de manera pormenorizada por cada trabajador todos los aparcamientos donde ha ejercido funciones, detallando las horas correspondientes y la suma total de carga de trabajo por cada columna mensual.
+    *   Sincroniza y muestra la valoración del personal asociada a la tabla `ranking` en `operativa_rrhh.db`, formateada visualmente en semáforo de calidad de servicio (estrellas y alertas verde/amarillo/rojo).
+3.  **Acceso Restringido**: El menú está integrado de forma restrictiva al rol `jefe_operaciones` bajo el dropdown "⚙️ Administració".
+
+
 
 
 

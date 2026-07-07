@@ -18,7 +18,19 @@ Este manual detalla los pasos para crear, configurar y distribuir el ejecutable 
 
 ## 2. Changelog de Versiones
 
-### v1.1.0 — 2026-07-03 (Actual)
+### v1.2.0 — 2026-07-07 (Actual)
+*   **NUEVO — Módulo de Reportes Operativos y Estadísticas (`reportes.html`):**
+    *   **Pestaña 1 (Rotación por Aparcamiento)**: Conteo total de turnos y personal distinto en el mes seleccionado mediante un `JOIN` dinámico de SQLite entre `quadrant` y catálogos.
+    *   **Pestaña 2 (Carga y Desempeño del Personal)**:
+        *   Cálculo retroactivo en JS del mes y los 3 meses anteriores con control de cambios de año.
+        *   Desglose pormenorizado de las horas mensuales trabajadas por cada empleado en cada uno de los aparcamientos donde ha estado asignado.
+        *   Fila de totalización de la carga de trabajo general para el cuatrimestre por empleado.
+        *   Recuperación de la nota media de la tabla `ranking` (operativa) con renderizado semáforo (estrellas y colores verde/amarillo/rojo).
+    *   **Navegación e Integración**: Botón de reportes integrado de forma restrictiva al rol `jefe_operaciones` bajo el menú colapsable "⚙️ Administració" de `portal.html`.
+*   **NUEVO — Capa de Servicios en el Cliente (`services.js`)**: Patrón de Repositorio global (`window.AppServices`) que encapsula y centraliza todas las consultas SQL. Refactorización completa del módulo de vacaciones como prueba de concepto.
+*   **NUEVO — Resiliencia ante Pérdidas de Red**: Captura segura de errores `ENOENT` y `EBUSY` durante escrituras de Mutex y SQLite, avisando en la UI con un Toast flotante temporal de solo lectura.
+
+### v1.1.0 — 2026-07-03
 *   **NUEVO — Módulo de Datos Maestros en el Migrador (`migrador.html`):**
     *   Panel colapsable **🚗 Aparcamientos**: descarga de datos actuales o plantilla, importación con modo Añadir / Sobrescribir sobre `catalogos.aparcamientos`.
     *   Panel colapsable **👥 Empleados**: descarga de datos actuales o plantilla, importación con **doble inserción simultánea**:

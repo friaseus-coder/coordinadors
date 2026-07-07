@@ -180,3 +180,18 @@ Gestionado en la tabla interactiva de aptitudes y valoraciones (`ranking.html` -
 | **Actitud** | `operativa_rrhh.db` | `ranking` | `actitud` | `REAL` | Calificación del 0.0 al 10.0. |
 | **Valoración Media** | `operativa_rrhh.db` | `ranking` | `valoracio` | `REAL` | Media matemática de las notas. |
 | **Observaciones** | `operativa_rrhh.db` | `ranking` | `observacions` | `TEXT` | Comentario sobre el desempeño. |
+
+---
+
+## 11. Módulo: Reportes Operativos y Estadísticas (Rotación y Carga de Personal)
+Gestionado en la pestaña de reportes de administración en `reportes.html`.
+
+| Campo en Interfaz (UI) / Sección | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones / Consultas Cruzadas |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Aparcamiento (Rotación)** | `operativa_rrhh.db` | `quadrant` / `catalogos.aparcamientos` | `aparcamientos.nombre` | `TEXT` | Resuelve el nombre del parking uniendo por ID. |
+| **Trabajador (Rotación)** | `operativa_rrhh.db` | `quadrant` / `catalogos.empleados` | `empleados.nombre` | `TEXT` | Resuelve el nombre del trabajador uniendo por ID. |
+| **Turnos Realizados** | `operativa_rrhh.db` | `quadrant` | `COUNT(*)` | `INTEGER` | Conteo agregado del total de registros de turnos. |
+| **Horas Estimadas** | `operativa_rrhh.db` | `quadrant` | `horas_trabajadas` | `INTEGER` | Turnos estándar multiplicados por 8 horas. |
+| **Valoración del Empleado** | `operativa_rrhh.db` | `ranking` | `valoracio` | `REAL` | Nota media recuperada para calificar al personal. |
+| **Horas Mensuales (Histórico 4 Meses)** | `operativa_rrhh.db` | `quadrant` | `horas_trabajadas` | `INTEGER` | Suma agrupada por mes, año, trabajador y parking en el cuatrimestre. |
+

@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>NyN Pàrquings | Reports Operatius</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        corePlugins: {
+          preflight: false,
+        }
+      }
+    </script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    
+    <style>
+        [x-cloak] { display: none !important; }
+
+        :root {
+            --nyn-verd: #063931;       /* Verde pino oscuro corporativo */
+            --nyn-verd-accent: #008d36; /* Verde acento */
+            --border: #e2e8f0;
+            --text-main: #0f2d4a;
+            --text-muted: #64748b;
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        body { 
+            font-family: 'Outfit', 'Segoe UI', Arial, sans-serif; 
+            background: #f8fafc; 
+            color: #1e293b;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header { 
+            background-color: var(--nyn-verd); 
+            color: white; 
+            padding: 8px 24px; 
+            display: flex;        
+            justify-content: center; 
+            align-items: center; 
+            height: 48px; 
+            border-bottom: 2px solid var(--nyn-verd-accent);
+            box-sizing: border-box;
+        }
+
+        .header-center { 
+            font-size: 15px; 
+            font-weight: 700; 
+            text-transform: uppercase; 
+            letter-spacing: 1px; 
+        }
+
+        .main-container {
+            flex: 1;
+            padding: 24px;
+            box-sizing: border-box;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .filter-panel {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: flex-end;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .report-panel {
+            background: #ffffff;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        label {
+            font-weight: 700;
+            color: var(--nyn-verd);
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        select {
+            padding: 8px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            width: 160px;
+            background: #ffffff;
+            outline: none;
+            font-family: inherit;
+            font-size: 13px;
+            transition: border-color 0.2s;
+            height: 38px;
+        }
+
+        select:focus {
+            border-color: var(--nyn-verd-accent);
+        }
+
+        .btn-nyn {
+            background: var(--nyn-verd);
+            color: white;
+            border: 1px solid var(--nyn-verd);
+            font-weight: 700;
+            padding: 0 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            height: 38px;
+            font-size: 13px;
+        }
+
+        .btn-nyn:hover {
+            background: #0b4e43;
+            border-color: #0b4e43;
+        }
+
+        /* Tabla */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8fafc;
+            color: var(--text-main);
+            font-weight: 700;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            padding: 10px 16px;
+            border-bottom: 2px solid var(--border);
+            text-align: left;
+        }
+
+        td {
+            padding: 12px 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 12.5px;
+            vertical-align: middle;
+        }
+
+        tr:hover td {
+            background-color: #f8fafc;
+        }
+
+        /* Spinner */
+        .spinner {
+            border: 3px solid #f1f5f9;
+            border-top: 3px solid var(--nyn-verd-accent);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body x-data="moduloReporte()" x-cloak>
+
+<header>
+    <div class="header-center"><i class="fas fa-chart-line mr-2"></i> REPORTS OPERATIUS I ESTADÍSTIQUES</div>
+</header>
+
+<div class="main-container">
+    <!-- Pestañas de Selección del Tipo de Reporte -->
+    <div class="flex border border-solid border-slate-200 bg-white rounded-xl p-1 shadow-sm gap-2">
+        <button class="flex-1 py-3 px-6 rounded-lg text-sm font-bold border-none cursor-pointer transition-all duration-200 flex items-center justify-center gap-2"
+                :class="tab === 'aparcamiento' ? 'bg-[#063931] text-white shadow-sm' : 'bg-transparent text-slate-500 hover:bg-slate-100'"
+                @click="tab = 'aparcamiento'">
+            <i class="fas fa-parking"></i> Rotació per Aparcament
+        </button>
+        <button class="flex-1 py-3 px-6 rounded-lg text-sm font-bold border-none cursor-pointer transition-all duration-200 flex items-center justify-center gap-2"
+                :class="tab === 'trabajador' ? 'bg-[#063931] text-white shadow-sm' : 'bg-transparent text-slate-500 hover:bg-slate-100'"
+                @click="tab = 'trabajador'">
+            <i class="fas fa-user-tie"></i> Càrrega i Desempeny del Personal
+        </button>
+    </div>
+
+    <!-- Panel de Filtros -->
+    <div class="filter-panel">
+        <div class="flex flex-col">
+            <label>Any</label>
+            <select x-model="anio">
+                <option value="2026">2026</option>
+                <option value="2027">2027</option>
+                <option value="2028">2028</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col">
+            <label>Mes</label>
+            <select x-model="mes">
+                <option value="1">Gener</option>
+                <option value="2">Febrer</option>
+                <option value="3">Març</option>
+                <option value="4">Abril</option>
+                <option value="5">Maig</option>
+                <option value="6">Juny</option>
+                <option value="7">Julio</option>
+                <option value="8">Agost</option>
+                <option value="9">Setembre</option>
+                <option value="10">Octubre</option>
+                <option value="11">Novembre</option>
+                <option value="12">Desembre</option>
+            </select>
+        </div>
+
+        <button class="btn-nyn" @click="generarReporte()" :disabled="cargando">
+            <template x-if="cargando">
+                <div class="spinner"></div>
+            </template>
+            <template x-if="!cargando">
+                <i class="fas fa-sync-alt"></i>
+            </template>
+            Generar Report
+        </button>
+    </div>
+
+    <!-- Panel de Resultados -->
+    <div class="report-panel">
+        <!-- Loader inicial o de proceso -->
+        <div x-show="cargando" class="flex flex-col items-center justify-center py-16 gap-4">
+            <div class="spinner" style="width: 48px; height: 48px; border-width: 5px;"></div>
+            <div class="text-sm font-semibold text-gray-500">Consultant dades en la xarxa, esperi un moment...</div>
+        </div>
+
+        <!-- Vista 1: Reporte por Aparcamiento -->
+        <div x-show="tab === 'aparcamiento' && !cargando">
+            <!-- Sin resultados -->
+            <div x-show="Object.keys(reporteAgrupado).length === 0" class="flex flex-col items-center justify-center py-16 text-gray-400">
+                <i class="fas fa-info-circle text-3xl mb-2 text-gray-300"></i>
+                <div class="text-sm font-medium">Selecciona un mes i any per a generar el llistat de rotació.</div>
+            </div>
+
+            <!-- Listado -->
+            <div x-show="Object.keys(reporteAgrupado).length > 0" class="flex flex-col gap-8">
+                <template x-for="(datosParking, nombreParking) in reporteAgrupado" :key="nombreParking">
+                    <div class="border border-solid border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                        <!-- Cabecera del Parking -->
+                        <div class="bg-emerald-50 border-b border-solid border-slate-200 px-6 py-4 flex justify-between items-center flex-wrap gap-2">
+                            <h3 class="text-base font-bold text-slate-800 m-0 flex items-center gap-2">
+                                <i class="fas fa-parking text-emerald-700"></i>
+                                <span x-text="nombreParking"></span>
+                            </h3>
+                            <span class="bg-emerald-700 text-white text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider" 
+                                  x-text="'Total personal distint: ' + datosParking.total_trabajadores">
+                            </span>
+                        </div>
+
+                        <!-- Tabla de Trabajadores -->
+                        <div class="overflow-x-auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Nom del Treballador</th>
+                                        <th width="150" class="text-right">Torns Realitzats</th>
+                                        <th width="180" class="text-right">Hores Estimades</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="trab in datosParking.trabajadores" :key="trab.nombre">
+                                        <tr>
+                                            <td class="font-semibold text-slate-700" x-text="trab.nombre"></td>
+                                            <td class="text-right font-medium text-slate-600" x-text="trab.turnos"></td>
+                                            <td class="text-right font-semibold text-slate-800" x-text="trab.horas + ' h'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+
+        <!-- Vista 2: Reporte por Trabajador (Carga y Desempeño) -->
+        <div x-show="tab === 'trabajador' && !cargando">
+            <!-- Sin resultados -->
+            <div x-show="listaReporteTrabajadores.length === 0" class="flex flex-col items-center justify-center py-16 text-gray-400">
+                <i class="fas fa-info-circle text-3xl mb-2 text-gray-300"></i>
+                <div class="text-sm font-medium">Selecciona un mes i any per a generar el llistat de càrrega de personal.</div>
+            </div>
+
+            <!-- Listado por Trabajador -->
+            <div x-show="listaReporteTrabajadores.length > 0" class="flex flex-col gap-8">
+                <template x-for="trab in listaReporteTrabajadores" :key="trab.nombre">
+                    <div class="border border-solid border-slate-200 rounded-xl overflow-hidden shadow-sm bg-white">
+                        <!-- Cabecera del Trabajador -->
+                        <div class="bg-slate-50 border-b border-solid border-slate-200 px-6 py-4 flex justify-between items-center flex-wrap gap-2">
+                            <h3 class="text-base font-bold text-slate-800 m-0 flex items-center gap-2">
+                                <i class="fas fa-user-circle text-slate-600 text-lg"></i>
+                                <span x-text="trab.nombre"></span>
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <!-- Badge de Valoración Semáforo -->
+                                <span class="text-[11px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider flex items-center gap-1.5"
+                                      :class="{
+                                          'bg-emerald-100 text-emerald-800 border border-solid border-emerald-200': trab.valoracion !== 'N/A' && parseFloat(trab.valoracion) >= 7.5,
+                                          'bg-amber-100 text-amber-800 border border-solid border-amber-200': trab.valoracion !== 'N/A' && parseFloat(trab.valoracion) >= 5 && parseFloat(trab.valoracion) < 7.5,
+                                          'bg-rose-100 text-rose-800 border border-solid border-rose-200': trab.valoracion === 'N/A' || parseFloat(trab.valoracion) < 5
+                                      }">
+                                    <i class="fas fa-star" :class="trab.valoracion === 'N/A' ? 'text-slate-400' : 'text-amber-500'"></i>
+                                    <span>Nota: <strong x-text="trab.valoracion"></strong></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de Aparcamientos y Horas Mensuales -->
+                        <div class="overflow-x-auto">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Aparcament on ha treballat</th>
+                                        <template x-for="m in mesesAnalizar" :key="m.key">
+                                            <th class="text-right" width="160" x-text="m.mesStr + ' ' + m.anio"></th>
+                                        </template>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Filas de Aparcamientos -->
+                                    <template x-for="park in trab.listaAparcamientos" :key="park.nombre">
+                                        <tr>
+                                            <td class="font-bold text-slate-600 flex items-center gap-2 pl-6">
+                                                <i class="fas fa-map-marker-alt text-slate-400 text-xs"></i>
+                                                <span x-text="park.nombre"></span>
+                                            </td>
+                                            <template x-for="m in mesesAnalizar" :key="m.key">
+                                                <td class="text-right font-medium text-slate-600" 
+                                                    x-text="park.horasMes[m.key] > 0 ? park.horasMes[m.key] + ' h' : '-'">
+                                                </td>
+                                            </template>
+                                        </tr>
+                                    </template>
+                                    
+                                    <!-- Fila de Cómputo Total del Trabajador -->
+                                    <tr class="bg-slate-50 font-bold border-t-2 border-solid border-slate-200">
+                                        <td class="text-slate-800 uppercase text-[10px] tracking-wider pl-6">Total Càrrega Laboral</td>
+                                        <template x-for="m in mesesAnalizar" :key="m.key">
+                                            <td class="text-right text-emerald-800" 
+                                                x-text="trab.totales[m.key] > 0 ? trab.totales[m.key] + ' h' : '-'">
+                                            </td>
+                                        </template>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function moduloReporte() {
+        return {
+            tab: 'aparcamiento', // Pestaña activa ('aparcamiento' o 'trabajador')
+            anio: '2026',
+            mes: '7',
+            reporteAgrupado: {}, // Rotación por aparcamiento
+            listaReporteTrabajadores: [], // Carga y Desempeño del personal (4 meses)
+            mesesAnalizar: [], // Cabeceras de meses calculadas
+            cargando: false,
+
+            async generarReporte() {
+                this.cargando = true;
+                this.reporteAgrupado = {};
+                this.listaReporteTrabajadores = [];
+                this.mesesAnalizar = [];
+
+                try {
+                    // 1. Calcular los 4 meses a analizar
+                    const selectedDate = new Date(this.anio, this.mes - 1, 1);
+                    for (let i = 0; i < 4; i++) {
+                        const d = new Date(selectedDate.getFullYear(), selectedDate.getMonth() - i, 1);
+                        const yyyy = d.getFullYear();
+                        const mm = String(d.getMonth() + 1).padStart(2, '0');
+                        
+                        // Nombres cortos de meses en Catalán/Castellano
+                        const mesNombres = {
+                            ca: ['Gen', 'Feb', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Oct', 'Nov', 'Des'],
+                            es: ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+                        };
+                        const lang = sessionStorage.getItem('language') || 'ca';
+                        const mesStr = mesNombres[lang] ? mesNombres[lang][d.getMonth()] : mesNombres['ca'][d.getMonth()];
+                        
+                        this.mesesAnalizar.push({
+                            anio: yyyy,
+                            mes: d.getMonth() + 1,
+                            mesStr: mesStr,
+                            pattern: `${yyyy}-${mm}-%`,
+                            key: `${yyyy}-${mm}`
+                        });
+                    }
+
+                    // 2. Generar Reporte 1: Rotación por Aparcamiento (Mes Seleccionado)
+                    const fechaPatternSeleccionada = this.mesesAnalizar[0].pattern;
+                    const queryRotacion = `
+                        SELECT 
+                            a.nombre AS parking, 
+                            e.nombre AS id_trabajador, 
+                            COUNT(*) as total_turnos
+                        FROM quadrant q
+                        JOIN catalogos.aparcamientos a ON q.aparcamiento_id = a.id
+                        JOIN catalogos.empleados e ON q.agente_id = e.id
+                        WHERE q.fecha LIKE ? AND q.agente_id IS NOT NULL
+                        GROUP BY a.nombre, e.nombre
+                        ORDER BY a.nombre ASC, e.nombre ASC
+                    `;
+                    const rowsRotacion = await window.dbAPI.read('operativa', queryRotacion, [fechaPatternSeleccionada]);
+
+                    const agrupadoRotacion = rowsRotacion.reduce((acc, row) => {
+                        const parking = row.parking;
+                        if (!acc[parking]) {
+                            acc[parking] = {
+                                trabajadores: [],
+                                total_trabajadores: 0
+                            };
+                        }
+                        acc[parking].trabajadores.push({
+                            nombre: row.id_trabajador,
+                            turnos: row.total_turnos,
+                            horas: row.total_turnos * 8
+                        });
+                        return acc;
+                    }, {});
+
+                    for (const parking in agrupadoRotacion) {
+                        agrupadoRotacion[parking].total_trabajadores = agrupadoRotacion[parking].trabajadores.length;
+                    }
+                    this.reporteAgrupado = agrupadoRotacion;
+
+                    // 3. Generar Reporte 2: Carga Laboral por Trabajador desglosada por Aparcamientos (4 meses)
+                    // Consulta de Valoraciones de Ranking
+                    const queryRanking = `SELECT id_trabajador, valoracio FROM ranking`;
+                    const rowsRanking = await window.dbAPI.read('operativa', queryRanking, []);
+
+                    // Consulta de Cuadrantes para los 4 meses (con desglose de parking)
+                    const queryCarga = `
+                        SELECT 
+                            e.nombre AS id_trabajador, 
+                            a.nombre AS parking,
+                            q.fecha, 
+                            q.horas_trabajadas
+                        FROM quadrant q
+                        JOIN catalogos.empleados e ON q.agente_id = e.id
+                        JOIN catalogos.aparcamientos a ON q.aparcamiento_id = a.id
+                        WHERE q.fecha LIKE ? OR q.fecha LIKE ? OR q.fecha LIKE ? OR q.fecha LIKE ?
+                    `;
+                    const paramsCarga = [
+                        this.mesesAnalizar[0].pattern,
+                        this.mesesAnalizar[1].pattern,
+                        this.mesesAnalizar[2].pattern,
+                        this.mesesAnalizar[3].pattern
+                    ];
+                    const rowsCarga = await window.dbAPI.read('operativa', queryCarga, paramsCarga);
+
+                    // Estructurar datos agrupando por Trabajador -> Aparcamiento -> Horas Mensuales
+                    const trabajadoresData = {};
+
+                    // Cargar primero las valoraciones conocidas
+                    rowsRanking.forEach(r => {
+                        if (!r.id_trabajador) return;
+                        const name = r.id_trabajador;
+                        trabajadoresData[name] = {
+                            nombre: name,
+                            valoracion: r.valoracio !== null && r.valoracio !== undefined ? r.valoracio.toFixed(1) : 'N/A',
+                            aparcamientos: {},
+                            totales: {
+                                [this.mesesAnalizar[0].key]: 0,
+                                [this.mesesAnalizar[1].key]: 0,
+                                [this.mesesAnalizar[2].key]: 0,
+                                [this.mesesAnalizar[3].key]: 0
+                            }
+                        };
+                    });
+
+                    // Procesar cuadrantes cargando las horas
+                    rowsCarga.forEach(row => {
+                        const name = row.id_trabajador;
+                        const parking = row.parking;
+                        const fecha = row.fecha;
+                        const yyyy_mm = fecha.substring(0, 7);
+
+                        // Si no estaba en el ranking, inicializar
+                        if (!trabajadoresData[name]) {
+                            trabajadoresData[name] = {
+                                nombre: name,
+                                valoracion: 'N/A',
+                                aparcamientos: {},
+                                totales: {
+                                    [this.mesesAnalizar[0].key]: 0,
+                                    [this.mesesAnalizar[1].key]: 0,
+                                    [this.mesesAnalizar[2].key]: 0,
+                                    [this.mesesAnalizar[3].key]: 0
+                                }
+                            };
+                        }
+
+                        // Inicializar aparcamiento para este trabajador si no existe
+                        if (!trabajadoresData[name].aparcamientos[parking]) {
+                            trabajadoresData[name].aparcamientos[parking] = {
+                                nombre: parking,
+                                horasMes: {
+                                    [this.mesesAnalizar[0].key]: 0,
+                                    [this.mesesAnalizar[1].key]: 0,
+                                    [this.mesesAnalizar[2].key]: 0,
+                                    [this.mesesAnalizar[3].key]: 0
+                                }
+                            };
+                        }
+
+                        // Acumular horas
+                        if (trabajadoresData[name].aparcamientos[parking].horasMes[yyyy_mm] !== undefined) {
+                            trabajadoresData[name].aparcamientos[parking].horasMes[yyyy_mm] += row.horas_trabajadas;
+                            trabajadoresData[name].totales[yyyy_mm] += row.horas_trabajadas;
+                        }
+                    });
+
+                    // Convertir a lista y ordenar por nombre del taquillero
+                    const lista = Object.values(trabajadoresData).map(trab => {
+                        trab.listaAparcamientos = Object.values(trab.aparcamientos).sort((a, b) => a.nombre.localeCompare(b.nombre, 'ca'));
+                        return trab;
+                    }).sort((a, b) => a.nombre.localeCompare(b.nombre, 'ca'));
+
+                    // Filtrar taquilleros que tengan al menos 1 hora trabajada en los 4 meses
+                    this.listaReporteTrabajadores = lista.filter(trab => {
+                        return Object.values(trab.totales).some(h => h > 0);
+                    });
+
+                } catch (err) {
+                    console.error("Error al generar report operatiu:", err);
+                    alert("Error al generar el report.");
+                } finally {
+                    this.cargando = false;
+                }
+            }
+        }
+    }
+</script>
+
+</body>
+</html>
