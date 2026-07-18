@@ -215,13 +215,13 @@
 <body x-data="moduloComerciales()" x-init="init()">
 
 <header>
-    <div class="header-center"><i class="fas fa-percent mr-2"></i> TARIFES I COMERCIALS</div>
+    <div class="header-center" data-i18n="comercialsHeader"><i class="fas fa-percent mr-2"></i> TARIFES I COMERCIALS</div>
 </header>
 
 <div class="admin-panel">
     <div class="toolbar-group">
-        <span class="filter-label">Cerca:</span>
-        <input type="text" x-model="busqueda" placeholder="Cerca aparcament, adreça..." style="width: 250px;">
+        <span class="filter-label" data-i18n="comercialsSearchLabel">Cerca:</span>
+        <input type="text" x-model="busqueda" placeholder="Cerca aparcament, adreça..." data-i18n="placeholderSearch" style="width: 250px;">
     </div>
     
     <div class="toolbar-group" x-show="canEdit()">
@@ -233,7 +233,7 @@
     <table>
         <thead>
             <tr>
-                <th width="180">Centre / Aparcament</th>
+                <th width="180" data-i18n="colCentreAparcament">Centre / Aparcament</th>
                 <th width="200">Adreça</th>
                 <th width="100">Plantas</th>
                 <th width="100">Capacidad</th>
@@ -281,7 +281,7 @@
                 <tr>
                     <td :colspan="canEdit() ? 8 : 7" class="text-center py-8 text-gray-400">
                         <i class="fas fa-info-circle mb-1 text-lg"></i><br>
-                        No s'han trobat tarifes comercials.
+                        <span data-i18n="comercialsEmpty">No s'han trobat tarifes comercials.</span>
                     </td>
                 </tr>
             </template>

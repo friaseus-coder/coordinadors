@@ -202,8 +202,12 @@ const i18n = (() => {
       successImport: "✅ Dades importades correctament a la base de dades SQLite del coordinador.",
       
       // Comercials (comercials.html)
+      comercialsHeader: "<i class=\"fas fa-percent mr-2\"></i> TARIFES I COMERCIALS",
+      comercialsSearchLabel: "Cerca:",
+      comercialsEmpty: "No s'han trobat tarifes comercials.",
       comercialsTitle: "Disponibilitat i Preus",
-      placeholderSearch: "🔍 Cercar aparcament (centre o adreça)...",
+      placeholderSearch: "Cerca aparcament, adreça...",
+      colCentreAparcament: "Centre / Aparcament",
       colCentre: "CENTRE",
       colAdreça: "ADREÇA",
       colFixes: "FIXES",
@@ -828,8 +832,12 @@ const i18n = (() => {
       successImport: "✅ Datos importados correctamente en la base de datos SQLite del coordinador.",
       
       // Comercials (comercials.html)
+      comercialsHeader: "<i class=\"fas fa-percent mr-2\"></i> TARIFAS Y COMERCIALES",
+      comercialsSearchLabel: "Buscar:",
+      comercialsEmpty: "No se han encontrado tarifas comerciales.",
       comercialsTitle: "Disponibilidad y Precios",
-      placeholderSearch: "🔍 Buscar aparcamiento (centro o dirección)...",
+      placeholderSearch: "Buscar aparcamiento, dirección...",
+      colCentreAparcament: "Centro / Aparcamiento",
       colCentre: "CENTRO",
       colAdreça: "DIRECCIÓN",
       colFixes: "FIJOS",
