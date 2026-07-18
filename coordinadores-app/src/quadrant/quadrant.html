@@ -891,6 +891,22 @@
     </div>
 </div>
 
+<!-- Modal Conflicto OCC -->
+<div class="modal-overlay" x-show="showConflictModal" style="display: none;"></div>
+<div class="modal-content" x-show="showConflictModal" style="display: none; padding: 25px; border-top: 5px solid #ef4444;">
+    <h3 style="margin-bottom: 15px; color: #b91c1c;"><i class="fas fa-exclamation-triangle"></i> Conflicte de Sincronització Detectat</h3>
+    <p style="font-size: 13px; margin-bottom: 10px;" x-text="conflictData?.message"></p>
+    <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 10px; border-radius: 6px; font-size: 12px; margin-bottom: 20px;">
+        <strong>Dades del Servidor:</strong><br>
+        Versió actual: <span x-text="conflictData?.serverVersion"></span><br>
+        Agent actual: <span x-text="conflictData?.serverAgenteId"></span>
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button class="btn-action-sec" @click="resolverConflicto('refresh')"><i class="fas fa-sync"></i> Refrescar i Descartar els meus canvis</button>
+        <button class="btn-action" style="background-color: #ef4444; border-color: #ef4444;" @click="resolverConflicto('force')"><i class="fas fa-bolt"></i> Forçar la meva versió (Sobreescriure)</button>
+    </div>
+</div>
+
 <script src="./js/quadrant.js"></script>
 </body>
 </html>

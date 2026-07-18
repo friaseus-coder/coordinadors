@@ -248,13 +248,13 @@
                 <tr>
                     <!-- Modo Normal -->
                     <template x-if="!c.editing">
-                        <td class="font-bold text-gray-800" x-text="c.nombre"></td>
+                        <td class="font-bold text-gray-800" x-text="c.aparcamiento"></td>
                         <td class="text-gray-600" x-text="c.direccion"></td>
-                        <td x-text="c.plantas"></td>
-                        <td x-text="c.capacidad"></td>
-                        <td :class="getColorDP(c.plazas_libres)" x-text="c.plazas_libres"></td>
+                        <td x-text="c.fijos"></td>
+                        <td x-text="c.variables"></td>
+                        <td :class="getColorDP(c.vacantes)" x-text="c.vacantes"></td>
                         <td class="font-bold text-gray-800" x-text="c.tarifa"></td>
-                        <td class="text-gray-500 text-xs" x-html="c.notes || c.notas"></td>
+                        <td class="text-gray-500 text-xs" x-html="c.observaciones"></td>
                         <td x-show="canEdit()" class="text-center">
                             <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto mr-1" @click="c.editing = true"><i class="fas fa-edit"></i></button>
                             <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto text-red-600 border-red-200 hover:bg-red-50" @click="eliminarComercial(c.id)"><i class="fas fa-trash-alt"></i></button>
@@ -263,13 +263,13 @@
  
                     <!-- Modo Edición Inline -->
                     <template x-if="c.editing">
-                        <td><input type="text" x-model="c.nombre" style="width: 100%;"></td>
+                        <td><input type="text" x-model="c.aparcamiento" style="width: 100%;"></td>
                         <td><input type="text" x-model="c.direccion" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.plantas" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.capacidad" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.plazas_libres" style="width: 100%;"></td>
+                        <td><input type="text" x-model="c.fijos" style="width: 100%;"></td>
+                        <td><input type="text" x-model="c.variables" style="width: 100%;"></td>
+                        <td><input type="text" x-model="c.vacantes" style="width: 100%;"></td>
                         <td><input type="text" x-model="c.tarifa" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.notas" style="width: 100%;"></td>
+                        <td><input type="text" x-model="c.observaciones" style="width: 100%;"></td>
                         <td class="text-center">
                             <button class="btn-nyn text-xs px-2 py-0.5 h-auto mr-1" @click="guardarEdicion(c)"><i class="fas fa-check"></i></button>
                             <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto" @click="c.editing = false"><i class="fas fa-times"></i></button>
@@ -296,7 +296,7 @@
     
     <div class="flex flex-col gap-1">
         <label>Nombre del Aparcamiento</label>
-        <input type="text" x-model="nuevaTarifa.nombre" placeholder="Ej: NN BRUC">
+        <input type="text" x-model="nuevaTarifa.aparcamiento" placeholder="Ej: NN BRUC">
     </div>
 
     <div class="flex flex-col gap-1">
@@ -305,18 +305,18 @@
     </div>
 
     <div class="flex flex-col gap-1">
-        <label>Plantas</label>
-        <input type="text" x-model="nuevaTarifa.plantas" placeholder="Ej: Todas, -2 a -4">
+        <label>Fijos</label>
+        <input type="number" x-model="nuevaTarifa.fijos" placeholder="Ej: 20">
     </div>
 
     <div class="flex flex-col gap-1">
-        <label>Capacidad</label>
-        <input type="text" x-model="nuevaTarifa.capacidad" placeholder="Ej: 20, 5">
+        <label>Variables</label>
+        <input type="number" x-model="nuevaTarifa.variables" placeholder="Ej: 5">
     </div>
 
     <div class="flex flex-col gap-1">
-        <label>Plazas Libres</label>
-        <input type="text" x-model="nuevaTarifa.plazas_libres" placeholder="Ej: ninguna, todas">
+        <label>Vacantes</label>
+        <input type="number" x-model="nuevaTarifa.vacantes" placeholder="Ej: 0">
     </div>
 
     <div class="flex flex-col gap-1">
@@ -326,7 +326,7 @@
 
     <div class="flex flex-col gap-1">
         <label>Notas / Observaciones</label>
-        <input type="text" x-model="nuevaTarifa.notas" placeholder="Observaciones adicionales...">
+        <input type="text" x-model="nuevaTarifa.observaciones" placeholder="Observaciones adicionales...">
     </div>
 
     <div class="flex gap-2 justify-end mt-4">

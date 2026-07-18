@@ -4,11 +4,19 @@
 
 PRAGMA foreign_keys = ON;
 
--- Almacenamiento clave-valor para tarifas y precios
-CREATE TABLE IF NOT EXISTS kv_store (
-    key TEXT PRIMARY KEY,
-    value TEXT,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+-- Tabla de tarifas comerciales estructurada (Reemplaza al antiguo kv_store)
+CREATE TABLE IF NOT EXISTS tarifas_comerciales (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    coordinador TEXT NOT NULL,
+    mes INTEGER NOT NULL,
+    anio INTEGER NOT NULL,
+    aparcamiento TEXT NOT NULL,
+    direccion TEXT,
+    fijos INTEGER DEFAULT 0,
+    variables INTEGER DEFAULT 0,
+    vacantes INTEGER DEFAULT 0,
+    tarifa REAL DEFAULT 0.0,
+    observaciones TEXT
 );
 
 -- Tabla de tarifas comerciales estructurada

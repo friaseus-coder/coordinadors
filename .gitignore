@@ -28,3 +28,8 @@ coordinadores-app/src/esborrall.json
 coordinadores-app/test_laura_parkings.js
 coordinadores-app/src/deutes/deutes.json
 coordinadores-app/src/ranking/js/data.json
+
+# Bloquear carpetas de planificación local
+/tareas pendientes/
+*.doc
+*.docx

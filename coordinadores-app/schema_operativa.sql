@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS quadrant (
     hora_fin TEXT NOT NULL DEFAULT '14:00',
     horas_trabajadas INTEGER DEFAULT 8,
     es_substitucio INTEGER DEFAULT 0,           -- 1 = Este turno fue una sustitución
-    nota TEXT                                   -- Observaciones libres
+    nota TEXT,                                  -- Observaciones libres
+    version INTEGER DEFAULT 1                   -- Control de Concurrencia Optimista (OCC)
 );
 
 -- Tabla unificada para todo tipo de excepciones al horario normal

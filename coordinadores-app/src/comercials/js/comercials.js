@@ -3,13 +3,13 @@ document.addEventListener('alpine:init', () => {
         comerciales: [],
         busqueda: '',
         nuevaTarifa: {
-            nombre: '',
+            aparcamiento: '',
             direccion: '',
-            plantas: '',
-            capacidad: '',
-            plazas_libres: '',
+            fijos: '',
+            variables: '',
+            vacantes: '',
             tarifa: '',
-            notas: ''
+            observaciones: ''
         },
         showFormNueva: false,
         usuarioActual: sessionStorage.getItem('userName') || 'Albert',
@@ -21,7 +21,12 @@ document.addEventListener('alpine:init', () => {
 
         async cargarComerciales() {
             try {
-                const rows = await window.dbAPI.read('comercial', "SELECT * FROM comerciales ORDER BY nombre ASC", []);
+                // TODO: Usar el mes y año real seleccionado en la UI si existe, si no, mes/año actual.
+                const mes = new Date().getMonth() + 1;
+                const anio = new Date().getFullYear();
+                
+                // Cargar todas las tarifas comerciales de la BD
+                const rows = await window.dbAPI.read('comercial', "SELECT * FROM tarifas_comerciales ORDER BY aparcamiento ASC", []);
                 this.comerciales = rows.map(r => ({
                     ...r,
                     editing: false
@@ -35,10 +40,10 @@ document.addEventListener('alpine:init', () => {
             const query = this.busqueda.trim().toUpperCase();
             if (!query) return this.comerciales;
             return this.comerciales.filter(c => 
-                (c.nombre || '').toUpperCase().includes(query) ||
+                (c.aparcamiento || '').toUpperCase().includes(query) ||
                 (c.direccion || '').toUpperCase().includes(query) ||
-                (c.notas || '').toUpperCase().includes(query) ||
-                (c.tarifa || '').toUpperCase().includes(query)
+                (c.observaciones || '').toUpperCase().includes(query) ||
+                (String(c.tarifa) || '').toUpperCase().includes(query)
             );
         },
 
@@ -55,35 +60,41 @@ document.addEventListener('alpine:init', () => {
         },
 
         async agregarComercial() {
-            if (!this.nuevaTarifa.nombre.trim()) {
+            if (!this.nuevaTarifa.aparcamiento.trim()) {
                 alert("Por favor, introduce el nombre del aparcamiento.");
                 return;
             }
+            
+            const mes = new Date().getMonth() + 1;
+            const anio = new Date().getFullYear();
 
             const query = `
-                INSERT INTO comerciales (nombre, direccion, plantas, capacidad, plazas_libres, tarifa, notas)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tarifas_comerciales (coordinador, mes, anio, aparcamiento, direccion, fijos, variables, vacantes, tarifa, observaciones)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `;
             const params = [
-                this.nuevaTarifa.nombre.trim().toUpperCase(),
+                this.usuarioActual,
+                mes,
+                anio,
+                this.nuevaTarifa.aparcamiento.trim().toUpperCase(),
                 this.nuevaTarifa.direccion.trim(),
-                this.nuevaTarifa.plantas.trim(),
-                this.nuevaTarifa.capacidad.trim(),
-                this.nuevaTarifa.plazas_libres.trim(),
-                this.nuevaTarifa.tarifa.trim(),
-                this.nuevaTarifa.notas.trim()
+                parseInt(this.nuevaTarifa.fijos) || 0,
+                parseInt(this.nuevaTarifa.variables) || 0,
+                parseInt(this.nuevaTarifa.vacantes) || 0,
+                parseFloat(this.nuevaTarifa.tarifa) || 0,
+                this.nuevaTarifa.observaciones.trim()
             ];
 
             try {
                 await window.dbAPI.write('comercial', query, params);
                 this.nuevaTarifa = {
-                    nombre: '',
+                    aparcamiento: '',
                     direccion: '',
-                    plantas: '',
-                    capacidad: '',
-                    plazas_libres: '',
+                    fijos: '',
+                    variables: '',
+                    vacantes: '',
                     tarifa: '',
-                    notas: ''
+                    observaciones: ''
                 };
                 this.showFormNueva = false;
                 await this.cargarComerciales();
@@ -97,18 +108,18 @@ document.addEventListener('alpine:init', () => {
         async guardarEdicion(c) {
             try {
                 const query = `
-                    UPDATE comerciales 
-                    SET nombre = ?, direccion = ?, plantas = ?, capacidad = ?, plazas_libres = ?, tarifa = ?, notas = ? 
+                    UPDATE tarifas_comerciales 
+                    SET aparcamiento = ?, direccion = ?, fijos = ?, variables = ?, vacantes = ?, tarifa = ?, observaciones = ? 
                     WHERE id = ?
                 `;
                 const params = [
-                    c.nombre.toUpperCase(),
+                    c.aparcamiento.toUpperCase(),
                     c.direccion,
-                    c.plantas,
-                    c.capacidad,
-                    c.plazas_libres,
-                    c.tarifa,
-                    c.notas,
+                    parseInt(c.fijos) || 0,
+                    parseInt(c.variables) || 0,
+                    parseInt(c.vacantes) || 0,
+                    parseFloat(c.tarifa) || 0,
+                    c.observaciones,
                     c.id
                 ];
                 await window.dbAPI.write('comercial', query, params);
@@ -123,7 +134,7 @@ document.addEventListener('alpine:init', () => {
         async eliminarComercial(id) {
             if (!confirm("¿Estás seguro de que deseas eliminar este registro de comercial?")) return;
             try {
-                await window.dbAPI.write('comercial', "DELETE FROM comerciales WHERE id = ?", [id]);
+                await window.dbAPI.write('comercial', "DELETE FROM tarifas_comerciales WHERE id = ?", [id]);
                 await this.cargarComerciales();
             } catch (err) {
                 console.error("Error al eliminar comercial:", err);

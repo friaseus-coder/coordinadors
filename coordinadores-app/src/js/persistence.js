@@ -509,46 +509,7 @@ const persistence = (() => {
     }
 
     if (activeModuleName === 'comercials') {
-      let coordinadores = [];
-      try {
-        coordinadores = await api.getCoordinadores();
-      } catch (e) {
-        coordinadores = [
-          { id: 'albert', nombre: 'Albert' },
-          { id: 'laura', nombre: 'Laura' }
-        ];
-      }
-
-      const mesSelect = document.getElementById('mesActual');
-      const anySelect = document.getElementById('anyActual');
-      const mes = mesSelect ? mesSelect.value : 'marc';
-      const any = anySelect ? anySelect.value : '2026';
-      
-      const combinedData = {};
-
-      for (const coord of coordinadores) {
-        const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}`;
-        let coordData = null;
-
-        // Intentar leer de SQLite kv_store
-        try {
-          const rows = await window.dbAPI.read('comercial', "SELECT value FROM kv_store WHERE key = ?", [filePath]);
-          if (rows && rows.length > 0 && rows[0].value) {
-            coordData = JSON.parse(rows[0].value);
-          }
-        } catch (dbErr) {
-          console.warn(`[PERSISTENCE] Clave ${filePath} no encontrada en kv_store para leer.`, dbErr);
-        }
-
-        // Fusionar claves
-        if (coordData) {
-          for (const key in coordData) {
-            combinedData[key] = coordData[key];
-          }
-        }
-      }
-
-      return combinedData;
+      return {}; // La vista de comerciales ahora carga directamente desde SQLite (tarifas_comerciales)
     }
 
     // Caso general para otros módulos (Gastos, etc.) usando la tabla kv_store en el shard correspondiente
@@ -805,70 +766,10 @@ const persistence = (() => {
     }
     const filter = moduleFilters[filterKey] || (() => true);
 
-    // CASO ESPECIAL: Comerciales. Sincronizamos las claves individuales de cada coordinador en su propio archivo de red.
+    // CASO ESPECIAL: Comerciales ya no se sincroniza desde localStorage a kv_store,
+    // se hace de forma directa y relacional en la UI.
     if (filterKey === 'comercials') {
-      const mesSelect = document.getElementById('mesActual');
-      const anySelect = document.getElementById('anyActual');
-      const mes = mesSelect ? mesSelect.value : 'marc';
-      const any = anySelect ? anySelect.value : '2026';
-
-      let coordinadores = [];
-      try {
-        coordinadores = await api.getCoordinadores();
-      } catch (e) {
-        coordinadores = [
-          { id: 'albert', nombre: 'Albert' },
-          { id: 'laura', nombre: 'Laura' }
-        ];
-      }
-
-      let success = true;
-      for (const coord of coordinadores) {
-        // Un coordinador solo puede guardar sus propios datos de comerciales
-        if (userRole === 'coordinador' && userName.toLowerCase() !== coord.nombre.toLowerCase()) {
-          continue;
-        }
-
-        // Obtener el prefijo del coordinador (ej: nn_A_ para Albert)
-        const prefix = `nn_${coord.nombre.charAt(0).toUpperCase()}_`;
-        
-        // Extraer las claves asociadas a este coordinador del localStorage
-        const coordData = {};
-        let hasData = false;
-        
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key.startsWith(prefix)) {
-            coordData[key] = localStorage.getItem(key);
-            hasData = true;
-          }
-        }
-
-        // Si es el coordinador actual de la sesión, añadimos claves transversales de comerciales
-        if (userName === coord.nombre) {
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key.startsWith('nn_last_export_')) {
-              coordData[key] = localStorage.getItem(key);
-            }
-          }
-        }
-
-        const targetKey = `${prefix}${mes}_${any}`;
-        if (localStorage.getItem(targetKey) !== null || hasData) {
-          const filePath = `dades ${coord.nombre}/comercials_${coord.id}_${mes}_${any}`;
-          try {
-            await window.dbAPI.write('comercial', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
-              filePath, JSON.stringify(coordData)
-            ]);
-            console.log(`[PERSISTENCE] Guardados comerciales de ${coord.nombre} en SQLite kv_store: ${filePath}`);
-          } catch (writeErr) {
-            console.error(`[PERSISTENCE] Error al guardar datos de comerciales para ${coord.nombre} en SQLite:`, writeErr);
-            success = false;
-          }
-        }
-      }
-      return success;
+      return true;
     }
 
     // Caso general para los demás módulos

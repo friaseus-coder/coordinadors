@@ -286,65 +286,6 @@ function syncToLocal(dbKey) {
   }
 }
 
-function acquireLock(dbKey, retries = 15, delay = 1000) {
-  const lockDir = path.join(NETWORK_DIR, `_${dbKey}.lock`);
-  const maxRetries = retries;
-  const delayMs = delay;
-
-  return new Promise((resolve, reject) => {
-    let attempt = 0;
-
-    const tryAcquire = () => {
-      try {
-        fs.mkdirSync(lockDir);
-        console.log(`[MUTEX] Candado adquirido con éxito: ${lockDir}`);
-        resolve(lockDir);
-      } catch (err) {
-        if (err.code === 'EEXIST') {
-          try {
-            const stats = fs.statSync(lockDir);
-            const time = Math.min(stats.birthtimeMs || stats.mtimeMs, stats.mtimeMs);
-            if (Date.now() - time > 180000) {
-              console.warn(`[MUTEX] Candado obsoleto detectado para ${dbKey} (antigüedad: ${Date.now() - time}ms). Eliminando forzosamente...`);
-              fs.rmSync(lockDir, { recursive: true, force: true });
-              tryAcquire();
-              return;
-            }
-          } catch (statErr) {
-            console.error(`[MUTEX Error] Error al comprobar/eliminar candado fantasma:`, statErr.message);
-          }
-
-          attempt++;
-          if (attempt >= maxRetries) {
-            reject(new Error(`[MUTEX Timeout] No se pudo adquirir el candado en red para ${dbKey} tras ${maxRetries} reintentos.`));
-          } else {
-            console.warn(`[MUTEX] Candado ocupado para ${dbKey}, reintentando en ${delayMs}ms (Intento ${attempt}/${maxRetries})...`);
-            setTimeout(tryAcquire, delayMs);
-          }
-        } else {
-          reject(err);
-        }
-      }
-    };
-
-    tryAcquire();
-  });
-}
-
-function releaseLock(lockDir) {
-  return new Promise((resolve) => {
-    try {
-      if (fs.existsSync(lockDir)) {
-        fs.rmdirSync(lockDir);
-        console.log(`[MUTEX] Candado liberado: ${lockDir}`);
-      }
-      resolve();
-    } catch (err) {
-      console.error(`[MUTEX Error] Error al liberar el candado: ${lockDir}`, err.message);
-      resolve();
-    }
-  });
-}
 
 async function safeWriteCombined(dbKey, query, params) {
   const dbFile = DBS[dbKey];
@@ -353,16 +294,16 @@ async function safeWriteCombined(dbKey, query, params) {
   }
 
   const netDbPath = path.join(NETWORK_DIR, dbFile);
-  let lockDir = null;
   let netDb = null;
 
   try {
-    lockDir = await acquireLock(dbKey);
-
     netDb = await new Promise((resolve, reject) => {
       const conn = new sqlite3.Database(netDbPath, sqlite3.OPEN_READWRITE, (err) => {
         if (err) reject(err);
-        else resolve(conn);
+        else {
+          conn.configure("busyTimeout", 20000); // 20 segundos de timeout
+          resolve(conn);
+        }
       });
     });
 
@@ -380,10 +321,26 @@ async function safeWriteCombined(dbKey, query, params) {
       });
     });
 
+    // Iniciar transacción exclusiva nativa de SQLite
+    await new Promise((resolve, reject) => {
+      netDb.run("BEGIN IMMEDIATE TRANSACTION;", (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
     const result = await new Promise((resolve, reject) => {
       netDb.run(query, params, function(err) {
         if (err) reject(err);
         else resolve({ lastID: this.lastID, changes: this.changes });
+      });
+    });
+
+    // Commit de la transacción
+    await new Promise((resolve, reject) => {
+      netDb.run("COMMIT;", (err) => {
+        if (err) reject(err);
+        else resolve();
       });
     });
 
@@ -397,9 +354,6 @@ async function safeWriteCombined(dbKey, query, params) {
       });
     });
 
-    await releaseLock(lockDir);
-    lockDir = null;
-
     syncToLocal(dbKey);
 
     return result;
@@ -407,10 +361,9 @@ async function safeWriteCombined(dbKey, query, params) {
   } catch (error) {
     console.error(`[MUTEX safeWrite] Error en escritura atómica para ${dbKey}:`, error.message);
     if (netDb) {
+      // Intentar hacer rollback por si quedó a medias
+      try { await new Promise((res) => netDb.run("ROLLBACK;", res)); } catch(e) {}
       try { netDb.close(); } catch (e) {}
-    }
-    if (lockDir) {
-      await releaseLock(lockDir);
     }
     
     // Capturar caída de red y notificar al frontend
@@ -442,16 +395,16 @@ async function safeWriteBatch(dbKey, operations) {
   }
 
   const netDbPath = path.join(NETWORK_DIR, dbFile);
-  let lockDir = null;
   let netDb = null;
 
   try {
-    lockDir = await acquireLock(dbKey);
-
     netDb = await new Promise((resolve, reject) => {
       const conn = new sqlite3.Database(netDbPath, sqlite3.OPEN_READWRITE, (err) => {
         if (err) reject(err);
-        else resolve(conn);
+        else {
+          conn.configure("busyTimeout", 20000); // 20 segundos de timeout
+          resolve(conn);
+        }
       });
     });
 
@@ -469,9 +422,9 @@ async function safeWriteBatch(dbKey, operations) {
       });
     });
 
-    // Iniciar transacción real en ESTA conexión
+    // Iniciar transacción real en ESTA conexión de forma exclusiva
     await new Promise((resolve, reject) => {
-      netDb.run("BEGIN TRANSACTION;", (err) => {
+      netDb.run("BEGIN IMMEDIATE TRANSACTION;", (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -509,9 +462,6 @@ async function safeWriteBatch(dbKey, operations) {
       });
     });
 
-    await releaseLock(lockDir);
-    lockDir = null;
-
     syncToLocal(dbKey);
 
     return { success: true, results, totalChanges };
@@ -520,15 +470,8 @@ async function safeWriteBatch(dbKey, operations) {
     console.error(`[MUTEX safeWriteBatch] Error en escritura batch para ${dbKey}:`, error.message);
     // Intentar rollback si la conexión sigue abierta
     if (netDb) {
-      try {
-        await new Promise((resolve) => {
-          netDb.run("ROLLBACK;", () => resolve());
-        });
-      } catch (e) {}
+      try { await new Promise((res) => netDb.run("ROLLBACK;", res)); } catch(e) {}
       try { netDb.close(); } catch (e) {}
-    }
-    if (lockDir) {
-      await releaseLock(lockDir);
     }
 
     if (error.code === 'ENOENT' || error.message.includes('EBUSY') || error.message.includes('ENOENT')) {
@@ -3093,6 +3036,61 @@ ipcMain.handle('save-turno-cuadrante', async (event, turnoData) => {
         `;
         db.run(sqlInsert, [turnoData.fecha, turnoData.aparcamiento_id, turnoData.agente_id, turnoData.turno, turnoData.hora_inicio, turnoData.hora_fin, turnoData.horas_trabajadas], function(errIns) {
           if (errIns) reject(errIns); else resolve({ success: true, id: this.lastID, action: 'inserted' });
+        });
+      }
+    });
+  });
+});
+
+ipcMain.handle('save-turno-cuadrante-seguro', async (event, params) => {
+  return new Promise((resolve, reject) => {
+    if (!db) return reject(new Error("DB no inicializada"));
+    const turnoData = params;
+    const clientVersion = turnoData.version || 1;
+    
+    // Buscar si ya existe para comprobar versión (OCC)
+    const sqlCheck = "SELECT id, version, agente_id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?";
+    db.get(sqlCheck, [turnoData.fecha, turnoData.aparcamiento_id, turnoData.turno], (err, row) => {
+      if (err) return reject(err);
+
+      if (row) {
+        // Validación de Concurrencia Optimista
+        if (row.version !== clientVersion) {
+          console.warn(`[OCC CONFLICT] Intento de sobreescribir turno. Version local: ${clientVersion}, Servidor: ${row.version}`);
+          return resolve({ 
+            success: false, 
+            conflict: true, 
+            serverVersion: row.version, 
+            serverAgenteId: row.agente_id,
+            message: "El turno ha sido modificado por otro coordinador. Refresca la tabla para ver los cambios."
+          });
+        }
+
+        // Actualizamos e incrementamos la versión de forma atómica
+        const newVersion = row.version + 1;
+        const sqlUpdate = `
+          UPDATE quadrant 
+          SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ?, version = ? 
+          WHERE id = ? AND version = ?
+        `;
+        db.run(sqlUpdate, [turnoData.agente_id, turnoData.hora_inicio, turnoData.hora_fin, turnoData.horas_trabajadas, newVersion, row.id, row.version], function(errUpd) {
+          if (errUpd) reject(errUpd); 
+          else {
+             if (this.changes === 0) {
+                 resolve({ success: false, conflict: true, message: "Conflicto concurrente detectado al intentar actualizar." });
+             } else {
+                 resolve({ success: true, id: row.id, action: 'updated', newVersion: newVersion });
+             }
+          }
+        });
+      } else {
+        // Insertamos un nuevo registro con versión 1
+        const sqlInsert = `
+          INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, version)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 1)
+        `;
+        db.run(sqlInsert, [turnoData.fecha, turnoData.aparcamiento_id, turnoData.agente_id, turnoData.turno, turnoData.hora_inicio, turnoData.hora_fin, turnoData.horas_trabajadas], function(errIns) {
+          if (errIns) reject(errIns); else resolve({ success: true, id: this.lastID, action: 'inserted', newVersion: 1 });
         });
       }
     });

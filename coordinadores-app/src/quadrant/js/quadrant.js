@@ -28,6 +28,11 @@ document.addEventListener('alpine:init', () => {
         noteText: '',
         noteCellId: '',
         
+        // OCC Conflicto
+        showConflictModal: false,
+        conflictData: null,
+        pendingConflictSave: null,
+        
         // Importación Excel
         showImportExcelModal: false,
         importExcelStep: 1,
@@ -306,17 +311,23 @@ document.addEventListener('alpine:init', () => {
                     if (endHour < startHour) endHour += 24;
                     const horasTrabajadas = endHour - startHour;
 
-                    if (idExistente) {
-                        await window.dbAPI.write('operativa', `
-                            UPDATE quadrant 
-                            SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ?, es_substitucio = ?
-                            WHERE id = ?
-                        `, [agenteId, horaInicio, horaFin, horasTrabajadas, isSub, idExistente]);
-                    } else {
-                        await window.dbAPI.write('operativa', `
-                            INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio)
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                        `, [fechaStr, parkingId, agenteId, turno, horaInicio, horaFin, horasTrabajadas, isSub]);
+                    const turnoData = {
+                        fecha: fechaStr,
+                        aparcamiento_id: parkingId,
+                        agente_id: agenteId,
+                        turno: turno,
+                        hora_inicio: horaInicio,
+                        hora_fin: horaFin,
+                        horas_trabajadas: horasTrabajadas,
+                        version: reg.version || 1
+                    };
+
+                    const response = await window.dbAPI.saveTurnoCuadranteSeguro(turnoData);
+                    if (!response.success && response.conflict) {
+                        this.conflictData = response;
+                        this.pendingConflictSave = turnoData;
+                        this.showConflictModal = true;
+                        return;
                     }
                 }
 
@@ -324,6 +335,26 @@ document.addEventListener('alpine:init', () => {
             } catch (err) {
                 console.error("Error guardando celda:", err);
             }
+        },
+
+        async resolverConflicto(action) {
+            this.showConflictModal = false;
+            if (action === 'refresh') {
+                await this.cargarCuadrantes();
+            } else if (action === 'force') {
+                if (this.pendingConflictSave) {
+                    // Actualizamos la versión del cliente con la versión devuelta por el servidor
+                    this.pendingConflictSave.version = this.conflictData.serverVersion;
+                    const response = await window.dbAPI.saveTurnoCuadranteSeguro(this.pendingConflictSave);
+                    if (!response.success && response.conflict) {
+                        alert("Ha ocurrido otro conflicto, por favor refresca la tabla.");
+                    } else {
+                        await this.cargarCuadrantes();
+                    }
+                }
+            }
+            this.pendingConflictSave = null;
+            this.conflictData = null;
         },
 
         /**
