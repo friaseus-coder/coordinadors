@@ -225,7 +225,7 @@
     </div>
     
     <div class="toolbar-group" x-show="canEdit()">
-        <button class="btn-nyn" @click="showFormNueva = true"><i class="fas fa-plus mr-1"></i> Nova Tarifa</button>
+        <button class="btn-nyn" @click="showFormNueva = true" data-i18n="btnAddNovaTarifa"><i class="fas fa-plus mr-1"></i> Nova Tarifa</button>
     </div>
 </div>
 
@@ -234,13 +234,13 @@
         <thead>
             <tr>
                 <th width="180" data-i18n="colCentreAparcament">Centre / Aparcament</th>
-                <th width="200">Adreça</th>
-                <th width="100">Plantas</th>
-                <th width="100">Capacidad</th>
-                <th width="100">Plazas Libres</th>
-                <th width="120">Tarifa</th>
-                <th>Notas / Observaciones</th>
-                <th x-show="canEdit()" width="110" class="text-center">Acciones</th>
+                <th width="200" data-i18n="colAdreca">Adreça</th>
+                <th width="100" data-i18n="colPlantas">Plantas</th>
+                <th width="100" data-i18n="colCapacidad">Capacidad</th>
+                <th width="100" data-i18n="colPlazasLibres">Plazas Libres</th>
+                <th width="120" data-i18n="colTarifaSingle">Tarifa</th>
+                <th data-i18n="colNotasObs">Notas / Observaciones</th>
+                <th x-show="canEdit()" width="110" class="text-center" data-i18n="colAcciones">Acciones</th>
             </tr>
         </thead>
         <tbody>
