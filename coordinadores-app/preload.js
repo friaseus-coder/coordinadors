@@ -47,6 +47,11 @@ contextBridge.exposeInMainWorld('dbAPI', {
     const userName = sessionStorage.getItem('user') || 'Desconocido';
     return ipcRenderer.invoke('write-db', { dbKey, query, params, userRole, userName });
   },
+  writeBatch: (dbKey, operations) => {
+    const userRole = sessionStorage.getItem('userRole') || 'invitado';
+    const userName = sessionStorage.getItem('user') || 'Desconocido';
+    return ipcRenderer.invoke('write-db-batch', { dbKey, operations, userRole, userName });
+  },
   forceUnlock: (dbKey) => ipcRenderer.invoke('force-unlock-db', dbKey),
   onNetworkStatus: (callback) => ipcRenderer.on('network-status', (_event, data) => callback(data))
 });

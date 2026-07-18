@@ -11,6 +11,18 @@ CREATE TABLE IF NOT EXISTS kv_store (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Tabla de tarifas comerciales estructurada
+CREATE TABLE IF NOT EXISTS comerciales (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    nombre TEXT NOT NULL,
+    direccion TEXT,
+    plantas TEXT,
+    capacidad TEXT,
+    plazas_libres TEXT,
+    tarifa TEXT,
+    notas TEXT
+);
+
 -- Versión del esquema
 CREATE TABLE IF NOT EXISTS schema_version (
     version INTEGER PRIMARY KEY,

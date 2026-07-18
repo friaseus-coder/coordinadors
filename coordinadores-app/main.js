@@ -30,7 +30,7 @@ function resolverDbKeyDesdeSql(sql) {
   if (sqlUpper.includes("DESPESES") || sqlUpper.includes("INVENTARI") || sqlUpper.includes("INVENTARI_RELACIONAL")) {
     return "finanzas";
   }
-  if (sqlUpper.includes("COMERCIALS")) {
+  if (sqlUpper.includes("COMERCIALS") || sqlUpper.includes("COMERCIALES")) {
     return "comercial";
   }
   return "catalogos";
@@ -64,6 +64,26 @@ function obtenerConexionLocal(dbKey) {
   }
 
   localConnections[dbKey] = dbConn;
+
+  // Garantizar la creación de la tabla comerciales si se trata de comercial.db
+  if (dbKey === 'comercial') {
+    dbConn.run(`
+      CREATE TABLE IF NOT EXISTS comerciales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        direccion TEXT,
+        plantas TEXT,
+        capacidad TEXT,
+        plazas_libres TEXT,
+        tarifa TEXT,
+        notas TEXT
+      )
+    `, (err) => {
+      if (err) console.error("[DB LOCAL] Error al crear la tabla comerciales:", err.message);
+      else console.log("[DB LOCAL] Tabla 'comerciales' verificada/inicializada en comercial.db.");
+    });
+  }
+
   return dbConn;
 }
 
@@ -406,6 +426,120 @@ async function safeWriteCombined(dbKey, query, params) {
 
 
 // ============================================================
+
+/**
+ * Ejecuta múltiples queries en una sola conexión de red dentro de una transacción real.
+ * Resuelve el problema de que safeWriteCombined abre/cierra conexión por cada query,
+ * impidiendo que BEGIN/COMMIT/ROLLBACK funcionen.
+ * @param {string} dbKey - Identificador del shard de base de datos
+ * @param {Array<{query: string, params: Array}>} operations - Array de operaciones {query, params}
+ * @returns {Promise<{success: boolean, results: Array, totalChanges: number}>}
+ */
+async function safeWriteBatch(dbKey, operations) {
+  const dbFile = DBS[dbKey];
+  if (!dbFile) {
+    throw new Error(`Base de datos no válida: ${dbKey}`);
+  }
+
+  const netDbPath = path.join(NETWORK_DIR, dbFile);
+  let lockDir = null;
+  let netDb = null;
+
+  try {
+    lockDir = await acquireLock(dbKey);
+
+    netDb = await new Promise((resolve, reject) => {
+      const conn = new sqlite3.Database(netDbPath, sqlite3.OPEN_READWRITE, (err) => {
+        if (err) reject(err);
+        else resolve(conn);
+      });
+    });
+
+    await new Promise((resolve, reject) => {
+      netDb.run("PRAGMA foreign_keys = ON;", (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    await new Promise((resolve, reject) => {
+      netDb.run("PRAGMA journal_mode = DELETE;", (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    // Iniciar transacción real en ESTA conexión
+    await new Promise((resolve, reject) => {
+      netDb.run("BEGIN TRANSACTION;", (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    const results = [];
+    let totalChanges = 0;
+
+    for (const op of operations) {
+      const result = await new Promise((resolve, reject) => {
+        netDb.run(op.query, op.params, function(err) {
+          if (err) reject(err);
+          else resolve({ lastID: this.lastID, changes: this.changes });
+        });
+      });
+      results.push(result);
+      totalChanges += result.changes;
+    }
+
+    // Commit real en la MISMA conexión
+    await new Promise((resolve, reject) => {
+      netDb.run("COMMIT;", (err) => {
+        if (err) reject(err);
+        else resolve();
+      });
+    });
+
+    await new Promise((resolve, reject) => {
+      netDb.close((err) => {
+        if (err) reject(err);
+        else {
+          netDb = null;
+          resolve();
+        }
+      });
+    });
+
+    await releaseLock(lockDir);
+    lockDir = null;
+
+    syncToLocal(dbKey);
+
+    return { success: true, results, totalChanges };
+
+  } catch (error) {
+    console.error(`[MUTEX safeWriteBatch] Error en escritura batch para ${dbKey}:`, error.message);
+    // Intentar rollback si la conexión sigue abierta
+    if (netDb) {
+      try {
+        await new Promise((resolve) => {
+          netDb.run("ROLLBACK;", () => resolve());
+        });
+      } catch (e) {}
+      try { netDb.close(); } catch (e) {}
+    }
+    if (lockDir) {
+      await releaseLock(lockDir);
+    }
+
+    if (error.code === 'ENOENT' || error.message.includes('EBUSY') || error.message.includes('ENOENT')) {
+      BrowserWindow.getAllWindows().forEach(win => {
+        win.webContents.send('network-status', { error: true, message: 'Red inaccesible. Modo de solo lectura activado.' });
+      });
+    }
+
+    throw error;
+  }
+}
 
 // SISTEMA DE MIGRACIONES VERSIONADO
 // ============================================================
@@ -1155,6 +1289,24 @@ ipcMain.handle('write-db', async (event, { dbKey, query, params, userRole, userN
   } catch (error) {
     console.warn(
       `[Seguridad/DB] Intento fallido de ${userName || 'Desconocido'} (${userRole || 'sin-rol'}) en ${dbKey}: ${query}`
+    );
+    throw new Error(error.message);
+  }
+});
+
+// Handler para escritura batch: ejecuta múltiples queries en una sola transacción real
+ipcMain.handle('write-db-batch', async (event, { dbKey, operations, userRole, userName }) => {
+  try {
+    // Validar seguridad de cada operación antes de ejecutar
+    for (const op of operations) {
+      validateSecurity(dbKey, op.query, userRole, userName);
+    }
+
+    // Ejecutar todas las operaciones en una sola transacción
+    return await safeWriteBatch(dbKey, operations);
+  } catch (error) {
+    console.warn(
+      `[Seguridad/DB Batch] Intento fallido de ${userName || 'Desconocido'} (${userRole || 'sin-rol'}) en ${dbKey}: ${error.message}`
     );
     throw new Error(error.message);
   }
@@ -2105,6 +2257,67 @@ ipcMain.handle('import-json-data', async (event, coordFolder, fileName, jsonCont
       relativePath,
       JSON.stringify(data)
     ]);
+
+    // Si es un archivo de Comerciales, migrar también sus datos a la tabla relacional de comerciales.db
+    if (fileName.toLowerCase().includes('comercials')) {
+      console.log(`[SQLITE-IMPORT] Detectado archivo de comerciales: ${fileName}. Migrando a la tabla relacional comerciales.`);
+      const dbComercial = obtenerConexionLocal('comercial');
+      
+      await new Promise((resolve, reject) => {
+        dbComercial.serialize(() => {
+          dbComercial.run("BEGIN TRANSACTION;");
+          
+          let insertados = 0;
+          for (const [key, value] of Object.entries(data)) {
+            // Ignorar claves que no correspondan a coordinadores
+            if (key.includes('last_export_time') || key.includes('last_export_author')) {
+              continue;
+            }
+            
+            let rows = [];
+            if (typeof value === 'string' && value.startsWith('[[')) {
+              try { rows = JSON.parse(value); } catch(e) {}
+            } else if (Array.isArray(value)) {
+              rows = value;
+            }
+            
+            if (Array.isArray(rows)) {
+              rows.forEach(row => {
+                if (Array.isArray(row) && row.length >= 7) {
+                  const nombre = (row[0] || '').trim().toUpperCase();
+                  const direccion = row[1] || '';
+                  const plantas = row[2] || '';
+                  const capacidad = row[3] || '';
+                  const plazas_libres = row[4] || '';
+                  const tarifa = row[5] || '';
+                  const notas = row[6] || '';
+                  
+                  if (nombre) {
+                    // Evitar duplicidades eliminando el aparcamiento comercial previo
+                    dbComercial.run("DELETE FROM comerciales WHERE nombre = ?", [nombre]);
+                    dbComercial.run(`
+                      INSERT INTO comerciales (nombre, direccion, plantas, capacidad, plazas_libres, tarifa, notas)
+                      VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [nombre, direccion, plantas, capacidad, plazas_libres, tarifa, notas]);
+                    insertados++;
+                  }
+                }
+              });
+            }
+          }
+          
+          dbComercial.run("COMMIT;", (err) => {
+            if (err) {
+              dbComercial.run("ROLLBACK;");
+              reject(err);
+            } else {
+              console.log(`[SQLITE-IMPORT] Migrados con éxito ${insertados} registros a la tabla comerciales.`);
+              resolve();
+            }
+          });
+        });
+      });
+    }
     
     console.log(`[SQLITE-IMPORT] Importación manual completada con éxito para: ${relativePath}`);
     return { success: true };

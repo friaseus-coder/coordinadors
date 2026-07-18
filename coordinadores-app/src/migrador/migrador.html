@@ -1814,6 +1814,80 @@
             avanzarPaso(3);
         }
 
+        function levenshteinDistance(a, b) {
+            const matrix = [];
+            for (let i = 0; i <= b.length; i++) {
+                matrix[i] = [i];
+            }
+            for (let j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i - 1) === a.charAt(j - 1)) {
+                        matrix[i][j] = matrix[i - 1][j - 1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i - 1][j - 1] + 1,
+                            matrix[i][j - 1] + 1,
+                            matrix[i - 1][j] + 1
+                        );
+                    }
+                }
+            }
+            return matrix[b.length][a.length];
+        }
+
+        function obtenerPropuestaAparcamiento(nombreJson, catalogosAparcamientos) {
+            if (!nombreJson) return 'NEW';
+            
+            function normalizar(str) {
+                return str.toUpperCase()
+                    .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                    .replace(/\b(N\.N\.|N\.|NN|NUÑEZ|PARKING|APARCAMIENTO)\b/g, '')
+                    .replace(/[^A-Z0-9]/g, '')
+                    .trim();
+            }
+            
+            const normaJson = normalizar(nombreJson);
+            if (!normaJson) return 'NEW';
+            
+            let mejorMatch = null;
+            let mejorScore = 0;
+            
+            for (const dbPk of catalogosAparcamientos) {
+                const normaDb = normalizar(dbPk.nombre);
+                if (!normaDb) continue;
+                
+                if (normaJson === normaDb) {
+                    return dbPk.id;
+                }
+                
+                if (normaJson.includes(normaDb) || normaDb.includes(normaJson)) {
+                    const score = Math.min(normaJson.length, normaDb.length) / Math.max(normaJson.length, normaDb.length);
+                    if (score > mejorScore) {
+                        mejorScore = score;
+                        mejorMatch = dbPk.id;
+                    }
+                }
+                
+                const dist = levenshteinDistance(normaJson, normaDb);
+                const maxLength = Math.max(normaJson.length, normaDb.length);
+                const similarity = 1 - (dist / maxLength);
+                
+                if (similarity > 0.60 && similarity > mejorScore) {
+                    mejorScore = similarity;
+                    mejorMatch = dbPk.id;
+                }
+            }
+            
+            if (mejorScore > 0.60) {
+                return mejorMatch;
+            }
+            
+            return 'NEW';
+        }
+
         function buildMatchingUI(discrepanciasParkings, discrepanciasAgentes) {
             const bodyP = document.getElementById('bodyMatchParkings');
             const bodyA = document.getElementById('bodyMatchAgentes');
@@ -1826,8 +1900,10 @@
                 discrepanciasParkings.forEach((pk, idx) => {
                     const tr = document.createElement('tr');
                     
+                    const propuestaId = obtenerPropuestaAparcamiento(pk, catalogosLocales.aparcamientos);
+                    
                     let options = `<option value="SKIP">❌ Ometre registres d'aquest aparcament</option>`;
-                    options += `<option value="NEW" selected>➕ Crear com a nou aparcament en catàleg</option>`;
+                    options += `<option value="NEW" ${propuestaId === 'NEW' ? 'selected' : ''}>➕ Crear com a nou aparcament en catàleg</option>`;
                     
                     const pksOrdenados = [...catalogosLocales.aparcamientos].sort((a, b) => {
                         const scoreA = a.nombre.toLowerCase().includes(pk.toLowerCase()) ? 1 : 0;
@@ -1836,7 +1912,8 @@
                     });
                     
                     pksOrdenados.forEach(dbPk => {
-                        options += `<option value="${dbPk.id}">🚗 Vincular a: ${dbPk.nombre}</option>`;
+                        const isSelected = dbPk.id == propuestaId ? 'selected' : '';
+                        options += `<option value="${dbPk.id}" ${isSelected}>🚗 Vincular a: ${dbPk.nombre} ${isSelected ? '(Sugerido)' : ''}</option>`;
                     });
                     
                     tr.innerHTML = `
@@ -1848,7 +1925,7 @@
                         </td>
                     `;
                     bodyP.appendChild(tr);
-                    matchAparcamientosMap.set(pk, 'NEW');
+                    matchAparcamientosMap.set(pk, propuestaId);
                 });
             } else {
                 document.getElementById('sectionMatchParkings').style.display = 'none';
@@ -2166,60 +2243,43 @@
                         return;
                     }
                     
-                    // Iniciar transacción en la base de datos finanzas
-                    await dbApi.write('finanzas', "BEGIN TRANSACTION;", []);
+                    // Construir array de operaciones para batch
+                    const opsGastos = [];
                     
                     if (estrategia === 'overwrite') {
-                        // Borrar todos los registros de 'Kilometraje' del usuario actual
-                        await dbApi.write('finanzas', `
+                        opsGastos.push({ query: `
                             DELETE FROM movimientos_economicos 
                             WHERE tipo_movimiento = 'Kilometraje' AND id_usuario = ?
-                        `, [empleadoIdUsuario]);
+                        `, params: [empleadoIdUsuario] });
                     }
-                    
-                    let exitos = 0;
-                    let errores = 0;
                     
                     for (const r of registrosParaInsertar) {
-                        try {
-                            if (estrategia === 'add') {
-                                // Borrar el registro existente para esa misma fecha, trabajador y tipo de movimiento antes de insertar el nuevo para evitar duplicados
-                                await dbApi.write('finanzas', `
-                                    DELETE FROM movimientos_economicos 
-                                    WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Kilometraje'
-                                `, [empleadoIdUsuario, r.fecha]);
-                            }
-                            
-                            // Insertar
-                            await dbApi.write('finanzas', `
-                                INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
-                                VALUES (?, ?, 'Kilometraje', ?, 0, ?)
-                            `, [empleadoIdUsuario, r.fecha, r.concepto, JSON.stringify({ km: r.km, tarifa: r.tarifa, extras: r.extras })]);
-                            
-                            exitos++;
-                        } catch (errRow) {
-                            console.error("Error al importar gasto:", errRow, r);
-                            errores++;
+                        if (estrategia === 'add') {
+                            opsGastos.push({ query: `
+                                DELETE FROM movimientos_economicos 
+                                WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Kilometraje'
+                            `, params: [empleadoIdUsuario, r.fecha] });
                         }
+                        opsGastos.push({ query: `
+                            INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
+                            VALUES (?, ?, 'Kilometraje', ?, 0, ?)
+                        `, params: [empleadoIdUsuario, r.fecha, r.concepto, JSON.stringify({ km: r.km, tarifa: r.tarifa, extras: r.extras })] });
                     }
                     
-                    await dbApi.write('finanzas', "COMMIT;", []);
+                    await dbApi.writeBatch('finanzas', opsGastos);
                     
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                     
                     document.getElementById('txtResultadoFinal').innerHTML = isCa
-                        ? `S'han importat correctament <strong>${exitos}</strong> registres de kilometratge per a l'empleat <strong>${empleadoIdUsuario}</strong>.`
-                        : `Se han importado correctamente <strong>${exitos}</strong> registros de kilometraje para el empleado <strong>${empleadoIdUsuario}</strong>.`;
+                        ? `S'han importat correctament <strong>${registrosParaInsertar.length}</strong> registres de kilometratge per a l'empleat <strong>${empleadoIdUsuario}</strong>.`
+                        : `Se han importado correctamente <strong>${registrosParaInsertar.length}</strong> registros de kilometraje para el empleado <strong>${empleadoIdUsuario}</strong>.`;
                         
                     document.getElementById('sectionDatosExcluidos').style.display = 'none';
                     
                     avanzarPaso(5);
                 } catch (errGlobal) {
                     console.error("Error global en migración de gastos:", errGlobal);
-                    try {
-                        await dbApi.write('finanzas', "ROLLBACK;", []);
-                    } catch(e) {}
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                     alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
@@ -2244,56 +2304,40 @@
                         return;
                     }
                     
-                    // Iniciar transacción en la base de datos finanzas
-                    await dbApi.write('finanzas', "BEGIN TRANSACTION;", []);
+                    // Construir array de operaciones para batch
+                    const opsRutas = [];
                     
                     if (estrategia === 'overwrite') {
-                        await dbApi.write('finanzas', "DELETE FROM movimientos_economicos WHERE tipo_movimiento = 'Ruta Comercial'", []);
+                        opsRutas.push({ query: "DELETE FROM movimientos_economicos WHERE tipo_movimiento = 'Ruta Comercial'", params: [] });
                     }
-                    
-                    let exitos = 0;
-                    let errores = 0;
                     
                     for (const r of registrosParaInsertar) {
-                        try {
-                            if (estrategia === 'add') {
-                                // Eliminar coincidencias para evitar duplicados en modo agregar
-                                await dbApi.write('finanzas', `
-                                    DELETE FROM movimientos_economicos 
-                                    WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Ruta Comercial'
-                                `, [r.worker, r.date]);
-                            }
-                            
-                            // Insertar
-                            await dbApi.write('finanzas', `
-                                INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
-                                VALUES (?, ?, 'Ruta Comercial', ?, 0, ?)
-                            `, [r.worker, r.date, r.concepto, JSON.stringify({ paradas: r.stops, festivo: r.festivo })]);
-                            
-                            exitos++;
-                        } catch (errRow) {
-                            console.error("Error al importar ruta:", errRow, r);
-                            errores++;
+                        if (estrategia === 'add') {
+                            opsRutas.push({ query: `
+                                DELETE FROM movimientos_economicos 
+                                WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Ruta Comercial'
+                            `, params: [r.worker, r.date] });
                         }
+                        opsRutas.push({ query: `
+                            INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
+                            VALUES (?, ?, 'Ruta Comercial', ?, 0, ?)
+                        `, params: [r.worker, r.date, r.concepto, JSON.stringify({ paradas: r.stops, festivo: r.festivo })] });
                     }
                     
-                    await dbApi.write('finanzas', "COMMIT;", []);
+                    await dbApi.writeBatch('finanzas', opsRutas);
                     
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                     
                     document.getElementById('txtResultadoFinal').innerHTML = isCa
-                        ? `S'han importat correctament <strong>${exitos}</strong> rutes comercials a la base de dades finances.`
-                        : `Se han importado correctamente <strong>${exitos}</strong> rutas comerciales en la base de datos finanzas.`;
+                        ? `S'han importat correctament <strong>${registrosParaInsertar.length}</strong> rutes comercials a la base de dades finances.`
+                        : `Se han importado correctamente <strong>${registrosParaInsertar.length}</strong> rutas comerciales en la base de datos finanzas.`;
                         
                     document.getElementById('sectionDatosExcluidos').style.display = 'none';
                     
                     avanzarPaso(5);
                 } catch (errGlobal) {
                     console.error("Error global en migración de rutas:", errGlobal);
-                    try {
-                        await dbApi.write('finanzas', "ROLLBACK;", []);
-                    } catch(e) {}
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                     alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
@@ -2303,88 +2347,55 @@
             
             if (tipo === 'comerciales') {
                 try {
-                    // 1. Agrupar registros resueltos por clave final
-                    const agrupados = new Map();
-                    registrosParaInsertar.forEach(r => {
-                        const keyParts = r.key.split('_');
-                        let coordId = '';
-                        let coordNombre = '';
-                        let mes = '';
-                        let año = '2026';
-                        
-                        if (r.key.startsWith('nn_A_')) {
-                            coordId = 'albert'; coordNombre = 'Albert'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
-                        } else if (r.key.startsWith('nn_L_')) {
-                            coordId = 'laura'; coordNombre = 'Laura'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
-                        } else if (r.key.startsWith('comercials_albert_')) {
-                            coordId = 'albert'; coordNombre = 'Albert'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
-                        } else if (r.key.startsWith('comercials_laura_')) {
-                            coordId = 'laura'; coordNombre = 'Laura'; mes = keyParts[2]; if (keyParts.length > 3) año = keyParts[3];
+                    // Preguntar antes de importar (como pidió el usuario: "recuerda que primero se pregunta")
+                    const confirmMsg = estrategia === 'overwrite'
+                        ? (isCa 
+                            ? "⚠️ ATENCIÓ: Es perdran TOTS els registres anteriors de Tarifes i Comercials a la base de dades. Vols continuar?"
+                            : "⚠️ ATENCIÓN: Se perderán TODOS los registros anteriores de Tarifas y Comerciales en la base de datos. ¿Deseas continuar?")
+                        : (isCa
+                            ? "⚠️ Estàs segur que vols importar els comercials? Els registres coincidents d'aparcament seran actualitzats/reemplaçats."
+                            : "⚠️ ¿Estás seguro de que deseas importar los comerciales? Los registros coincidentes de aparcamiento serán actualizados/reemplazados.");
+                    
+                    if (!confirm(confirmMsg)) {
+                        btn.disabled = false;
+                        btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
+                        return;
+                    }
+                    
+                    // Construir array de operaciones para batch
+                    const ops = [];
+                    
+                    if (estrategia === 'overwrite') {
+                        ops.push({ query: "DELETE FROM comerciales", params: [] });
+                    }
+                    
+                    for (const r of registrosParaInsertar) {
+                        if (estrategia === 'add') {
+                            ops.push({ query: "DELETE FROM comerciales WHERE nombre = ?", params: [r.centro.toUpperCase()] });
                         }
-                        
-                        // Generar el path exacto esperado por comercials.html con extensión .json
-                        const targetKey = `dades ${coordNombre}/comercials_${coordId}_${mes}_${año}.json`;
-                        const clauActual = `comercials_${coordId}_${mes}_${año}`;
-                        
-                        if (!agrupados.has(targetKey)) {
-                            agrupados.set(targetKey, {
-                                clau: clauActual,
-                                coordNombre: coordNombre,
-                                filas: []
-                            });
-                        }
-                        
-                        agrupados.get(targetKey).filas.push([
-                            r.centro,
+                        ops.push({ query: `
+                            INSERT INTO comerciales (nombre, direccion, plantas, capacidad, plazas_libres, tarifa, notas)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        `, params: [
+                            r.centro.toUpperCase(),
                             r.direccion,
                             r.fixes,
                             r.variables,
                             r.vacants,
                             r.tarifa,
                             r.observaciones
-                        ]);
-                    });
-
-                    // 2. Procesar escritura en la base de datos comercial
-                    let exitos = 0;
-                    let errores = 0;
-                    
-                    for (const [targetKey, group] of agrupados.entries()) {
-                        try {
-                            // Aplicar estrategia de vaciado para este mes si corresponde
-                            if (estrategia === 'overwrite') {
-                                await dbApi.write('comercial', "DELETE FROM kv_store WHERE key = ?", [targetKey]);
-                            }
-                            
-                            // Construir el payload con la doble encapsulación que lee comercials.html
-                            const payload = {};
-                            payload[group.clau] = JSON.stringify(group.filas);
-                            payload["nn_last_export_time_shared"] = new Date().toLocaleString('ca-ES', { 
-                                day: '2-digit', month: '2-digit', year: 'numeric', 
-                                hour: '2-digit', minute: '2-digit' 
-                            });
-                            payload["nn_last_export_author_shared"] = group.coordNombre.toUpperCase();
-                            
-                            // Escribir en SQLite kv_store
-                            await dbApi.write('comercial', `
-                                INSERT OR REPLACE INTO kv_store (key, value, updated_at)
-                                VALUES (?, ?, CURRENT_TIMESTAMP)
-                            `, [targetKey, JSON.stringify(payload)]);
-                            
-                            exitos++;
-                        } catch (errRow) {
-                            console.error("Error al escribir grupo en kv_store comercial:", errRow, targetKey);
-                            errores++;
-                        }
+                        ]});
                     }
+                    
+                    await dbApi.writeBatch('comercial', ops);
                     
                     // 3. Mostrar feedback y resetear UI
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                     
                     const resumenMsg = isCa 
-                        ? `Migració de Comerciales completada:\n- Èxits: ${exitos} mesos/arxius\n- Errors: ${errores}`
-                        : `Migración de Comerciales completada:\n- Éxitos: ${exitos} meses/archivos\n- Errores: ${errores}`;
+                        ? `Migració de Comerciales completada:\n- Èxits: ${registrosParaInsertar.length} registres`
+                        : `Migración de Comerciales completada:\n- Éxitos: ${registrosParaInsertar.length} registros`;
                     alert(resumenMsg);
                     
                     reiniciarAsistente();
@@ -2392,7 +2403,7 @@
                     console.error("Error global en migración de comerciales:", errGlobal);
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    alert((isCa ? "❌ Error al executar la importació definitiva: " : "❌ Error al ejecutar la importación definitiva: ") + errGlobal.message);
+                    alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
                 }
                 return;
             }
@@ -2413,16 +2424,16 @@
                 }
                 
                 if (nuevosAgentes.size > 0 || nuevosParkings.size > 0) {
-                    await dbApi.write('catalogos', "BEGIN TRANSACTION;", []);
+                    const opsCatalogos = [];
                     
                     for (const name of nuevosAgentes) {
-                        await dbApi.write('catalogos', "INSERT OR IGNORE INTO empleados (nombre, rol, activo) VALUES (?, 'Trabajador', 1)", [name]);
+                        opsCatalogos.push({ query: "INSERT OR IGNORE INTO empleados (nombre, rol, activo) VALUES (?, 'Trabajador', 1)", params: [name] });
                     }
                     for (const name of nuevosParkings) {
-                        await dbApi.write('catalogos', "INSERT OR IGNORE INTO aparcamientos (nombre, sociedad_id, activo) VALUES (?, 1, 1)", [name]);
+                        opsCatalogos.push({ query: "INSERT OR IGNORE INTO aparcamientos (nombre, sociedad_id, activo) VALUES (?, 1, 1)", params: [name] });
                     }
                     
-                    await dbApi.write('catalogos', "COMMIT;", []);
+                    await dbApi.writeBatch('catalogos', opsCatalogos);
                     
                     await loadCatalogos();
                     
@@ -2444,22 +2455,21 @@
                     }
                 }
 
-                const dbKey = 'operativa';
-                
-                await dbApi.write(dbKey, "BEGIN TRANSACTION;", []);
+                // Construir array de operaciones para batch
+                const opsOperativa = [];
                 
                 if (estrategia === 'overwrite') {
                     if (tipo === 'deudas') {
-                        await dbApi.write('operativa', "DELETE FROM deutes", []);
+                        opsOperativa.push({ query: "DELETE FROM deutes", params: [] });
                     }
                     else if (tipo === 'vacaciones') {
-                        await dbApi.write('operativa', "DELETE FROM vacances", []);
+                        opsOperativa.push({ query: "DELETE FROM vacances", params: [] });
                     }
                     else if (tipo === 'cuadrante' && registrosParaInsertar.length > 0) {
                         const fechas = registrosParaInsertar.map(r => r.fecha);
                         const minFecha = fechas.reduce((a, b) => a < b ? a : b);
                         const maxFecha = fechas.reduce((a, b) => a > b ? a : b);
-                        await dbApi.write('operativa', "DELETE FROM quadrant WHERE fecha BETWEEN ? AND ?", [minFecha, maxFecha]);
+                        opsOperativa.push({ query: "DELETE FROM quadrant WHERE fecha BETWEEN ? AND ?", params: [minFecha, maxFecha] });
                     }
                 }
 
@@ -2472,10 +2482,10 @@
                             let valorImport = typeof r.import === 'string' 
                                 ? Number(r.import.replace(',', '.')) 
                                 : Number(r.import);
-                            await dbApi.write('operativa', `
+                            opsOperativa.push({ query: `
                                 INSERT INTO deutes (comercial, cliente, import, fecha, activo)
                                 VALUES (?, ?, ?, ?, 1)
-                            `, [r.comercial, r.cliente, valorImport, r.fecha]);
+                            `, params: [r.comercial, r.cliente, valorImport, r.fecha] });
                             insertados++;
                         }
                     }
@@ -2484,10 +2494,10 @@
                     for (const r of registrosParaInsertar) {
                         const resolvedAgId = matchAgentesMap.get(r.nombre);
                         if (resolvedAgId && resolvedAgId !== 'SKIP') {
-                            await dbApi.write('operativa', `
+                            opsOperativa.push({ query: `
                                 INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin)
                                 VALUES (?, ?, ?)
-                            `, [resolvedAgId, r.fecha_inicio, r.fecha_fin]);
+                            `, params: [resolvedAgId, r.fecha_inicio, r.fecha_fin] });
                             insertados++;
                         }
                     }
@@ -2498,16 +2508,16 @@
                         const resolvedAgId = r.agente ? matchAgentesMap.get(r.agente) : null;
                         
                         if (resolvedPkId && resolvedPkId !== 'SKIP' && (!r.agente || (resolvedAgId && resolvedAgId !== 'SKIP'))) {
-                            await dbApi.write('operativa', `
+                            opsOperativa.push({ query: `
                                 INSERT OR REPLACE INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, es_substitucio, nota)
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                            `, [r.fecha, resolvedPkId, resolvedAgId || 0, r.turno, '06:00', '14:00', r.es_sub, r.nota]);
+                            `, params: [r.fecha, resolvedPkId, resolvedAgId || 0, r.turno, '06:00', '14:00', r.es_sub, r.nota] });
                             insertados++;
                         }
                     }
                 }
 
-                await dbApi.write(dbKey, "COMMIT;", []);
+                await dbApi.writeBatch('operativa', opsOperativa);
                 
                 document.getElementById('txtResultadoFinal').innerHTML = `S'han importat correctament <strong>${insertados}</strong> registres relacionals en la base de dades.`;
                 
@@ -2519,8 +2529,6 @@
                 
                 avanzarPaso(5);
             } catch (err) {
-                const dbKey = (tipo === 'comerciales') ? 'comercial' : 'operativa';
-                await dbApi.write(dbKey, "ROLLBACK;", []);
                 btn.disabled = false;
                 btn.innerHTML = '🚀 Confirmar i Importar';
                 alert("❌ Error al executar la importació definitiva: " + err.message);
