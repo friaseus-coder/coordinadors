@@ -588,10 +588,15 @@
     <div id="coordModal" class="modal-overlay" onclick="if(event.target===this) closeCoordModal()">
         <div class="modal-box">
             <div class="modal-title" data-i18n="modalTitle">⚙️ Gestió de Coordinadors</div>
-            <div class="modal-add-form">
-                <input type="text" id="newCoordNom" placeholder="Nom (ex: Marc)" data-i18n="inputNomPlaceholder">
-                <input type="text" id="newCoordCognom" placeholder="Cognom (ex: López)" data-i18n="inputCognomPlaceholder">
-                <button class="btn-add-coord" onclick="addCoordinador()" data-i18n="btnAdd">➕ Afegir</button>
+            <div class="modal-add-form" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input type="text" id="newCoordNom" placeholder="Nom (ex: Marc)" data-i18n="inputNomPlaceholder" style="flex: 1; min-width: 120px;">
+                <input type="text" id="newCoordCognom" placeholder="Cognom (ex: López)" data-i18n="inputCognomPlaceholder" style="flex: 1; min-width: 120px;">
+                <select id="newCoordZona" style="padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; font-family: inherit; outline: none; flex: 1; min-width: 100px;">
+                    <option value="Zona 1">Zona 1</option>
+                    <option value="Zona 2">Zona 2</option>
+                    <option value="Zona 3">Zona 3</option>
+                </select>
+                <button class="btn-add-coord" onclick="addCoordinador()" data-i18n="btnAdd" style="margin: 0;">➕ Afegir</button>
             </div>
             <div id="coordList" class="modal-list"></div>
             <div class="modal-footer">
@@ -606,8 +611,8 @@
             <!-- Overlay de Carga Premium / Barra de Espera -->
             <div id="aparcamentLoadingOverlay" style="display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.85); border-radius: 16px; flex-direction: column; justify-content: center; align-items: center; z-index: 10;">
                 <div class="spinner" style="width: 40px; height: 40px; border: 4px solid #f1f5f9; border-top: 4px solid #063931; border-radius: 50%; animation: spin 1s linear infinite;"></div>
-                <div style="margin-top: 12px; font-weight: 600; color: #0f2d4a; font-size: 13px;">Actualitzant base de dades...</div>
-                <div style="margin-top: 4px; color: #64748b; font-size: 11px;">Processant fitxers en xarxa, esperi un moment.</div>
+                <div style="margin-top: 12px; font-weight: 600; color: #0f2d4a; font-size: 13px;" data-i18n="aparcamentActualitzant">Actualitzant base de dades...</div>
+                <div style="margin-top: 4px; color: #64748b; font-size: 11px;" data-i18n="aparcamentProcessant">Processant fitxers en xarxa, esperi un moment.</div>
             </div>
             <div class="modal-title" data-i18n="modalAparcamentTitle">🚗 Gestió d'Aparcaments</div>
             
@@ -617,22 +622,24 @@
                 
                 <div style="display: grid; grid-template-columns: 1fr 2.2fr; gap: 10px;">
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NÚM. OBRA</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="aparcamentNumObra">NÚM. OBRA</label>
                         <input type="text" id="newAparcamentObra" placeholder="OB-0001" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NOM APARCAMENT</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="aparcamentNom">NOM APARCAMENT</label>
                         <input type="text" id="newAparcamentNom" placeholder="BEJAR 63" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px;">
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">ZONA</label>
-                        <input type="text" id="newAparcamentZona" placeholder="Zona 1" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="aparcamentZona">ZONA</label>
+                        <select id="newAparcamentZona" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
+                            <!-- Cargado dinámicamente -->
+                        </select>
                     </div>
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">SOCIETAT</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="aparcamentSocietat">SOCIETAT</label>
                         <select id="newAparcamentSociedad" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
                             <!-- Cargado dinámicamente -->
                         </select>
@@ -641,34 +648,32 @@
 
                 <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 10px;">
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">TIPUS GESTIÓ</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="aparcamentTipusGestio">TIPUS GESTIÓ</label>
                         <select id="newAparcamentGestion" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
                             <option value="propio" selected>Propio</option>
                             <option value="concesion">Concesión</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">COORDINADOR RESPONSABLE</label>
-                        <select id="newAparcamentCoord" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
-                            <!-- Cargado dinámicamente -->
-                        </select>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="aparcamentCoord">COORDINADOR RESPONSABLE</label>
+                        <input type="text" id="newAparcamentCoord" readonly disabled style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: #e2e8f0; color: #64748b; box-sizing: border-box; font-family: inherit; outline: none;">
                     </div>
                 </div>
 
                 <div style="display: flex; gap: 20px; align-items: center; padding-top: 4px; flex-wrap: wrap;">
                     <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="newAparcamentRemoto" value="1">
-                        Es Remotitzat
+                        <span data-i18n="aparcamentEsRemotitzat">Es Remotitzat</span>
                     </label>
                     <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
                         <input type="checkbox" id="newAparcamentVacio" value="1">
-                        Permetre Buit Laborables
+                        <span data-i18n="aparcamentPermetreBuit">Permetre Buit Laborables</span>
                     </label>
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
-                    <button class="btn-close-modal" id="btnCancelAparcamentEdit" onclick="cancelarAparcamentEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;">Cancel·lar</button>
-                    <button class="btn-add-coord" id="btnAddAparcamentSubmit" onclick="addAparcament()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;">➕ Afegir</button>
+                    <button class="btn-close-modal" id="btnCancelAparcamentEdit" onclick="cancelarAparcamentEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;" data-i18n="aparcamentBtnCancelar">Cancel·lar</button>
+                    <button class="btn-add-coord" id="btnAddAparcamentSubmit" onclick="addAparcament()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;" data-i18n="aparcamentBtnAfegir">➕ Afegir</button>
                 </div>
             </div>
 
@@ -676,10 +681,10 @@
             <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
                 <div style="display: flex; gap: 8px;">
                     <button class="btn-manage-coord" style="background: #e2f0d9; color: #385723; border-color: #c5e0b4;" onclick="exportarAparcamentsCSV()">
-                        <i class="fas fa-file-excel mr-1"></i> Exportar Excel
+                        <i class="fas fa-file-excel mr-1"></i> <span data-i18n="aparcamentExportar">Exportar Excel</span>
                     </button>
                     <button class="btn-manage-coord" style="background: #fff2cc; color: #7f6000; border-color: #ffe599;" onclick="document.getElementById('importAparcamentsCsvFile').click()">
-                        <i class="fas fa-file-import mr-1"></i> Importar Excel
+                        <i class="fas fa-file-import mr-1"></i> <span data-i18n="aparcamentImportar">Importar Excel</span>
                     </button>
                     <input type="file" id="importAparcamentsCsvFile" accept=".csv" style="display:none" onchange="importarAparcamentsCSV(this)">
                 </div>
@@ -881,6 +886,26 @@
 
 
     <script>
+        // Parche de restauración de foco en Electron tras mostrar alertas o confirmaciones nativas
+        (function() {
+            const originalAlert = window.alert;
+            window.alert = function(message) {
+                originalAlert(message);
+                if (window.api && typeof window.api.fixFocus === 'function') {
+                    window.api.fixFocus().catch(err => console.error('[FOCUS FIX] Error:', err));
+                }
+            };
+
+            const originalConfirm = window.confirm;
+            window.confirm = function(message) {
+                const result = originalConfirm(message);
+                if (window.api && typeof window.api.fixFocus === 'function') {
+                    window.api.fixFocus().catch(err => console.error('[FOCUS FIX] Error:', err));
+                }
+                return result;
+            };
+        })();
+
         // Configurar los badges del usuario y bienvenida
         document.addEventListener('DOMContentLoaded', async () => {
             let role = sessionStorage.getItem('userRole');
@@ -1108,7 +1133,7 @@
                 item.className = 'modal-list-item';
                 item.innerHTML = `
                     <div>
-                        <span class="coord-name">${c.nombre} ${c.apellido}</span>
+                        <span class="coord-name">${c.nombre} ${c.apellido} <strong>(${c.zona || 'Gral'})</strong></span>
                         <span class="coord-folder">📁 dades ${c.nombre}/</span>
                     </div>
                     <button class="btn-remove-coord" onclick="removeCoordinador('${c.id}', '${c.nombre} ${c.apellido}')">✕ Eliminar</button>
@@ -1120,6 +1145,7 @@
         async function addCoordinador() {
             const nom = document.getElementById('newCoordNom').value.trim();
             const cognom = document.getElementById('newCoordCognom').value.trim();
+            const zona = document.getElementById('newCoordZona').value;
             
             if (!nom) { alert('⚠️ Has d\'escriure un nom.'); return; }
             if (!cognom) { alert('⚠️ Has d\'escriure un cognom.'); return; }
@@ -1128,13 +1154,14 @@
             const nomCap = nom.charAt(0).toUpperCase() + nom.slice(1);
             const cognomCap = cognom.charAt(0).toUpperCase() + cognom.slice(1);
             
-            const result = await window.api.addCoordinador(nomCap, cognomCap);
+            const result = await window.api.addCoordinador(nomCap, cognomCap, zona);
             
             if (result.success) {
                 document.getElementById('newCoordNom').value = '';
                 document.getElementById('newCoordCognom').value = '';
+                document.getElementById('newCoordZona').selectedIndex = 0;
                 await refreshCoordList();
-                alert(`✅ Coordinador ${nomCap} ${cognomCap} afegit correctament.`);
+                alert(`✅ Coordinador ${nomCap} ${cognomCap} (${zona}) afegit correctament.`);
             } else {
                 alert('❌ Error: ' + result.error);
             }
@@ -1155,18 +1182,40 @@
         // ========== GESTIÓN DE APARCAMIENTOS (Modal) ==========
         let _aparcamientosCache = []; // Cache para edición
         let _sociedadesCache = []; // Cache de sociedades
+        let _coordinadoresCache = []; // Cache de coordinadores
 
         async function openAparcamentModal() {
             document.getElementById('aparcamentModal').classList.add('active');
-            cancelarAparcamentEdit();
             
-            // Cargar selector de coordinadores en el formulario de añadir
-            const selectCoord = document.getElementById('newAparcamentCoord');
-            selectCoord.innerHTML = `
-                <option value="Ambos" selected>Ambos (Albert i Laura)</option>
-                <option value="Albert">Albert</option>
-                <option value="Laura">Laura</option>
-            `;
+            try {
+                // Obtener coordinadores
+                const coordinadores = await window.api.getCoordinadores();
+                _coordinadoresCache = coordinadores;
+                
+                // Rellenar selector de zonas dinámicamente con las del maestro de coordinadores
+                const selectZona = document.getElementById('newAparcamentZona');
+                selectZona.innerHTML = '';
+                
+                // Extraer zonas únicas y válidas de los coordinadores
+                const zonas = [...new Set(coordinadores.map(c => c.zona).filter(z => z))].sort();
+                
+                zonas.forEach(z => {
+                    const opt = document.createElement('option');
+                    opt.value = z;
+                    opt.textContent = z;
+                    selectZona.appendChild(opt);
+                });
+                
+                // Asociar evento onchange al select de zonas para actualizar el coordinador automáticamente
+                selectZona.onchange = () => {
+                    actualizarCoordinadorPorZona();
+                };
+                
+            } catch (err) {
+                console.error("Error al cargar coordinadores para select:", err);
+            }
+            
+            cancelarAparcamentEdit();
             
             // Cargar selector de sociedades dinámico
             await cargarSociedadesEnSelects();
@@ -1175,6 +1224,20 @@
 
         function closeAparcamentModal() {
             document.getElementById('aparcamentModal').classList.remove('active');
+        }
+
+        function actualizarCoordinadorPorZona() {
+            const selectZona = document.getElementById('newAparcamentZona');
+            const selectedZona = selectZona.value;
+            const coordInput = document.getElementById('newAparcamentCoord');
+            
+            // Buscar coordinador en la caché que tenga esta zona
+            const coord = _coordinadoresCache.find(c => c.zona === selectedZona);
+            if (coord) {
+                coordInput.value = coord.nombre;
+            } else {
+                coordInput.value = 'Ambos';
+            }
         }
 
         async function cargarSociedadesEnSelects() {
@@ -1191,7 +1254,24 @@
                     opt.textContent = "Empresa Principal (Default)";
                     selectSoc.appendChild(opt);
                 } else {
-                    sociedades.forEach(s => {
+                    // Ordenar alfabéticamente
+                    const ordenadas = [...sociedades].sort((a, b) => {
+                        const txtA = `${a.codigo_corto} - ${a.nombre_fiscal}`.toUpperCase();
+                        const txtB = `${b.codigo_corto} - ${b.nombre_fiscal}`.toUpperCase();
+                        return txtA.localeCompare(txtB, 'es');
+                    });
+                    
+                    // Buscar JOSEL y poner al principio
+                    const idxJosel = ordenadas.findIndex(s => 
+                        s.codigo_corto.toUpperCase() === 'JOSEL' || 
+                        s.nombre_fiscal.toUpperCase().includes('JOSEL')
+                    );
+                    if (idxJosel !== -1) {
+                        const josel = ordenadas.splice(idxJosel, 1)[0];
+                        ordenadas.unshift(josel);
+                    }
+
+                    ordenadas.forEach(s => {
                         const opt = document.createElement('option');
                         opt.value = s.id;
                         opt.textContent = `${s.codigo_corto} - ${s.nombre_fiscal}`;
@@ -1209,7 +1289,8 @@
 
         async function refreshAparcamentList() {
             const list = document.getElementById('aparcamentList');
-            list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
+            const loadingText = window.i18n ? (window.i18n.getLanguage() === 'es' ? 'Cargando...' : 'Carregant...') : 'Carregant...';
+            list.innerHTML = `<div style="padding:8px;color:#999;font-size:12px;">${loadingText}</div>`;
             
             try {
                 const aparcamientos = await window.api.getAparcamientos();
@@ -1218,7 +1299,8 @@
                 list.innerHTML = '';
                 
                 if (aparcamientos.length === 0) {
-                    list.innerHTML = `<div style="padding:12px;color:#999;font-size:12px;text-align:center;">No hi ha aparcaments registrats.</div>`;
+                    const noParkingsText = window.i18n ? (window.i18n.getLanguage() === 'es' ? 'No hay aparcamientos registrados.' : 'No hi ha aparcaments registrats.') : 'No hi ha aparcaments registrats.';
+                    list.innerHTML = `<div style="padding:12px;color:#999;font-size:12px;text-align:center;">${noParkingsText}</div>`;
                     return;
                 }
                 
@@ -1234,8 +1316,15 @@
                     item.style.padding = '8px 12px';
                     item.style.borderBottom = '1px solid #f1f5f9';
                     
-                    const remotoBadge = ap.es_remotizado ? '<span style="background: #e0f2fe; color: #0369a1; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 5px;">REMOTO</span>' : '<span style="background: #f1f5f9; color: #64748b; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 5px;">PRESENCIAL</span>';
+                    const remotoText = window.i18n ? window.i18n.t(ap.es_remotizado ? 'aparcamentRemoto' : 'aparcamentPresencial') : (ap.es_remotizado ? 'REMOTO' : 'PRESENCIAL');
+                    const remotoBadge = `<span style="background: ${ap.es_remotizado ? '#e0f2fe; color: #0369a1;' : '#f1f5f9; color: #64748b;'} padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 5px;">${remotoText}</span>`;
                     const socNombre = ap.sociedad_codigo || (ap.sociedad_id === 1 ? 'EMP_01' : `SOC_${ap.sociedad_id}`);
+                    
+                    const labelObra = window.i18n ? window.i18n.t('aparcamentLabelObra') : 'Obra';
+                    const labelZona = window.i18n ? window.i18n.t('aparcamentLabelZona') : 'Zona';
+                    const labelSoc = window.i18n ? window.i18n.t('aparcamentLabelSoc') : 'Soc';
+                    const labelCoord = window.i18n ? window.i18n.t('aparcamentLabelCoord') : 'Coord';
+                    const btnEditarText = window.i18n ? window.i18n.t('aparcamentEditar') : '✏️ Editar';
                     
                     item.innerHTML = `
                         <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
@@ -1244,11 +1333,11 @@
                                 ${remotoBadge}
                             </div>
                             <div style="font-size: 10px; color: #64748b;">
-                                Obra: <strong>${ap.numero_obra || 'S/N'}</strong> | Zona: <strong>${ap.zona || 'Gral'}</strong> | Soc: <strong>${socNombre}</strong> | Coord: <strong>${ap.coordinador_responsable || 'Ambos'}</strong>
+                                ${labelObra}: <strong>${ap.numero_obra || 'S/N'}</strong> | ${labelZona}: <strong>${ap.zona || 'Gral'}</strong> | ${labelSoc}: <strong>${socNombre}</strong> | ${labelCoord}: <strong>${ap.coordinador_responsable || 'Ambos'}</strong>
                             </div>
                         </div>
                         <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
-                            <button class="btn-manage-coord" onclick="cargarAparcamentEnFormulario(${ap.id})" style="background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
+                            <button class="btn-manage-coord" onclick="cargarAparcamentEnFormulario(${ap.id})" style="background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer;">${btnEditarText}</button>
                             <button class="btn-remove-coord" onclick="removeAparcament('${ap.nombre.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
                         </div>
                     `;
@@ -1256,7 +1345,8 @@
                 });
             } catch(e) {
                 console.error(e);
-                list.innerHTML = `<div style="padding:12px;color:red;font-size:12px;text-align:center;">Error al carregar listado: ${e.message}</div>`;
+                const errorMsg = window.i18n ? (window.i18n.getLanguage() === 'es' ? 'Error al cargar listado: ' : 'Error al carregar listado: ') : 'Error al carregar listado: ';
+                list.innerHTML = `<div style="padding:12px;color:red;font-size:12px;text-align:center;">${errorMsg}${e.message}</div>`;
             }
         }
 
@@ -1267,30 +1357,55 @@
             document.getElementById('editAparcamentId').value = ap.id;
             document.getElementById('newAparcamentObra').value = ap.numero_obra || '';
             document.getElementById('newAparcamentNom').value = ap.nombre || '';
-            document.getElementById('newAparcamentZona').value = ap.zona || '';
+            
+            const selectZona = document.getElementById('newAparcamentZona');
+            const optionExists = Array.from(selectZona.options).some(opt => opt.value === ap.zona);
+            if (optionExists) {
+                selectZona.value = ap.zona;
+            } else if (selectZona.options.length > 0) {
+                selectZona.selectedIndex = 0;
+            }
+            
+            actualizarCoordinadorPorZona();
+            
             document.getElementById('newAparcamentSociedad').value = ap.sociedad_id || 1;
             document.getElementById('newAparcamentGestion').value = ap.tipo_gestion || 'propio';
-            document.getElementById('newAparcamentCoord').value = ap.coordinador_responsable || 'Ambos';
             document.getElementById('newAparcamentRemoto').checked = ap.es_remotizado === 1;
             document.getElementById('newAparcamentVacio').checked = ap.permitir_vacio_laborables === 1;
             
-            document.getElementById('btnCancelAparcamentEdit').style.display = 'inline-block';
-            document.getElementById('btnAddAparcamentSubmit').textContent = '💾 Desar';
+            const btnCancel = document.getElementById('btnCancelAparcamentEdit');
+            btnCancel.style.display = 'inline-block';
+            btnCancel.setAttribute('data-i18n', 'aparcamentBtnCancelar');
+            
+            const btnSubmit = document.getElementById('btnAddAparcamentSubmit');
+            btnSubmit.setAttribute('data-i18n', 'aparcamentBtnDesar');
+            
+            if (window.i18n) window.i18n.translatePage();
         }
 
         function cancelarAparcamentEdit() {
             document.getElementById('editAparcamentId').value = '';
             document.getElementById('newAparcamentObra').value = '';
             document.getElementById('newAparcamentNom').value = '';
-            document.getElementById('newAparcamentZona').value = '';
+            
+            const selectZona = document.getElementById('newAparcamentZona');
+            if (selectZona.options.length > 0) {
+                selectZona.selectedIndex = 0;
+            }
+            actualizarCoordinadorPorZona();
+            
             document.getElementById('newAparcamentSociedad').selectedIndex = 0;
             document.getElementById('newAparcamentGestion').value = 'propio';
-            document.getElementById('newAparcamentCoord').value = 'Ambos';
             document.getElementById('newAparcamentRemoto').checked = false;
             document.getElementById('newAparcamentVacio').checked = false;
             
-            document.getElementById('btnCancelAparcamentEdit').style.display = 'none';
-            document.getElementById('btnAddAparcamentSubmit').textContent = '➕ Afegir';
+            const btnCancel = document.getElementById('btnCancelAparcamentEdit');
+            btnCancel.style.display = 'none';
+            
+            const btnSubmit = document.getElementById('btnAddAparcamentSubmit');
+            btnSubmit.setAttribute('data-i18n', 'aparcamentBtnAfegir');
+            
+            if (window.i18n) window.i18n.translatePage();
         }
 
         async function addAparcament() {
@@ -1314,10 +1429,9 @@
             try {
                 let aparcamientos = await window.api.getAparcamientos();
                 
-                // Mapear coordinadorId heredado
-                let coordId = '';
-                if (responsable === 'Albert') coordId = 'albert';
-                else if (responsable === 'Laura') coordId = 'laura';
+                // Mapear coordinadorId de forma dinámica
+                const coordEncontrado = _coordinadoresCache.find(c => c.nombre === responsable);
+                let coordId = coordEncontrado ? coordEncontrado.id : responsable.toLowerCase();
                 
                 const newAp = {
                     id: editId ? Number(editId) : undefined,
@@ -1465,6 +1579,16 @@
                         return;
                     }
                     
+                    // Cargar coordinadores para validación
+                    const coordinadores = await window.api.getCoordinadores();
+                    const zonasValidas = [...new Set(coordinadores.map(c => c.zona).filter(z => z))];
+                    
+                    if (zonasValidas.length === 0) {
+                        alert("❌ No hi ha zones definides al mestre de coordinadors. Si us plau, afegeix coordinadors amb zona primer.");
+                        if (loadingOverlay) loadingOverlay.style.display = 'none';
+                        return;
+                    }
+                    
                     // Iniciar transacción en SQLite
                     await window.dbAPI.write('catalogos', "BEGIN TRANSACTION;", []);
                     
@@ -1481,12 +1605,21 @@
                         const id = fields[0] ? parseInt(fields[0].trim()) : null;
                         const numObra = fields[1] ? fields[1].trim() : null;
                         const nombre = fields[2] ? fields[2].trim().toUpperCase() : "";
-                        const zona = fields[3] ? fields[3].trim() : "General";
+                        let zona = fields[3] ? fields[3].trim() : "";
+                        
+                        // Forzar que la zona esté en el maestro de coordinadores
+                        if (!zonasValidas.includes(zona)) {
+                            zona = zonasValidas[0];
+                        }
+                        
+                        // El coordinador se deduce a partir de la zona obligatoriamente
+                        const coord = coordinadores.find(c => c.zona === zona);
+                        const responsable = coord ? coord.nombre : "Ambos";
+                        
                         const esRemoto = fields[4] ? parseInt(fields[4].trim()) || 0 : 0;
                         const gestion = fields[5] ? fields[5].trim().toLowerCase() : "propio";
                         const vacioLab = fields[6] ? parseInt(fields[6].trim()) || 0 : 0;
                         const sociedadId = fields[7] ? parseInt(fields[7].trim()) || 1 : 1;
-                        const responsable = fields[8] ? fields[8].trim() : "Ambos";
                         
                         if (!nombre) continue;
                         

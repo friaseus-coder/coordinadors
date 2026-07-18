@@ -388,7 +388,7 @@
         opacity: 0.65; 
     }
 
-    #noteModal, #deleteModal, #horesModal { 
+    #noteModal, #deleteModal, #horesModal, #importExcelModal { 
         position: fixed; 
         top: 50%; 
         left: 50%; 
@@ -554,10 +554,9 @@
         <!-- Grupo 3: Exportacions Extensas -->
         <div class="toolbar-group">
             <button class="btn-main btn-action-sec" style="background:#16a34a!important; border-color:#16a34a!important;" @click="exportarExcel()">📊 Exportar Excel</button>
-            <button class="btn-main btn-archive" @click="exportarBackupJSON()" data-i18n="quadrantBtnExportBackup">💾 Exportar Backup</button>
-            <button class="btn-main btn-archive" @click="document.getElementById('importFile').click()" data-i18n="quadrantBtnImportBackup">📂 Importar Backup</button>
+            <button class="btn-main btn-archive" style="background:#16a34a!important; border-color:#16a34a!important; color: white;" @click="document.getElementById('importExcelFile').click()">📂 Importar Excel</button>
             <button class="btn-main btn-archive" @click="document.getElementById('fileVacances').click()" style="color: #7e22ce; font-weight: 600;" data-i18n="quadrantBtnImportVacances">🌴 Importar Vacances</button>
-            <input type="file" id="importFile" style="display:none" accept=".json" @change="importarBackupJSON($event)">
+            <input type="file" id="importExcelFile" style="display:none" accept=".xlsx,.xls" @change="iniciarImportarExcel($event)">
             <input type="file" id="fileVacances" style="display:none" accept=".json" @change="importarVacances($event)">
         </div>
 
@@ -714,6 +713,141 @@
     <div style="display:grid; grid-template-columns: 1fr; gap:5px; margin-top:10px;">
         <button @click="addNewItem()" class="btn-main">Afegir Nou</button>
         <button @click="showDeleteModal = false" class="btn-archive" style="margin-top: 10px;">Tancar</button>
+    </div>
+</div>
+
+<!-- Modal para Importar Excel -->
+<div id="importExcelModal" x-show="showImportExcelModal" x-cloak style="width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; display: flex; flex-direction: column;">
+    <button @click="cerrarImportExcel()" class="close-btn-top" style="position: absolute; top: 15px; right: 15px; background: none; border: none; font-size: 20px; cursor: pointer; color: #94a3b8; box-shadow: none; height: auto; padding: 0;">&times;</button>
+    
+    <div style="font-weight:bold; font-size:16px; margin-bottom:15px; color:var(--nyn-verd);">
+        📥 Importar Quadrant des d'Excel
+    </div>
+
+    <!-- PASO 1: Confirmación de período -->
+    <div x-show="importExcelStep === 1">
+        <p class="text-xs text-gray-600 mb-4">
+            S'ha analitzat el fitxer d'Excel. Confirma el període (mes i any) al qual vols aplicar les dades de la importació:
+        </p>
+        <div class="flex gap-4 mb-6">
+            <div class="flex-1">
+                <label class="block text-xs font-bold text-gray-500 mb-1">MES</label>
+                <select x-model="importExcelMes" class="w-full p-2 border rounded text-xs">
+                    <template x-for="(m, i) in ['Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost','Setembre','Octubre','Novembre','Desembre']">
+                        <option :value="i.toString()" x-text="m"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="flex-1">
+                <label class="block text-xs font-bold text-gray-500 mb-1">ANY</label>
+                <select x-model="importExcelAnio" class="w-full p-2 border rounded text-xs">
+                    <option value="2026">2026</option>
+                    <option value="2027">2027</option>
+                    <option value="2028">2028</option>
+                </select>
+            </div>
+        </div>
+        <div class="flex justify-end gap-2">
+            <button @click="cerrarImportExcel()" class="btn-archive">Cancel·lar</button>
+            <button @click="siguientePasoImportExcel()" class="btn-main" style="background:var(--nyn-verd-accent)!important; border-color:var(--nyn-verd-accent)!important;">Següent</button>
+        </div>
+    </div>
+
+    <!-- PASO 2: Selección de modo -->
+    <div x-show="importExcelStep === 2">
+        <p class="text-xs text-gray-600 mb-4">
+            Selecciona com vols importar les dades del fitxer per al mes de <strong x-text="['Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost','Setembre','Octubre','Novembre','Desembre'][parseInt(importExcelMes)] + ' ' + importExcelAnio"></strong>:
+        </p>
+        
+        <div class="flex flex-col gap-3 mb-6">
+            <!-- Opción A: Sobrescribir -->
+            <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="importMode" value="overwrite" x-model="importExcelModo" class="mt-1">
+                <div>
+                    <span class="block text-xs font-bold text-slate-800">🗑️ Esborrar i sobrescriure el mes sencer</span>
+                    <span class="block text-[10px] text-gray-500">S'eliminaran totes les assignacions actuals del mes i s'importaran les de l'Excel.</span>
+                </div>
+            </label>
+            
+            <!-- Opción B: Actualizar sólo parkings del Excel -->
+            <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="importMode" value="centres" x-model="importExcelModo" class="mt-1">
+                <div>
+                    <span class="block text-xs font-bold text-slate-800">🏢 Actualitzar només els centres de l'Excel</span>
+                    <span class="block text-[10px] text-gray-500">Només s'actualitzaran els centres que apareixen al fitxer de l'Excel. La resta de centres d'aquest mes no es tocaran.</span>
+                </div>
+            </label>
+            
+            <!-- Opción C: Confirmación uno a uno -->
+            <label class="flex items-start gap-3 p-3 border rounded-lg hover:bg-slate-50 cursor-pointer">
+                <input type="radio" name="importMode" value="oneByOne" x-model="importExcelModo" class="mt-1">
+                <div>
+                    <span class="block text-xs font-bold text-slate-800">🔍 Revisar canvis un a un</span>
+                    <span class="block text-[10px] text-gray-500">El sistema analitzarà les diferències i et mostrarà una llista amb cada canvi perquè decideixis si l'apliques.</span>
+                </div>
+            </label>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <button @click="importExcelStep = 1" class="btn-archive">Enrere</button>
+            <div class="flex gap-2">
+                <button @click="cerrarImportExcel()" class="btn-archive">Cancel·lar</button>
+                <button @click="siguientePasoImportExcel()" class="btn-main" style="background:var(--nyn-verd-accent)!important; border-color:var(--nyn-verd-accent)!important;">Importar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PASO 3: Revisión uno a uno -->
+    <div x-show="importExcelStep === 3" style="display: flex; flex-direction: column; height: 100%;">
+        <p class="text-xs text-gray-600 mb-3">
+            S'han detectat els següents canvis. Marca els que vulguis aplicar:
+        </p>
+
+        <div class="border rounded-lg overflow-hidden mb-4" style="max-height: 40vh; overflow-y: auto; background: white;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 10px;">
+                <thead class="sticky top-0 bg-slate-100 border-b z-10">
+                    <tr>
+                        <th style="padding: 6px; text-align: center; width: 40px;"><input type="checkbox" @change="toggleTodosCambios($event.target.checked)" checked></th>
+                        <th style="padding: 6px; text-align: left;">Centre / Torn</th>
+                        <th style="padding: 6px; text-align: center; width: 60px;">Dia</th>
+                        <th style="padding: 6px; text-align: left;">Actual</th>
+                        <th style="padding: 6px; text-align: left;">Nou (Excel)</th>
+                        <th style="padding: 6px; text-align: center; width: 100px;">Estat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <template x-for="(c, index) in importExcelCambios" :key="index">
+                        <tr class="border-b hover:bg-slate-50" :class="{'bg-red-50/40': c.error, 'bg-amber-50/40': c.conflicto}">
+                            <td style="padding: 6px; text-align: center;">
+                                <input type="checkbox" x-model="c.aplicar" :disabled="c.error">
+                            </td>
+                            <td style="padding: 6px;" class="font-semibold text-slate-700" x-text="c.parkingName + ' (' + getTranslatedTorn(c.turno) + ')'"></td>
+                            <td style="padding: 6px; text-align: center;" x-text="c.dia"></td>
+                            <td style="padding: 6px; color: #64748b;" x-text="c.workerActual"></td>
+                            <td style="padding: 6px;" class="font-semibold" :class="c.workerPropuesto === '-' ? 'text-red-600' : 'text-green-700'" x-text="c.workerPropuesto"></td>
+                            <td style="padding: 6px; text-align: center;">
+                                <span x-show="c.error" class="text-[9px] bg-red-100 text-red-800 px-1.5 py-0.5 rounded font-bold" :title="c.error">⚠️ Inexistent</span>
+                                <span x-show="c.conflicto && !c.error" class="text-[9px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold" :title="c.conflicto">⚠️ Ocupat</span>
+                                <span x-show="!c.error && !c.conflicto" class="text-[9px] bg-green-100 text-green-800 px-1.5 py-0.5 rounded font-bold">✓ Correcte</span>
+                            </td>
+                        </tr>
+                    </template>
+                    <template x-if="importExcelCambios.length === 0">
+                        <tr>
+                            <td colspan="6" class="text-center py-6 text-gray-500 font-semibold">No s'ha detectat cap canvi. El quadrant ja està actualitzat amb aquest Excel.</td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <button @click="importExcelStep = 2" class="btn-archive">Enrere</button>
+            <div class="flex gap-2">
+                <button @click="cerrarImportExcel()" class="btn-archive">Cancel·lar</button>
+                <button @click="aplicarCambiosSeleccionados()" class="btn-main" style="background:var(--nyn-verd-accent)!important; border-color:var(--nyn-verd-accent)!important;" :disabled="importExcelCambios.length === 0">Desar Canvis</button>
+            </div>
+        </div>
     </div>
 </div>
 

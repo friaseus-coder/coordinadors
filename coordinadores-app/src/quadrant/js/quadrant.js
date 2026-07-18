@@ -28,6 +28,15 @@ document.addEventListener('alpine:init', () => {
         noteText: '',
         noteCellId: '',
         
+        // Importación Excel
+        showImportExcelModal: false,
+        importExcelStep: 1,
+        importExcelMes: new Date().getMonth().toString(),
+        importExcelAnio: new Date().getFullYear().toString(),
+        importExcelModo: 'oneByOne',
+        importExcelRows: [],
+        importExcelCambios: [],
+        
         // Asistente lateral
         selectedCellId: null,
         asistenteData: {
@@ -739,9 +748,20 @@ document.addEventListener('alpine:init', () => {
                     }
                     try {
                         const allParkings = await window.api.getAparcamientos();
+                        const coordinadores = await window.api.getCoordinadores();
+                        const userName = (sessionStorage.getItem('userName') || 'Administrador').toLowerCase();
+                        
+                        // Buscar el coordinador actual en el maestro para obtener su zona asignada
+                        const coordObj = coordinadores.find(c => c.id === userName || c.nombre.toLowerCase() === userName);
+                        const coordId = coordObj ? coordObj.id : userName;
+                        const responsable = coordObj ? coordObj.nombre : 'Ambos';
+                        const zonaAsignada = coordObj ? coordObj.zona : (coordinadores[0] ? coordinadores[0].zona : 'Zona 1');
+
                         allParkings.push({
                             nombre: nouTrim,
-                            coordinadorId: (sessionStorage.getItem('userName') || 'Administrador').toLowerCase()
+                            coordinadorId: coordId,
+                            coordinador_responsable: responsable,
+                            zona: zonaAsignada
                         });
                         const res = await window.api.saveAparcamientos(allParkings);
                         if (res && res.success) {
@@ -793,6 +813,452 @@ document.addEventListener('alpine:init', () => {
             const ws = XLSX.utils.aoa_to_sheet(ws_data);
             XLSX.utils.book_append_sheet(wb, ws, "Cuadrante");
             XLSX.writeFile(wb, `Cuadrante_${this.filtros.parking}_${mesNom}_${this.filtros.anio}.xlsx`);
+        },
+
+        async iniciarImportarExcel(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+                    const rows = XLSX.utils.sheet_to_json(worksheet, {header: 1});
+                    
+                    if (!rows || rows.length < 3) {
+                        alert(i18n.getLanguage() === 'es' ? "El archivo Excel no tiene el formato correcto o está vacío." : "El fitxer Excel no té el format correcte o està buit.");
+                        return;
+                    }
+                    
+                    this.importExcelRows = rows;
+                    
+                    // Intentar adivinar mes y año de la celda A1 (rows[0][0])
+                    const textCabecera = rows[0] && rows[0][0] ? rows[0][0].toString() : "";
+                    const match = textCabecera.match(/INFORME CUADRANTES\s*-\s*([A-Za-zÁÉÍÓÚáéíóúçÇñÑ]+)\s+(\d{4})/i);
+                    if (match) {
+                        const mesDetectado = match[1].toLowerCase();
+                        const anioDetectado = match[2];
+                        const MESES_MAP = {
+                            'gener': 0, 'enero': 0,
+                            'febrer': 1, 'febrero': 1,
+                            'març': 2, 'marzo': 2,
+                            'abril': 3,
+                            'maig': 4, 'mayo': 4,
+                            'juny': 5, 'junio': 5,
+                            'juliol': 6, 'julio': 6,
+                            'agost': 7, 'agosto': 7,
+                            'setembre': 8, 'septiembre': 8,
+                            'octubre': 9,
+                            'novembre': 10, 'noviembre': 10,
+                            'desembre': 11, 'diciembre': 11
+                        };
+                        if (MESES_MAP[mesDetectado] !== undefined) {
+                            this.importExcelMes = MESES_MAP[mesDetectado].toString();
+                            this.importExcelAnio = anioDetectado;
+                        }
+                    } else {
+                        this.importExcelMes = this.filtros.mes;
+                        this.importExcelAnio = this.filtros.anio;
+                    }
+                    
+                    this.importExcelStep = 1;
+                    this.importExcelModo = 'oneByOne';
+                    this.showImportExcelModal = true;
+                } catch (err) {
+                    console.error("Error al leer Excel:", err);
+                    alert("Error al procesar el archivo Excel.");
+                } finally {
+                    event.target.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        },
+        
+        cerrarImportExcel() {
+            this.showImportExcelModal = false;
+            this.importExcelRows = [];
+            this.importExcelCambios = [];
+        },
+        
+        toggleTodosCambios(val) {
+            this.importExcelCambios.forEach(c => {
+                if (!c.error) {
+                    c.aplicar = val;
+                }
+            });
+        },
+        
+        async siguientePasoImportExcel() {
+            if (this.importExcelStep === 1) {
+                this.importExcelStep = 2;
+            } else if (this.importExcelStep === 2) {
+                if (this.importExcelModo === 'oneByOne') {
+                    await this.calcularCambiosImportExcel();
+                    this.importExcelStep = 3;
+                } else {
+                    const confirmMsg = i18n.getLanguage() === 'es'
+                        ? `⚠️ ¿Estás seguro de que quieres proceder con la importación en modo '${this.importExcelModo === 'overwrite' ? 'Sobrescribir mes completo' : 'Actualizar solo centros del Excel'}'? Esta acción modificará directamente la base de datos.`
+                        : `⚠️ Estàs segur que vols procedir amb la importació en mode '${this.importExcelModo === 'overwrite' ? 'Sobrescriure mes sencer' : 'Actualitzar només centres de l\'Excel'}'? Aquesta acció modificarà directament la base de dades.`;
+                    
+                    if (confirm(confirmMsg)) {
+                        await this.ejecutarImportacionDirecta();
+                    }
+                }
+            }
+        },
+        
+        async calcularCambiosImportExcel() {
+            try {
+                const mesNum = (parseInt(this.importExcelMes) + 1).toString().padStart(2, '0');
+                const numDays = new Date(parseInt(this.importExcelAnio), parseInt(this.importExcelMes) + 1, 0).getDate();
+                
+                const empleadosBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM empleados", []);
+                const parkingsBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
+                
+                const normalizar = (str) => {
+                    if (!str) return "";
+                    return str.toString().toLowerCase()
+                        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                        .trim().replace(/\s+/g, " ");
+                };
+                
+                const mapEmpleados = {};
+                empleadosBD.forEach(e => {
+                    mapEmpleados[normalizar(e.nombre)] = { id: e.id, nombreBD: e.nombre };
+                });
+                
+                const mapParkings = {};
+                parkingsBD.forEach(p => {
+                    mapParkings[normalizar(p.nombre)] = { id: p.id, nombreBD: p.nombre };
+                });
+                
+                const pattern = `${this.importExcelAnio}-${mesNum}-%`;
+                const query = `
+                    SELECT q.*, a.nombre as agente_nombre, ap.nombre as aparcamiento_nombre 
+                    FROM quadrant q
+                    LEFT JOIN empleados a ON q.agente_id = a.id
+                    JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
+                    WHERE q.fecha LIKE ?
+                `;
+                const turnosActuales = await window.dbAPI.read('operativa', query, [pattern]);
+                
+                const getTurnoActual = (parkingNorm, turno, dia) => {
+                    const fechaStr = `${this.importExcelAnio}-${mesNum}-${dia.toString().padStart(2, '0')}`;
+                    const match = turnosActuales.find(t => 
+                        normalizar(t.aparcamiento_nombre) === parkingNorm && 
+                        t.turno === turno && 
+                        t.fecha === fechaStr
+                    );
+                    return match ? (match.agente_nombre || "-") : "-";
+                };
+                
+                const cambios = [];
+                const rows = this.importExcelRows;
+                const filasPropuestas = [];
+                
+                for (let i = 3; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r || r.length === 0 || !r[0]) continue;
+                    
+                    const parkingExcel = r[0].toString().trim();
+                    const turnoExcel = r[1] ? r[1].toString().trim().toUpperCase() : "";
+                    
+                    let turnoNorm = "";
+                    if (turnoExcel === "MAÑANA" || turnoExcel === "MATÍ") turnoNorm = "MATÍ";
+                    else if (turnoExcel === "TARDE" || turnoExcel === "TARDA") turnoNorm = "TARDA";
+                    else if (turnoExcel === "NOCHE" || turnoExcel === "NIT") turnoNorm = "NIT";
+                    
+                    if (!turnoNorm) continue;
+                    
+                    const parkingNorm = normalizar(parkingExcel);
+                    const parkingRef = mapParkings[parkingNorm];
+                    
+                    filasPropuestas.push({
+                        parkingExcel,
+                        parkingNorm,
+                        parkingId: parkingRef ? parkingRef.id : null,
+                        parkingNameBD: parkingRef ? parkingRef.nombreBD : parkingExcel,
+                        turnoNorm,
+                        diasExcel: r.slice(2)
+                    });
+                }
+                
+                const asignacionesExcelPorDia = {};
+                for (let dia = 1; dia <= numDays; dia++) {
+                    asignacionesExcelPorDia[dia] = {};
+                    filasPropuestas.forEach(fp => {
+                        const workerProp = fp.diasExcel[dia - 1];
+                        if (workerProp && workerProp.toString().trim() && workerProp.toString().trim() !== "-") {
+                            const wNorm = normalizar(workerProp);
+                            if (!asignacionesExcelPorDia[dia][wNorm]) {
+                                asignacionesExcelPorDia[dia][wNorm] = [];
+                            }
+                            asignacionesExcelPorDia[dia][wNorm].push({ parking: fp.parkingNameBD, turno: fp.turnoNorm });
+                        }
+                    });
+                }
+                
+                for (const fp of filasPropuestas) {
+                    for (let dia = 1; dia <= numDays; dia++) {
+                        const workerProp = fp.diasExcel[dia - 1] ? fp.diasExcel[dia - 1].toString().trim() : "";
+                        const workerPropNorm = normalizar(workerProp || "-");
+                        
+                        const workerAct = getTurnoActual(fp.parkingNorm, fp.turnoNorm, dia);
+                        const workerActNorm = normalizar(workerAct);
+                        
+                        if (workerActNorm !== workerPropNorm) {
+                            let error = null;
+                            let conflicto = null;
+                            let workerPropNameBD = workerProp || "-";
+                            let propAgenteId = 0;
+                            
+                            if (!fp.parkingId) {
+                                error = i18n.getLanguage() === 'es' 
+                                    ? `Centro '${fp.parkingExcel}' no encontrado`
+                                    : `Centre '${fp.parkingExcel}' no trobat`;
+                            }
+                            
+                            if (workerProp && workerProp !== "-") {
+                                const empRef = mapEmpleados[workerPropNorm];
+                                if (!empRef) {
+                                    error = i18n.getLanguage() === 'es' 
+                                        ? `Trabajador '${workerProp}' no existe en BD`
+                                        : `Treballador '${workerProp}' no existeix a BD`;
+                                } else {
+                                    workerPropNameBD = empRef.nombreBD;
+                                    propAgenteId = empRef.id;
+                                    
+                                    if (asignacionesExcelPorDia[dia][workerPropNorm] && asignacionesExcelPorDia[dia][workerPropNorm].length > 1) {
+                                        const duplicados = asignacionesExcelPorDia[dia][workerPropNorm]
+                                            .filter(x => !(x.parking === fp.parkingNameBD && x.turno === fp.turnoNorm))
+                                            .map(x => `${x.parking} (${this.getTranslatedTorn(x.turno)})`)
+                                            .join(', ');
+                                        conflicto = i18n.getLanguage() === 'es'
+                                            ? `Asignado en Excel el mismo día en: ${duplicados}`
+                                            : `Assignat a l'Excel el mateix dia a: ${duplicados}`;
+                                    } else {
+                                        const fechaStr = `${this.importExcelAnio}-${mesNum}-${dia.toString().padStart(2, '0')}`;
+                                        const yaAsignadoEnBD = turnosActuales.some(t => 
+                                            t.agente_id === propAgenteId && 
+                                            t.fecha === fechaStr && 
+                                            normalizar(t.aparcamiento_nombre) !== fp.parkingNorm
+                                        );
+                                        if (yaAsignadoEnBD) {
+                                            conflicto = i18n.getLanguage() === 'es'
+                                                ? "Ya asignado en BD este día en otro centro"
+                                                : "Ja assignat a BD aquest dia a un altre centre";
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            cambios.push({
+                                parkingName: fp.parkingNameBD,
+                                parkingId: fp.parkingId,
+                                turno: fp.turnoNorm,
+                                dia,
+                                fecha: `${this.importExcelAnio}-${mesNum}-${dia.toString().padStart(2, '0')}`,
+                                workerActual: workerAct,
+                                workerPropuesto: workerPropNameBD,
+                                propAgenteId,
+                                conflicto,
+                                error,
+                                aplicar: !error
+                            });
+                        }
+                    }
+                }
+                
+                this.importExcelCambios = cambios;
+            } catch (err) {
+                console.error("Error al calcular cambios de importación:", err);
+                alert("Error al analizar y comparar las diferencias.");
+            }
+        },
+        
+        async ejecutarImportacionDirecta() {
+            try {
+                const mesNum = (parseInt(this.importExcelMes) + 1).toString().padStart(2, '0');
+                const numDays = new Date(parseInt(this.importExcelAnio), parseInt(this.importExcelMes) + 1, 0).getDate();
+                
+                const empleadosBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM empleados", []);
+                const parkingsBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
+                
+                const normalizar = (str) => {
+                    if (!str) return "";
+                    return str.toString().toLowerCase()
+                        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                        .trim().replace(/\s+/g, " ");
+                };
+                
+                const mapEmpleados = {};
+                empleadosBD.forEach(e => {
+                    mapEmpleados[normalizar(e.nombre)] = e.id;
+                });
+                
+                const mapParkings = {};
+                parkingsBD.forEach(p => {
+                    mapParkings[normalizar(p.nombre)] = p.id;
+                });
+                
+                const rows = this.importExcelRows;
+                const pattern = `${this.importExcelAnio}-${mesNum}-%`;
+                
+                await window.dbAPI.write('operativa', "BEGIN TRANSACTION;", []);
+                
+                if (this.importExcelModo === 'overwrite') {
+                    await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ?", [pattern]);
+                }
+                
+                const centresProcesados = new Set();
+                const asignacionesAInsertar = [];
+                const advertencias = [];
+                
+                for (let i = 3; i < rows.length; i++) {
+                    const r = rows[i];
+                    if (!r || r.length === 0 || !r[0]) continue;
+                    
+                    const parkingExcel = r[0].toString().trim();
+                    const turnoExcel = r[1] ? r[1].toString().trim().toUpperCase() : "";
+                    
+                    let turnoNorm = "";
+                    if (turnoExcel === "MAÑANA" || turnoExcel === "MATÍ") turnoNorm = "MATÍ";
+                    else if (turnoExcel === "TARDE" || turnoExcel === "TARDA") turnoNorm = "TARDA";
+                    else if (turnoExcel === "NOCHE" || turnoExcel === "NIT") turnoNorm = "NIT";
+                    
+                    if (!turnoNorm) continue;
+                    
+                    const parkingNorm = normalizar(parkingExcel);
+                    const parkingRef = mapParkings[parkingNorm];
+                    
+                    if (!parkingRef) {
+                        advertencias.push(`Centro '${parkingExcel}' ignorado (no encontrado en BD).`);
+                        continue;
+                    }
+                    
+                    const parkingId = parkingRef.id;
+                    
+                    if (this.importExcelModo === 'centres' && !centresProcesados.has(parkingId)) {
+                        await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ? AND aparcamiento_id = ?", [pattern, parkingId]);
+                        centresProcesados.add(parkingId);
+                    }
+                    
+                    let horaInicio = "06:00";
+                    let horaFin = "14:00";
+                    if (turnoNorm === "TARDA") { horaInicio = "14:00"; horaFin = "22:00"; }
+                    else if (turnoNorm === "NIT") { horaInicio = "22:00"; horaFin = "06:00"; }
+                    
+                    for (let dia = 1; dia <= numDays; dia++) {
+                        const workerProp = r[2 + dia - 1] ? r[2 + dia - 1].toString().trim() : "";
+                        if (workerProp && workerProp !== "-") {
+                            const workerPropNorm = normalizar(workerProp);
+                            const agenteId = mapEmpleados[workerPropNorm];
+                            
+                            if (!agenteId) {
+                                advertencias.push(`Asignación día ${dia} centro ${parkingExcel}: Empleado '${workerProp}' no encontrado en BD.`);
+                                continue;
+                            }
+                            
+                            const fechaStr = `${this.importExcelAnio}-${mesNum}-${dia.toString().padStart(2, '0')}`;
+                            asignacionesAInsertar.push({
+                                fecha: fechaStr,
+                                aparcamiento_id: parkingId,
+                                agente_id: agenteId,
+                                turno: turnoNorm,
+                                hora_inicio: horaInicio,
+                                hora_fin: horaFin
+                            });
+                        }
+                    }
+                }
+                
+                for (const asig of asignacionesAInsertar) {
+                    await window.dbAPI.write('operativa', `
+                        INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio)
+                        VALUES (?, ?, ?, ?, ?, ?, 8, 0)
+                    `, [asig.fecha, asig.aparcamiento_id, asig.agente_id, asig.turno, asig.hora_inicio, asig.hora_fin]);
+                }
+                
+                await window.dbAPI.write('operativa', "COMMIT;", []);
+                
+                this.filtros.mes = this.importExcelMes;
+                this.filtros.anio = this.importExcelAnio;
+                await this.cargarCuadrantes();
+                
+                this.cerrarImportExcel();
+                
+                let successMsg = i18n.getLanguage() === 'es'
+                    ? "✅ Importación directa finalizada con éxito."
+                    : "✅ Importació directa finalitzada amb èxit.";
+                    
+                if (advertencias.length > 0) {
+                    successMsg += "\n\nAdvertencias:\n" + advertencias.slice(0, 10).join("\n") + (advertencias.length > 10 ? "\n..." : "");
+                }
+                alert(successMsg);
+            } catch (err) {
+                await window.dbAPI.write('operativa', "ROLLBACK;", []);
+                console.error("Error en importación directa:", err);
+                alert("Fallo al guardar los datos en la base de datos.");
+            }
+        },
+        
+        async aplicarCambiosSeleccionados() {
+            try {
+                await window.dbAPI.write('operativa', "BEGIN TRANSACTION;", []);
+                
+                const cambiosAAplicar = this.importExcelCambios.filter(c => c.aplicar && !c.error);
+                
+                for (const c of cambiosAAplicar) {
+                    if (c.workerPropuesto === "-" || c.propAgenteId === 0) {
+                        await window.dbAPI.write('operativa', `
+                            DELETE FROM quadrant 
+                            WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?
+                        `, [c.fecha, c.parkingId, c.turno]);
+                    } else {
+                        const check = await window.dbAPI.read('operativa', `
+                            SELECT id FROM quadrant 
+                            WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?
+                        `, [c.fecha, c.parkingId, c.turno]);
+                        
+                        if (check && check.length > 0) {
+                            await window.dbAPI.write('operativa', `
+                                UPDATE quadrant 
+                                SET agente_id = ? 
+                                WHERE id = ?
+                            `, [c.propAgenteId, check[0].id]);
+                        } else {
+                            let horaInicio = "06:00";
+                            let horaFin = "14:00";
+                            if (c.turno === "TARDA") { horaInicio = "14:00"; horaFin = "22:00"; }
+                            else if (c.turno === "NIT") { horaInicio = "22:00"; horaFin = "06:00"; }
+                            
+                            await window.dbAPI.write('operativa', `
+                                INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio)
+                                VALUES (?, ?, ?, ?, ?, ?, 8, 0)
+                            `, [c.fecha, c.parkingId, c.propAgenteId, c.turno, horaInicio, horaFin]);
+                        }
+                    }
+                }
+                
+                await window.dbAPI.write('operativa', "COMMIT;", []);
+                
+                this.filtros.mes = this.importExcelMes;
+                this.filtros.anio = this.importExcelAnio;
+                await this.cargarCuadrantes();
+                
+                this.cerrarImportExcel();
+                
+                alert(i18n.getLanguage() === 'es'
+                    ? "✅ Cambios aplicados correctamente."
+                    : "✅ Canvis aplicats correctament.");
+            } catch (err) {
+                await window.dbAPI.write('operativa', "ROLLBACK;", []);
+                console.error("Error al aplicar cambios seleccionados:", err);
+                alert("Fallo al aplicar las modificaciones.");
+            }
         }
     }));
 });

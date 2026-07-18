@@ -9,7 +9,7 @@ contextBridge.exposeInMainWorld('api', {
   forceReleaseLock: (relativePath) => ipcRenderer.invoke('force-release-lock', relativePath),
   // Gestión dinámica de coordinadores
   getCoordinadores: () => ipcRenderer.invoke('get-coordinadores'),
-  addCoordinador: (nombre, apellido) => ipcRenderer.invoke('add-coordinador', nombre, apellido),
+  addCoordinador: (nombre, apellido, zona) => ipcRenderer.invoke('add-coordinador', nombre, apellido, zona),
   removeCoordinador: (id) => ipcRenderer.invoke('remove-coordinador', id),
   // Gestión dinámica de aparcamientos
   getAparcamientos: () => ipcRenderer.invoke('get-aparcamientos'),
@@ -32,7 +32,8 @@ contextBridge.exposeInMainWorld('api', {
   // Gestión de contratos de trabajadores
   getContratosAgente: (agenteId) => ipcRenderer.invoke('get-contratos-agente', agenteId),
   addContratoAgente: (datos) => ipcRenderer.invoke('add-contrato-agente', datos),
-  cerrarContratoAgente: (contratoId) => ipcRenderer.invoke('cerrar-contrato-agente', contratoId)
+  cerrarContratoAgente: (contratoId) => ipcRenderer.invoke('cerrar-contrato-agente', contratoId),
+  fixFocus: () => ipcRenderer.invoke('focus-fix')
 });
 
 contextBridge.exposeInMainWorld('databaseAPI', {

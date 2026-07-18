@@ -154,6 +154,15 @@ function dbAll(sql, params = []) {
   });
 }
 
+function dbRun(sql, params = []) {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function(err) {
+      if (err) reject(err);
+      else resolve(this);
+    });
+  });
+}
+
 function conectarBaseDatosUnica(rutaCompartida) {
   NETWORK_DIR = rutaCompartida;
   currentDbPath = path.join(NETWORK_DIR, 'dades.db');
@@ -1538,8 +1547,8 @@ async function readCoordinadoresAsync() {
   }
   // Devolver datos por defecto si no existe el archivo
   return [
-    { id: 'albert', nombre: 'Albert', apellido: 'Campins' },
-    { id: 'laura', nombre: 'Laura', apellido: 'Navarro' }
+    { id: 'albert', nombre: 'Albert', apellido: 'Campins', zona: 'Zona 1' },
+    { id: 'laura', nombre: 'Laura', apellido: 'Navarro', zona: 'Zona 2' }
   ];
 }
 
@@ -1555,7 +1564,7 @@ ipcMain.handle('get-coordinadores', async () => {
 });
 
 // 8. Añadir un nuevo coordinador
-ipcMain.handle('add-coordinador', async (event, nombre, apellido) => {
+ipcMain.handle('add-coordinador', async (event, nombre, apellido, zona) => {
   try {
     const id = nombre.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '_');
     const coordinadores = await readCoordinadoresAsync();
@@ -1566,7 +1575,7 @@ ipcMain.handle('add-coordinador', async (event, nombre, apellido) => {
     }
 
     // Añadir el nuevo coordinador
-    coordinadores.push({ id, nombre, apellido });
+    coordinadores.push({ id, nombre, apellido, zona });
     await saveCoordinadoresAsync(coordinadores);
 
     // Crear la carpeta de datos del coordinador
@@ -1576,8 +1585,8 @@ ipcMain.handle('add-coordinador', async (event, nombre, apellido) => {
       console.log(`[COORDINADORES] Creada carpeta de datos: ${userFolder}`);
     }
 
-    console.log(`[COORDINADORES] Nuevo coordinador añadido: ${nombre} ${apellido} (id: ${id})`);
-    return { success: true, coordinador: { id, nombre, apellido } };
+    console.log(`[COORDINADORES] Nuevo coordinador añadido: ${nombre} ${apellido} (id: ${id}, zona: ${zona})`);
+    return { success: true, coordinador: { id, nombre, apellido, zona } };
   } catch (error) {
     console.error('[COORDINADORES] Error al añadir coordinador:', error);
     return { success: false, error: error.message };
@@ -3274,6 +3283,15 @@ ipcMain.handle('get-user-config', () => {
     return {};
   }
 });
+
+ipcMain.handle('focus-fix', async () => {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.blur();
+    mainWindow.focus();
+  }
+  return true;
+});
+
 
 
 // Cerrar de forma limpia todas las conexiones SQLite al salir
