@@ -5,6 +5,16 @@
     <title>Asistente de Carga de Históricos</title>
     <script src="../js/i18n.js"></script>
     <script>
+
+        function mostrarAlerta(msg) {
+            const isError = String(msg).toLowerCase().includes('error');
+            if (window.parent && typeof window.parent.showCustomAlert === 'function') {
+                window.parent.showCustomAlert(msg, isError ? 'error' : 'success');
+            } else {
+                window.alert(msg);
+            }
+        }
+
        // Forzar traducción inmediata al cargar
        document.addEventListener('DOMContentLoaded', () => {
            if(typeof applyTranslations === 'function') applyTranslations();
@@ -1405,14 +1415,14 @@
                 } catch (err) {
                     console.error("Error al procesar el archivo JSON:", err);
                     const msg = window.i18n && window.i18n.t ? window.i18n.t('alertErrorParse') : "El archivo no contiene un JSON válido o tiene un formato incorrecto.";
-                    alert(msg + " " + err.message);
+                    mostrarAlerta(msg + " " + err.message);
                     document.getElementById('btnGoToStep2').disabled = true;
                 }
             };
             
             reader.onerror = function() {
                 const msg = window.i18n && window.i18n.t ? window.i18n.t('alertErrorLeer') : "Error al leer el archivo JSON.";
-                alert(msg);
+                mostrarAlerta(msg);
                 document.getElementById('btnGoToStep2').disabled = true;
             };
             
@@ -1428,7 +1438,7 @@
 
         async function seleccionarArchivosJson() {
             if (!electronApi || !electronApi.seleccionarArchivosMigracion) {
-                alert("API de selección de archivos no disponible.");
+                mostrarAlerta("API de selección de archivos no disponible.");
                 return;
             }
 
@@ -1463,7 +1473,7 @@
                 
                 document.getElementById('btnGoToStep2').disabled = false;
             } else if (result.error) {
-                alert("Error al cargar archivos: " + result.error);
+                mostrarAlerta("Error al cargar archivos: " + result.error);
             }
         }
 
@@ -2218,7 +2228,7 @@
 
         async function ejecutarMigracionFinal() {
             if (!dbApi) {
-                alert("API de base de datos no disponible.");
+                mostrarAlerta("API de base de datos no disponible.");
                 return;
             }
             
@@ -2271,7 +2281,7 @@
                         `, params: [empleadoIdUsuario, r.fecha, r.concepto, JSON.stringify({ km: r.km, tarifa: r.tarifa, extras: r.extras })] });
                     }
                     
-                    await dbApi.writeBatch('finanzas', opsGastos);
+                    await window.dbAPI.writeBatch('finanzas', opsGastos);
                     
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
@@ -2287,7 +2297,7 @@
                     console.error("Error global en migración de gastos:", errGlobal);
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
+                    mostrarAlerta((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
                 }
                 return;
             }
@@ -2345,7 +2355,7 @@
                     console.error("Error global en migración de rutas:", errGlobal);
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
+                    mostrarAlerta((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
                 }
                 return;
             }
@@ -2371,17 +2381,20 @@
                     const ops = [];
                     
                     if (estrategia === 'overwrite') {
-                        ops.push({ query: "DELETE FROM comerciales", params: [] });
+                        ops.push({ query: "DELETE FROM tarifas_comerciales", params: [] });
                     }
                     
                     for (const r of registrosParaInsertar) {
                         if (estrategia === 'add') {
-                            ops.push({ query: "DELETE FROM comerciales WHERE nombre = ?", params: [r.centro.toUpperCase()] });
+                            ops.push({ query: "DELETE FROM tarifas_comerciales WHERE aparcamiento = ?", params: [r.centro.toUpperCase()] });
                         }
                         ops.push({ query: `
-                            INSERT INTO comerciales (nombre, plazas_libres, tarifa, notas)
-                            VALUES (?, ?, ?, ?)
+                            INSERT INTO tarifas_comerciales (coordinador, mes, anio, aparcamiento, vacantes, tarifa, observaciones)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
                         `, params: [
+                            r.coordinador || 'Desconocido',
+                            new Date().getMonth() + 1,
+                            new Date().getFullYear(),
                             r.centro.toUpperCase(),
                             r.vacants,
                             r.tarifa,
@@ -2398,14 +2411,14 @@
                     const resumenMsg = isCa 
                         ? `Migració de Comerciales completada:\n- Èxits: ${registrosParaInsertar.length} registres`
                         : `Migración de Comerciales completada:\n- Éxitos: ${registrosParaInsertar.length} registros`;
-                    alert(resumenMsg);
+                    mostrarAlerta(resumenMsg);
                     
                     reiniciarAsistente();
                 } catch (errGlobal) {
                     console.error("Error global en migración de comerciales:", errGlobal);
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    alert((isCa ? "Error al executar la importació: " : "Error al ejecutar la importación: ") + errGlobal.message);
+                    mostrarAlerta((isCa ? "Error al executar la importació: " : "Error al ejecutar la importación: ") + errGlobal.message);
                 }
                 return;
             }
@@ -2533,7 +2546,7 @@
             } catch (err) {
                 btn.disabled = false;
                 btn.innerHTML = '🚀 Confirmar i Importar';
-                alert("❌ Error al executar la importació definitiva: " + err.message);
+                mostrarAlerta("❌ Error al executar la importació definitiva: " + err.message);
             }
         }
 
@@ -2877,7 +2890,7 @@
          */
         async function descargarDatosMaestros(tabla) {
             if (!dbApi) {
-                alert('API de base de datos no disponible.');
+                mostrarAlerta('API de base de datos no disponible.');
                 return;
             }
 
@@ -2990,7 +3003,7 @@
          */
         async function importarDatosMaestros(tabla) {
             if (!dbApi) {
-                alert('API de base de datos no disponible.');
+                mostrarAlerta('API de base de datos no disponible.');
                 return;
             }
 
@@ -3148,7 +3161,7 @@
                         `  • operativa.ranking   — ${exitosOperativa} inserciones correctas\n` +
                         (errores > 0 ? `  • Errores: ${errores}\n` : '') +
                         `\nTotal trabajadores procesados: ${datos.length}`;
-                    alert(resumen);
+                    mostrarAlerta(resumen);
 
                     mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
                         `✅ Completado — ${exitosCatalogos} en catalogos, ${exitosOperativa} en ranking` +
@@ -3198,7 +3211,7 @@
                         `  • Éxitos: ${exitosCatalogos}\n` +
                         (errores > 0 ? `  • Errores: ${errores}\n` : '') +
                         `\nTotal procesados: ${datos.length}`;
-                    alert(resumen);
+                    mostrarAlerta(resumen);
 
                     mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
                         `✅ Importación completada — ${exitosCatalogos} inserción(es) correctas` +
@@ -3211,7 +3224,7 @@
             } catch(errGlobal) {
                 console.error(`[Maestros/${tabla}] Error global:`, errGlobal);
                 mostrarLogMaestros(logEl, 'error', `❌ Error inesperado: ${errGlobal.message}`);
-                alert(`❌ Error al ejecutar la importación: ${errGlobal.message}`);
+                mostrarAlerta(`❌ Error al ejecutar la importación: ${errGlobal.message}`);
             } finally {
                 btnEl.disabled = false;
                 btnEl.innerHTML = '🚀 Importar';
