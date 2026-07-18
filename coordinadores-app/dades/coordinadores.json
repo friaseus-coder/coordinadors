@@ -1,6 +1,16 @@
 {
   "coordinadores": [
-    { "id": "albert", "nombre": "Albert", "apellido": "Campins" },
-    { "id": "laura", "nombre": "Laura", "apellido": "Navarro" }
+    {
+      "id": "albert",
+      "nombre": "Albert",
+      "apellido": "Campins",
+      "zona": "Zona 1"
+    },
+    {
+      "id": "laura",
+      "nombre": "Laura",
+      "apellido": "Navarro",
+      "zona": "Zona 2"
+    }
   ]
 }

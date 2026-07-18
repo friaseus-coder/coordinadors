@@ -1540,7 +1540,20 @@ async function readCoordinadoresAsync() {
     if (await fileExists(coordinadoresFile)) {
       const content = await fs.promises.readFile(coordinadoresFile, 'utf8');
       const parsed = JSON.parse(content);
-      return parsed.coordinadores || [];
+      const list = parsed.coordinadores || [];
+      // Asegurar que cada coordinador tenga asignada una zona
+      list.forEach(c => {
+        if (!c.zona) {
+          if (c.id === 'albert' || c.nombre.toLowerCase() === 'albert') {
+            c.zona = 'Zona 1';
+          } else if (c.id === 'laura' || c.nombre.toLowerCase() === 'laura') {
+            c.zona = 'Zona 2';
+          } else {
+            c.zona = 'Zona 1';
+          }
+        }
+      });
+      return list;
     }
   } catch (error) {
     console.error('[COORDINADORES] Error al leer coordinadores.json:', error);
