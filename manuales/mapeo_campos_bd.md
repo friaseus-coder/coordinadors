@@ -151,20 +151,34 @@ Gestionado en la herramienta de inventariado de oficinas y parkings (`inventari.
 
 ---
 
-## 9. Módulo: Estadísticas de Comerciales
-Gestionado en la tabla de tarifas y rendimiento de comerciales (`ranking.html` - sección comercial).
+## 9. Módulo: Gestión Comercial (Tarifas y Estadísticas)
+Gestionado en la nueva interfaz de comerciales (`comercials.html`) utilizando Alpine.js.
 
-*Se almacena un JSON serializado en la columna `value` con una clave (`key`) mensual: `dades [Usuario_Sesión]/comercials_[coordinador]_[mes]_[año].json`.*
+*Se ha migrado del modelo legacy `kv_store` a tablas estructuradas dentro de `comercial.db`.*
 
-| Campo en Tabla (UI) | Base de Datos SQLite | Tabla Física | Columna Física (JSON) | Tipo de Dato | Observaciones |
+### A. Tarifas Comerciales Mensuales
+| Campo en Interfaz (UI) | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Aparcamiento** | `comercial.db` | `kv_store` | Índice `0` | `TEXT` | Nombre del centro comercializado. |
-| **Dirección** | `comercial.db` | `kv_store` | Índice `1` | `TEXT` | Dirección física. |
-| **Fijos (Abonos)** | `comercial.db` | `kv_store` | Índice `2` | `INTEGER` | Plazas fijas asignadas. |
-| **Variables** | `comercial.db` | `kv_store` | Índice `3` | `INTEGER` | Plazas variables. |
-| **Vacantes** | `comercial.db` | `kv_store` | Índice `4` | `INTEGER` | Plazas vacías. |
-| **Tarifa Mensual** | `comercial.db` | `kv_store` | Índice `5` | `REAL` | Importe por abono. |
-| **Observaciones** | `comercial.db` | `kv_store` | Índice `6` | `TEXT` | Notas del comercial. |
+| **Coordinador** | `comercial.db` | `tarifas_comerciales` | `coordinador` | `TEXT` | Usuario responsable de la tarifa. |
+| **Mes / Año** | `comercial.db` | `tarifas_comerciales` | `mes`, `anio` | `INTEGER` | Periodo de la estadística. |
+| **Aparcamiento** | `comercial.db` | `tarifas_comerciales` | `aparcamiento` | `TEXT` | Nombre del centro comercializado. |
+| **Dirección** | `comercial.db` | `tarifas_comerciales` | `direccion` | `TEXT` | Dirección física. |
+| **Fijos (Abonos)** | `comercial.db` | `tarifas_comerciales` | `fijos` | `INTEGER` | Plazas fijas asignadas. |
+| **Variables** | `comercial.db` | `tarifas_comerciales` | `variables` | `INTEGER` | Plazas variables. |
+| **Vacantes** | `comercial.db` | `tarifas_comerciales` | `vacantes` | `INTEGER` | Plazas vacías. |
+| **Tarifa Mensual** | `comercial.db` | `tarifas_comerciales` | `tarifa` | `REAL` | Importe por abono. |
+| **Observaciones** | `comercial.db` | `tarifas_comerciales` | `observaciones` | `TEXT` | Notas adicionales. |
+
+### B. Catálogo Base de Comerciales
+| Campo en Interfaz (UI) | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| **Nombre** | `comercial.db` | `comerciales` | `nombre` | `TEXT` | Nombre del comercial o centro. |
+| **Dirección** | `comercial.db` | `comerciales` | `direccion` | `TEXT` | Dirección física. |
+| **Plantas** | `comercial.db` | `comerciales` | `plantas` | `TEXT` | Información sobre las plantas. |
+| **Capacidad** | `comercial.db` | `comerciales` | `capacidad` | `TEXT` | Capacidad total de vehículos. |
+| **Plazas Libres** | `comercial.db` | `comerciales` | `plazas_libres` | `TEXT` | Plazas actualmente libres. |
+| **Tarifa** | `comercial.db` | `comerciales` | `tarifa` | `TEXT` | Descripción de la tarifa base. |
+| **Notas** | `comercial.db` | `comerciales` | `notas` | `TEXT` | Detalles y notas. |
 
 ---
 

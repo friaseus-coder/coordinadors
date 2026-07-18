@@ -7,7 +7,8 @@ Este documento detalla el funcionamiento interno, la arquitectura de archivos, l
 La aplicación se ha diseñado para funcionar sin servidores de backend ni bases de datos en la nube (como PostgreSQL o MySQL remotos). Esto reduce a cero los costes de mantenimiento y simplifica el despliegue en la red de la oficina.
 
 *   **Runtime:** [Electron.js (v31)](https://www.electronjs.org/), que unifica el motor de renderizado Chromium de Google con el entorno de ejecución Node.js de escritorio.
-*   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS), **Alpine.js (v3.x.x)** como micro-framework reactivo y JavaScript nativo ES6.
+*   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS), **Alpine.js (v3.x.x)** como micro-framework reactivo para módulos como el de comerciales, y JavaScript nativo ES6.
+*   **Internacionalización (i18n):** Módulo propio (`i18n.js`) para traducción dinámica de la interfaz y elementos estáticos.
 *   **Fuentes de Texto:** Carga de la tipografía premium **Outfit** desde Google Fonts.
 *   **Persistencia y Triple Estrategia (Sharding Lógico + Caché Local):** La persistencia se divide en 4 bases de datos SQLite independientes según áreas de negocio: `operativa_rrhh.db`, `finanzas_inventario.db`, `comercial.db` y `catalogos_maestros.db`. En el arranque, Electron realiza una copia de caché en el almacenamiento local del usuario (`app.getPath('userData')/db_cache`). Todas las lecturas se resuelven exclusivamente sobre esta caché local, eliminando latencias de red y cuelgues por conectividad lenta.
 *   **Concurrencia (Mutex de Red con Auto-caducidad y Override):** Para evitar la corrupción de datos por concurrencia multi-usuario, las escrituras en red están controladas por un Candado Mutex de directorio físico (`_<dbKey>.lock`). Antes de modificar una base de datos en red, el proceso realiza un intento de creación de carpeta (`fs.mkdirSync`). Si la carpeta ya existe por un fallo anterior (cuelgue de otro usuario), la aplicación evalúa su antigüedad mediante `fs.statSync`. Si es superior a 3 minutos (180,000 ms), se asume que es un candado fantasma y se auto-elimina (`fs.rmSync`) de forma segura antes de reintentar. Además, los usuarios con rol de "Jefe de Operaciones" pueden forzar el desbloqueo desde la interfaz mediante un canal IPC dedicado.
@@ -43,8 +44,12 @@ coordinadores-app/
     │   ├── calendari.js    # Base de datos del santoral y festivos
     │   ├── i18n.js         # Soporte multi-idioma
     │   └── persistence.js  # Lógica de persistencia relacional con window.dbAPI
-    └── comercials/         # Submódulo dinámico de comerciales
-        └── comercials.html
+    ├── migrador/           # Asistente de migración de datos históricos
+    │   └── migrador.html
+    └── comercials/         # Submódulo de comerciales gestionado con Alpine.js
+        ├── comercials.html
+        └── js/
+            └── comercials.js # Lógica CRUD y estado reactivo
 ```
 ```
 

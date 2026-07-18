@@ -18,7 +18,17 @@ Este manual detalla los pasos para crear, configurar y distribuir el ejecutable 
 
 ## 2. Changelog de Versiones
 
-### v1.2.0 — 2026-07-07 (Actual)
+### v1.3.0 — 2026-07-18 (Actual)
+*   **NUEVO — Asistente de Migración de Datos Históricos (`migrador.html`):**
+    *   Implementación de un flujo paso a paso para importar datos (incluyendo el módulo de Comerciales).
+    *   Soporte para carga y procesamiento de múltiples archivos simultáneamente.
+*   **NUEVO — Módulo de Gestión Comercial (`comercials.html`):**
+    *   Gestión de tarifas comerciales con operaciones CRUD completas.
+    *   Integración del micro-framework **Alpine.js** para el manejo reactivo del estado en la interfaz.
+*   **NUEVO — Soporte de Internacionalización (i18n):**
+    *   Implementación de soporte de traducciones (`js/i18n.js`) para múltiples idiomas en la interfaz.
+
+### v1.2.0 — 2026-07-07
 *   **NUEVO — Módulo de Reportes Operativos y Estadísticas (`reportes.html`):**
     *   **Pestaña 1 (Rotación por Aparcamiento)**: Conteo total de turnos y personal distinto en el mes seleccionado mediante un `JOIN` dinámico de SQLite entre `quadrant` y catálogos.
     *   **Pestaña 2 (Carga y Desempeño del Personal)**:
