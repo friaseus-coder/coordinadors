@@ -4,9 +4,6 @@ document.addEventListener('alpine:init', () => {
         busqueda: '',
         nuevaTarifa: {
             aparcamiento: '',
-            direccion: '',
-            fijos: '',
-            variables: '',
             vacantes: '',
             tarifa: '',
             observaciones: ''
@@ -41,7 +38,6 @@ document.addEventListener('alpine:init', () => {
             if (!query) return this.comerciales;
             return this.comerciales.filter(c => 
                 (c.aparcamiento || '').toUpperCase().includes(query) ||
-                (c.direccion || '').toUpperCase().includes(query) ||
                 (c.observaciones || '').toUpperCase().includes(query) ||
                 (String(c.tarifa) || '').toUpperCase().includes(query)
             );
@@ -69,17 +65,14 @@ document.addEventListener('alpine:init', () => {
             const anio = new Date().getFullYear();
 
             const query = `
-                INSERT INTO tarifas_comerciales (coordinador, mes, anio, aparcamiento, direccion, fijos, variables, vacantes, tarifa, observaciones)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO tarifas_comerciales (coordinador, mes, anio, aparcamiento, vacantes, tarifa, observaciones)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             `;
             const params = [
                 this.usuarioActual,
                 mes,
                 anio,
                 this.nuevaTarifa.aparcamiento.trim().toUpperCase(),
-                this.nuevaTarifa.direccion.trim(),
-                parseInt(this.nuevaTarifa.fijos) || 0,
-                parseInt(this.nuevaTarifa.variables) || 0,
                 parseInt(this.nuevaTarifa.vacantes) || 0,
                 parseFloat(this.nuevaTarifa.tarifa) || 0,
                 this.nuevaTarifa.observaciones.trim()
@@ -89,9 +82,6 @@ document.addEventListener('alpine:init', () => {
                 await window.dbAPI.write('comercial', query, params);
                 this.nuevaTarifa = {
                     aparcamiento: '',
-                    direccion: '',
-                    fijos: '',
-                    variables: '',
                     vacantes: '',
                     tarifa: '',
                     observaciones: ''
@@ -109,14 +99,11 @@ document.addEventListener('alpine:init', () => {
             try {
                 const query = `
                     UPDATE tarifas_comerciales 
-                    SET aparcamiento = ?, direccion = ?, fijos = ?, variables = ?, vacantes = ?, tarifa = ?, observaciones = ? 
+                    SET aparcamiento = ?, vacantes = ?, tarifa = ?, observaciones = ? 
                     WHERE id = ?
                 `;
                 const params = [
                     c.aparcamiento.toUpperCase(),
-                    c.direccion,
-                    parseInt(c.fijos) || 0,
-                    parseInt(c.variables) || 0,
                     parseInt(c.vacantes) || 0,
                     parseFloat(c.tarifa) || 0,
                     c.observaciones,

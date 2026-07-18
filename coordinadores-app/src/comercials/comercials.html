@@ -234,9 +234,6 @@
         <thead>
             <tr>
                 <th width="180" data-i18n="colCentreAparcament">Centre / Aparcament</th>
-                <th width="200" data-i18n="colAdreca">Adreça</th>
-                <th width="100" data-i18n="colPlantas">Plantas</th>
-                <th width="100" data-i18n="colCapacidad">Capacidad</th>
                 <th width="100" data-i18n="colPlazasLibres">Plazas Libres</th>
                 <th width="120" data-i18n="colTarifaSingle">Tarifa</th>
                 <th data-i18n="colNotasObs">Notas / Observaciones</th>
@@ -249,9 +246,6 @@
                     <!-- Modo Normal -->
                     <template x-if="!c.editing">
                         <td class="font-bold text-gray-800" x-text="c.aparcamiento"></td>
-                        <td class="text-gray-600" x-text="c.direccion"></td>
-                        <td x-text="c.fijos"></td>
-                        <td x-text="c.variables"></td>
                         <td :class="getColorDP(c.vacantes)" x-text="c.vacantes"></td>
                         <td class="font-bold text-gray-800" x-text="c.tarifa"></td>
                         <td class="text-gray-500 text-xs" x-html="c.observaciones"></td>
@@ -264,9 +258,6 @@
                     <!-- Modo Edición Inline -->
                     <template x-if="c.editing">
                         <td><input type="text" x-model="c.aparcamiento" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.direccion" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.fijos" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.variables" style="width: 100%;"></td>
                         <td><input type="text" x-model="c.vacantes" style="width: 100%;"></td>
                         <td><input type="text" x-model="c.tarifa" style="width: 100%;"></td>
                         <td><input type="text" x-model="c.observaciones" style="width: 100%;"></td>
@@ -279,7 +270,7 @@
             </template>
             <template x-if="comercialesFiltrados.length === 0">
                 <tr>
-                    <td :colspan="canEdit() ? 8 : 7" class="text-center py-8 text-gray-400">
+                    <td :colspan="canEdit() ? 5 : 4" class="text-center py-8 text-gray-400">
                         <i class="fas fa-info-circle mb-1 text-lg"></i><br>
                         <span data-i18n="comercialsEmpty">No s'han trobat tarifes comercials.</span>
                     </td>
@@ -297,21 +288,6 @@
     <div class="flex flex-col gap-1">
         <label>Nombre del Aparcamiento</label>
         <input type="text" x-model="nuevaTarifa.aparcamiento" placeholder="Ej: NN BRUC">
-    </div>
-
-    <div class="flex flex-col gap-1">
-        <label>Dirección</label>
-        <input type="text" x-model="nuevaTarifa.direccion" placeholder="Ej: Bruc, 103">
-    </div>
-
-    <div class="flex flex-col gap-1">
-        <label>Fijos</label>
-        <input type="number" x-model="nuevaTarifa.fijos" placeholder="Ej: 20">
-    </div>
-
-    <div class="flex flex-col gap-1">
-        <label>Variables</label>
-        <input type="number" x-model="nuevaTarifa.variables" placeholder="Ej: 5">
     </div>
 
     <div class="flex flex-col gap-1">

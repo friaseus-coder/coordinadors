@@ -219,6 +219,20 @@ function inicializarBasesDeDatosEnRed() {
         console.warn(`[DB INIT] Esquema no encontrado: ${schemaPath}`);
         dbTemp.close();
       }
+    } else {
+      // Si ya existe, asegurarnos de que tengan las tablas necesarias aplicando el esquema de todos modos
+      // CREATE TABLE IF NOT EXISTS es seguro
+      const dbTemp = new sqlite3.Database(netDbPath);
+      const schemaFileName = `schema_${key}.sql`;
+      const schemaPath = path.join(__dirname, schemaFileName);
+      if (fs.existsSync(schemaPath)) {
+        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+        dbTemp.exec(schemaSql, (err) => {
+          dbTemp.close();
+        });
+      } else {
+        dbTemp.close();
+      }
     }
   }
 }

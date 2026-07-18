@@ -864,7 +864,7 @@
                 <button class="btn btn-secondary" id="btnSelectHtml5" style="display: none;" onclick="document.getElementById('inputArchivoJson').click()" data-i18n="btnSeleccionar">
                     📂 Seleccionar fitxers...
                 </button>
-                <input type="file" id="inputArchivoJson" accept=".json" style="display: none;" onchange="manejarArchivoSeleccionado(event)">
+                <input type="file" id="inputArchivoJson" accept=".json" multiple style="display: none;" onchange="manejarArchivoSeleccionado(event)">
                 <div id="fileListContainer" class="file-list" style="display: none;"></div>
             </div>
 
@@ -1434,7 +1434,18 @@
 
             const result = await electronApi.seleccionarArchivosMigracion();
             if (result.success && result.files) {
-                selectedFiles = result.files;
+                // Si la estrategia es 'add', permitimos acumular archivos
+                const isAddStrategy = document.getElementById('optAdd').classList.contains('selected');
+                if (isAddStrategy) {
+                    const existingNames = new Set(selectedFiles.map(f => f.name));
+                    result.files.forEach(f => {
+                        if (!existingNames.has(f.name)) {
+                            selectedFiles.push(f);
+                        }
+                    });
+                } else {
+                    selectedFiles = result.files;
+                }
                 
                 const container = document.getElementById('fileListContainer');
                 container.innerHTML = '';
@@ -1791,12 +1802,6 @@
                 document.getElementById('sectionMatchParkings').style.display = 'none';
                 document.getElementById('sectionMatchAgentes').style.display = 'none';
                 document.getElementById('infoGastosMatching').style.display = 'block';
-            } else if (tipo === 'comerciales') {
-                document.getElementById('alertDiscrepancias').style.display = 'none';
-                document.getElementById('alertCleanCatalogs').style.display = 'none';
-                document.getElementById('sectionMatchParkings').style.display = 'none';
-                document.getElementById('sectionMatchAgentes').style.display = 'none';
-                document.getElementById('infoComercialesMatching').style.display = 'block';
             } else {
                 if (discrepanciasParkings.length > 0 || discrepanciasAgentes.length > 0) {
                     document.getElementById('alertDiscrepancias').style.display = 'flex';
@@ -2015,8 +2020,8 @@
                     : ['COMERCIAL', 'CLIENTE', 'IMPORTE', 'FECHA', 'ESTADO'];
             } else if (tipo === 'comerciales') {
                 headers = isCa 
-                    ? ['NOM', 'ADREÇA', 'PLACES LLIURES', 'PLANTES', 'CAPACITAT', 'TARIFA', 'NOTES']
-                    : ['NOMBRE', 'DIRECCIÓN', 'PLAZAS LIBRES', 'PLANTAS', 'CAPACIDAD', 'TARIFA', 'NOTAS'];
+                    ? ['NOM', 'PLACES LLIURES', 'TARIFA', 'NOTES']
+                    : ['NOMBRE', 'PLAZAS LIBRES', 'TARIFA', 'NOTAS'];
             } else if (tipo === 'rutas') {
                 headers = isCa 
                     ? ['DATA', 'TREBALLADOR', 'TIPUS', 'RECORREGUT (CONCEPTE)', 'ESTAT']
@@ -2074,7 +2079,7 @@
                     const r = registrosParaInsertar[idx];
                     const tr = document.createElement('tr');
                     
-                    const cells = [r.centro, r.direccion, r.fixes, r.variables, r.vacants, r.tarifa, r.observaciones];
+                    const cells = [r.centro, r.vacants, r.tarifa, r.observaciones];
                     cells.forEach(c => {
                         const td = document.createElement('td');
                         td.textContent = c !== undefined ? c : '';
@@ -2347,14 +2352,14 @@
             
             if (tipo === 'comerciales') {
                 try {
-                    // Preguntar antes de importar (como pidió el usuario: "recuerda que primero se pregunta")
+                    // Preguntar antes de importar
                     const confirmMsg = estrategia === 'overwrite'
                         ? (isCa 
-                            ? "⚠️ ATENCIÓ: Es perdran TOTS els registres anteriors de Tarifes i Comercials a la base de dades. Vols continuar?"
-                            : "⚠️ ATENCIÓN: Se perderán TODOS los registros anteriores de Tarifas y Comerciales en la base de datos. ¿Deseas continuar?")
+                            ? "Es perdran TOTS els registres anteriors de Tarifes i Comercials a la base de dades. Vols continuar?"
+                            : "Se perderán TODOS los registros anteriores de Tarifas y Comerciales en la base de datos. ¿Deseas continuar?")
                         : (isCa
-                            ? "⚠️ Estàs segur que vols importar els comercials? Els registres coincidents d'aparcament seran actualitzats/reemplaçats."
-                            : "⚠️ ¿Estás seguro de que deseas importar los comerciales? Los registros coincidentes de aparcamiento serán actualizados/reemplazados.");
+                            ? "Estàs segur que vols importar els comercials? Els registres coincidents d'aparcament seran actualitzats/reemplaçats."
+                            : "¿Estás seguro de que deseas importar los comerciales? Los registros coincidentes de aparcamiento serán actualizados/reemplazados.");
                     
                     if (!confirm(confirmMsg)) {
                         btn.disabled = false;
@@ -2374,13 +2379,10 @@
                             ops.push({ query: "DELETE FROM comerciales WHERE nombre = ?", params: [r.centro.toUpperCase()] });
                         }
                         ops.push({ query: `
-                            INSERT INTO comerciales (nombre, direccion, plantas, capacidad, plazas_libres, tarifa, notas)
-                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                            INSERT INTO comerciales (nombre, plazas_libres, tarifa, notas)
+                            VALUES (?, ?, ?, ?)
                         `, params: [
                             r.centro.toUpperCase(),
-                            r.direccion,
-                            r.fixes,
-                            r.variables,
                             r.vacants,
                             r.tarifa,
                             r.observaciones
@@ -2403,7 +2405,7 @@
                     console.error("Error global en migración de comerciales:", errGlobal);
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    alert((isCa ? "❌ Error al executar la importació: " : "❌ Error al ejecutar la importación: ") + errGlobal.message);
+                    alert((isCa ? "Error al executar la importació: " : "Error al ejecutar la importación: ") + errGlobal.message);
                 }
                 return;
             }
