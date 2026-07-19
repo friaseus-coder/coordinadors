@@ -19,6 +19,7 @@
        });
     </script>
     <script src="../js/persistence.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -423,6 +424,108 @@
 
             <!-- Log de resultado -->
             <div class="maestros-status-log" id="logEmpleados"></div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PANEL: EDICIÓN INDIVIDUAL DE EMPLEADOS (Alpine.js + OCC)
+    ============================================================ -->
+    <div class="maestros-panel" x-data="empleadosManager()" x-init="init()">
+        <div class="maestros-header" @click="open = !open">
+            <h2>
+                ✏️ Edición Individual de Empleados (OCC)
+                <span class="badge-db">catalogos.db</span>
+            </h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:10px; font-weight:600; opacity:0.8;">Interactiva</span>
+                <span class="maestros-toggle-icon" :class="{ 'open': open }">▼</span>
+            </div>
+        </div>
+        
+        <div class="maestros-body" :class="{ 'open': open }" style="display: flex;">
+            <!-- Notificaciones Toast -->
+            <div x-show="toast.show" 
+                 x-transition
+                 :class="['maestros-status-log', toast.type]" 
+                 style="display: block; margin-bottom: 12px;" 
+                 x-text="toast.message">
+            </div>
+
+            <!-- Listado y Búsqueda -->
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" x-model="search" placeholder="Buscar empleado..." 
+                       style="flex: 1; padding: 8px; border-radius: 6px; border: 1px solid var(--border);">
+                <button class="btn btn-secondary" @click="loadEmpleados()">🔄 Recargar</button>
+            </div>
+
+            <!-- Tabla de Empleados -->
+            <div style="overflow-x: auto; max-height: 400px; border: 1px solid var(--border); border-radius: 8px;">
+                <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 12px;">
+                    <thead style="background: var(--bg); position: sticky; top: 0; z-index: 1;">
+                        <tr>
+                            <th style="padding: 10px; border-bottom: 1px solid var(--border);">Nombre</th>
+                            <th style="padding: 10px; border-bottom: 1px solid var(--border);">Email</th>
+                            <th style="padding: 10px; border-bottom: 1px solid var(--border);">Rol</th>
+                            <th style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center;">Activo</th>
+                            <th style="padding: 10px; border-bottom: 1px solid var(--border); text-align: center;">Versión</th>
+                            <th style="padding: 10px; border-bottom: 1px solid var(--border); text-align: right;">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="emp in filteredEmpleados" :key="emp.id">
+                            <tr style="border-bottom: 1px solid var(--border); background: #fff;">
+                                <td style="padding: 10px;">
+                                    <input type="text" x-model="emp.nombre" style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px;" @input="emp.isDirty = true">
+                                </td>
+                                <td style="padding: 10px;">
+                                    <input type="email" x-model="emp.email" style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px;" @input="emp.isDirty = true">
+                                </td>
+                                <td style="padding: 10px;">
+                                    <select x-model="emp.rol" style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px;" @change="emp.isDirty = true">
+                                        <option value="Admin">Admin</option>
+                                        <option value="Coordinador">Coordinador</option>
+                                        <option value="Comercial">Comercial</option>
+                                        <option value="Trabajador">Trabajador</option>
+                                    </select>
+                                </td>
+                                <td style="padding: 10px; text-align: center;">
+                                    <input type="checkbox" x-model="emp.activo" :true-value="1" :false-value="0" @change="emp.isDirty = true">
+                                </td>
+                                <td style="padding: 10px; text-align: center;">
+                                    <span style="background: var(--info-bg); color: var(--info); padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 11px;" x-text="'v' + emp.version"></span>
+                                </td>
+                                <td style="padding: 10px; text-align: right;">
+                                    <button class="btn btn-amber" 
+                                            style="padding: 6px 12px; font-size: 11px;"
+                                            :disabled="!emp.isDirty"
+                                            @click="saveEmpleado(emp)">
+                                        💾 Guardar
+                                    </button>
+                                </td>
+                            </tr>
+                        </template>
+                        <tr x-show="filteredEmpleados.length === 0">
+                            <td colspan="6" style="padding: 14px; text-align: center; color: var(--text-muted);">No hay empleados que coincidan con la búsqueda.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Crear Nuevo Empleado -->
+            <div style="margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border); display: flex; gap: 10px; align-items: center;">
+                <span class="maestros-label" style="margin-bottom: 0;">➕ Añadir Nuevo Empleado:</span>
+                <input type="text" x-model="newEmp.nombre" placeholder="Nombre..." style="padding: 6px; border: 1px solid var(--border); border-radius: 4px; flex: 1;">
+                <select x-model="newEmp.rol" style="padding: 6px; border: 1px solid var(--border); border-radius: 4px;">
+                    <option value="Trabajador">Trabajador</option>
+                    <option value="Coordinador">Coordinador</option>
+                    <option value="Comercial">Comercial</option>
+                    <option value="Admin">Admin</option>
+                </select>
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;" :disabled="!newEmp.nombre.trim()" @click="crearEmpleado()">
+                    Añadir
+                </button>
+            </div>
 
         </div>
     </div>

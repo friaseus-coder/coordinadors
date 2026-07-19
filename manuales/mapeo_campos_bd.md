@@ -11,7 +11,7 @@ Físicamente, la aplicación implementa **sharding** dividiendo la información 
 ---
 
 ## 1. Módulo: Gestión de Personal (Trabajadores y Sociedades)
-Gestionado desde el modal de administración de trabajadores en `portal.html` y el modal de sociedades.
+Gestionado individualmente desde los modales de administración en `portal.html`, y masivamente desde `src/maestros/maestros.html`.
 
 ### A. Catálogo Unificado de Empleados y Preferencias
 
@@ -44,7 +44,7 @@ La asignación de contratos se restringe a empleados con rol operativo (`Trabaja
 ---
 
 ## 2. Módulo: Gestión de Aparcamientos
-Gestionado desde el modal de administración de aparcamientos en `portal.html`.
+Gestionado individualmente desde el modal de administración de aparcamientos en `portal.html`, y masivamente desde `src/maestros/maestros.html`.
 
 | Campo en Interfaz (UI) | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones / Valores |
 | :--- | :--- | :--- | :--- | :--- | :--- |

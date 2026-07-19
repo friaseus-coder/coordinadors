@@ -123,7 +123,8 @@ CREATE TABLE IF NOT EXISTS empleados (
     email TEXT,
     rol TEXT NOT NULL, -- Ej: 'Admin', 'Coordinador', 'Comercial', 'Trabajador'
     activo INTEGER DEFAULT 1, -- 1 para activo, 0 para inactivo/baja
-    json_preferencias TEXT -- Para guardar tema claro/oscuro, idioma, etc.
+    json_preferencias TEXT, -- Para guardar tema claro/oscuro, idioma, etc.
+    version INTEGER DEFAULT 1 -- OCC: Control de concurrencia optimista
 );
 
 -- 13. SCHEMA_VERSION — Control de versiones del esquema

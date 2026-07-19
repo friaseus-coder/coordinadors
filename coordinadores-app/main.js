@@ -222,8 +222,7 @@ const MIGRACIONES = {
     { version: 1, sqlFile: 'schema_operativa.sql' }
   ],
   finanzas: [
-    { version: 1, sqlFile: 'schema_finanzas.sql' },
-    { version: 2, sqlFile: 'schema_finanzas_v2.sql' }
+    { version: 1, sqlFile: 'schema_finanzas.sql' }
   ]
 };
 
@@ -353,7 +352,8 @@ function syncToLocal(dbKey) {
 
 
 const VERSIONED_TABLES = {
-  'inventario_existencias': { pk: 'id', versionColumn: 'version' }
+  'inventario_existencias': { pk: 'id', versionColumn: 'version' },
+  'empleados': { pk: 'id', versionColumn: 'version' }
 };
 
 async function processOccMiddleware(netDb, query, params, occVersion) {
@@ -3667,7 +3667,7 @@ ipcMain.handle('importar-empleados-maestros', async (event, datos, modo) => {
 
     return await new Promise((resolve, reject) => {
       catDb.serialize(() => {
-        catDb.run('BEGIN TRANSACTION', (err) => {
+        catDb.run('BEGIN IMMEDIATE TRANSACTION', (err) => {
           if (err) return reject(err);
         });
 
@@ -3765,7 +3765,7 @@ ipcMain.handle('importar-aparcamientos-maestros', async (event, datos, modo) => 
 
     return await new Promise((resolve, reject) => {
       catDb.serialize(() => {
-        catDb.run('BEGIN TRANSACTION', (err) => {
+        catDb.run('BEGIN IMMEDIATE TRANSACTION', (err) => {
           if (err) return reject(err);
         });
 

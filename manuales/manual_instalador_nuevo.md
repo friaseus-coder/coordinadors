@@ -18,7 +18,12 @@ Este manual detalla los pasos para crear, configurar y distribuir el ejecutable 
 
 ## 2. Changelog de Versiones
 
-### v1.3.0 — 2026-07-18 (Actual)
+### v1.4.0 — 2026-07-19
+*   **ACTUALIZACIÓN — Separación de Datos Maestros y Transaccionalidad:**
+    *   El módulo de **Datos Maestros** (Aparcamientos y Empleados) se ha extraído de `migrador.html` a su propia vista dedicada `src/maestros/maestros.html`.
+    *   **Transaccionalidad Real en Backend (`main.js`):** La importación de Empleados y Aparcamientos ahora delega la doble escritura atómica al proceso principal, usando `ATTACH DATABASE` y bloqueos `BEGIN TRANSACTION / COMMIT` de SQLite nativo para prevenir datos corruptos.
+
+### v1.3.0 — 2026-07-18
 *   **NUEVO — Asistente de Migración de Datos Históricos (`migrador.html`):**
     *   Implementación de un flujo paso a paso para importar datos (incluyendo el módulo de Comerciales).
     *   Soporte para carga y procesamiento de múltiples archivos simultáneamente.

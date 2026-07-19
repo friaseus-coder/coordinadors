@@ -476,3 +476,101 @@ function mostrarLogMaestros(logEl, tipo, mensaje) {
     logEl.className = `maestros-status-log ${tipo}`;
     logEl.style.display = 'block';
 }
+
+// ============================================================
+// COMPONENTE ALPINE.JS: EDICIÓN INDIVIDUAL DE EMPLEADOS (OCC)
+// ============================================================
+function empleadosManager() {
+    return {
+        open: false,
+        search: '',
+        empleados: [],
+        newEmp: { nombre: '', rol: 'Trabajador' },
+        toast: { show: false, message: '', type: '' },
+
+        get filteredEmpleados() {
+            if (this.search === '') return this.empleados;
+            const s = this.search.toLowerCase();
+            return this.empleados.filter(e => 
+                e.nombre.toLowerCase().includes(s) || 
+                (e.email && e.email.toLowerCase().includes(s))
+            );
+        },
+
+        async init() {
+            if (this.open) {
+                await this.loadEmpleados();
+            }
+            this.$watch('open', async (val) => {
+                if (val && this.empleados.length === 0) {
+                    await this.loadEmpleados();
+                }
+            });
+        },
+
+        async loadEmpleados() {
+            try {
+                const filas = await window.dbAPI.read('catalogos', 'SELECT * FROM empleados ORDER BY nombre ASC', []);
+                this.empleados = filas.map(f => ({
+                    ...f,
+                    isDirty: false
+                }));
+            } catch (err) {
+                this.showToast('❌ Error cargando empleados: ' + err.message, 'error');
+            }
+        },
+
+        async saveEmpleado(emp) {
+            try {
+                // OCC Update
+                const query = "UPDATE empleados SET nombre = ?, email = ?, rol = ?, activo = ?, version = version + 1 WHERE id = ? AND version = ?";
+                const params = [emp.nombre, emp.email || null, emp.rol, emp.activo, emp.id, emp.version];
+                
+                const result = await window.dbAPI.write('catalogos', query, params, emp.version);
+
+                if (result.success) {
+                    this.showToast(`✅ Empleado ${emp.nombre} guardado correctamente.`, 'success');
+                    emp.version += 1;
+                    emp.isDirty = false;
+                } else {
+                    if (result.error && result.error.includes('CONFLICT')) {
+                        this.showToast('⚠️ CONFLICTO: Alguien más modificó este empleado. Recarga la tabla.', 'error');
+                    } else {
+                        this.showToast('❌ Error al guardar: ' + result.error, 'error');
+                    }
+                }
+            } catch (err) {
+                if (err.message && err.message.includes('CONFLICT')) {
+                    this.showToast('⚠️ CONFLICTO: Alguien más modificó este empleado. Recarga la tabla para ver los cambios recientes.', 'error');
+                } else {
+                    this.showToast('❌ Error: ' + err.message, 'error');
+                }
+            }
+        },
+
+        async crearEmpleado() {
+            try {
+                const query = "INSERT INTO empleados (nombre, rol, activo, version) VALUES (?, ?, 1, 1)";
+                const params = [this.newEmp.nombre, this.newEmp.rol];
+                const result = await window.dbAPI.write('catalogos', query, params);
+                
+                if (result.success) {
+                    this.showToast(`✅ Nuevo empleado añadido: ${this.newEmp.nombre}`, 'success');
+                    this.newEmp = { nombre: '', rol: 'Trabajador' };
+                    await this.loadEmpleados();
+                } else {
+                    this.showToast('❌ Error al crear: ' + result.error, 'error');
+                }
+            } catch (err) {
+                this.showToast('❌ Error: ' + err.message, 'error');
+            }
+        },
+
+        showToast(message, type) {
+            this.toast = { show: true, message, type };
+            setTimeout(() => {
+                this.toast.show = false;
+            }, 5000);
+        }
+    }
+}

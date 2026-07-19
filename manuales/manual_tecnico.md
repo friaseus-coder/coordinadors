@@ -375,7 +375,7 @@ Durante la sincronización de archivos de configuración (`coordinadores.json`),
 
 Con la implantación de la **Fase 10**, SQLite es la fuente de verdad única absoluta en la aplicación, habiéndose eliminado los antiguos fallbacks locales y archivos JSON en la edición diaria. Las migraciones de datos legados se canalizan a través de un asistente premium interactivo y seguro, habiéndose eliminado por completo el Panel de Administración heredado (`admin.html`) por redundancia.
 
-El archivo `src/migrador/migrador.html` alberga **dos bloques funcionales independientes** organizados verticalmente en la pantalla:
+El módulo de **Gestión de Datos Maestros** se ha extraído a una vista dedicada y limpia (`src/maestros/maestros.html`), eliminando la colisión de responsabilidades con el migrador.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -386,17 +386,14 @@ El archivo `src/migrador/migrador.html` alberga **dos bloques funcionales indepe
 ├─────────────────────────────────────────────────────────┤
 │  👥 EMPLEADOS  [catalogos.db]        Dades Mestres  ▼   │
 │  └─ (misma estructura, con escritura doble BD)          │
-├─────────────────────────────────────────────────────────┤
-│  MIGRADOR DE HISTÓRICOS — Flujo de 5 pasos              │
-│  (Cuadrante, Vacaciones, Deudas, Comerciales, etc.)     │
 └─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-### A. Módulo de Gestión de Datos Maestros (Paneles Colapsables)
+### A. Módulo de Gestión de Datos Maestros (`maestros.html`)
 
-Incorporado en la parte superior de `migrador.html`, este módulo permite gestionar los catálogos base del sistema sin interferir con el flujo de migración de históricos. Cada panel es colapsable mediante clic en la cabecera.
+Incorporado en el menú principal bajo "Gestió de Dades Mestres", este entorno dedicado permite gestionar los catálogos base del sistema. Cada panel es independiente y llama a operaciones atómicas.
 
 #### A.1 Panel de Aparcamientos
 
@@ -483,26 +480,23 @@ CREATE TABLE IF NOT EXISTS ranking (
 );
 ```
 
-**Flujo completo en modo Sobrescribir:**
+**Flujo completo en modo Sobrescribir (Transaccional en backend):**
 ```javascript
-// 1. Borrar ambas tablas
-await dbApi.write('catalogos', 'DELETE FROM empleados', []);
-await dbApi.write('operativa', 'DELETE FROM ranking', []);
+// La vista llama al puente expuesto en preload.js
+const res = await window.dbAPI.importarEmpleadosTransaccional(data, modo);
 
-// 2. Por cada fila del JSON (try/catch independiente por BD):
-// A) catalogos.empleados
-await dbApi.write('catalogos',
-  'INSERT OR IGNORE INTO empleados (nombre, email, rol, activo, json_preferencias) VALUES (?, ?, ?, ?, ?)',
-  [r.nombre, null, 'Coordinador', 1, JSON.stringify({centre, societat, torn, zona})]
-);
-// B) operativa.ranking
-await dbApi.write('operativa',
-  'INSERT INTO ranking (id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions) VALUES (?, ?, ?, ?, ?, ?, ?)',
-  [r.nombre, r.coneixements, r.atencio, r.disponibilitat, r.actitud, r.valoracio, r.observacions]
-);
+// En main.js (Backend), la inserción es atómica:
+db.serialize(() => {
+  db.run("BEGIN TRANSACTION");
+  db.run("ATTACH DATABASE ? AS operativa", [rutaOperativa]);
+  db.run("DELETE FROM empleados");
+  db.run("DELETE FROM operativa.ranking");
 
-// 3. Alert final con resumen de éxitos en cada BD
-```
+  // Inserciones preparadas en ambas bases simultáneamente
+  
+  db.run("COMMIT");
+});
+`````
 
 **Compatibilidad con JSON legacy:**
 
