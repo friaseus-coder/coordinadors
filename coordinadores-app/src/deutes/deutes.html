@@ -324,7 +324,7 @@
                                       :class="{
                                           'bg-green-100 text-green-800': inc.tipo_incidencia === 'Bolsa Horas (+)',
                                           'bg-red-100 text-red-800': inc.tipo_incidencia === 'Deuda Horas (-)'
-                                      }" x-text="inc.tipo_incidencia"></span>
+                                      }" x-text="getTranslatedIncidencia(inc.tipo_incidencia)"></span>
                             </td>
                             <td class="text-right font-bold text-gray-900" x-text="inc.impacto_horas + 'h'"></td>
                             <td class="text-gray-600 font-semibold" x-text="inc.coordinador"></td>

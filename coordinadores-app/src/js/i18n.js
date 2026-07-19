@@ -4,6 +4,36 @@
  */
 
 const i18n = (() => {
+  window.DbLanguageMap = {
+    translate(key, type, lang) {
+      if (!key) return key;
+      const maps = {
+        turno: {
+          'MATÍ': { es: 'Mañana', ca: 'Matí' },
+          'TARDA': { es: 'Tarde', ca: 'Tarda' },
+          'NIT': { es: 'Noche', ca: 'Nit' },
+          'CAP DE SET.': { es: 'Fin de Semana', ca: 'Cap de Setmana' }
+        },
+        incidencia: {
+          'Vacaciones': { es: 'Vacaciones', ca: 'Vacances' },
+          'Baja Médica': { es: 'Baja Médica', ca: 'Baixa Mèdica' },
+          'Deuda Horas (-)': { es: 'Deuda Horas (-)', ca: 'Deute Hores (-)' },
+          'Bolsa Horas (+)': { es: 'Bolsa Horas (+)', ca: 'Bossa Hores (+)' }
+        },
+        rol: {
+          'Trabajador': { es: 'Trabajador', ca: 'Treballador' },
+          'Coordinador': { es: 'Coordinador', ca: 'Coordinador' },
+          'Comercial': { es: 'Comercial', ca: 'Comercial' },
+          'Admin': { es: 'Administrador', ca: 'Administrador' },
+          'jefe operaciones': { es: 'Jefe de Operaciones', ca: 'Cap d\'Operacions' },
+          'jefe_operaciones': { es: 'Jefe de Operaciones', ca: 'Cap d\'Operacions' }
+        }
+      };
+      return maps[type]?.[key]?.[lang] || key;
+    }
+  };
+
+
   // Obtener idioma activo (por defecto catalán 'ca')
   function getLanguage() {
     return localStorage.getItem('nyn_idioma') || 'ca';
@@ -156,6 +186,11 @@ const i18n = (() => {
       confirmRemoveCoord: "⚠️ Estàs segur que vols eliminar a {name} de la llista de coordinadors?\n\n(Les seves dades NO s'esborraran)",
       btnManageAparcaments: "🚗 Aparcaments",
       btnManageTrabajadores: "👥 Treballadors",
+      btnManageSocietats: "🏢 Societats",
+      adminMigratorTitle: "📊 Assistent de Càrrega d'Històrics",
+      btnManageMaestros: "👥 Gestió de Dades Mestres",
+      btnManageReportes: "📊 Report de Rotació",
+      btnManageConfig: "⚙️ Configuració Xarxa",
       modalTrabajadorTitle: "👥 Gestió de Treballadors",
       inputTrabajadorPlaceholder: "Nom del treballador (ex: Joan Pujol)",
       confirmRemoveTrabajador: "⚠️ Estàs segur que vols eliminar al treballador {name}?\n\n(Això no esborrarà els historials ja guardats)",
@@ -163,6 +198,34 @@ const i18n = (() => {
       inputAparcamentPlaceholder: "Nom de l'aparcament (ex: BEJAR 63)",
       selectCoordPlaceholder: "-- Coordinador --",
       confirmRemoveAparcament: "⚠️ Estàs segur que vols eliminar l'aparcament {name}?\n\n(Això no esborrarà els historials ja guardats)",
+      
+      // Modal Configuracion
+      configTitle: "⚙️ Configuració del Sistema",
+      configSubtitle: "Modifica la ruta compartida on s'emmagatzema la base de dades mestra.",
+      configNetworkPath: "Ruta de xarxa (SMB/Local):",
+      configBtnTest: "Provar",
+      configBtnSave: "Desar Canvis",
+      
+      // Modal Sociedades
+      sociedadTitle: "🏢 Gestió de Societats",
+      sociedadNomFiscal: "NOM FISCAL",
+      sociedadCodiCurt: "CODI CURT",
+      btnCancel: "Cancel·lar",
+      
+      // Modal Trabajadores
+      trabNom: "NOM COMPLET",
+      trabEmail: "EMAIL",
+      trabRol: "ROL ACCÉS",
+      trabActivo: "Treballador en Actiu (Alta)",
+      trabCentre: "CENTRE PREFERENT",
+      trabTorn: "TORN PREFERENT",
+      trabTornNone: "-- Cap --",
+      trabZona: "ZONA HABITUAL",
+      trabHistorialSocietats: "🏢 Historial de Societats Vinculades (Contractes)",
+      trabSociedad: "SOCIETAT",
+      trabDataInici: "DATA INICI",
+      trabVincular: "Vincular",
+
       aparcamentNumObra: "NÚM. OBRA",
       aparcamentNom: "NOM APARCAMENT",
       aparcamentZona: "ZONA",
@@ -794,6 +857,11 @@ const i18n = (() => {
       confirmRemoveCoord: "⚠️ ¿Estás seguro de que deseas eliminar a {name} de la lista de coordinadores?\n\n(Sus datos NO se borrarán)",
       btnManageAparcaments: "🚗 Aparcamientos",
       btnManageTrabajadores: "👥 Trabajadores",
+      btnManageSocietats: "🏢 Sociedades",
+      adminMigratorTitle: "📊 Asistente de Carga de Históricos",
+      btnManageMaestros: "👥 Gestión de Datos Maestros",
+      btnManageReportes: "📊 Reporte de Rotación",
+      btnManageConfig: "⚙️ Configuración de Red",
       modalTrabajadorTitle: "👥 Gestión de Trabajadores",
       inputTrabajadorPlaceholder: "Nombre del trabajador (ej: Juan Pujol)",
       confirmRemoveTrabajador: "⚠️ ¿Estás seguro de que deseas eliminar al trabajador {name}?\n\n(Esto no borrará los historiales ya guardados)",
@@ -801,6 +869,34 @@ const i18n = (() => {
       inputAparcamentPlaceholder: "Nombre del aparcamiento (ej: BEJAR 63)",
       selectCoordPlaceholder: "-- Coordinador --",
       confirmRemoveAparcament: "⚠️ ¿Estás seguro de que deseas eliminar el aparcamiento {name}?\n\n(Esto no borrará los historiales ya guardados)",
+      
+      // Modal Configuracion
+      configTitle: "⚙️ Configuración del Sistema",
+      configSubtitle: "Modifica la ruta compartida donde se almacena la base de datos maestra.",
+      configNetworkPath: "Ruta de red (SMB/Local):",
+      configBtnTest: "Probar",
+      configBtnSave: "Guardar Cambios",
+      
+      // Modal Sociedades
+      sociedadTitle: "🏢 Gestión de Sociedades",
+      sociedadNomFiscal: "NOMBRE FISCAL",
+      sociedadCodiCurt: "CÓDIGO CORTO",
+      btnCancel: "Cancelar",
+      
+      // Modal Trabajadores
+      trabNom: "NOMBRE COMPLETO",
+      trabEmail: "EMAIL",
+      trabRol: "ROL ACCESO",
+      trabActivo: "Trabajador en Activo (Alta)",
+      trabCentre: "CENTRO PREFERENTE",
+      trabTorn: "TURNO PREFERENTE",
+      trabTornNone: "-- Ninguno --",
+      trabZona: "ZONA HABITUAL",
+      trabHistorialSocietats: "🏢 Historial de Sociedades Vinculadas (Contratos)",
+      trabSociedad: "SOCIEDAD",
+      trabDataInici: "FECHA INICIO",
+      trabVincular: "Vincular",
+
       aparcamentNumObra: "NÚM. OBRA",
       aparcamentNom: "NOMBRE APARCAMIENTO",
       aparcamentZona: "ZONA",

@@ -483,10 +483,10 @@
                                 </td>
                                 <td style="padding: 10px;">
                                     <select x-model="emp.rol" style="width: 100%; padding: 6px; border: 1px solid var(--border); border-radius: 4px;" @change="emp.isDirty = true">
-                                        <option value="Admin">Admin</option>
-                                        <option value="Coordinador">Coordinador</option>
-                                        <option value="Comercial">Comercial</option>
-                                        <option value="Trabajador">Trabajador</option>
+                                        <option value="Admin" x-text="getTranslatedRol('Admin')">Admin</option>
+                                        <option value="Coordinador" x-text="getTranslatedRol('Coordinador')">Coordinador</option>
+                                        <option value="Comercial" x-text="getTranslatedRol('Comercial')">Comercial</option>
+                                        <option value="Trabajador" x-text="getTranslatedRol('Trabajador')">Trabajador</option>
                                     </select>
                                 </td>
                                 <td style="padding: 10px; text-align: center;">
@@ -518,10 +518,10 @@
                 <span class="maestros-label" style="margin-bottom: 0;">➕ Añadir Nuevo Empleado:</span>
                 <input type="text" x-model="newEmp.nombre" placeholder="Nombre..." style="padding: 6px; border: 1px solid var(--border); border-radius: 4px; flex: 1;">
                 <select x-model="newEmp.rol" style="padding: 6px; border: 1px solid var(--border); border-radius: 4px;">
-                    <option value="Trabajador">Trabajador</option>
-                    <option value="Coordinador">Coordinador</option>
-                    <option value="Comercial">Comercial</option>
-                    <option value="Admin">Admin</option>
+                    <option value="Trabajador" x-text="getTranslatedRol('Trabajador')">Trabajador</option>
+                    <option value="Coordinador" x-text="getTranslatedRol('Coordinador')">Coordinador</option>
+                    <option value="Comercial" x-text="getTranslatedRol('Comercial')">Comercial</option>
+                    <option value="Admin" x-text="getTranslatedRol('Admin')">Admin</option>
                 </select>
                 <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;" :disabled="!newEmp.nombre.trim() || loading" @click="crearEmpleado()">
                     <span x-show="!loading">Añadir</span>

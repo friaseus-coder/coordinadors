@@ -101,6 +101,10 @@ document.addEventListener('alpine:init', () => {
                 console.error("Error al eliminar solicitud:", err);
                 alert("❌ Error al eliminar la solicitud.");
             }
+        },
+
+        getTranslatedIncidencia(tipo) {
+            return window.DbLanguageMap ? window.DbLanguageMap.translate(tipo, 'incidencia', window.i18n ? window.i18n.getLanguage() : 'ca') : tipo;
         }
     }));
 });

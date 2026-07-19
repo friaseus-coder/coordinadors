@@ -569,11 +569,11 @@
                     <button class="dropdown-admin-item" onclick="openCoordModal(); closeAdminDropdown();" data-i18n="btnManageCoord">⚙️ Coordinadors</button>
                     <button class="dropdown-admin-item" onclick="openAparcamentModal(); closeAdminDropdown();" data-i18n="btnManageAparcaments">🚗 Aparcaments</button>
                     <button class="dropdown-admin-item" onclick="openTrabajadorModal(); closeAdminDropdown();" data-i18n="btnManageTrabajadores">👥 Treballadors</button>
-                    <button class="dropdown-admin-item" onclick="openSociedadModal(); closeAdminDropdown();">🏢 Societats</button>
+                    <button class="dropdown-admin-item" onclick="openSociedadModal(); closeAdminDropdown();" data-i18n="btnManageSocietats">🏢 Societats</button>
                     <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();" data-i18n="adminMigratorTitle">📊 Assistent de Càrrega d'Històrics</button>
-                    <button class="dropdown-admin-item" onclick="openTab('maestros', this); closeAdminDropdown();">👥 Gestió de Dades Mestres</button>
-                    <button class="dropdown-admin-item" onclick="openTab('reportes', this); closeAdminDropdown();">📊 Report de Rotació</button>
-                    <button class="dropdown-admin-item" onclick="openConfigModal(); closeAdminDropdown();">⚙️ Configuració Xarxa</button>
+                    <button class="dropdown-admin-item" onclick="openTab('maestros', this); closeAdminDropdown();" data-i18n="btnManageMaestros">👥 Gestió de Dades Mestres</button>
+                    <button class="dropdown-admin-item" onclick="openTab('reportes', this); closeAdminDropdown();" data-i18n="btnManageReportes">📊 Report de Rotació</button>
+                    <button class="dropdown-admin-item" onclick="openConfigModal(); closeAdminDropdown();" data-i18n="btnManageConfig">⚙️ Configuració Xarxa</button>
                     <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
                     <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
                 </div>
@@ -610,21 +610,21 @@
     <!-- Modal de Configuración de Red -->
     <div id="configModal" class="modal-overlay" onclick="if(event.target===this) closeConfigModal()" style="display: none;">
         <div class="modal-box">
-            <div class="modal-title">⚙️ Configuració del Sistema</div>
-            <div style="margin-bottom: 12px; font-size: 13px; color: #475569;">Modifica la ruta compartida on s'emmagatzema la base de dades mestra.</div>
+            <div class="modal-title" data-i18n="configTitle">⚙️ Configuració del Sistema</div>
+            <div style="margin-bottom: 12px; font-size: 13px; color: #475569;" data-i18n="configSubtitle">Modifica la ruta compartida on s'emmagatzema la base de dades mestra.</div>
             
             <div style="display: flex; gap: 8px; flex-direction: column;">
-                <label style="font-size: 12px; font-weight: 600; color: #0f2d4a;">Ruta de xarxa (SMB/Local):</label>
+                <label style="font-size: 12px; font-weight: 600; color: #0f2d4a;" data-i18n="configNetworkPath">Ruta de xarxa (SMB/Local):</label>
                 <div style="display: flex; gap: 8px;">
                     <input type="text" id="configNetworkPath" placeholder="Ex: \\servidor\compartit\Coordinadores" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
-                    <button onclick="testNetworkPath()" style="background: #e2e8f0; border: none; padding: 0 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Provar</button>
+                    <button onclick="testNetworkPath()" style="background: #e2e8f0; border: none; padding: 0 16px; border-radius: 6px; cursor: pointer; font-weight: 500;" data-i18n="configBtnTest">Provar</button>
                 </div>
                 <div id="configTestResult" style="font-size: 12px; margin-top: 4px;"></div>
             </div>
 
             <div class="modal-footer" style="margin-top: 20px;">
-                <button class="btn-close-modal" onclick="closeConfigModal()">Tancar</button>
-                <button class="btn-add-coord" onclick="saveSystemConfig()">Desar Canvis</button>
+                <button class="btn-close-modal" onclick="closeConfigModal()" data-i18n="btnClose">Tancar</button>
+                <button class="btn-add-coord" onclick="saveSystemConfig()" data-i18n="configBtnSave">Desar Canvis</button>
             </div>
         </div>
         <script>
@@ -771,7 +771,7 @@
                 <div style="margin-top: 12px; font-weight: 600; color: #0f2d4a; font-size: 13px;">Actualitzant base de dades...</div>
             </div>
             
-            <div class="modal-title">🏢 Gestió de Societats</div>
+            <div class="modal-title" data-i18n="sociedadTitle">🏢 Gestió de Societats</div>
             
             <!-- Formulario de Sociedades -->
             <div class="sociedad-form-container" style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 14px; margin-bottom: 16px; display: flex; flex-direction: column; gap: 10px;">
@@ -779,25 +779,25 @@
                 
                 <div style="display: grid; grid-template-columns: 2fr 1.2fr; gap: 10px;">
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NOM FISCAL</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="sociedadNomFiscal">NOM FISCAL</label>
                         <input type="text" id="newSociedadNombre" placeholder="Escriu el nom fiscal..." style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">CÒDIG CORT</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="sociedadCodiCurt">CÒDIG CORT</label>
                         <input type="text" id="newSociedadCodigo" placeholder="Escriu el codi (ex: NN_SL)..." style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                 </div>
                 
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
-                    <button class="btn-close-modal" id="btnCancelSociedadEdit" onclick="cancelarSociedadEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;">Cancel·lar</button>
-                    <button class="btn-add-coord" id="btnAddSociedadSubmit" onclick="saveSociedad()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;">➕ Afegir</button>
+                    <button class="btn-close-modal" id="btnCancelSociedadEdit" onclick="cancelarSociedadEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;" data-i18n="btnCancel">Cancel·lar</button>
+                    <button class="btn-add-coord" id="btnAddSociedadSubmit" onclick="saveSociedad()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;" data-i18n="btnAdd">➕ Afegir</button>
                 </div>
             </div>
             
             <div id="sociedadList" class="modal-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 16px;"></div>
             
             <div class="modal-footer" style="display: flex; justify-content: flex-end;">
-                <button class="btn-close-modal" onclick="closeSociedadModal()">Tancar</button>
+                <button class="btn-close-modal" onclick="closeSociedadModal()" data-i18n="btnClose">Tancar</button>
             </div>
         </div>
     </div>
@@ -818,18 +818,18 @@
                 
                 <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 10px;">
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">NOM COMPLET</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="trabNom">NOM COMPLET</label>
                         <input type="text" id="newTrabajadorNom" placeholder="Joan Pujol" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">EMAIL</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="trabEmail">EMAIL</label>
                         <input type="email" id="newTrabajadorEmail" placeholder="joan.pujol@nyn.es" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px;">
                     <div>
-                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;">ROL ACCÉS</label>
+                        <label style="font-size: 10px; font-weight: 700; color: #475569; display: block; margin-bottom: 2px;" data-i18n="trabRol">ROL ACCÉS</label>
                         <select id="newTrabajadorRol" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
                             <option value="Trabajador" selected>Trabajador</option>
                             <option value="Coordinador">Coordinador</option>
@@ -840,7 +840,7 @@
                     <div style="display: flex; align-items: flex-end; padding-bottom: 8px;">
                         <label style="font-size: 12px; color: #334155; display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;">
                             <input type="checkbox" id="newTrabajadorActivo" checked>
-                            Trabajador en Actiu (Alta)
+                            <span data-i18n="trabActivo">Trabajador en Actiu (Alta)</span>
                         </label>
                     </div>
                 </div>
@@ -848,47 +848,47 @@
                 <!-- Preferencias operativas -->
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; border-top: 1px dashed #e2e8f0; padding-top: 8px;">
                     <div>
-                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">CENTRE PREFERENT</label>
+                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;" data-i18n="trabCentre">CENTRE PREFERENT</label>
                         <input type="text" id="newTrabajadorCentre" placeholder="NN CONCEPT" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                     <div>
-                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">TORN PREFERENT</label>
+                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;" data-i18n="trabTorn">TORN PREFERENT</label>
                         <select id="newTrabajadorTorn" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; background: white; box-sizing: border-box; font-family: inherit; outline: none;">
-                            <option value="" selected>-- Cap --</option>
+                            <option value="" selected data-i18n="trabTornNone">-- Cap --</option>
                             <option value="MATÍ">MATÍ</option>
                             <option value="TARDA">TARDA</option>
                             <option value="NIT">NIT</option>
                         </select>
                     </div>
                     <div>
-                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;">ZONA HABITUAL</label>
+                        <label style="font-size: 9px; font-weight: 700; color: #64748b; display: block; margin-bottom: 2px;" data-i18n="trabZona">ZONA HABITUAL</label>
                         <input type="text" id="newTrabajadorZona" placeholder="Zona 1" style="width: 100%; padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; font-family: inherit;">
                     </div>
                 </div>
 
                 <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
-                    <button class="btn-close-modal" id="btnCancelTrabajadorEdit" onclick="cancelarTrabajadorEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;">Cancel·lar</button>
-                    <button class="btn-add-coord" id="btnAddTrabajadorSubmit" onclick="saveTrabajador()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;">➕ Afegir</button>
+                    <button class="btn-close-modal" id="btnCancelTrabajadorEdit" onclick="cancelarTrabajadorEdit()" style="display: none; padding: 6px 12px; font-size: 11px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; cursor: pointer; margin: 0;" data-i18n="btnCancel">Cancel·lar</button>
+                    <button class="btn-add-coord" id="btnAddTrabajadorSubmit" onclick="saveTrabajador()" style="padding: 6px 14px; font-size: 11px; margin: 0; min-width: 100px;" data-i18n="btnAdd">➕ Afegir</button>
                 </div>
             </div>
 
             <!-- Sección de Histórico de Sociedades (Contratos) -->
             <div id="trabajadorContratosSection" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 14px; margin-bottom: 16px; flex-direction: column; gap: 10px;">
-                <h4 style="margin: 0; font-size: 12px; color: #166534; font-weight: 700;">🏢 Historial de Societats Vinculades (Contractes)</h4>
+                <h4 style="margin: 0; font-size: 12px; color: #166534; font-weight: 700;" data-i18n="trabHistorialSocietats">🏢 Historial de Societats Vinculades (Contractes)</h4>
                 
                 <!-- Formulario de nueva vinculación -->
                 <div style="display: flex; gap: 8px; align-items: flex-end;">
                     <div style="flex: 1.5;">
-                        <label style="font-size: 9px; font-weight: 700; color: #166534; display: block; margin-bottom: 2px;">SOCIETAT</label>
+                        <label style="font-size: 9px; font-weight: 700; color: #166534; display: block; margin-bottom: 2px;" data-i18n="trabSociedad">SOCIETAT</label>
                         <select id="newContratoSociedad" style="width: 100%; padding: 5px 8px; border: 1px solid #86efac; border-radius: 6px; font-size: 11px; background: white; font-family: inherit; outline: none;">
                             <!-- Sociedades cargadas dinámicamente -->
                         </select>
                     </div>
                     <div style="flex: 1.2;">
-                        <label style="font-size: 9px; font-weight: 700; color: #166534; display: block; margin-bottom: 2px;">DATA INICI</label>
+                        <label style="font-size: 9px; font-weight: 700; color: #166534; display: block; margin-bottom: 2px;" data-i18n="trabDataInici">DATA INICI</label>
                         <input type="date" id="newContratoFechaInicio" style="width: 100%; padding: 4px 8px; border: 1px solid #86efac; border-radius: 6px; font-size: 11px; font-family: inherit; box-sizing: border-box;">
                     </div>
-                    <button class="btn-add-coord" onclick="addContratoTrabajador()" style="background: #15803d; border-color: #166534; color: white; padding: 5px 12px; font-size: 11px; margin: 0; flex: 0.8;">Vincular</button>
+                    <button class="btn-add-coord" onclick="addContratoTrabajador()" style="background: #15803d; border-color: #166534; color: white; padding: 5px 12px; font-size: 11px; margin: 0; flex: 0.8;" data-i18n="trabVincular">Vincular</button>
                 </div>
 
                 <!-- Tabla/Lista de contratos históricos -->
@@ -2404,6 +2404,7 @@
         }
 
         function updateClock() {
+            const lang = (window.i18n && window.i18n.getLanguage) ? window.i18n.getLanguage() : (localStorage.getItem('app_language') || localStorage.getItem('nyn_idioma') || 'ca');
             const ara = new Date();
             const h = String(ara.getHours()).padStart(2, '0');
             const m = String(ara.getMinutes()).padStart(2, '0');
@@ -2417,23 +2418,26 @@
             document.getElementById('s2').textContent = s[1];
             
             const opcions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('digital-date').textContent = ara.toLocaleDateString('ca-ES', opcions);
+            document.getElementById('digital-date').textContent = ara.toLocaleDateString(lang === 'es' ? 'es-ES' : 'ca-ES', opcions);
 
             const avui = `${String(ara.getDate()).padStart(2, '0')}-${String(ara.getMonth() + 1).padStart(2, '0')}`;
 
             const bdayContainer = document.getElementById('birthday-msg');
             if (typeof aniversaris !== 'undefined' && aniversaris[avui]) {
-                document.getElementById('bday-text').textContent = `Feliç aniversari ${aniversaris[avui]}!!`;
+                const bdayPrefix = lang === 'es' ? '¡Feliz cumpleaños' : 'Feliç aniversari';
+                document.getElementById('bday-text').textContent = `${bdayPrefix} ${aniversaris[avui]}!!`;
                 bdayContainer.style.display = "block";
             } else { bdayContainer.style.display = "none"; }
 
             const msgEle = document.getElementById('celebration-msg');
             if (typeof calendari !== 'undefined' && calendari[avui]) {
-                msgEle.innerHTML = `🌟 Feliç dia de <b>${calendari[avui]}</b>!`;
+                const festivo = typeof calendari[avui] === 'object' ? (calendari[avui][lang] || calendari[avui]['ca']) : calendari[avui];
+                const calPrefix = lang === 'es' ? 'Feliz día de' : 'Feliç dia de';
+                msgEle.innerHTML = `🌟 ${calPrefix} <b>${festivo}</b>!`;
                 msgEle.style.backgroundColor = "#e8f5e9";
                 msgEle.style.borderColor = "#008d36";
             } else {
-                msgEle.innerHTML = "Avui no se celebra res especial al món 🙁";
+                msgEle.innerHTML = lang === 'es' ? "Hoy no se celebra nada especial en el mundo 🙁" : "Avui no se celebra res especial al món 🙁";
                 msgEle.style.backgroundColor = "#f8f8f8";
                 msgEle.style.borderColor = "#ddd";
             }

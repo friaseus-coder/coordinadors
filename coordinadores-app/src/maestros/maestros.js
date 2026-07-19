@@ -578,6 +578,11 @@ function empleadosManager() {
             setTimeout(() => {
                 this.toast.show = false;
             }, 5000);
+        },
+
+        getTranslatedRol(rol) {
+            return window.DbLanguageMap ? window.DbLanguageMap.translate(rol, 'rol', window.i18n ? window.i18n.getLanguage() : 'ca') : rol;
+        }
         }
     }
 }

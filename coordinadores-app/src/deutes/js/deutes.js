@@ -109,6 +109,10 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        getTranslatedIncidencia(tipo) {
+            return window.DbLanguageMap ? window.DbLanguageMap.translate(tipo, 'incidencia', window.i18n ? window.i18n.getLanguage() : 'ca') : tipo;
+        },
+
         async eliminarIncidencia(id) {
             if (!confirm("¿Estás seguro de que deseas eliminar este registro de horas?")) return;
             try {

@@ -584,12 +584,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         getTranslatedTorn(torn) {
-            if (i18n.getLanguage() === 'es') {
-                if (torn === "MATÍ") return "MAÑANA";
-                if (torn === "TARDA") return "TARDE";
-                if (torn === "NIT") return "NOCHE";
-            }
-            return torn;
+            return window.DbLanguageMap ? window.DbLanguageMap.translate(torn, 'turno', i18n.getLanguage()).toUpperCase() : torn;
         },
 
         // Asistente lateral
