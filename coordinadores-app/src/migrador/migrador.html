@@ -756,7 +756,7 @@
                 <label data-i18n="lblEstrategia">Estratègia de Càrrega</label>
                 <div class="radio-group">
                     <div class="radio-option selected" id="optAdd" onclick="seleccionarEstrategia('add')">
-                        <input type="radio" name="estrategia" value="add" checked style="pointer-events:none">
+                        <input type="radio" name="estrategia" value="add" checked onchange="seleccionarEstrategia('add')">
                         <div>
                             <div class="radio-title" data-i18n="optAddTitle">Afegir i Combinar Dades</div>
                             <div class="radio-desc" data-i18n="optAddDesc">Uneix les noves dades amb les existents. No
@@ -764,7 +764,7 @@
                         </div>
                     </div>
                     <div class="radio-option" id="optOverwrite" onclick="seleccionarEstrategia('overwrite')">
-                        <input type="radio" name="estrategia" value="overwrite" style="pointer-events:none">
+                        <input type="radio" name="estrategia" value="overwrite" onchange="seleccionarEstrategia('overwrite')">
                         <div>
                             <div class="radio-title" data-i18n="optOverwriteTitle">Sobrescriure / Netejar anterior</div>
                             <div class="radio-desc" data-i18n="optOverwriteDesc">Esborra la informació del mòdul/dates
@@ -2560,17 +2560,50 @@
                     }
                 }
                 else if (tipo === 'cuadrante') {
+                    // Función helper: convierte formato legado "6H-14H", "14H-22H", "00H - 6H"
+                    // a hora_inicio "06:00" y hora_fin "14:00" compatibles con listaHorarios
+                    function parsarHoresLlegades(horasStr) {
+                        if (!horasStr || horasStr === '-' || horasStr === '0') {
+                            return { inicio: '06:00', fin: '14:00', legacy: horasStr || '' };
+                        }
+                        // Normalizar: quitar espacios, convertir a mayúsculas
+                        const norm = horasStr.replace(/\s/g, '').toUpperCase();
+                        // Separar por '-' (pero no el del cero, que puede ser "00H-6H")
+                        // El patrón es: NUMHoNUM:NUMh - NUMHoNUM:NUMh
+                        const match = norm.match(/^(\d+)H?(?::(\d+))?[-–](\d+)H?(?::(\d+))?$/);
+                        if (!match) return { inicio: '06:00', fin: '14:00', legacy: horasStr };
+                        
+                        const hIni = parseInt(match[1], 10);
+                        const mIni = parseInt(match[2] || '0', 10);
+                        const hFin = parseInt(match[3], 10);
+                        const mFin = parseInt(match[4] || '0', 10);
+                        
+                        const inicio = `${String(hIni).padStart(2, '0')}:${String(mIni).padStart(2, '0')}`;
+                        const fin    = `${String(hFin).padStart(2, '0')}:${String(mFin).padStart(2, '0')}`;
+                        return { inicio, fin, legacy: horasStr };
+                    }
+
                     for (const r of registrosParaInsertar) {
                         const agId = r.agente ? matchAgentesMap.get(r.agente) : (r.agenteId || null);
                         const pkId = r.parking ? matchAparcamientosMap.get(r.parking) : (r.parkingId || null);
 
                         if (pkId && pkId !== 'SKIP' && (!r.agente || (agId && agId !== 'SKIP'))) {
+                            const { inicio: horaInicio, fin: horaFin, legacy: horasLegado } = parsarHoresLlegades(r.horas);
+                            // Si es modo 'add', borramos primero la celda exacta para evitar duplicados
+                            if (estrategia === 'add') {
+                                opsOperativa.push({
+                                    query: `DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?`,
+                                    params: [r.fecha, pkId, r.turno]
+                                });
+                            }
                             opsOperativa.push({
                                 query: `
-                                INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, horas_trabajadas, es_substitucio, nota)
-                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                                INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio, nota)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                             `, params: [
-                                    r.fecha, pkId, agId || 0, r.turno, r.horas || 0, r.es_sub ? 1 : 0, r.nota || ''
+                                    r.fecha, pkId, agId || 0, r.turno,
+                                    horaInicio, horaFin, horasLegado,
+                                    r.es_sub ? 1 : 0, r.nota || ''
                                 ]
                             });
                             insertados++;

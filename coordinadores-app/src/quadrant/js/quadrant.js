@@ -9,7 +9,7 @@ document.addEventListener('alpine:init', () => {
         },
         listaTrabajadores: [],
         listaParkings: [],
-        listaHorarios: ["-", "06:00-14:00", "14:00-22:00", "22:00-06:00", "09:00-17:00", "17:00-01:00", "08:00-16:00", "16:00-00:00", "07:00-15:00", "15:00-23:00", "10:00-18:00", "18:00-02:00"],
+        listaHorarios: ["-", "06:00-14:00", "14:00-22:00", "22:00-06:00", "00:00-06:00", "09:00-17:00", "17:00-01:00", "08:00-16:00", "16:00-00:00", "07:00-15:00", "15:00-23:00", "10:00-18:00", "18:00-02:00"],
         turnosDB: [],
         pendientesParkings: {},
         lockedMonths: {},
@@ -730,10 +730,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         parsearDataCustom(str) {
-            const p = str.trim().split('/');
-            const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
-            d.setHours(0, 0, 0, 0);
-            return d;
+            try {
+                if (!str || typeof str !== 'string') return new Date(0);
+                const p = str.trim().split('/');
+                if (p.length < 3) return new Date(0);
+                const d = new Date(parseInt(p[2]), parseInt(p[1]) - 1, parseInt(p[0]));
+                if (isNaN(d.getTime())) return new Date(0);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            } catch(e) {
+                return new Date(0);
+            }
         },
 
         async importarVacances(event) {
