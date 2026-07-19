@@ -128,6 +128,88 @@ window.AppServices = {
                 datos.json_detalles
             ];
             return await window.dbAPI.write('finanzas', sql, params);
+        },
+
+        Inventario: {
+            /**
+             * Obtener todos los artículos del catálogo.
+             */
+            obtenerArticulos: async () => {
+                return await window.dbAPI.read('finanzas', 'SELECT * FROM inventario_articulos ORDER BY nombre ASC', []);
+            },
+            crearArticulo: async (referencia, nombre, categoria) => {
+                const sql = `INSERT INTO inventario_articulos (referencia, nombre, categoria) VALUES (?, ?, ?)`;
+                return await window.dbAPI.write('finanzas', sql, [referencia, nombre, categoria]);
+            },
+            eliminarArticulo: async (id) => {
+                const sql = `DELETE FROM inventario_articulos WHERE id = ?`;
+                return await window.dbAPI.write('finanzas', sql, [id]);
+            },
+            
+            /**
+             * Obtener todos los almacenes.
+             */
+            obtenerAlmacenes: async () => {
+                return await window.dbAPI.read('finanzas', 'SELECT * FROM inventario_almacenes ORDER BY nombre ASC', []);
+            },
+            crearAlmacen: async (nombre) => {
+                const sql = `INSERT INTO inventario_almacenes (nombre) VALUES (?)`;
+                return await window.dbAPI.write('finanzas', sql, [nombre]);
+            },
+
+            /**
+             * Obtener el stock global actual con sus versiones OCC.
+             */
+            obtenerStockGlobal: async () => {
+                const sql = `
+                    SELECT e.id, a.id as articulo_id, a.referencia as ref, a.nombre as articulo, al.nombre as magatzem, e.stock, e.version, a.categoria as cat
+                    FROM inventario_existencias e
+                    JOIN inventario_articulos a ON e.articulo_id = a.id
+                    JOIN inventario_almacenes al ON e.almacen_id = al.id
+                `;
+                return await window.dbAPI.read('finanzas', sql, []);
+            },
+            crearStock: async (articulo_id, almacen_id) => {
+                const sql = `INSERT INTO inventario_existencias (articulo_id, almacen_id, stock) VALUES (?, ?, 0)`;
+                return await window.dbAPI.write('finanzas', sql, [articulo_id, almacen_id]);
+            },
+            borrarStock: async (id) => {
+                const sql = `DELETE FROM inventario_existencias WHERE id = ?`;
+                return await window.dbAPI.write('finanzas', sql, [id]);
+            },
+
+            /**
+             * Actualiza el stock de un artículo con control optimista de concurrencia (OCC).
+             */
+            actualizarStock: async (existenciaId, nuevoStock, expectedVersion) => {
+                const sql = `UPDATE inventario_existencias SET stock = ? WHERE id = ?`;
+                return await window.dbAPI.write('finanzas', sql, [nuevoStock, existenciaId], expectedVersion);
+            },
+            
+            /**
+             * Comandas
+             */
+            obtenerComandas: async () => {
+                const sql = `
+                    SELECT c.id, c.data, c.centre, c.articulo_id, a.referencia as ref, c.uds, c.estat, c.rec
+                    FROM inventario_comandas c
+                    JOIN inventario_articulos a ON c.articulo_id = a.id
+                    ORDER BY c.data DESC, c.id DESC
+                `;
+                return await window.dbAPI.read('finanzas', sql, []);
+            },
+            crearComanda: async (comanda) => {
+                const sql = `INSERT INTO inventario_comandas (data, centre, articulo_id, uds, estat, rec) VALUES (?, ?, ?, ?, ?, ?)`;
+                return await window.dbAPI.write('finanzas', sql, [comanda.data, comanda.centre, comanda.articulo_id, comanda.uds, comanda.estat, comanda.rec]);
+            },
+            actualizarComanda: async (id, estat, rec) => {
+                const sql = `UPDATE inventario_comandas SET estat = ?, rec = ? WHERE id = ?`;
+                return await window.dbAPI.write('finanzas', sql, [estat, rec, id]);
+            },
+            borrarComanda: async (id) => {
+                const sql = `DELETE FROM inventario_comandas WHERE id = ?`;
+                return await window.dbAPI.write('finanzas', sql, [id]);
+            }
         }
     },
 

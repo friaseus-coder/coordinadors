@@ -22,6 +22,8 @@ contextBridge.exposeInMainWorld('api', {
   migrarJsonComercials: (dataJSON) => ipcRenderer.invoke('migrar-json-comercials', { dataJSON }),
   seleccionarArchivosMigracion: () => ipcRenderer.invoke('seleccionar-archivos-migracion'),
   crearBackupMigracion: (tipo) => ipcRenderer.invoke('crear-backup-migracion', { tipo }),
+  importarEmpleadosMaestros: (datos, modo) => ipcRenderer.invoke('importar-empleados-maestros', datos, modo),
+  importarAparcamientosMaestros: (datos, modo) => ipcRenderer.invoke('importar-aparcamientos-maestros', datos, modo),
   // Cerrar aplicación
   closeApp: () => ipcRenderer.invoke('app-close'),
   // Gestión de sociedades
@@ -42,10 +44,10 @@ contextBridge.exposeInMainWorld('databaseAPI', {
 
 contextBridge.exposeInMainWorld('dbAPI', {
   read: (dbKey, query, params) => ipcRenderer.invoke('read-db', { dbKey, query, params }),
-  write: (dbKey, query, params) => {
+  write: (dbKey, query, params, occVersion = null) => {
     const userRole = sessionStorage.getItem('userRole') || 'invitado';
     const userName = sessionStorage.getItem('user') || 'Desconocido';
-    return ipcRenderer.invoke('write-db', { dbKey, query, params, userRole, userName });
+    return ipcRenderer.invoke('write-db', { dbKey, query, params, occVersion, userRole, userName });
   },
   writeBatch: (dbKey, operations) => {
     const userRole = sessionStorage.getItem('userRole') || 'invitado';
@@ -59,6 +61,11 @@ contextBridge.exposeInMainWorld('dbAPI', {
     const userName = sessionStorage.getItem('userName') || sessionStorage.getItem('user') || 'Desconocido';
     return ipcRenderer.invoke('save-turno-cuadrante-seguro', { ...params, userRole, userName });
   }
+});
+
+contextBridge.exposeInMainWorld('configAPI', {
+  validateNetworkPath: (testPath) => ipcRenderer.invoke('validate-network-path', testPath),
+  updateSystemConfig: (newPath) => ipcRenderer.invoke('update-system-config', newPath)
 });
 
 

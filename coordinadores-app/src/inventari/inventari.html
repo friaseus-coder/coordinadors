@@ -289,12 +289,12 @@
                                 </select>
                             </td>
                             <td>
-                                <select :value="s.ref" @change="canviarItemStock(s.id, $event.target.value)">
+                                <select :value="s.ref" @change="canviarItemStock(s.id, $event.target.value)" disabled title="Per canviar el material cal crear una nova fila.">
                                     <option value="">-- Selecciona Material --</option>
                                     <template x-for="c in dades.categories" :key="c">
                                         <optgroup :label="c">
-                                            <template x-for="m in dades.cataleg.filter(x => x.cat === c)" :key="m.ref">
-                                                <option :value="m.ref" x-text="m.ref + ' | ' + m.nom" :selected="s.ref === m.ref"></option>
+                                            <template x-for="m in dades.cataleg.filter(x => x.categoria === c)" :key="m.referencia">
+                                                <option :value="m.referencia" x-text="m.referencia + ' | ' + m.nombre" :selected="s.ref === m.referencia"></option>
                                             </template>
                                         </optgroup>
                                     </template>
@@ -347,14 +347,14 @@
                                 </select>
                             </td>
                             <td>
-                                <select x-model="c.ref" @change="guardar()">
+                                <select x-model="c.articulo_id" @change="guardar()" disabled title="Per canviar-ho cal esborrar i crear de nou.">
                                     <option value="">-- Selecciona --</option>
-                                    <template x-for="m in dades.cataleg" :key="m.ref">
-                                        <option :value="m.ref" x-text="m.ref + ' - ' + m.nom" :selected="c.ref === m.ref"></option>
+                                    <template x-for="m in dades.cataleg" :key="m.id">
+                                        <option :value="m.id" x-text="m.referencia + ' - ' + m.nombre" :selected="c.articulo_id === m.id"></option>
                                     </template>
                                 </select>
                             </td>
-                            <td><input type="number" min="1" x-model.number="c.uds" @change="guardar()" style="width: 100%;"></td>
+                            <td><input type="number" min="1" x-model.number="c.uds" @change="guardar()" style="width: 100%;" readonly title="Nomes visual"></td>
                             <td>
                                 <button class="status-btn text-[9px]" :class="c.estat === 'entregat' ? 'entregat' : 'pendent'" @click="canviarEstat(index)" x-text="c.estat === 'entregat' ? 'Entregat' : 'Pendent'"></button>
                             </td>
@@ -400,13 +400,13 @@
             </thead>
             <tbody>
                 <template x-for="(m, i) in dades.cataleg" :key="i">
-                    <tr class="row-box" :class="getCatClass(m.ref)">
-                        <td><input type="text" x-model="m.ref" @change="guardar()"></td>
-                        <td><input type="text" x-model="m.nom" @change="m.nom = m.nom.toUpperCase(); guardar()"></td>
+                    <tr class="row-box" :class="getCatClass(m.referencia)">
+                        <td><input type="text" x-model="m.referencia" disabled title="No editable des d'aquí"></td>
+                        <td><input type="text" x-model="m.nombre" disabled title="No editable des d'aquí"></td>
                         <td>
-                            <select x-model="m.cat" @change="guardar()">
+                            <select x-model="m.categoria" disabled title="No editable des d'aquí">
                                 <template x-for="c in dades.categories" :key="c">
-                                    <option :value="c" x-text="c" :selected="m.cat === c"></option>
+                                    <option :value="c" x-text="c" :selected="m.categoria === c"></option>
                                 </template>
                             </select>
                         </td>

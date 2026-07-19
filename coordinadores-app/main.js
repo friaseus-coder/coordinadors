@@ -183,63 +183,114 @@ function dbRun(sql, params = []) {
   });
 }
 
-function conectarBaseDatosUnica(rutaCompartida) {
+async function conectarBaseDatosUnica(rutaCompartida) {
   NETWORK_DIR = rutaCompartida;
   currentDbPath = path.join(NETWORK_DIR, 'dades.db');
 
   console.log(`[DB INIT] Inicializando Triple Estrategia en red: ${NETWORK_DIR}`);
-  syncAllToLocal();
+  await syncAllToLocal();
 
   return db;
 }
 
-function inicializarBasesDeDatosEnRed() {
+async function executeQueryAsync(dbConn, sql) {
+  return new Promise((resolve, reject) => {
+    dbConn.exec(sql, (err) => {
+      if (err) reject(err);
+      else resolve();
+    });
+  });
+}
+
+async function getDbVersion(dbConn) {
+  return new Promise((resolve, reject) => {
+    dbConn.get("SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1", (err, row) => {
+      if (err) resolve(0);
+      else resolve(row ? row.version : 0);
+    });
+  });
+}
+
+const MIGRACIONES = {
+  catalogos: [
+    { version: 1, sqlFile: 'schema_catalogos.sql' }
+  ],
+  comercial: [
+    { version: 1, sqlFile: 'schema_comercial.sql' }
+  ],
+  operativa: [
+    { version: 1, sqlFile: 'schema_operativa.sql' }
+  ],
+  finanzas: [
+    { version: 1, sqlFile: 'schema_finanzas.sql' },
+    { version: 2, sqlFile: 'schema_finanzas_v2.sql' }
+  ]
+};
+
+async function inicializarBasesDeDatosEnRed() {
   if (!fs.existsSync(NETWORK_DIR)) {
     fs.mkdirSync(NETWORK_DIR, { recursive: true });
   }
 
   for (const [key, dbFile] of Object.entries(DBS)) {
     const netDbPath = path.join(NETWORK_DIR, dbFile);
-    if (!fs.existsSync(netDbPath)) {
-      console.log(`[DB INIT] Creando base de datos vacía en red: ${dbFile}`);
-      const dbTemp = new sqlite3.Database(netDbPath);
-      const schemaFileName = `schema_${key}.sql`;
-      const schemaPath = path.join(__dirname, schemaFileName);
-      if (fs.existsSync(schemaPath)) {
-        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-        dbTemp.exec(schemaSql, (err) => {
-          if (err) {
-            console.error(`[DB INIT] Error aplicando esquema en red para ${dbFile}:`, err.message);
-          } else {
-            console.log(`[DB INIT] Esquema aplicado con éxito para ${dbFile}`);
+    
+    await new Promise((resolve, reject) => {
+      const dbTemp = new sqlite3.Database(netDbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE, async (err) => {
+        if (err) {
+          console.error(`[DB INIT] Error abriendo BD en red para ${dbFile}:`, err.message);
+          return resolve();
+        }
+        
+        try {
+          await executeQueryAsync(dbTemp, `
+            CREATE TABLE IF NOT EXISTS schema_migrations (
+                version INTEGER PRIMARY KEY,
+                applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+          `);
+          
+          const currentVersion = await getDbVersion(dbTemp);
+          const migrations = MIGRACIONES[key] || [];
+          
+          for (const mig of migrations) {
+            if (mig.version > currentVersion) {
+              console.log(`[MIGRATION] Aplicando migración v${mig.version} en ${dbFile}...`);
+              
+              const schemaPath = path.join(__dirname, mig.sqlFile);
+              if (fs.existsSync(schemaPath)) {
+                const schemaSql = fs.readFileSync(schemaPath, 'utf8');
+                
+                await executeQueryAsync(dbTemp, "BEGIN IMMEDIATE TRANSACTION;");
+                try {
+                  await executeQueryAsync(dbTemp, schemaSql);
+                  await executeQueryAsync(dbTemp, `INSERT INTO schema_migrations (version) VALUES (${mig.version});`);
+                  await executeQueryAsync(dbTemp, "COMMIT;");
+                  console.log(`[MIGRATION] Migración v${mig.version} aplicada con éxito en ${dbFile}.`);
+                } catch (migErr) {
+                  await executeQueryAsync(dbTemp, "ROLLBACK;");
+                  console.error(`[MIGRATION] Error aplicando migración v${mig.version} en ${dbFile}:`, migErr.message);
+                  break;
+                }
+              } else {
+                console.warn(`[MIGRATION] Archivo SQL no encontrado: ${schemaPath}`);
+              }
+            }
           }
-          dbTemp.close();
-        });
-      } else {
-        console.warn(`[DB INIT] Esquema no encontrado: ${schemaPath}`);
-        dbTemp.close();
-      }
-    } else {
-      // Si ya existe, asegurarnos de que tengan las tablas necesarias aplicando el esquema de todos modos
-      // CREATE TABLE IF NOT EXISTS es seguro
-      const dbTemp = new sqlite3.Database(netDbPath);
-      const schemaFileName = `schema_${key}.sql`;
-      const schemaPath = path.join(__dirname, schemaFileName);
-      if (fs.existsSync(schemaPath)) {
-        const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-        dbTemp.exec(schemaSql, (err) => {
-          dbTemp.close();
-        });
-      } else {
-        dbTemp.close();
-      }
-    }
+        } catch(e) {
+            console.error(`[MIGRATION] Error global procesando migraciones de ${dbFile}:`, e);
+        } finally {
+            dbTemp.close();
+            resolve();
+        }
+      });
+    });
   }
 }
 
-function syncAllToLocal() {
+async function syncAllToLocal() {
   console.log("[DB SYNC] Sincronizando bases de datos desde red a caché local...");
-  inicializarBasesDeDatosEnRed();
+  await inicializarBasesDeDatosEnRed();
 
   for (const [key, dbFile] of Object.entries(DBS)) {
     const netDbPath = path.join(NETWORK_DIR, dbFile);
@@ -301,7 +352,48 @@ function syncToLocal(dbKey) {
 }
 
 
-async function safeWriteCombined(dbKey, query, params) {
+const VERSIONED_TABLES = {
+  'inventario_existencias': { pk: 'id', versionColumn: 'version' }
+};
+
+async function processOccMiddleware(netDb, query, params, occVersion) {
+  if (occVersion === undefined || occVersion === null) return { query, params };
+  
+  const occMatch = query.match(/^UPDATE\s+(\w+)\s+SET\s+(.+?)\s+WHERE\s+(\w+)\s*=\s*\?/i);
+  if (!occMatch) return { query, params };
+  
+  const tableName = occMatch[1].toLowerCase();
+  const config = VERSIONED_TABLES[tableName];
+  if (!config) return { query, params };
+  
+  const pkField = occMatch[3].toLowerCase();
+  if (pkField !== config.pk) return { query, params };
+  
+  const pkValue = params[params.length - 1];
+  
+  const currentData = await new Promise((resolve, reject) => {
+    netDb.get(`SELECT ${config.versionColumn} FROM ${tableName} WHERE ${config.pk} = ?`, [pkValue], (err, row) => {
+      if (err) reject(err); else resolve(row);
+    });
+  });
+  
+  if (!currentData) {
+    throw new Error('OCC_CONFLICT: Registro no encontrado.');
+  }
+  
+  if (currentData[config.versionColumn] !== occVersion) {
+    throw new Error(`OCC_CONFLICT: Versión desactualizada. Esperada ${occVersion}, actual ${currentData[config.versionColumn]}`);
+  }
+  
+  const newQuery = query.replace(
+    new RegExp(`SET\\s+(.+?)\\s+WHERE`, 'i'), 
+    `SET $1, ${config.versionColumn} = ${config.versionColumn} + 1 WHERE`
+  );
+  
+  return { query: newQuery, params };
+}
+
+async function safeWriteCombined(dbKey, query, params, occVersion) {
   const dbFile = DBS[dbKey];
   if (!dbFile) {
     throw new Error(`Base de datos no válida: ${dbKey}`);
@@ -343,8 +435,10 @@ async function safeWriteCombined(dbKey, query, params) {
       });
     });
 
+    const processed = await processOccMiddleware(netDb, query, params, occVersion);
+
     const result = await new Promise((resolve, reject) => {
-      netDb.run(query, params, function(err) {
+      netDb.run(processed.query, processed.params, function(err) {
         if (err) reject(err);
         else resolve({ lastID: this.lastID, changes: this.changes });
       });
@@ -448,8 +542,9 @@ async function safeWriteBatch(dbKey, operations) {
     let totalChanges = 0;
 
     for (const op of operations) {
+      const processed = await processOccMiddleware(netDb, op.query, op.params, op.occVersion);
       const result = await new Promise((resolve, reject) => {
-        netDb.run(op.query, op.params, function(err) {
+        netDb.run(processed.query, processed.params, function(err) {
           if (err) reject(err);
           else resolve({ lastID: this.lastID, changes: this.changes });
         });
@@ -1084,7 +1179,7 @@ function obtenerReglasConfiguradas(dbConnection) {
 }
 
 // Inicialización de la aplicación
-app.on('ready', () => {
+app.on('ready', async () => {
   const configPath = configFile;
   let rutaCompartida = path.join(app.getPath('documents'), 'Coordinadores_Local'); // Fallback
   
@@ -1104,7 +1199,7 @@ app.on('ready', () => {
   }
   
   try {
-    conectarBaseDatosUnica(rutaCompartida);
+    await conectarBaseDatosUnica(rutaCompartida);
   } catch (err) {
     console.error("Error crítico al inicializar base de datos única:", err);
   }
@@ -1236,13 +1331,13 @@ ipcMain.handle('read-db', async (event, { dbKey, query, params }) => {
   });
 });
 
-ipcMain.handle('write-db', async (event, { dbKey, query, params, userRole, userName }) => {
+ipcMain.handle('write-db', async (event, { dbKey, query, params, occVersion, userRole, userName }) => {
   try {
     // 1. Pasar por el control de seguridad antes de adquirir el Mutex
     validateSecurity(dbKey, query, userRole, userName);
 
     // 2. Ejecutar la escritura segura con Mutex (safeWriteCombined)
-    return await safeWriteCombined(dbKey, query, params);
+    return await safeWriteCombined(dbKey, query, params, occVersion);
   } catch (error) {
     console.warn(
       `[Seguridad/DB] Intento fallido de ${userName || 'Desconocido'} (${userRole || 'sin-rol'}) en ${dbKey}: ${query}`
@@ -1269,6 +1364,28 @@ ipcMain.handle('write-db-batch', async (event, { dbKey, operations, userRole, us
   }
 });
 
+// --- Configuracion dinamica ---
+ipcMain.handle('validate-network-path', async (event, testPath) => {
+  try {
+    fs.accessSync(testPath, fs.constants.R_OK | fs.constants.W_OK);
+    return { valid: true };
+  } catch (err) {
+    return { valid: false, error: err.message };
+  }
+});
+
+ipcMain.handle('update-system-config', async (event, newPath) => {
+  try {
+    const configData = { ruta_compartida: newPath };
+    fs.writeFileSync(configFile, JSON.stringify(configData, null, 2));
+    await conectarBaseDatosUnica(newPath); // Re-conecta y resincroniza localmente
+    return { success: true };
+  } catch (err) {
+    return { success: false, error: err.message };
+  }
+});
+
+// Handler para forzar el desbloqueo de DB
 ipcMain.handle('force-unlock-db', async (event, dbKey) => {
   const lockDir = path.join(NETWORK_DIR, `_${dbKey}.lock`);
   try {
@@ -3530,6 +3647,167 @@ ipcMain.handle('focus-fix', async () => {
   return true;
 });
 
+
+
+// ==========================================
+// IMPORTACIÓN DE MAESTROS (DOBLE ESCRITURA TRANSACCIONAL)
+// ==========================================
+
+ipcMain.handle('importar-empleados-maestros', async (event, datos, modo) => {
+  try {
+    const catalogosPath = Object.keys(DBS).includes('catalogos') ? (dbConnections['catalogos']?.filename || path.join(NETWORK_DIR, DBS['catalogos'])) : '';
+    const operativaPath = Object.keys(DBS).includes('operativa') ? (dbConnections['operativa']?.filename || path.join(NETWORK_DIR, DBS['operativa'])) : '';
+
+    if (!catalogosPath || !operativaPath) {
+      throw new Error("No se pudo determinar la ruta de catalogos.db u operativa.db");
+    }
+
+    // Usar la BD de catálogos y adjuntar operativa para doble escritura atómica
+    const catDb = new sqlite3.Database(catalogosPath);
+
+    return await new Promise((resolve, reject) => {
+      catDb.serialize(() => {
+        catDb.run('BEGIN TRANSACTION', (err) => {
+          if (err) return reject(err);
+        });
+
+        catDb.run(`ATTACH DATABASE ? AS operativa`, [operativaPath], (err) => {
+          if (err) {
+            catDb.run('ROLLBACK');
+            return reject(new Error("Error adjuntando operativa.db: " + err.message));
+          }
+        });
+
+        // 0. Asegurar tabla ranking en operativa
+        catDb.run(`
+          CREATE TABLE IF NOT EXISTS operativa.ranking (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_trabajador TEXT,
+            coneixements   REAL,
+            atencio        REAL,
+            disponibilitat REAL,
+            actitud        REAL,
+            valoracio      REAL,
+            observacions   TEXT
+          )
+        `);
+
+        // 1. Vaciado si modo es overwrite
+        if (modo === 'overwrite') {
+          catDb.run(`DELETE FROM empleados`);
+          catDb.run(`DELETE FROM operativa.ranking`);
+        }
+
+        // 2. Preparar statements
+        const stmtCat = catDb.prepare(`
+          INSERT OR IGNORE INTO empleados (nombre, email, rol, activo, json_preferencias)
+          VALUES (?, ?, ?, ?, ?)
+        `);
+
+        const stmtAgentes = catDb.prepare(`
+          INSERT OR IGNORE INTO agentes (nombre, activo, ranking_score)
+          VALUES (?, ?, 50)
+        `);
+
+        const stmtOp = catDb.prepare(`
+          INSERT INTO operativa.ranking (id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions)
+          VALUES (?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        let errores = [];
+        let insertadosCat = 0;
+        let insertadosOp = 0;
+
+        for (const r of datos) {
+          stmtCat.run(r.nombre, r.email || null, r.rol || 'Coordinador', r.activo !== undefined ? r.activo : 1, r.json_preferencias || null, function(err) {
+            if (err) errores.push("Error cat.empleados: " + err.message);
+            else insertadosCat++;
+          });
+          stmtAgentes.run(r.nombre, r.activo !== undefined ? r.activo : 1);
+          stmtOp.run(r.nombre, r.coneixements || 0, r.atencio || 0, r.disponibilitat || 0, r.actitud || 0, r.valoracio || 0, r.observacions || null, function(err) {
+            if (err) errores.push("Error op.ranking: " + err.message);
+            else insertadosOp++;
+          });
+        }
+
+        stmtCat.finalize();
+        stmtAgentes.finalize();
+        stmtOp.finalize();
+
+        catDb.run('COMMIT', (err) => {
+          if (err) {
+            catDb.run('ROLLBACK');
+            return reject(err);
+          }
+          catDb.run(`DETACH DATABASE operativa`, () => {
+            catDb.close();
+            if (errores.length > 0) {
+               resolve({ success: true, message: `✅ Completado con algunos errores. ${insertadosCat} empleados, ${insertadosOp} rankings. Errores: ${errores.length}`});
+            } else {
+               resolve({ success: true, message: `✅ Importación transaccional exitosa: ${insertadosCat} registros en catalogos y operativa.`});
+            }
+          });
+        });
+      });
+    });
+  } catch (e) {
+    console.error("[Maestros IPC] Error:", e);
+    return { success: false, error: e.message };
+  }
+});
+
+ipcMain.handle('importar-aparcamientos-maestros', async (event, datos, modo) => {
+  try {
+    const catalogosPath = Object.keys(DBS).includes('catalogos') ? (dbConnections['catalogos']?.filename || path.join(NETWORK_DIR, DBS['catalogos'])) : '';
+    if (!catalogosPath) throw new Error("No se pudo determinar la ruta de catalogos.db");
+
+    const catDb = new sqlite3.Database(catalogosPath);
+
+    return await new Promise((resolve, reject) => {
+      catDb.serialize(() => {
+        catDb.run('BEGIN TRANSACTION', (err) => {
+          if (err) return reject(err);
+        });
+
+        if (modo === 'overwrite') {
+          catDb.run(`DELETE FROM aparcamientos`);
+        }
+
+        const stmt = catDb.prepare(`
+          INSERT OR IGNORE INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+
+        let errores = [];
+        let insertados = 0;
+
+        for (const r of datos) {
+          stmt.run(r.numero_obra || null, r.nombre, r.zona || null, r.es_remotizado !== undefined ? r.es_remotizado : 0, r.tipo_gestion || null, r.permitir_vacio_laborables !== undefined ? r.permitir_vacio_laborables : 0, r.sociedad_id || null, r.coordinador_responsable || null, r.activo !== undefined ? r.activo : 1, function(err) {
+            if (err) errores.push("Error aparcamientos: " + err.message);
+            else insertados++;
+          });
+        }
+        stmt.finalize();
+
+        catDb.run('COMMIT', (err) => {
+          if (err) {
+            catDb.run('ROLLBACK');
+            return reject(err);
+          }
+          catDb.close();
+          if (errores.length > 0) {
+             resolve({ success: true, message: `✅ Completado con algunos errores. ${insertados} insertados. Errores: ${errores.length}` });
+          } else {
+             resolve({ success: true, message: `✅ Importación exitosa: ${insertados} aparcamientos.`});
+          }
+        });
+      });
+    });
+  } catch (e) {
+    console.error("[Maestros IPC] Error aparcamientos:", e);
+    return { success: false, error: e.message };
+  }
+});
 
 
 // Cerrar de forma limpia todas las conexiones SQLite al salir

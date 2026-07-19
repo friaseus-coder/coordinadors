@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <title>Gestión de Maestros</title>
+    <script src="../js/i18n.js"></script>
+    <script>
+        function mostrarAlerta(msg) {
+            const isError = String(msg).toLowerCase().includes('error');
+            if (window.parent && typeof window.parent.showCustomAlert === 'function') {
+                window.parent.showCustomAlert(msg, isError ? 'error' : 'success');
+            } else {
+                window.alert(msg);
+            }
+        }
+
+       document.addEventListener('DOMContentLoaded', () => {
+           if(typeof applyTranslations === 'function') applyTranslations();
+       });
+    </script>
+    <script src="../js/persistence.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #063931;       /* Verde Pino */
+            --primary-accent: #008d36; /* Verde Acento */
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --shadow: 0 10px 15px -3px rgba(15, 23, 42, 0.05), 0 4px 6px -4px rgba(15, 23, 42, 0.05);
+            --shadow-lg: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 10px 10px -5px rgba(15, 23, 42, 0.04);
+            --danger: #dc2626;
+            --danger-bg: #fee2e2;
+            --success: #16a34a;
+            --success-bg: #dcfce7;
+            --info: #2563eb;
+            --info-bg: #dbeafe;
+        }
+
+        body {
+            font-family: 'Outfit', 'Segoe UI', Arial, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            color: var(--text-main);
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            padding: 10px 24px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            border: 1px solid transparent;
+            font-family: inherit;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-secondary {
+            background: #ffffff;
+            color: var(--text-main);
+            border-color: var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #f8fafc;
+        }
+
+        /* Paneles de Datos Maestros */
+        .maestros-panel {
+            width: 100%;
+            max-width: 850px;
+            background: var(--card);
+            border-radius: 16px;
+            border: 1px solid #d4b896;
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+            margin-bottom: 18px;
+        }
+
+        .maestros-header {
+            background: linear-gradient(135deg, #7c4a00, #c47a2b);
+            color: white;
+            padding: 14px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .maestros-header:hover {
+            background: linear-gradient(135deg, #6b3f00, #ad6b24);
+        }
+
+        .maestros-header h2 {
+            margin: 0;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .maestros-header .badge-db {
+            font-size: 10px;
+            background: rgba(255,255,255,0.2);
+            padding: 3px 8px;
+            border-radius: 9999px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .maestros-toggle-icon {
+            font-size: 14px;
+            transition: transform 0.3s ease;
+        }
+
+        .maestros-toggle-icon.open {
+            transform: rotate(180deg);
+        }
+
+        .maestros-body {
+            padding: 20px 24px;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            border-top: 2px solid #e8c98a;
+        }
+
+        .maestros-body.open {
+            display: flex;
+        }
+
+        .maestros-row {
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+
+        .maestros-col {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .maestros-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #7c4a00;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .maestros-radio-group {
+            display: flex;
+            gap: 8px;
+        }
+
+        .maestros-radio-option {
+            flex: 1;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #fff;
+        }
+
+        .maestros-radio-option:hover {
+            border-color: #c47a2b;
+            background: #fef9f0;
+        }
+
+        .maestros-radio-option.selected {
+            border-color: #7c4a00;
+            background: rgba(124, 74, 0, 0.05);
+            box-shadow: 0 0 0 2px rgba(124, 74, 0, 0.12);
+        }
+
+        .maestros-radio-option input[type="radio"] {
+            pointer-events: none;
+            margin: 0;
+        }
+
+        .btn-amber {
+            background: linear-gradient(135deg, #c47a2b, #e5982f);
+            color: white;
+            border-color: #c47a2b;
+        }
+
+        .btn-amber:hover:not(:disabled) {
+            background: linear-gradient(135deg, #7c4a00, #c47a2b);
+            border-color: #7c4a00;
+        }
+
+        .btn-amber-outline {
+            background: #fff;
+            color: #7c4a00;
+            border-color: #c47a2b;
+        }
+
+        .btn-amber-outline:hover:not(:disabled) {
+            background: #fef9f0;
+        }
+
+        .maestros-status-log {
+            display: none;
+            margin-top: 12px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        .maestros-status-log.success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid #bbf7d0;
+        }
+
+        .maestros-status-log.error {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid #fca5a5;
+        }
+
+        .maestros-status-log.info {
+            background: var(--info-bg);
+            color: var(--info);
+            border: 1px solid #bfdbfe;
+        }
+
+        .maestros-file-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .maestros-file-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-style: italic;
+            margin-top: 4px;
+        }
+
+        .maestros-divider {
+            border: none;
+            border-top: 1px dashed #e8c98a;
+            margin: 4px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <h1 style="font-size: 20px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 24px;">👥 Gestión de Datos Maestros</h1>
+
+    <!-- ============================================================
+         PANEL: DATOS MAESTROS — APARCAMIENTOS
+    ============================================================ -->
+    <div class="maestros-panel" id="panelMaestrosAparcamientos">
+        <div class="maestros-header" onclick="toggleMaestrosPanel('aparcamientos')">
+            <h2>
+                🚗 Aparcamientos
+                <span class="badge-db">catalogos.db</span>
+            </h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:10px; font-weight:600; opacity:0.8;">Dades Mestres</span>
+                <span class="maestros-toggle-icon" id="toggleIconAparcamientos">▼</span>
+            </div>
+        </div>
+        <div class="maestros-body" id="maestrosBodyAparcamientos">
+
+            <!-- Fila 1: Descarga -->
+            <div>
+                <span class="maestros-label">📥 Exportar / Plantilla</span>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('aparcamientos')">
+                        ⬇ Descargar Datos Actuales
+                    </button>
+                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>aparcamientos</strong> en formato CSV (Excel), o una plantilla si está vacía.</span>
+                </div>
+            </div>
+
+            <hr class="maestros-divider">
+
+            <!-- Fila 2: Modo importación + archivo + botón importar -->
+            <div class="maestros-row">
+                <div class="maestros-col">
+                    <span class="maestros-label">⚙️ Modo de Importación</span>
+                    <div class="maestros-radio-group">
+                        <div class="maestros-radio-option selected" id="modoAparcamientos-add"
+                             onclick="seleccionarModoMaestros('aparcamientos', 'add')">
+                            <input type="radio" name="modoAparcamientos" value="add" checked>
+                            <span>Añadir</span>
+                        </div>
+                        <div class="maestros-radio-option" id="modoAparcamientos-overwrite"
+                             onclick="seleccionarModoMaestros('aparcamientos', 'overwrite')">
+                            <input type="radio" name="modoAparcamientos" value="overwrite">
+                            <span>Sobrescribir</span>
+                        </div>
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;" id="hintModoAparcamientos">
+                        🔵 Añadir: inserta sin borrar los existentes.
+                    </div>
+                </div>
+
+                <div class="maestros-col">
+                    <span class="maestros-label">📂 Archivo a Importar (CSV o JSON)</span>
+                    <div class="maestros-file-input-wrapper">
+                        <input type="file" accept=".csv,.json"
+                               id="inputAparcamientosArchivo" style="display:none;"
+                               onchange="onArchivoMaestrosSeleccionado('aparcamientos', this)">
+                        <button class="btn btn-secondary"
+                                onclick="document.getElementById('inputAparcamientosArchivo').click()">
+                            📂 Seleccionar Archivo...
+                        </button>
+                        <button class="btn btn-amber" id="btnImportarAparcamientos" disabled
+                                onclick="importarDatosMaestros('aparcamientos')">
+                            🚀 Importar
+                        </button>
+                    </div>
+                    <div class="maestros-file-label" id="lblArchivoAparcamientos">Ningún archivo seleccionado.</div>
+                </div>
+            </div>
+
+            <!-- Log de resultado -->
+            <div class="maestros-status-log" id="logAparcamientos"></div>
+
+        </div>
+    </div>
+
+    <!-- ============================================================
+         PANEL: DATOS MAESTROS — EMPLEADOS
+    ============================================================ -->
+    <div class="maestros-panel" id="panelMaestrosEmpleados">
+        <div class="maestros-header" onclick="toggleMaestrosPanel('empleados')">
+            <h2>
+                👥 Empleados
+                <span class="badge-db">catalogos.db + operativa.db</span>
+            </h2>
+            <div style="display:flex; align-items:center; gap:10px;">
+                <span style="font-size:10px; font-weight:600; opacity:0.8;">Doble Escritura</span>
+                <span class="maestros-toggle-icon" id="toggleIconEmpleados">▼</span>
+            </div>
+        </div>
+        <div class="maestros-body" id="maestrosBodyEmpleados">
+
+            <!-- Fila 1: Descarga -->
+            <div>
+                <span class="maestros-label">📥 Exportar / Plantilla</span>
+                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                    <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('empleados')">
+                        ⬇ Descargar Datos Actuales
+                    </button>
+                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>empleados</strong> en formato CSV (Excel), o una plantilla si está vacía.</span>
+                </div>
+            </div>
+
+            <hr class="maestros-divider">
+
+            <!-- Fila 2: Modo importación + archivo + botón importar -->
+            <div class="maestros-row">
+                <div class="maestros-col">
+                    <span class="maestros-label">⚙️ Modo de Importación</span>
+                    <div class="maestros-radio-group">
+                        <div class="maestros-radio-option selected" id="modoEmpleados-add"
+                             onclick="seleccionarModoMaestros('empleados', 'add')">
+                            <input type="radio" name="modoEmpleados" value="add" checked>
+                            <span>Añadir</span>
+                        </div>
+                        <div class="maestros-radio-option" id="modoEmpleados-overwrite"
+                             onclick="seleccionarModoMaestros('empleados', 'overwrite')">
+                            <input type="radio" name="modoEmpleados" value="overwrite">
+                            <span>Sobrescribir</span>
+                        </div>
+                    </div>
+                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;" id="hintModoEmpleados">
+                        🔵 Añadir: inserta sin borrar los existentes.
+                    </div>
+                </div>
+
+                <div class="maestros-col">
+                    <span class="maestros-label">📂 Archivo a Importar (CSV o JSON)</span>
+                    <div class="maestros-file-input-wrapper">
+                        <input type="file" accept=".csv,.json"
+                               id="inputEmpleadosArchivo" style="display:none;"
+                               onchange="onArchivoMaestrosSeleccionado('empleados', this)">
+                        <button class="btn btn-secondary"
+                                onclick="document.getElementById('inputEmpleadosArchivo').click()">
+                            📂 Seleccionar Archivo...
+                        </button>
+                        <button class="btn btn-amber" id="btnImportarEmpleados" disabled
+                                onclick="importarDatosMaestros('empleados')">
+                            🚀 Importar (Transaccional)
+                        </button>
+                    </div>
+                    <div class="maestros-file-label" id="lblArchivoEmpleados">Ningún archivo seleccionado.</div>
+                </div>
+            </div>
+
+            <!-- Log de resultado -->
+            <div class="maestros-status-log" id="logEmpleados"></div>
+
+        </div>
+    </div>
+
+    <script src="maestros.js"></script>
+</body>
+</html>

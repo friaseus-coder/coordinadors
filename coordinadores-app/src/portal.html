@@ -571,7 +571,9 @@
                     <button class="dropdown-admin-item" onclick="openTrabajadorModal(); closeAdminDropdown();" data-i18n="btnManageTrabajadores">👥 Treballadors</button>
                     <button class="dropdown-admin-item" onclick="openSociedadModal(); closeAdminDropdown();">🏢 Societats</button>
                     <button class="dropdown-admin-item" onclick="openTab('migrador', this); closeAdminDropdown();" data-i18n="adminMigratorTitle">📊 Assistent de Càrrega d'Històrics</button>
+                    <button class="dropdown-admin-item" onclick="openTab('maestros', this); closeAdminDropdown();">👥 Gestió de Dades Mestres</button>
                     <button class="dropdown-admin-item" onclick="openTab('reportes', this); closeAdminDropdown();">📊 Report de Rotació</button>
+                    <button class="dropdown-admin-item" onclick="openConfigModal(); closeAdminDropdown();">⚙️ Configuració Xarxa</button>
                     <div class="dropdown-divider menu-item" data-roles="jefe_operaciones"></div>
                     <button class="dropdown-admin-item danger menu-item" onclick="triggerGlobalForceUnlock(); closeAdminDropdown();" data-roles="jefe_operaciones" data-i18n="btnUnlockFiles">🔓 Desbloquejar Fitxers</button>
                 </div>
@@ -603,6 +605,65 @@
                 <button class="btn-close-modal" onclick="closeCoordModal()" data-i18n="btnClose">Tancar</button>
             </div>
         </div>
+    </div>
+
+    <!-- Modal de Configuración de Red -->
+    <div id="configModal" class="modal-overlay" onclick="if(event.target===this) closeConfigModal()" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-title">⚙️ Configuració del Sistema</div>
+            <div style="margin-bottom: 12px; font-size: 13px; color: #475569;">Modifica la ruta compartida on s'emmagatzema la base de dades mestra.</div>
+            
+            <div style="display: flex; gap: 8px; flex-direction: column;">
+                <label style="font-size: 12px; font-weight: 600; color: #0f2d4a;">Ruta de xarxa (SMB/Local):</label>
+                <div style="display: flex; gap: 8px;">
+                    <input type="text" id="configNetworkPath" placeholder="Ex: \\servidor\compartit\Coordinadores" style="flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <button onclick="testNetworkPath()" style="background: #e2e8f0; border: none; padding: 0 16px; border-radius: 6px; cursor: pointer; font-weight: 500;">Provar</button>
+                </div>
+                <div id="configTestResult" style="font-size: 12px; margin-top: 4px;"></div>
+            </div>
+
+            <div class="modal-footer" style="margin-top: 20px;">
+                <button class="btn-close-modal" onclick="closeConfigModal()">Tancar</button>
+                <button class="btn-add-coord" onclick="saveSystemConfig()">Desar Canvis</button>
+            </div>
+        </div>
+        <script>
+            function openConfigModal() {
+                document.getElementById('configModal').style.display = 'flex';
+                window.databaseAPI.getUserConfig().then(config => {
+                    document.getElementById('configNetworkPath').value = config.ruta_compartida || '';
+                    document.getElementById('configTestResult').innerText = '';
+                }).catch(e => console.error(e));
+            }
+            function closeConfigModal() {
+                document.getElementById('configModal').style.display = 'none';
+            }
+            async function testNetworkPath() {
+                const path = document.getElementById('configNetworkPath').value;
+                const resultLabel = document.getElementById('configTestResult');
+                resultLabel.innerText = 'Provant...';
+                resultLabel.style.color = '#64748b';
+                
+                const res = await window.configAPI.validateNetworkPath(path);
+                if (res.valid) {
+                    resultLabel.innerText = '✅ Ruta vàlida i accessible.';
+                    resultLabel.style.color = '#10b981';
+                } else {
+                    resultLabel.innerText = '❌ Error: ' + res.error;
+                    resultLabel.style.color = '#ef4444';
+                }
+            }
+            async function saveSystemConfig() {
+                const path = document.getElementById('configNetworkPath').value;
+                const res = await window.configAPI.updateSystemConfig(path);
+                if (res.success) {
+                    alert('Configuració desada correctament. El sistema s\'ha resincronitzat.');
+                    closeConfigModal();
+                } else {
+                    alert('Error en desar: ' + res.error);
+                }
+            }
+        </script>
     </div>
 
     <!-- Modal de Gestión de Aparcamientos -->
@@ -890,6 +951,7 @@
     <div id="log" class="tab-content"><iframe data-src="log/log.html"></iframe></div>
     <div id="regles" class="tab-content"><iframe data-src="regles/regles.html"></iframe></div>
     <div id="migrador" class="tab-content"><iframe data-src="migrador/migrador.html"></iframe></div>
+    <div id="maestros" class="tab-content"><iframe data-src="maestros/maestros.html"></iframe></div>
     <div id="reportes" class="tab-content"><iframe data-src="reportes/reportes.html"></iframe></div>
 
 

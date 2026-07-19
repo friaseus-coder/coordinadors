@@ -38,33 +38,24 @@ document.addEventListener('alpine:init', () => {
 
         async carregar() {
             try {
-                const keyPath = `dades ${this.usuarioActual}/inventari`;
-                const rows = await window.dbAPI.read('finanzas', "SELECT value FROM kv_store WHERE key = ?", [keyPath]);
-                if (rows && rows.length > 0 && rows[0].value) {
-                    const parsed = JSON.parse(rows[0].value);
-                    this.dades = {
-                        cataleg: parsed.cataleg || [],
-                        stock: parsed.stock || [],
-                        comandes: parsed.comandes || [],
-                        magatzems: parsed.magatzems || ["OFICINES", "PROVENÇA", "CÒRSEGA"],
-                        categories: parsed.categories || ["CONSUMIBLES IMPRESSORA", "MATERIAL OFIMÀTIC", "MANTENIMENT I VARIS", "MOBILIARI I ERGONOMIA"]
-                    };
+                this.dades.cataleg = await window.AppServices.Finanzas.Inventario.obtenerArticulos();
+                
+                const almacenes = await window.AppServices.Finanzas.Inventario.obtenerAlmacenes();
+                this.dades.magatzems = almacenes.map(a => a.nombre);
+                if (this.dades.magatzems.length === 0) {
+                    this.dades.magatzems = ["OFICINES", "PROVENÇA", "CÒRSEGA", "OFICINA CENTRAL"];
                 }
+                
+                this.dades.stock = await window.AppServices.Finanzas.Inventario.obtenerStockGlobal();
+                this.dades.comandes = await window.AppServices.Finanzas.Inventario.obtenerComandas();
             } catch (err) {
                 console.error("Error al cargar inventario:", err);
             }
         },
 
         async guardar() {
-            try {
-                const keyPath = `dades ${this.usuarioActual}/inventari`;
-                const serialized = JSON.stringify(this.dades);
-                await window.dbAPI.write('finanzas', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
-                    keyPath, serialized
-                ]);
-            } catch (err) {
-                console.error("Error al guardar inventario:", err);
-            }
+            // El guardado masivo ya no se utiliza en el modelo relacional.
+            // Las modificaciones se hacen individualmente para asegurar la atomicidad y control de concurrencia.
         },
 
         getCatClass(ref) {
@@ -83,95 +74,121 @@ document.addEventListener('alpine:init', () => {
             return s ? s.stock : 0;
         },
 
-        modQty(stockId, delta) {
+        async modQty(stockId, delta) {
             const item = this.dades.stock.find(x => x.id === stockId);
             if (item) {
-                item.stock = Math.max(0, item.stock + delta);
-                this.guardar();
-            }
-        },
-
-        canviarMag(stockId, value) {
-            if (value === "ADD") {
-                const n = prompt("Introduïu el nom del nou magatzem:").toUpperCase();
-                if (n && !this.dades.magatzems.includes(n)) {
-                    this.dades.magatzems.push(n);
-                    const item = this.dades.stock.find(x => x.id === stockId);
-                    if (item) item.magatzem = n;
-                    this.guardar();
-                }
-            } else {
-                const item = this.dades.stock.find(x => x.id === stockId);
-                if (item) {
-                    item.magatzem = value;
-                    this.guardar();
+                const newStock = Math.max(0, item.stock + delta);
+                try {
+                    await window.AppServices.Finanzas.Inventario.actualizarStock(stockId, newStock, item.version);
+                    item.stock = newStock;
+                    item.version += 1;
+                } catch(e) {
+                    if (e.message.includes('OCC_CONFLICT')) {
+                        alert("Algú ha modificat aquest stock abans. S'actualitzaran les dades.");
+                    } else {
+                        alert("Error actualitzant stock: " + e.message);
+                    }
+                    await this.carregar();
                 }
             }
         },
 
-        canviarItemStock(stockId, value) {
-            if (value && this.dades.stock.find(x => x.ref === value && x.id !== stockId)) {
-                alert("Aquest material ja està afegit al stock.");
-                return;
+        async canviarMag(stockId, value) {
+            // En versión relacional, no se permite cambiar de almacén al vuelo,
+            // habría que borrar el stock o moverlo. Por ahora, se recargará.
+            await this.carregar();
+        },
+
+        async canviarItemStock(stockId, value) {
+            // Relacional: esto no se soporta al vuelo, se requiere borrar y crear nuevo registro
+            await this.carregar();
+        },
+
+        async afegirFilaStock() {
+            const articulo_id = prompt("ID del Artículo a añadir (vea el catálogo):");
+            if (!articulo_id) return;
+            // Para simplicidad por defecto toma el primer almacén:
+            const almacenes = await window.AppServices.Finanzas.Inventario.obtenerAlmacenes();
+            if (almacenes.length === 0) return;
+            
+            try {
+                await window.AppServices.Finanzas.Inventario.crearStock(articulo_id, almacenes[0].id);
+                await this.carregar();
+            } catch(e) {
+                alert("Error al añadir al stock: " + e.message);
             }
-            const item = this.dades.stock.find(x => x.id === stockId);
-            if (item) {
-                item.ref = value;
-                this.guardar();
+        },
+
+        async borrarStock(stockId) {
+            if (confirm("Segur que vols eliminar aquesta fila d'stock?")) {
+                await window.AppServices.Finanzas.Inventario.borrarStock(stockId);
+                await this.carregar();
             }
         },
 
-        afegirFilaStock() {
-            this.dades.stock.unshift({
-                id: Date.now(),
-                magatzem: this.dades.magatzems[0],
-                ref: "",
-                stock: 0
-            });
-        },
-
-        borrarStock(stockId) {
-            this.dades.stock = this.dades.stock.filter(x => x.id !== stockId);
-            this.guardar();
-        },
-
-        novaComanda() {
-            this.dades.comandes.unshift({
+        async novaComanda() {
+            const artId = prompt("Introdueix ID de l'Article per a la comanda:");
+            if(!artId) return;
+            const centre = prompt("A quin centre va dirigit?") || "CENTRAL";
+            
+            const comanda = {
                 data: new Date().toISOString().split('T')[0],
-                centre: "",
-                ref: "",
+                centre: centre,
+                articulo_id: artId,
                 uds: 1,
                 estat: 'pendent',
                 rec: ''
-            });
+            };
+            
+            try {
+                await window.AppServices.Finanzas.Inventario.crearComanda(comanda);
+                await this.carregar();
+            } catch(e) {
+                alert("Error creant comanda: " + e.message);
+            }
         },
 
         async canviarEstat(index) {
             const c = this.dades.comandes[index];
-            const s = this.dades.stock.find(x => x.ref === c.ref);
-            if (!c.ref || !c.centre) {
-                alert("Cal completar el centre i el material per poder marcar-lo com entregat.");
-                return;
-            }
-
+            const s = this.dades.stock.find(x => x.articulo_id === c.articulo_id && x.magatzem === 'OFICINA CENTRAL'); // O el que pertoqui
+            
             if (c.estat === 'pendent') {
                 if (!s || s.stock < c.uds) {
-                    alert("No hi ha prou stock disponible al magatzem!");
+                    alert("No hi ha prou stock disponible al magatzem principal!");
                     return;
                 }
-                s.stock -= c.uds;
-                c.estat = 'entregat';
-                c.rec = new Date().toISOString().split('T')[0];
+                const newStock = s.stock - c.uds;
+                try {
+                    await window.AppServices.Finanzas.Inventario.actualizarStock(s.id, newStock, s.version);
+                    c.estat = 'entregat';
+                    c.rec = new Date().toISOString().split('T')[0];
+                    await window.AppServices.Finanzas.Inventario.actualizarComanda(c.id, c.estat, c.rec);
+                    await this.carregar();
+                } catch(e) {
+                    alert("Error processant comanda: " + e.message);
+                    await this.carregar();
+                }
             } else {
-                if (s) s.stock += c.uds;
-                c.estat = 'pendent';
+                // Revertir (només conceptual, necessitaria control de versió sobre s)
+                if (s) {
+                    const newStock = s.stock + c.uds;
+                    try {
+                        await window.AppServices.Finanzas.Inventario.actualizarStock(s.id, newStock, s.version);
+                        c.estat = 'pendent';
+                        c.rec = '';
+                        await window.AppServices.Finanzas.Inventario.actualizarComanda(c.id, c.estat, c.rec);
+                        await this.carregar();
+                    } catch(e) {}
+                }
             }
-            await this.guardar();
         },
 
-        borrarCom(index) {
-            this.dades.comandes.splice(index, 1);
-            this.guardar();
+        async borrarCom(index) {
+            const c = this.dades.comandes[index];
+            if (confirm("Vols eliminar aquesta comanda?")) {
+                await window.AppServices.Finanzas.Inventario.borrarComanda(c.id);
+                await this.carregar();
+            }
         },
 
         comprovarNovaCat(value) {
@@ -186,24 +203,35 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        afegirAlCataleg() {
+        async afegirAlCataleg() {
             if (!this.newRef || !this.newNom) {
                 alert("Falten camps per omplir.");
                 return;
             }
-            this.dades.cataleg.push({
-                cat: this.newCat,
-                ref: this.newRef.trim(),
-                nom: this.newNom.trim().toUpperCase()
-            });
-            this.newRef = '';
-            this.newNom = '';
-            this.guardar();
+            try {
+                await window.AppServices.Finanzas.Inventario.crearArticulo(
+                    this.newRef.trim(), 
+                    this.newNom.trim().toUpperCase(), 
+                    this.newCat
+                );
+                this.newRef = '';
+                this.newNom = '';
+                await this.carregar();
+            } catch(e) {
+                alert("Error afegint article: " + e.message);
+            }
         },
 
-        eliminarDelCataleg(index) {
-            this.dades.cataleg.splice(index, 1);
-            this.guardar();
+        async eliminarDelCataleg(index) {
+            const art = this.dades.cataleg[index];
+            if (confirm("Vols eliminar l'article del catàleg?")) {
+                try {
+                    await window.AppServices.Finanzas.Inventario.eliminarArticulo(art.id);
+                    await this.carregar();
+                } catch(e) {
+                    alert("No s'ha pogut esborrar, potser està en ús en l'stock: " + e.message);
+                }
+            }
         },
 
         exportarJSON() {

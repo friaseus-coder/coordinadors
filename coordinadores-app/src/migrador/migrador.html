@@ -642,156 +642,6 @@
 </head>
 <body>
 
-    <!-- ============================================================
-         PANEL: DATOS MAESTROS — APARCAMIENTOS
-    ============================================================ -->
-    <div class="maestros-panel" id="panelMaestrosAparcamientos">
-        <div class="maestros-header" onclick="toggleMaestrosPanel('aparcamientos')">
-            <h2>
-                🚗 Aparcamientos
-                <span class="badge-db">catalogos.db</span>
-            </h2>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:10px; font-weight:600; opacity:0.8;">Dades Mestres</span>
-                <span class="maestros-toggle-icon" id="toggleIconAparcamientos">▼</span>
-            </div>
-        </div>
-        <div class="maestros-body" id="maestrosBodyAparcamientos">
-
-            <!-- Fila 1: Descarga -->
-            <div>
-                <span class="maestros-label">📥 Exportar / Plantilla</span>
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('aparcamientos')">
-                        ⬇ Descargar Datos Actuales
-                    </button>
-                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>aparcamientos</strong> en formato CSV (Excel), o una plantilla si está vacía.</span>
-                </div>
-            </div>
-
-            <hr class="maestros-divider">
-
-            <!-- Fila 2: Modo importación + archivo + botón importar -->
-            <div class="maestros-row">
-                <div class="maestros-col">
-                    <span class="maestros-label">⚙️ Modo de Importación</span>
-                    <div class="maestros-radio-group">
-                        <div class="maestros-radio-option selected" id="modoAparcamientos-add"
-                             onclick="seleccionarModoMaestros('aparcamientos', 'add')">
-                            <input type="radio" name="modoAparcamientos" value="add" checked>
-                            <span>Añadir</span>
-                        </div>
-                        <div class="maestros-radio-option" id="modoAparcamientos-overwrite"
-                             onclick="seleccionarModoMaestros('aparcamientos', 'overwrite')">
-                            <input type="radio" name="modoAparcamientos" value="overwrite">
-                            <span>Sobrescribir</span>
-                        </div>
-                    </div>
-                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;" id="hintModoAparcamientos">
-                        🔵 Añadir: inserta sin borrar los existentes.
-                    </div>
-                </div>
-
-                <div class="maestros-col">
-                    <span class="maestros-label">📂 Archivo a Importar (CSV o JSON)</span>
-                    <div class="maestros-file-input-wrapper">
-                        <input type="file" accept=".csv,.json"
-                               id="inputAparcamientosArchivo" style="display:none;"
-                               onchange="onArchivoMaestrosSeleccionado('aparcamientos', this)">
-                        <button class="btn btn-secondary"
-                                onclick="document.getElementById('inputAparcamientosArchivo').click()">
-                            📂 Seleccionar Archivo...
-                        </button>
-                        <button class="btn btn-amber" id="btnImportarAparcamientos" disabled
-                                onclick="importarDatosMaestros('aparcamientos')">
-                            🚀 Importar
-                        </button>
-                    </div>
-                    <div class="maestros-file-label" id="lblArchivoAparcamientos">Ningún archivo seleccionado.</div>
-                </div>
-            </div>
-
-            <!-- Log de resultado -->
-            <div class="maestros-status-log" id="logAparcamientos"></div>
-
-        </div>
-    </div>
-
-    <!-- ============================================================
-         PANEL: DATOS MAESTROS — EMPLEADOS
-    ============================================================ -->
-    <div class="maestros-panel" id="panelMaestrosEmpleados">
-        <div class="maestros-header" onclick="toggleMaestrosPanel('empleados')">
-            <h2>
-                👥 Empleados
-                <span class="badge-db">catalogos.db</span>
-            </h2>
-            <div style="display:flex; align-items:center; gap:10px;">
-                <span style="font-size:10px; font-weight:600; opacity:0.8;">Dades Mestres</span>
-                <span class="maestros-toggle-icon" id="toggleIconEmpleados">▼</span>
-            </div>
-        </div>
-        <div class="maestros-body" id="maestrosBodyEmpleados">
-
-            <!-- Fila 1: Descarga -->
-            <div>
-                <span class="maestros-label">📥 Exportar / Plantilla</span>
-                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
-                    <button class="btn btn-amber-outline" onclick="descargarDatosMaestros('empleados')">
-                        ⬇ Descargar Datos Actuales
-                    </button>
-                    <span style="font-size:11px; color:var(--text-muted); font-style:italic;">Descarga todos los registros de la tabla <strong>empleados</strong> en formato CSV (Excel), o una plantilla si está vacía.</span>
-                </div>
-            </div>
-
-            <hr class="maestros-divider">
-
-            <!-- Fila 2: Modo importación + archivo + botón importar -->
-            <div class="maestros-row">
-                <div class="maestros-col">
-                    <span class="maestros-label">⚙️ Modo de Importación</span>
-                    <div class="maestros-radio-group">
-                        <div class="maestros-radio-option selected" id="modoEmpleados-add"
-                             onclick="seleccionarModoMaestros('empleados', 'add')">
-                            <input type="radio" name="modoEmpleados" value="add" checked>
-                            <span>Añadir</span>
-                        </div>
-                        <div class="maestros-radio-option" id="modoEmpleados-overwrite"
-                             onclick="seleccionarModoMaestros('empleados', 'overwrite')">
-                            <input type="radio" name="modoEmpleados" value="overwrite">
-                            <span>Sobrescribir</span>
-                        </div>
-                    </div>
-                    <div style="font-size:10px; color:var(--text-muted); margin-top:6px;" id="hintModoEmpleados">
-                        🔵 Añadir: inserta sin borrar los existentes.
-                    </div>
-                </div>
-
-                <div class="maestros-col">
-                    <span class="maestros-label">📂 Archivo a Importar (CSV o JSON)</span>
-                    <div class="maestros-file-input-wrapper">
-                        <input type="file" accept=".csv,.json"
-                               id="inputEmpleadosArchivo" style="display:none;"
-                               onchange="onArchivoMaestrosSeleccionado('empleados', this)">
-                        <button class="btn btn-secondary"
-                                onclick="document.getElementById('inputEmpleadosArchivo').click()">
-                            📂 Seleccionar Archivo...
-                        </button>
-                        <button class="btn btn-amber" id="btnImportarEmpleados" disabled
-                                onclick="importarDatosMaestros('empleados')">
-                            🚀 Importar
-                        </button>
-                    </div>
-                    <div class="maestros-file-label" id="lblArchivoEmpleados">Ningún archivo seleccionado.</div>
-                </div>
-            </div>
-
-            <!-- Log de resultado -->
-            <div class="maestros-status-log" id="logEmpleados"></div>
-
-        </div>
-    </div>
-
     <div class="migrator-container">
         <header>
             <div>
@@ -874,7 +724,7 @@
                 <button class="btn btn-secondary" id="btnSelectHtml5" style="display: none;" onclick="document.getElementById('inputArchivoJson').click()" data-i18n="btnSeleccionar">
                     📂 Seleccionar fitxers...
                 </button>
-                <input type="file" id="inputArchivoJson" accept=".json" multiple style="display: none;" onchange="manejarArchivoSeleccionado(event)">
+                <input type="file" id="inputArchivoJson" accept=".json,.csv" multiple style="display: none;" onchange="manejarArchivoSeleccionado(event)">
                 <div id="fileListContainer" class="file-list" style="display: none;"></div>
             </div>
 
@@ -931,6 +781,27 @@
                 <div>
                     <strong data-i18n="alertCleanCatalogsTitle">Catàlegs Sincronitzats!</strong><br>
                     <span data-i18n="alertCleanCatalogsDesc">Tots els aparcamientos i persones del JSON coincideixen exactament amb els existents a la base de dades. Pots continuar sense realitzar matching manual.</span>
+                </div>
+            </div>
+
+            <div id="sectionMatchColumnasComerciales" style="margin-bottom: 28px; display: none;">
+                <div class="alert alert-info">
+                    <div class="alert-icon">📢</div>
+                    <div>Vincula las columnas detectadas en tu fichero con las columnas de la base de datos de Comerciales. El coordinador se deducirá automáticamente del aparcamiento.</div>
+                </div>
+                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;">🔄 Mapeo de Columnas</h3>
+                <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
+                    <table class="matching-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 45%;">Campo en Base de Datos</th>
+                                <th style="width: 55%;">Columna en Fichero</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bodyMatchColumnasComerciales">
+                            <!-- Se llena por JS -->
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
@@ -1153,7 +1024,7 @@
                 lblTotalRegistrosDetectados: "Total Registros Detectados:",
                 lblEstrategiaTriadaTxt: "Estrategia Elegida:",
                 btnConfirmarImportar: "🚀 Confirmar e Importar",
-                successTitle: "¡Migración Completada con Éxito!",
+                successTitle: "¡Migración Completada con Exito!",
                 successDesc: "Se han importado correctamente {count} registros relacionales en la base de datos.",
                 btnReiniciar: "🔄 Iniciar otra migración",
                 btnTornarPortal: "🚪 Volver al Portal",
@@ -1216,7 +1087,7 @@
                     // Cargar agentes (empleados con rol Trabajador)
                     catalogosLocales.agentes = await dbApi.read('catalogos', "SELECT id, nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador'", []);
                     // Cargar aparcamientos
-                    catalogosLocales.aparcamientos = await dbApi.read('catalogos', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
+                    catalogosLocales.aparcamientos = await dbApi.read('catalogos', "SELECT id, nombre, coordinador FROM aparcamientos WHERE activo = 1", []);
                 }
             } catch (e) {
                 console.error("Error al cargar catálogos maestros:", e);
@@ -1297,8 +1168,7 @@
                 txtBds.textContent = 'finanzas_inventario.db';
                 btnSelectElectron.style.display = 'none';
                 btnSelectHtml5.style.display = 'inline-flex';
-            } else if (tipo === 'gastos') {
-                txtBds.textContent = 'finanzas_inventario.db';
+txtBds.textContent = 'finanzas_inventario.db';
                 btnSelectElectron.style.display = 'none';
                 btnSelectHtml5.style.display = 'inline-flex';
             } else {
@@ -1308,120 +1178,156 @@
             }
         }
 
-        function manejarArchivoSeleccionado(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        async function manejarArchivoSeleccionado(event) {
+            const files = Array.from(event.target.files);
+            if (files.length === 0) return;
             
             const tipo = document.getElementById('tipoMigracion').value;
-            const reader = new FileReader();
-            reader.onload = function(e) {
+            const container = document.getElementById('fileListContainer');
+            container.innerHTML = '';
+            container.style.display = 'block';
+            
+            // Si la estrategia es 'add', acumulamos archivos, si no, los reemplazamos
+            const isAddStrategy = document.getElementById('optAdd') && document.getElementById('optAdd').classList.contains('selected');
+            if (!isAddStrategy) {
+                selectedFiles = [];
+                datosAImportar = [];
+                gastosAImportar = [];
+                empleadoIdUsuario = "";
+            }
+            
+            let allValid = true;
+            const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
+            const successMsg = isCa ? "Lectura completada amb èxit" : "Lectura completada con éxito";
+            
+            // Variable global para detectar encabezados en comerciales
+            if (tipo === 'comerciales') {
+                window.columnasDetectadas = window.columnasDetectadas || [];
+            }
+
+            for (const file of files) {
                 try {
-                    const parsedJson = JSON.parse(e.target.result);
+                    const text = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = e => resolve(e.target.result);
+                        reader.onerror = e => reject(e);
+                        reader.readAsText(file);
+                    });
                     
-                    const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
-                    const successMsg = isCa ? "Lectura completada amb èxit" : "Lectura completada con éxito";
-                    const container = document.getElementById('fileListContainer');
-                    container.innerHTML = '';
-                    container.style.display = 'block';
+                    const isCsv = file.name.toLowerCase().endsWith('.csv');
+                    let parsedData = null;
+                    
+                    if (isCsv) {
+                        const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
+                        if (lines.length > 0) {
+                            const sep = lines[0].includes(';') ? ';' : ',';
+                            const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
+                            
+                            if (tipo === 'comerciales' && window.columnasDetectadas.length === 0) {
+                                window.columnasDetectadas = headers;
+                            }
+                            
+                            parsedData = [];
+                            for (let i = 1; i < lines.length; i++) {
+                                const values = lines[i].split(sep).map(v => v.trim().replace(/^"|"$/g, ''));
+                                const rowObj = {};
+                                headers.forEach((h, index) => {
+                                    rowObj[h] = values[index] || '';
+                                });
+                                parsedData.push(rowObj);
+                            }
+                        } else {
+                            parsedData = [];
+                        }
+                    } else {
+                        parsedData = JSON.parse(text);
+                    }
+                    
                     const item = document.createElement('div');
                     item.className = 'file-item';
                     
                     if (tipo === 'comerciales') {
-                        datosAImportar = [];
-                        for (const [key, value] of Object.entries(parsedJson)) {
-                            if (key.includes('last_export_time') || key.includes('last_export_author')) {
-                                continue;
+                        if (isCsv) {
+                            datosAImportar.push(...parsedData);
+                        } else {
+                            for (const [key, value] of Object.entries(parsedData)) {
+                                if (key.includes('last_export_time') || key.includes('last_export_author')) {
+                                    continue;
+                                }
+                                
+                                let rows = [];
+                                if (typeof value === 'string' && value.startsWith('[[')) {
+                                    try { rows = JSON.parse(value); } catch(e) {}
+                                } else if (Array.isArray(value)) {
+                                    rows = value;
+                                }
+                                
+                                if (Array.isArray(rows)) {
+                                    rows.forEach(row => {
+                                        if (Array.isArray(row) && row.length >= 7) {
+                                            datosAImportar.push(row);
+                                        } else if (!Array.isArray(row) && typeof row === 'object') {
+                                            datosAImportar.push(row);
+                                        }
+                                    });
+                                }
                             }
                             
-                            let rows = [];
-                            if (typeof value === 'string' && value.startsWith('[[')) {
-                                rows = JSON.parse(value);
-                            } else if (Array.isArray(value)) {
-                                rows = value;
-                            }
-                            
-                            if (Array.isArray(rows)) {
-                                rows.forEach(row => {
-                                    if (Array.isArray(row) && row.length >= 7) {
-                                        datosAImportar.push(row);
-                                    }
-                                });
+                            // Extraer columnas simuladas para JSON si no es CSV y no hay columnas
+                            if (window.columnasDetectadas.length === 0 && datosAImportar.length > 0) {
+                                const firstRow = datosAImportar[0];
+                                if (Array.isArray(firstRow)) {
+                                    window.columnasDetectadas = firstRow.map((_, i) => "Columna " + i);
+                                } else if (typeof firstRow === 'object') {
+                                    window.columnasDetectadas = Object.keys(firstRow);
+                                }
                             }
                         }
                         
-                        selectedFiles = [{ name: file.name, content: parsedJson }];
+                        selectedFiles.push({ name: file.name, content: parsedData });
                         item.innerHTML = `
                             <span class="file-name">📄 ${file.name}</span>
-                            <span class="file-size">${successMsg} (${datosAImportar.length} reg.)</span>
+                            <span class="file-size">${successMsg}</span>
                         `;
                         container.appendChild(item);
                         
-                        if (datosAImportar.length > 0) {
-                            document.getElementById('btnGoToStep2').disabled = false;
-                        } else {
-                            document.getElementById('btnGoToStep2').disabled = true;
-                        }
                     } else if (tipo === 'rutas') {
                         let totalKeys = 0;
-                        for (const [key, value] of Object.entries(parsedJson)) {
+                        for (const [key, value] of Object.entries(parsedData)) {
                             if (key.startsWith('METADATA')) continue;
                             const parts = key.split('-');
-                            if (parts.length >= 5) {
-                                totalKeys++;
-                            }
+                            if (parts.length >= 5) totalKeys++;
                         }
+                        if (totalKeys === 0) throw new Error(isCa ? "No s'han trobat rutes vàlides." : "No se han encontrado rutas válidas.");
                         
-                        if (totalKeys === 0) {
-                            throw new Error(isCa ? "No s'han trobat rutes vàlides al JSON." : "No se han encontrado rutas válidas en el JSON.");
-                        }
-                        
-                        selectedFiles = [{ name: file.name, content: parsedJson }];
+                        selectedFiles.push({ name: file.name, content: parsedData });
                         item.innerHTML = `
                             <span class="file-name">📄 ${file.name}</span>
-                            <span class="file-size">${successMsg} (${totalKeys} registres detectats)</span>
+                            <span class="file-size">${successMsg} (${totalKeys} reg.)</span>
                         `;
                         container.appendChild(item);
-                        document.getElementById('btnGoToStep2').disabled = false;
+                        
                     } else if (tipo === 'gastos') {
                         let totalRows = 0;
-                        const empleado = parsedJson["nyn_nom_empleat"];
-                        if (!empleado) {
-                            throw new Error(isCa ? "No s'ha trobat el nom de l'empleat ('nyn_nom_empleat') al JSON." : "No se ha encontrado el nombre del empleado ('nyn_nom_empleat') en el JSON.");
-                        }
+                        const empleado = parsedData["nyn_nom_empleat"];
+                        if (!empleado) throw new Error(isCa ? "Sense nom empleat." : "Sin nombre empleado.");
                         
-                        for (const [key, value] of Object.entries(parsedJson)) {
+                        for (const [key, value] of Object.entries(parsedData)) {
                             if (key.startsWith('nyn_despeses_') && Array.isArray(value)) {
-                                value.forEach(row => {
-                                    if (Array.isArray(row) && row[0] && row[0] !== "") {
-                                        totalRows++;
-                                    }
-                                });
+                                value.forEach(row => { if (Array.isArray(row) && row[0] && row[0] !== "") totalRows++; });
                             }
                         }
-                        
-                        if (totalRows === 0) {
-                            throw new Error(isCa ? "No s'han trobat files de despeses vàlides al JSON." : "No se han encontrado filas de gastos válidas en el JSON.");
-                        }
+                        if (totalRows === 0) throw new Error(isCa ? "No hi ha despeses." : "No hay gastos.");
                         
                         empleadoIdUsuario = empleado;
-                        selectedFiles = [{ name: file.name, content: parsedJson }];
+                        selectedFiles.push({ name: file.name, content: parsedData });
                         item.innerHTML = `
                             <span class="file-name">📄 ${file.name}</span>
                             <span class="file-size">${successMsg} (${empleado}, ${totalRows} reg.)</span>
                         `;
                         container.appendChild(item);
-                        document.getElementById('btnGoToStep2').disabled = false;
                     }
                 } catch (err) {
-                    console.error("Error al procesar el archivo JSON:", err);
-                    const msg = window.i18n && window.i18n.t ? window.i18n.t('alertErrorParse') : "El archivo no contiene un JSON válido o tiene un formato incorrecto.";
-                    mostrarAlerta(msg + " " + err.message);
-                    document.getElementById('btnGoToStep2').disabled = true;
-                }
-            };
-            
-            reader.onerror = function() {
-                const msg = window.i18n && window.i18n.t ? window.i18n.t('alertErrorLeer') : "Error al leer el archivo JSON.";
                 mostrarAlerta(msg);
                 document.getElementById('btnGoToStep2').disabled = true;
             };
@@ -1548,6 +1454,7 @@
             const tipo = document.getElementById('tipoMigracion').value;
             
             // Ocultar información de Comerciales, Rutas y Gastos por defecto
+            document.getElementById('sectionMatchColumnasComerciales').style.display = 'none';
             document.getElementById('infoComercialesMatching').style.display = 'none';
             document.getElementById('infoRutasMatching').style.display = 'none';
             document.getElementById('infoGastosMatching').style.display = 'none';
@@ -1584,39 +1491,6 @@
                     });
                 }
                 else if (tipo === 'comerciales') {
-                    for (const [key, value] of Object.entries(content)) {
-                        if (key.includes('last_export_time') || key.includes('last_export_author')) {
-                            continue;
-                        }
-                        if (key.startsWith('nn_') || key.startsWith('comercials_')) {
-                            let coordName = 'Desconocido';
-                            if (key.startsWith('nn_A_') || key.includes('_albert_')) coordName = 'Albert';
-                            else if (key.startsWith('nn_L_') || key.includes('_laura_')) coordName = 'Laura';
-                            
-                            let rows = [];
-                            if (typeof value === 'string' && value.startsWith('[[')) {
-                                try { rows = JSON.parse(value); } catch(e) { console.error("Error al parsear matriz legada:", e); }
-                            } else if (Array.isArray(value)) {
-                                rows = value;
-                            }
-                            
-                            if (Array.isArray(rows)) {
-                                rows.forEach(row => {
-                                    const centro = (row[0] || '').trim();
-                                    if (centro) {
-                                        parkingsEnJson.add(centro);
-                                        registrosProcesados.push({
-                                            key: key,
-                                            coordinador: coordName,
-                                            centro: centro,
-                                            direccion: row[1] || '',
-                                            fixes: row[2] || '',
-                                            variables: row[3] || '',
-                                            vacants: row[4] || '',
-                                            tarifa: row[5] || '',
-                                            observaciones: row[6] || ''
-                                        });
-                                    }
                                 });
                             }
                         }
@@ -2053,34 +1927,46 @@
             let countVisible = 0;
             
             if (tipo === 'comerciales') {
-                registrosProcesados.forEach((reg, i) => {
-                    const pkName = reg.centro;
-                    const destMatch = matchAparcamientosMap.get(pkName);
+                const colAparcamiento = document.getElementById('match_col_aparcamiento').value;
+                const colVacantes = document.getElementById('match_col_vacantes').value;
+                const colTarifa = document.getElementById('match_col_tarifa').value;
+                const colObservaciones = document.getElementById('match_col_observaciones').value;
+                
+                if (colAparcamiento === "") {
+                    mostrarAlerta(isCa ? "Has de mapejar almenys la columna d'Aparcament" : "Debes mapear al menos la columna de Aparcamiento");
+                    retrocederPaso(3);
+                    return;
+                }
+
+                datosAImportar.forEach((row, i) => {
+                    const centroName = Array.isArray(row) ? row[parseInt(colAparcamiento)] : row[colAparcamiento];
+                    if (centroName === undefined || centroName === null || String(centroName).trim() === '') return;
                     
-                    if (destMatch === 'SKIP') {
-                        registrosExcluidos.push(reg);
-                    } else {
-                        let nombreCentroResuelto = reg.centro;
-                        if (destMatch && destMatch !== 'NEW') {
-                            const apOficial = catalogosLocales.aparcamientos.find(a => a.id == destMatch);
-                            if (apOficial) {
-                                nombreCentroResuelto = apOficial.nombre;
-                            }
-                        }
-                        
-                        registrosParaInsertar.push({
-                            key: reg.key,
-                            coordinador: reg.coordinador,
-                            centro: nombreCentroResuelto,
-                            direccion: reg.direccion,
-                            fixes: reg.fixes,
-                            variables: reg.variables,
-                            vacants: reg.vacants,
-                            tarifa: reg.tarifa,
-                            observaciones: reg.observaciones,
-                            parkingId: destMatch
-                        });
+                    const pkName = String(centroName).trim().toUpperCase();
+                    let coordName = 'Desconocido';
+                    
+                    const dbPk = catalogosLocales.aparcamientos.find(a => 
+                        a.nombre.toUpperCase() === pkName || 
+                        a.nombre.toUpperCase().includes(pkName) || 
+                        pkName.includes(a.nombre.toUpperCase())
+                    );
+                    
+                    if (dbPk && dbPk.coordinador) {
+                        coordName = dbPk.coordinador;
                     }
+
+                    const vacantsValue = colVacantes !== "" ? (Array.isArray(row) ? row[parseInt(colVacantes)] : row[colVacantes]) : '';
+                    const tarifaValue = colTarifa !== "" ? (Array.isArray(row) ? row[parseInt(colTarifa)] : row[colTarifa]) : '';
+                    const observacionesValue = colObservaciones !== "" ? (Array.isArray(row) ? row[parseInt(colObservaciones)] : row[colObservaciones]) : '';
+
+                    registrosParaInsertar.push({
+                        key: 'row_' + i,
+                        coordinador: coordName,
+                        centro: dbPk ? dbPk.nombre : pkName,
+                        vacants: vacantsValue || '',
+                        tarifa: tarifaValue || '',
+                        observaciones: observacionesValue || ''
+                    });
                 });
                 
                 // Mostrar solo los primeros 15 registros de comerciales resueltos
@@ -2560,686 +2446,6 @@
             dlAnchorElem.click();
         }
 
-        // ============================================================
-        //  DATOS MAESTROS — Aparcamientos y Empleados
-        // ============================================================
-
-        // Estado interno para los paneles maestros
-        const _maestros = {
-            aparcamientos: { modo: 'add', parsedData: null },
-            empleados:     { modo: 'add', parsedData: null }
-        };
-
-        // Plantillas vacías por tabla
-        const _maestrosPlantillas = {
-            aparcamientos: [
-                {
-                    numero_obra: "OB-0001",
-                    nombre: "Parking Ejemplo",
-                    zona: "Zona 1",
-                    es_remotizado: 0,
-                    tipo_gestion: "propio",
-                    permitir_vacio_laborables: 0,
-                    sociedad_id: 1,
-                    coordinador_responsable: "Albert",
-                    activo: 1
-                }
-            ],
-            empleados: [
-                {
-                    agent:          "Nom Cognom",
-                    centre:         "NN CONCEPT",
-                    societat:       "ABCN",
-                    torn:           "MATÍ",
-                    zona:           "Zona 1",
-                    coneixements:   7.5,
-                    atencio:        8.0,
-                    disponibilitat: 9.0,
-                    actitud:        8.5,
-                    valoracio:      8.25,
-                    observacions:   "Sense observacions"
-                }
-            ]
-        };
-
-        /**
-         * Colapsa / expande un panel maestro.
-         */
-        function toggleMaestrosPanel(tabla) {
-            const body = document.getElementById(`maestrosBody${capitalizar(tabla)}`);
-            const icon = document.getElementById(`toggleIcon${capitalizar(tabla)}`);
-            const isOpen = body.classList.contains('open');
-            if (isOpen) {
-                body.classList.remove('open');
-                icon.classList.remove('open');
-            } else {
-                body.classList.add('open');
-                icon.classList.add('open');
-            }
-        }
-
-        function capitalizar(str) {
-            return str.charAt(0).toUpperCase() + str.slice(1);
-        }
-
-        /**
-         * Cambia el modo de importación (add / overwrite) para un panel maestro.
-         */
-        function seleccionarModoMaestros(tabla, modo) {
-            _maestros[tabla].modo = modo;
-
-            const addEl      = document.getElementById(`modo${capitalizar(tabla)}-add`);
-            const overwriteEl = document.getElementById(`modo${capitalizar(tabla)}-overwrite`);
-            const hintEl     = document.getElementById(`hintModo${capitalizar(tabla)}`);
-
-            addEl.classList.toggle('selected', modo === 'add');
-            overwriteEl.classList.toggle('selected', modo === 'overwrite');
-            addEl.querySelector('input').checked = (modo === 'add');
-            overwriteEl.querySelector('input').checked = (modo === 'overwrite');
-
-            if (hintEl) {
-                hintEl.textContent = modo === 'add'
-                    ? '🔵 Añadir: inserta sin borrar los existentes.'
-                    : '🔴 Sobrescribir: borrará TODOS los registros antes de importar.';
-                hintEl.style.color = modo === 'overwrite' ? 'var(--danger)' : 'var(--text-muted)';
-            }
-        }
-
-        /**
-         * Parsea un texto CSV con separador ; en un array de objetos.
-         * La primera fila debe ser la cabecera con los nombres de campos.
-         * Soporta valores entrecomillados con " que contengan ; o saltos de línea.
-         */
-        function parsearCSV(texto) {
-            const SEP = ';';
-            const lineas = [];
-            let current = '';
-            let inQuotes = false;
-
-            // Parseo robusto respetando comillas
-            for (let i = 0; i < texto.length; i++) {
-                const ch = texto[i];
-                if (inQuotes) {
-                    if (ch === '"') {
-                        if (i + 1 < texto.length && texto[i + 1] === '"') {
-                            current += '"'; // comilla escapada
-                            i++;
-                        } else {
-                            inQuotes = false;
-                        }
-                    } else {
-                        current += ch;
-                    }
-                } else {
-                    if (ch === '"') {
-                        inQuotes = true;
-                    } else if (ch === '\n') {
-                        lineas.push(current);
-                        current = '';
-                    } else if (ch === '\r') {
-                        // ignorar \r
-                    } else {
-                        current += ch;
-                    }
-                }
-            }
-            if (current.trim()) lineas.push(current);
-
-            if (lineas.length < 2) return []; // solo cabecera o vacío
-
-            const cabeceras = lineas[0].split(SEP).map(h => h.trim());
-            const resultados = [];
-
-            for (let i = 1; i < lineas.length; i++) {
-                const linea = lineas[i].trim();
-                if (!linea) continue;
-
-                // Parsear campos respetando comillas
-                const campos = [];
-                let campo = '';
-                let enComillas = false;
-                for (let j = 0; j < linea.length; j++) {
-                    const c = linea[j];
-                    if (enComillas) {
-                        if (c === '"') {
-                            if (j + 1 < linea.length && linea[j + 1] === '"') {
-                                campo += '"';
-                                j++;
-                            } else {
-                                enComillas = false;
-                            }
-                        } else {
-                            campo += c;
-                        }
-                    } else {
-                        if (c === '"') {
-                            enComillas = true;
-                        } else if (c === SEP) {
-                            campos.push(campo.trim());
-                            campo = '';
-                        } else {
-                            campo += c;
-                        }
-                    }
-                }
-                campos.push(campo.trim());
-
-                const obj = {};
-                cabeceras.forEach((cab, idx) => {
-                    obj[cab] = campos[idx] !== undefined ? campos[idx] : '';
-                });
-                resultados.push(obj);
-            }
-            return resultados;
-        }
-
-        /**
-         * Convierte un array de objetos a texto CSV con separador ;.
-         * Primera fila = cabeceras, resto = datos.
-         */
-        function generarCSV(datos, columnas) {
-            const SEP = ';';
-            // Escapar valores que contengan ; o comillas o saltos de línea
-            function escaparCampo(val) {
-                if (val === null || val === undefined) return '';
-                const str = String(val);
-                if (str.includes(SEP) || str.includes('"') || str.includes('\n')) {
-                    return '"' + str.replace(/"/g, '""') + '"';
-                }
-                return str;
-            }
-
-            const cabecera = columnas.join(SEP);
-            const filas = datos.map(obj =>
-                columnas.map(col => escaparCampo(obj[col])).join(SEP)
-            );
-            // BOM UTF-8 para que Excel abra bien los acentos
-            return '\uFEFF' + cabecera + '\n' + filas.join('\n');
-        }
-
-        /**
-         * Gestiona la selección de archivo CSV o JSON para un panel maestro.
-         * Detecta la extensión y aplica el parseo adecuado.
-         */
-        function onArchivoMaestrosSeleccionado(tabla, inputEl) {
-            const file = inputEl.files[0];
-            const lblEl = document.getElementById(`lblArchivo${capitalizar(tabla)}`);
-            const btnImportar = document.getElementById(`btnImportar${capitalizar(tabla)}`);
-            const logEl = document.getElementById(`log${capitalizar(tabla)}`);
-
-            _maestros[tabla].parsedData = null;
-            btnImportar.disabled = true;
-            mostrarLogMaestros(logEl, 'info', `⏳ Leyendo archivo...`);
-
-            if (!file) {
-                lblEl.textContent = 'Ningún archivo seleccionado.';
-                logEl.style.display = 'none';
-                return;
-            }
-
-            const nombreArchivoMinusculas = file.name.toLowerCase();
-            const esJson = nombreArchivoMinusculas.endsWith('.json');
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    let datos = null;
-
-                    if (esJson) {
-                        // Parsear como JSON (recupera compatibilidad con formato antiguo)
-                        const parsed = JSON.parse(e.target.result);
-
-                        if (Array.isArray(parsed)) {
-                            datos = parsed;
-                        } else if (parsed && typeof parsed === 'object') {
-                            // Compatibilidad con coordinadores.json antiguos (objeto con claves = nombres)
-                            const candidato = Object.values(parsed).find(v => Array.isArray(v));
-                            if (candidato) {
-                                datos = candidato;
-                            } else {
-                                // Intentar construir array desde las claves del objeto
-                                datos = Object.entries(parsed).map(([key, val]) => {
-                                    if (typeof val === 'object' && val !== null) return { nombre: key, ...val };
-                                    return { nombre: key };
-                                });
-                            }
-                        }
-                    } else {
-                        // Parsear como CSV
-                        datos = parsearCSV(e.target.result);
-                    }
-
-                    if (!datos || datos.length === 0) {
-                        throw new Error(esJson 
-                            ? 'El JSON no contiene un array de registros válido.' 
-                            : 'El CSV no contiene registros válidos. Asegúrate de que la primera fila sean las cabeceras.');
-                    }
-
-                    // Normalizar para empleados: mapear a la estructura de la base de datos
-                    if (tabla === 'empleados') {
-                        datos = datos.map(item => {
-                            // En el JSON o CSV el campo de nombre puede ser 'agent', 'nombre', 'name' o 'nom'
-                            const nombre = item.agent || item.nombre || item.name || item.nom || '';
-                            
-                            // json_preferencias puede venir ya serializado o estructurado
-                            let jsonPrefs = null;
-                            if (esJson && item.json_preferencias) {
-                                jsonPrefs = item.json_preferencias;
-                            } else {
-                                jsonPrefs = JSON.stringify({
-                                    centre:   item.centre   || null,
-                                    societat: item.societat || null,
-                                    torn:     item.torn     || null,
-                                    zona:     item.zona     || null
-                                });
-                            }
-
-                            return {
-                                nombre:            nombre,
-                                email:             item.email || item.mail || null,
-                                rol:               item.rol || item.role || 'Coordinador',
-                                activo:            item.activo !== undefined && item.activo !== '' ? Number(item.activo) : 1,
-                                json_preferencias: jsonPrefs,
-                                coneixements:   parseFloat(item.coneixements)   || 0,
-                                atencio:        parseFloat(item.atencio)        || 0,
-                                disponibilitat: parseFloat(item.disponibilitat) || 0,
-                                actitud:        parseFloat(item.actitud)        || 0,
-                                valoracio:      parseFloat(item.valoracio)      || 0,
-                                observacions:   item.observacions || null
-                            };
-                        }).filter(r => r.nombre && r.nombre.trim() !== '');
-                    }
-
-                    // Normalizar para aparcamientos
-                    if (tabla === 'aparcamientos') {
-                        datos = datos.map(item => ({
-                            numero_obra:                item.numero_obra || null,
-                            nombre:                     item.nombre || item.name || item.nom || '',
-                            zona:                       item.zona || null,
-                            es_remotizado:              item.es_remotizado !== undefined && item.es_remotizado !== '' ? Number(item.es_remotizado) : 0,
-                            tipo_gestion:               item.tipo_gestion || null,
-                            permitir_vacio_laborables:  item.permitir_vacio_laborables !== undefined && item.permitir_vacio_laborables !== '' ? Number(item.permitir_vacio_laborables) : 0,
-                            sociedad_id:                item.sociedad_id || null,
-                            coordinador_responsable:    item.coordinador_responsable || null,
-                            activo:                     item.activo !== undefined && item.activo !== '' ? Number(item.activo) : 1
-                        })).filter(r => r.nombre && r.nombre.trim() !== '');
-                    }
-
-                    _maestros[tabla].parsedData = datos;
-                    lblEl.textContent = `✅ ${file.name} — ${datos.length} registro(s) listos.`;
-                    lblEl.style.color = 'var(--success)';
-                    btnImportar.disabled = false;
-                    mostrarLogMaestros(logEl, 'info', `📋 ${datos.length} registro(s) parseados correctamente desde ${esJson ? 'JSON' : 'CSV'}. Haz clic en "Importar" para confirmar.`);
-
-                } catch(err) {
-                    console.error(`[Maestros/${tabla}] Error al parsear el archivo:`, err);
-                    lblEl.textContent = `❌ Error al leer el archivo: ${err.message}`;
-                    lblEl.style.color = 'var(--danger)';
-                    btnImportar.disabled = true;
-                    mostrarLogMaestros(logEl, 'error', `❌ Error al parsear el archivo: ${err.message}`);
-                }
-            };
-            reader.onerror = () => {
-                mostrarLogMaestros(logEl, 'error', '❌ Error al leer el archivo.');
-            };
-            reader.readAsText(file, 'UTF-8');
-        }
-
-        /**
-         * Descarga los datos actuales de una tabla maestros o una plantilla si está vacía.
-         */
-        async function descargarDatosMaestros(tabla) {
-            if (!dbApi) {
-                mostrarAlerta('API de base de datos no disponible.');
-                return;
-            }
-
-            const logEl = document.getElementById(`log${capitalizar(tabla)}`);
-            mostrarLogMaestros(logEl, 'info', `⏳ Leyendo tabla ${tabla}...`);
-
-            try {
-                let datosExport = [];
-
-                if (tabla === 'empleados') {
-                    // Leer empleados de catalogos + ranking de operativa
-                    const filas = await dbApi.read('catalogos', `SELECT * FROM empleados`, []);
-
-                    let rankingMap = {};
-                    try {
-                        const rankingRows = await dbApi.read('operativa',
-                            `SELECT id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions FROM ranking`, []);
-                        if (rankingRows) {
-                            for (const r of rankingRows) {
-                                rankingMap[r.id_trabajador] = r;
-                            }
-                        }
-                    } catch(e) {
-                        console.warn('[Descarga Maestros] No se pudo leer ranking:', e.message);
-                    }
-
-                    if (filas && filas.length > 0) {
-                        datosExport = filas.map(emp => {
-                            // Deserializar json_preferencias
-                            let prefs = {};
-                            try {
-                                if (emp.json_preferencias) {
-                                    prefs = JSON.parse(emp.json_preferencias);
-                                }
-                            } catch(e) { /* ignorar JSON inválido */ }
-
-                            // Buscar datos de ranking para este empleado
-                            const rk = rankingMap[emp.nombre] || {};
-
-                            return {
-                                agent:          emp.nombre,
-                                email:          emp.email || null,
-                                rol:            emp.rol || 'Coordinador',
-                                activo:         emp.activo !== undefined ? emp.activo : 1,
-                                centre:         prefs.centre || null,
-                                societat:       prefs.societat || null,
-                                torn:           prefs.torn || null,
-                                zona:           prefs.zona || null,
-                                coneixements:   rk.coneixements || 0,
-                                atencio:        rk.atencio || 0,
-                                disponibilitat: rk.disponibilitat || 0,
-                                actitud:        rk.actitud || 0,
-                                valoracio:      rk.valoracio || 0,
-                                observacions:   rk.observacions || null
-                            };
-                        });
-                    }
-
-                } else if (tabla === 'aparcamientos') {
-                    // Leer aparcamientos excluyendo el id interno (no necesario para reimportación)
-                    const filas = await dbApi.read('catalogos',
-                        `SELECT numero_obra, nombre, zona, es_remotizado, tipo_gestion,
-                                permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo
-                         FROM aparcamientos`, []);
-
-                    if (filas && filas.length > 0) {
-                        datosExport = filas;
-                    }
-                }
-
-                // Definir las columnas CSV para cada tabla
-                const columnasCSV = {
-                    aparcamientos: ['numero_obra','nombre','zona','es_remotizado','tipo_gestion','permitir_vacio_laborables','sociedad_id','coordinador_responsable','activo'],
-                    empleados:     ['agent','email','rol','activo','centre','societat','torn','zona','coneixements','atencio','disponibilitat','actitud','valoracio','observacions']
-                };
-
-                let contenido;
-                let nombreArchivo;
-                const columnas = columnasCSV[tabla];
-
-                if (datosExport.length > 0) {
-                    contenido = generarCSV(datosExport, columnas);
-                    nombreArchivo = `${tabla}_${new Date().toISOString().slice(0,10)}.csv`;
-                    mostrarLogMaestros(logEl, 'success', `✅ ${datosExport.length} registro(s) exportados en formato CSV (compatible con Excel).`);
-                } else {
-                    // Plantilla vacía: cabecera + fila de ejemplo
-                    contenido = generarCSV(_maestrosPlantillas[tabla], columnas);
-                    nombreArchivo = `plantilla_${tabla}.csv`;
-                    mostrarLogMaestros(logEl, 'info', `ℹ️ La tabla ${tabla} está vacía. Se descarga una plantilla CSV con estructura y ejemplo.`);
-                }
-
-                const blob = new Blob([contenido], { type: 'text/csv;charset=utf-8' });
-                const url  = URL.createObjectURL(blob);
-                const a    = document.createElement('a');
-                a.href     = url;
-                a.download = nombreArchivo;
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 2000);
-
-            } catch(err) {
-                console.error(`[Maestros/${tabla}] Error al descargar:`, err);
-                mostrarLogMaestros(logEl, 'error', `❌ Error al leer la base de datos: ${err.message}`);
-            }
-        }
-
-        /**
-         * Importa los datos del JSON seleccionado en la tabla maestros indicada.
-         * Para empleados: doble inserción en catalogos.empleados + operativa.ranking.
-         * Respeta el modo add/overwrite.
-         */
-        async function importarDatosMaestros(tabla) {
-            if (!dbApi) {
-                mostrarAlerta('API de base de datos no disponible.');
-                return;
-            }
-
-            const datos    = _maestros[tabla].parsedData;
-            const modo     = _maestros[tabla].modo;
-            const logEl    = document.getElementById(`log${capitalizar(tabla)}`);
-            const btnEl    = document.getElementById(`btnImportar${capitalizar(tabla)}`);
-
-            if (!datos || datos.length === 0) {
-                mostrarLogMaestros(logEl, 'error', '❌ No hay datos válidos para importar.');
-                return;
-            }
-
-            // Confirmación para modo sobrescribir
-            if (modo === 'overwrite') {
-                const tablasMensaje = tabla === 'empleados'
-                    ? '"empleados" (catalogos) y "ranking" (operativa)'
-                    : `"${tabla}" (catalogos)`;
-                const confirmar = confirm(
-                    `⚠️ ATENCIÓN: Se borrarán TODOS los registros de ${tablasMensaje} antes de importar.\n` +
-                    `Se insertarán ${datos.length} nuevo(s) registro(s).\n\n¿Deseas continuar?`
-                );
-                if (!confirmar) return;
-            }
-
-            btnEl.disabled = true;
-            btnEl.innerHTML = '<span class="spinner"></span> Importando...';
-            mostrarLogMaestros(logEl, 'info', '⏳ Iniciando importación...');
-
-            let exitosCatalogos  = 0;
-            let exitosOperativa  = 0;
-            let errores          = 0;
-
-            try {
-                // ── EMPLEADOS (doble inserción: catalogos + operativa) ──────────────────────
-                if (tabla === 'empleados') {
-
-                    // 0. Asegurar que la tabla ranking existe en operativa
-                    await dbApi.write('operativa',
-                        `CREATE TABLE IF NOT EXISTS ranking (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            id_trabajador TEXT,
-                            coneixements   REAL,
-                            atencio        REAL,
-                            disponibilitat REAL,
-                            actitud        REAL,
-                            valoracio      REAL,
-                            observacions   TEXT
-                        )`, []
-                    );
-
-                    // 1. Overwrite: borrar ambas tablas primero
-                    if (modo === 'overwrite') {
-                        await dbApi.write('catalogos', 'DELETE FROM empleados', []);
-                        await dbApi.write('operativa', 'DELETE FROM ranking', []);
-                        mostrarLogMaestros(logEl, 'info',
-                            `🗑️ Tablas vaciadas. Insertando ${datos.length} registro(s) en ambas BDs...`);
-                    }
-
-                    // 2. Insertar fila a fila en ambas BDs
-                    for (const r of datos) {
-                        try {
-                            // A) catalogos.empleados
-                            await dbApi.write('catalogos',
-                                `INSERT OR IGNORE INTO empleados
-                                 (nombre, email, rol, activo, json_preferencias)
-                                 VALUES (?, ?, ?, ?, ?)`,
-                                [
-                                    r.nombre,
-                                    r.email || null,
-                                    r.rol   || 'Coordinador',
-                                    r.activo !== undefined ? r.activo : 1,
-                                    r.json_preferencias || null
-                                ]
-                            );
-                            
-                            // B) Sincronizar en la tabla agentes
-                            await dbApi.write('catalogos', 
-                                "INSERT OR IGNORE INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)",
-                                [r.nombre, r.activo !== undefined ? r.activo : 1]
-                            );
-
-                            // C) Obtener el ID del agente e insertar su contrato inicial si tiene sociedad en json_preferencias
-                            const agRow = await dbApi.read('catalogos', "SELECT id FROM agentes WHERE nombre = ?", [r.nombre]);
-                            if (agRow && agRow.length > 0) {
-                                const agenteId = agRow[0].id;
-                                let prefs = {};
-                                try {
-                                    if (r.json_preferencias) {
-                                        prefs = typeof r.json_preferencias === 'string' 
-                                            ? JSON.parse(r.json_preferencias) 
-                                            : r.json_preferencias;
-                                    }
-                                } catch(e) {}
-
-                                const socRef = prefs.societat;
-                                if (socRef) {
-                                    let querySoc = "SELECT id FROM sociedades WHERE codigo_corto = ? OR nombre_fiscal = ?";
-                                    let paramsSoc = [socRef, socRef];
-                                    if (!isNaN(socRef)) {
-                                        querySoc += " OR id = ?";
-                                        paramsSoc.push(Number(socRef));
-                                    }
-                                    const socRow = await dbApi.read('catalogos', querySoc, paramsSoc);
-                                    if (socRow && socRow.length > 0) {
-                                        const sociedadId = socRow[0].id;
-                                        // Cerrar cualquier contrato abierto anterior
-                                        await dbApi.write('catalogos',
-                                            "UPDATE contratos_agentes SET fecha_fin = date('now') WHERE agente_id = ? AND fecha_fin IS NULL AND sociedad_id <> ?",
-                                            [agenteId, sociedadId]
-                                        );
-                                        // Crear el nuevo
-                                        await dbApi.write('catalogos',
-                                            `INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio)
-                                             VALUES (?, ?, date('now', 'start of month'))`,
-                                            [agenteId, sociedadId]
-                                        );
-                                    }
-                                }
-                            }
-                            
-                            exitosCatalogos++;
-                        } catch(errCat) {
-                            console.error('[Maestros/empleados → catalogos] Error:', errCat, r);
-                            errores++;
-                        }
-
-                        try {
-                            // B) operativa.ranking
-                            await dbApi.write('operativa',
-                                `INSERT INTO ranking
-                                 (id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions)
-                                 VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                                [
-                                    r.nombre,
-                                    r.coneixements   || 0,
-                                    r.atencio        || 0,
-                                    r.disponibilitat || 0,
-                                    r.actitud        || 0,
-                                    r.valoracio      || 0,
-                                    r.observacions   || null
-                                ]
-                            );
-                            exitosOperativa++;
-                        } catch(errOp) {
-                            console.error('[Maestros/empleados → operativa.ranking] Error:', errOp, r);
-                            errores++;
-                        }
-                    }
-
-                    // 3. Mostrar resultado final con alert
-                    const resumen =
-                        `✅ Importación de Empleados completada:\n` +
-                        `  • catalogos.empleados — ${exitosCatalogos} inserciones correctas\n` +
-                        `  • operativa.ranking   — ${exitosOperativa} inserciones correctas\n` +
-                        (errores > 0 ? `  • Errores: ${errores}\n` : '') +
-                        `\nTotal trabajadores procesados: ${datos.length}`;
-                    mostrarAlerta(resumen);
-
-                    mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
-                        `✅ Completado — ${exitosCatalogos} en catalogos, ${exitosOperativa} en ranking` +
-                        (errores > 0 ? `, ${errores} error(es)` : ''));
-                }
-
-                // ── APARCAMIENTOS ──────────────────────────────────────────────────────────
-                else if (tabla === 'aparcamientos') {
-
-                    // 1. Overwrite: borrar tabla primero
-                    if (modo === 'overwrite') {
-                        await dbApi.write('catalogos', 'DELETE FROM aparcamientos', []);
-                        mostrarLogMaestros(logEl, 'info',
-                            `🗑️ Tabla aparcamientos vaciada. Insertando ${datos.length} registro(s)...`);
-                    }
-
-                    // 2. Insertar fila a fila
-                    for (const r of datos) {
-                        try {
-                            await dbApi.write('catalogos',
-                                `INSERT OR IGNORE INTO aparcamientos
-                                 (numero_obra, nombre, zona, es_remotizado, tipo_gestion,
-                                  permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
-                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-                                [
-                                    r.numero_obra || null,
-                                    r.nombre,
-                                    r.zona || null,
-                                    r.es_remotizado !== undefined ? r.es_remotizado : 0,
-                                    r.tipo_gestion || null,
-                                    r.permitir_vacio_laborables !== undefined ? r.permitir_vacio_laborables : 0,
-                                    r.sociedad_id || null,
-                                    r.coordinador_responsable || null,
-                                    r.activo !== undefined ? r.activo : 1
-                                ]
-                            );
-                            exitosCatalogos++;
-                        } catch(errFila) {
-                            console.error('[Maestros/aparcamientos] Error en fila:', errFila, r);
-                            errores++;
-                        }
-                    }
-
-                    // 3. Mostrar resultado final con alert
-                    const resumen =
-                        `✅ Importación de Aparcamientos completada:\n` +
-                        `  • Éxitos: ${exitosCatalogos}\n` +
-                        (errores > 0 ? `  • Errores: ${errores}\n` : '') +
-                        `\nTotal procesados: ${datos.length}`;
-                    mostrarAlerta(resumen);
-
-                    mostrarLogMaestros(logEl, errores > 0 ? 'error' : 'success',
-                        `✅ Importación completada — ${exitosCatalogos} inserción(es) correctas` +
-                        (errores > 0 ? `, ${errores} error(es)` : ''));
-                }
-
-                // Recargar catálogos del migrador de históricos
-                await loadCatalogos();
-
-            } catch(errGlobal) {
-                console.error(`[Maestros/${tabla}] Error global:`, errGlobal);
-                mostrarLogMaestros(logEl, 'error', `❌ Error inesperado: ${errGlobal.message}`);
-                mostrarAlerta(`❌ Error al ejecutar la importación: ${errGlobal.message}`);
-            } finally {
-                btnEl.disabled = false;
-                btnEl.innerHTML = '🚀 Importar';
-            }
-        }
-
-        /**
-         * Muestra un mensaje en el log inline de un panel maestro.
-         */
-        function mostrarLogMaestros(logEl, tipo, mensaje) {
-            logEl.textContent = mensaje;
-            logEl.className = `maestros-status-log ${tipo}`;
-            logEl.style.display = 'block';
-        }
-
-    </script>
+        </script>
 </body>
 </html>
