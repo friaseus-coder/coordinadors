@@ -350,19 +350,20 @@ document.addEventListener('alpine:init', () => {
             try {
                 if (action === 'refresh') {
                     await this.cargarCuadrantes();
-            } else if (action === 'force') {
-                if (this.pendingConflictSave) {
-                    // Actualizamos la versión del cliente con la versión devuelta por el servidor
-                    this.pendingConflictSave.version = this.conflictData.serverVersion;
-                    const response = await window.dbAPI.saveTurnoCuadranteSeguro(this.pendingConflictSave);
-                    if (!response.success && response.conflict) {
-                        alert("Ha ocurrido otro conflicto, por favor refresca la tabla.");
-                    } else {
-                        await this.cargarCuadrantes();
+                } else if (action === 'force') {
+                    if (this.pendingConflictSave) {
+                        // Actualizamos la versión del cliente con la versión devuelta por el servidor
+                        this.pendingConflictSave.version = this.conflictData.serverVersion;
+                        const response = await window.dbAPI.saveTurnoCuadranteSeguro(this.pendingConflictSave);
+                        if (!response.success && response.conflict) {
+                            alert("Ha ocurrido otro conflicto, por favor refresca la tabla.");
+                        } else {
+                            await this.cargarCuadrantes();
+                        }
                     }
+                    this.pendingConflictSave = null;
+                    this.conflictData = null;
                 }
-                this.pendingConflictSave = null;
-                this.conflictData = null;
             } catch(err) {
                 console.error("Error resolviendo conflicto:", err);
             } finally {

@@ -16,18 +16,64 @@ document.addEventListener('alpine:init', () => {
             await this.cargarComerciales();
         },
 
+        normalizeName(name) {
+            if (!name) return "";
+            return name.toUpperCase()
+                .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                .replace(/^(N\.N\.|N\.N|NN|N\.|NUÑEZ|NURIA)\s*/i, "")
+                .replace(/[-\.\(\)\s]/g, "")
+                .trim();
+        },
+
         async cargarComerciales() {
             try {
-                // TODO: Usar el mes y año real seleccionado en la UI si existe, si no, mes/año actual.
-                const mes = new Date().getMonth() + 1;
-                const anio = new Date().getFullYear();
-                
                 // Cargar todas las tarifas comerciales de la BD
                 const rows = await window.dbAPI.read('comercial', "SELECT * FROM tarifas_comerciales ORDER BY aparcamiento ASC", []);
-                this.comerciales = rows.map(r => ({
-                    ...r,
-                    editing: false
-                }));
+                
+                // Cargar aparcamientos oficiales de catálogos
+                let oficiales = [];
+                try {
+                    oficiales = await window.dbAPI.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1", []);
+                } catch (catErr) {
+                    console.error("Error al cargar catálogos de aparcamientos:", catErr);
+                }
+
+                this.comerciales = rows.map(r => {
+                    const rawName = (r.aparcamiento || '').trim();
+                    const normInput = this.normalizeName(rawName);
+                    let matchedName = rawName;
+
+                    if (normInput && oficiales.length > 0) {
+                        // 1. Coincidencia exacta normalizada
+                        let found = oficiales.find(o => this.normalizeName(o.nombre) === normInput);
+                        
+                        // 2. Coincidencia startsWith/includes normalizada
+                        if (!found) {
+                            found = oficiales.find(o => {
+                                const normO = this.normalizeName(o.nombre);
+                                return normO.startsWith(normInput) || normInput.startsWith(normO);
+                            });
+                        }
+                        
+                        // 3. Primeras 5 letras
+                        if (!found) {
+                            found = oficiales.find(o => {
+                                const normO = this.normalizeName(o.nombre);
+                                return normO.substring(0, 5) === normInput.substring(0, 5);
+                            });
+                        }
+                        
+                        if (found) {
+                            matchedName = found.nombre;
+                        }
+                    }
+
+                    return {
+                        ...r,
+                        aparcamiento: matchedName,
+                        editing: false
+                    };
+                });
             } catch (err) {
                 console.error("Error al cargar comerciales:", err);
             }

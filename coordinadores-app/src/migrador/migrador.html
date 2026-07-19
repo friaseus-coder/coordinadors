@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ca">
+
 <head>
     <meta charset="UTF-8">
     <title>Asistente de Carga de Históricos</title>
@@ -15,17 +16,20 @@
             }
         }
 
-       // Forzar traducción inmediata al cargar
-       document.addEventListener('DOMContentLoaded', () => {
-           if(typeof applyTranslations === 'function') applyTranslations();
-       });
+        // Forzar traducción inmediata al cargar
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof applyTranslations === 'function') applyTranslations();
+        });
     </script>
     <script src="../js/persistence.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
     <style>
         :root {
-            --primary: #063931;       /* Verde Pino */
-            --primary-accent: #008d36; /* Verde Acento */
+            --primary: #063931;
+            /* Verde Pino */
+            --primary-accent: #008d36;
+            /* Verde Acento */
             --bg: #f8fafc;
             --card: #ffffff;
             --border: #e2e8f0;
@@ -169,7 +173,8 @@
             letter-spacing: 0.5px;
         }
 
-        select, input[type="text"] {
+        select,
+        input[type="text"] {
             width: 100%;
             padding: 10px 16px;
             border: 1px solid var(--border);
@@ -182,7 +187,8 @@
             transition: border 0.2s;
         }
 
-        select:focus, input[type="text"]:focus {
+        select:focus,
+        input[type="text"]:focus {
             border-color: var(--primary-accent);
         }
 
@@ -304,12 +310,34 @@
             gap: 10px;
         }
 
-        .alert-info { background: var(--info-bg); color: var(--info); border: 1px solid #bfdbfe; }
-        .alert-warning { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
-        .alert-success { background: var(--success-bg); color: var(--success); border: 1px solid #bbf7d0; }
-        .alert-danger { background: var(--danger-bg); color: var(--danger); border: 1px solid #fca5a5; }
+        .alert-info {
+            background: var(--info-bg);
+            color: var(--info);
+            border: 1px solid #bfdbfe;
+        }
 
-        .alert-icon { font-size: 16px; margin-top: 1px; }
+        .alert-warning {
+            background: #fffbeb;
+            color: #b45309;
+            border: 1px solid #fef3c7;
+        }
+
+        .alert-success {
+            background: var(--success-bg);
+            color: var(--success);
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-danger {
+            background: var(--danger-bg);
+            color: var(--danger);
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-icon {
+            font-size: 16px;
+            margin-top: 1px;
+        }
 
         /* Estilo de la zona de matching */
         .matching-table {
@@ -417,9 +445,20 @@
             text-transform: uppercase;
         }
 
-        .preview-status.ok { background: var(--success-bg); color: var(--success); }
-        .preview-status.error { background: var(--danger-bg); color: var(--danger); }
-        .preview-status.mapped { background: var(--info-bg); color: var(--info); }
+        .preview-status.ok {
+            background: var(--success-bg);
+            color: var(--success);
+        }
+
+        .preview-status.error {
+            background: var(--danger-bg);
+            color: var(--danger);
+        }
+
+        .preview-status.mapped {
+            background: var(--info-bg);
+            color: var(--info);
+        }
 
         /* Animación spinner */
         .spinner {
@@ -431,13 +470,23 @@
             animation: spin 1s linear infinite;
             display: inline-block;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
 
         /* Reporte Final */
         .success-box {
             text-align: center;
             padding: 20px;
         }
+
         .success-box .icon {
             font-size: 48px;
             color: var(--success);
@@ -487,7 +536,7 @@
 
         .maestros-header .badge-db {
             font-size: 10px;
-            background: rgba(255,255,255,0.2);
+            background: rgba(255, 255, 255, 0.2);
             padding: 3px 8px;
             border-radius: 9999px;
             font-weight: 600;
@@ -643,16 +692,19 @@
         }
     </style>
 </head>
+
 <body>
 
     <div class="migrator-container">
         <header>
             <div>
                 <h1 data-i18n="migratorHeader">Assistent de Càrrega d'Històrics</h1>
-                <div class="subtitle" data-i18n="migratorSubtitle">Migració intel·ligent i segura de dades llegades a SQLite</div>
+                <div class="subtitle" data-i18n="migratorSubtitle">Migració intel·ligent i segura de dades llegades a
+                    SQLite</div>
             </div>
             <div>
-                <span style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.5px;">PRO</span>
+                <span
+                    style="font-size: 10px; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 10px; border-radius: 9999px; letter-spacing: 0.5px;">PRO</span>
             </div>
         </header>
 
@@ -684,7 +736,8 @@
         <div class="step-content active" id="stepContent-1">
             <div class="alert alert-info">
                 <div class="alert-icon">💡</div>
-                <div data-i18n="alertStep1">Selecciona el tipus de dades que vols migrar, indica si vols fusionar o sobrescriure les dades i tria els fitxers JSON a importar.</div>
+                <div data-i18n="alertStep1">Selecciona el tipus de dades que vols migrar, indica si vols fusionar o
+                    sobrescriure les dades i tria els fitxers JSON a importar.</div>
             </div>
 
             <div class="form-group">
@@ -706,34 +759,65 @@
                         <input type="radio" name="estrategia" value="add" checked style="pointer-events:none">
                         <div>
                             <div class="radio-title" data-i18n="optAddTitle">Afegir i Combinar Dades</div>
-                            <div class="radio-desc" data-i18n="optAddDesc">Uneix les noves dades amb les existents. No elimina informació prèvia.</div>
+                            <div class="radio-desc" data-i18n="optAddDesc">Uneix les noves dades amb les existents. No
+                                elimina informació prèvia.</div>
                         </div>
                     </div>
                     <div class="radio-option" id="optOverwrite" onclick="seleccionarEstrategia('overwrite')">
                         <input type="radio" name="estrategia" value="overwrite" style="pointer-events:none">
                         <div>
                             <div class="radio-title" data-i18n="optOverwriteTitle">Sobrescriure / Netejar anterior</div>
-                            <div class="radio-desc" data-i18n="optOverwriteDesc">Esborra la informació del mòdul/dates coincidents abans d'inserir el nou històric.</div>
+                            <div class="radio-desc" data-i18n="optOverwriteDesc">Esborra la informació del mòdul/dates
+                                coincidents abans d'inserir el nou històric.</div>
                         </div>
                     </div>
                 </div>
             </div>
 
+            <div class="form-group" id="grpCuadranteOverride" style="display: none; margin-top: 24px;">
+                <label data-i18n="lblOverrideMes">Forçar mes i any (Opcional) - Només per a Quadrants</label>
+                <div style="display: flex; gap: 8px;">
+                    <select id="selOverrideMes" class="form-control" style="flex: 1; padding: 8px;">
+                        <option value="" data-i18n="optKeepFile">-- Mantenir el del fitxer --</option>
+                        <option value="0" data-i18n="optJan">Gener</option>
+                        <option value="1" data-i18n="optFeb">Febrer</option>
+                        <option value="2" data-i18n="optMar">Març</option>
+                        <option value="3" data-i18n="optApr">Abril</option>
+                        <option value="4" data-i18n="optMay">Maig</option>
+                        <option value="5" data-i18n="optJun">Juny</option>
+                        <option value="6" data-i18n="optJul">Juliol</option>
+                        <option value="7" data-i18n="optAug">Agost</option>
+                        <option value="8" data-i18n="optSep">Setembre</option>
+                        <option value="9" data-i18n="optOct">Octubre</option>
+                        <option value="10" data-i18n="optNov">Novembre</option>
+                        <option value="11" data-i18n="optDec">Desembre</option>
+                    </select>
+                    <input type="number" id="txtOverrideAno" class="form-control" placeholder="Any (ex. 2026)" style="flex: 1; padding: 8px;" value="2026">
+                </div>
+                <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;" data-i18n="lblOverrideMesDesc">
+                    Si selecciones un mes i any, s'ignoraran les dates originals del fitxer i es carregarà tot en el mes especificat.
+                </div>
+            </div>
+
             <div class="form-group" style="margin-top: 24px;">
                 <label id="lblFitxersJson" data-i18n="lblFitxersJson">Fitxers JSON Llegats</label>
-                <button class="btn btn-secondary" id="btnSelectElectron" onclick="seleccionarArchivosJson()" data-i18n="btnSeleccionar">
+                <button class="btn btn-secondary" id="btnSelectElectron" onclick="seleccionarArchivosJson()"
+                    data-i18n="btnSeleccionar">
                     📂 Seleccionar fitxers...
                 </button>
-                <button class="btn btn-secondary" id="btnSelectHtml5" style="display: none;" onclick="document.getElementById('inputArchivoJson').click()" data-i18n="btnSeleccionar">
+                <button class="btn btn-secondary" id="btnSelectHtml5" style="display: none;"
+                    onclick="document.getElementById('inputArchivoJson').click()" data-i18n="btnSeleccionar">
                     📂 Seleccionar fitxers...
                 </button>
-                <input type="file" id="inputArchivoJson" accept=".json,.csv" multiple style="display: none;" onchange="manejarArchivoSeleccionado(event)">
+                <input type="file" id="inputArchivoJson" accept=".json,.csv" multiple style="display: none;"
+                    onchange="manejarArchivoSeleccionado(event)">
                 <div id="fileListContainer" class="file-list" style="display: none;"></div>
             </div>
 
             <div class="btn-group">
                 <span></span>
-                <button class="btn btn-primary" id="btnGoToStep2" disabled onclick="avanzarPaso(2)" data-i18n="btnSeguent">
+                <button class="btn btn-primary" id="btnGoToStep2" disabled onclick="avanzarPaso(2)"
+                    data-i18n="btnSeguent">
                     Següent Pas ➔
                 </button>
             </div>
@@ -745,25 +829,33 @@
                 <div class="alert-icon">⚠️</div>
                 <div>
                     <strong data-i18n="backupTitle">Copia de Seguretat Obligatòria Preventiva</strong><br>
-                    <span data-i18n="backupDesc">Abans de modificar qualsevol base de dades relacional, el sistema requereix generar una còpia de seguretat. Guarda el fitxer en una ubicació segura per poder restaurar en cas d'error.</span>
+                    <span data-i18n="backupDesc">Abans de modificar qualsevol base de dades relacional, el sistema
+                        requereix generar una còpia de seguretat. Guarda el fitxer en una ubicació segura per poder
+                        restaurar en cas d'error.</span>
                 </div>
             </div>
 
-            <div style="text-align: center; padding: 30px 20px; border: 1px dashed var(--border); border-radius: 12px; background: #fafafa; margin-bottom: 20px;">
+            <div
+                style="text-align: center; padding: 30px 20px; border: 1px dashed var(--border); border-radius: 12px; background: #fafafa; margin-bottom: 20px;">
                 <div style="font-size: 32px; margin-bottom: 12px;">🔒</div>
-                <h3 style="margin: 0 0 8px 0; font-size: 15px; color: var(--primary);" data-i18n="lblBdsProteger">Bases de dades a protegir:</h3>
-                <p id="txtBdsAfectadas" style="font-size: 12px; color: var(--text-muted); margin: 0 0 20px 0;">operativa_rrhh.db</p>
-                <button class="btn btn-primary" id="btnHacerBackup" onclick="crearCopiaSeguridad()" data-i18n="btnHacerBackup">
+                <h3 style="margin: 0 0 8px 0; font-size: 15px; color: var(--primary);" data-i18n="lblBdsProteger">Bases
+                    de dades a protegir:</h3>
+                <p id="txtBdsAfectadas" style="font-size: 12px; color: var(--text-muted); margin: 0 0 20px 0;">
+                    operativa_rrhh.db</p>
+                <button class="btn btn-primary" id="btnHacerBackup" onclick="crearCopiaSeguridad()"
+                    data-i18n="btnHacerBackup">
                     🛡️ Generar Còpia de Seguretat...
                 </button>
-                <div id="txtStatusBackup" style="margin-top: 12px; font-size: 12px; font-weight: 600; display: none;"></div>
+                <div id="txtStatusBackup" style="margin-top: 12px; font-size: 12px; font-weight: 600; display: none;">
+                </div>
             </div>
 
             <div class="btn-group">
                 <button class="btn btn-secondary" onclick="retrocederPaso(1)" data-i18n="btnEnrere">
                     ⬅ Enrere
                 </button>
-                <button class="btn btn-primary" id="btnGoToStep3" disabled onclick="analizarDatosYProceder()" data-i18n="btnAnalitzar">
+                <button class="btn btn-primary" id="btnGoToStep3" disabled onclick="analizarDatosYProceder()"
+                    data-i18n="btnAnalitzar">
                     Analitzar Dades ➔
                 </button>
             </div>
@@ -774,25 +866,33 @@
             <div class="alert alert-warning" id="alertDiscrepancias">
                 <div class="alert-icon">🔗</div>
                 <div>
-                    <strong data-i18n="alertDiscrepanciasTitle">Chequeig de Catàlegs: S'han trobat discrepàncies.</strong><br>
-                    <span data-i18n="alertDiscrepanciasDesc">Hi ha noms d'aparcaments o persones al JSON que no consten exactament a la base de datos de catàlegs. Associa'ls de forma manual per no perdre les relacions, o tria crear-los de nou.</span>
+                    <strong data-i18n="alertDiscrepanciasTitle">Chequeig de Catàlegs: S'han trobat
+                        discrepàncies.</strong><br>
+                    <span data-i18n="alertDiscrepanciasDesc">Hi ha noms d'aparcaments o persones al JSON que no consten
+                        exactament a la base de datos de catàlegs. Associa'ls de forma manual per no perdre les
+                        relacions, o tria crear-los de nou.</span>
                 </div>
             </div>
-            
+
             <div class="alert alert-success" id="alertCleanCatalogs" style="display: none;">
                 <div class="alert-icon">✅</div>
                 <div>
                     <strong data-i18n="alertCleanCatalogsTitle">Catàlegs Sincronitzats!</strong><br>
-                    <span data-i18n="alertCleanCatalogsDesc">Tots els aparcamientos i persones del JSON coincideixen exactament amb els existents a la base de dades. Pots continuar sense realitzar matching manual.</span>
+                    <span data-i18n="alertCleanCatalogsDesc">Tots els aparcamientos i persones del JSON coincideixen
+                        exactament amb els existents a la base de dades. Pots continuar sense realitzar matching
+                        manual.</span>
                 </div>
             </div>
 
             <div id="sectionMatchColumnasComerciales" style="margin-bottom: 28px; display: none;">
                 <div class="alert alert-info">
                     <div class="alert-icon">📢</div>
-                    <div>Vincula las columnas detectadas en tu fichero con las columnas de la base de datos de Comerciales. El coordinador se deducirá automáticamente del aparcamiento.</div>
+                    <div>Vincula las columnas detectadas en tu fichero con las columnas de la base de datos de
+                        Comerciales. El coordinador se deducirá automáticamente del aparcamiento.</div>
                 </div>
-                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;">🔄 Mapeo de Columnas</h3>
+                <h3
+                    style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;">
+                    🔄 Mapeo de Columnas</h3>
                 <div style="max-height: 250px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
                     <table class="matching-table">
                         <thead>
@@ -810,22 +910,26 @@
 
             <div class="alert alert-success" id="infoComercialesMatching" style="display: none;">
                 <div class="alert-icon">📢</div>
-                <div data-i18n="infoComercialesMatching">No es requereix mapeig de catàlegs per a Comerciales. Els preus i tarifes s'importaran directament a la taula plana de Comerciales.</div>
+                <div data-i18n="infoComercialesMatching">No es requereix mapeig de catàlegs per a Comerciales. Els preus
+                    i tarifes s'importaran directament a la taula plana de Comerciales.</div>
             </div>
 
             <div class="alert alert-success" id="infoRutasMatching" style="display: none;">
                 <div class="alert-icon">📢</div>
-                <div data-i18n="infoRutasMatching">No es requereix mapeig de catàlegs per a Rutes. Les rutes s'importaran directament a la taula de movimientos_economicos.</div>
+                <div data-i18n="infoRutasMatching">No es requereix mapeig de catàlegs per a Rutes. Les rutes
+                    s'importaran directament a la taula de movimientos_economicos.</div>
             </div>
 
             <div class="alert alert-success" id="infoGastosMatching" style="display: none;">
                 <div class="alert-icon">📢</div>
-                <div data-i18n="infoGastosMatching">No es requereix mapeig de catàlegs per a Gastos i Kilometratge. S'importaran directament a la taula de movimientos_economicos.</div>
+                <div data-i18n="infoGastosMatching">No es requereix mapeig de catàlegs per a Gastos i Kilometratge.
+                    S'importaran directament a la taula de movimientos_economicos.</div>
             </div>
 
             <!-- Matching Aparcamientos -->
             <div id="sectionMatchParkings" style="margin-bottom: 28px; display: none;">
-                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;" data-i18n="titleMapeoParkings">🚗 Mapeig d'Aparcaments</h3>
+                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;"
+                    data-i18n="titleMapeoParkings">🚗 Mapeig d'Aparcaments</h3>
                 <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
                     <table class="matching-table">
                         <thead>
@@ -841,7 +945,8 @@
 
             <!-- Matching Personas -->
             <div id="sectionMatchAgentes" style="display: none;">
-                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;" data-i18n="titleMapeoAgentes">👥 Mapeig de Persones / Agents</h3>
+                <h3 style="font-size: 14px; color: var(--primary); text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 12px;"
+                    data-i18n="titleMapeoAgentes">👥 Mapeig de Persones / Agents</h3>
                 <div style="max-height: 200px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px;">
                     <table class="matching-table">
                         <thead>
@@ -869,15 +974,20 @@
         <div class="step-content" id="stepContent-4">
             <div class="alert alert-info">
                 <div class="alert-icon">👁️</div>
-                <div data-i18n="previewHelp">Aquesta és una previsualització dels primers registres que s'escriuran a la base de dades relacional. Si estàs d'acord, clica a "Confirmar i Importar".</div>
+                <div data-i18n="previewHelp">Aquesta és una previsualització dels primers registres que s'escriuran a la
+                    base de dades relacional. Si estàs d'acord, clica a "Confirmar i Importar".</div>
             </div>
 
             <div style="display: flex; gap: 20px; margin-bottom: 16px;">
-                <div style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fafafa; font-size: 12px;">
-                    <strong data-i18n="lblTotalRegistrosDetectados">Total Registres Detectats:</strong> <span id="lblTotalRegistros" style="font-weight: 700; color: var(--primary);">0</span>
+                <div
+                    style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fafafa; font-size: 12px;">
+                    <strong data-i18n="lblTotalRegistrosDetectados">Total Registres Detectats:</strong> <span
+                        id="lblTotalRegistros" style="font-weight: 700; color: var(--primary);">0</span>
                 </div>
-                <div style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fafafa; font-size: 12px;">
-                    <strong data-i18n="lblEstrategiaTriadaTxt">Estratègia Triada:</strong> <span id="lblEstrategiaTriada" style="font-weight: 700; text-transform: uppercase;">Afegeix</span>
+                <div
+                    style="flex: 1; border: 1px solid var(--border); border-radius: 8px; padding: 12px; background: #fafafa; font-size: 12px;">
+                    <strong data-i18n="lblEstrategiaTriadaTxt">Estratègia Triada:</strong> <span
+                        id="lblEstrategiaTriada" style="font-weight: 700; text-transform: uppercase;">Afegeix</span>
                 </div>
             </div>
 
@@ -892,7 +1002,8 @@
                 <button class="btn btn-secondary" onclick="retrocederPaso(3)" data-i18n="btnEnrere">
                     ⬅ Enrere
                 </button>
-                <button class="btn btn-primary" id="btnEjecutarMigracion" onclick="ejecutarMigracionFinal()" data-i18n="btnConfirmarImportar">
+                <button class="btn btn-primary" id="btnEjecutarMigracion" onclick="ejecutarMigracionFinal()"
+                    data-i18n="btnConfirmarImportar">
                     🚀 Confirmar i Importar
                 </button>
             </div>
@@ -902,13 +1013,21 @@
         <div class="step-content" id="stepContent-5">
             <div class="success-box">
                 <div class="icon">🎉</div>
-                <h2 style="margin: 0 0 8px 0; color: var(--success); font-size: 18px;" data-i18n="successTitle">Migració Completada amb Èxit!</h2>
-                <p id="txtResultadoFinal" style="font-size: 13px; color: var(--text-muted); margin: 0 0 20px 0;">S'han importat correctament 0 registres relacionals en la base de dades.</p>
-                
-                <div id="sectionDatosExcluidos" style="display: none; padding: 16px; border: 1px solid #fca5a5; border-radius: 10px; background: #fff5f5; max-width: 500px; margin: 24px auto;">
-                    <div style="font-weight: 700; color: var(--danger); font-size: 12px; text-transform: uppercase; margin-bottom: 6px;">Registres Exclosos / Faltaven Dades</div>
-                    <p style="font-size: 11px; color: #7f1d1d; margin: 0 0 12px 0;">Alguns registres contenien referències que has omès en el matching o tenien dades buides. Pots descarregar-los en un JSON de correcció per arreglar-los.</p>
-                    <button class="btn btn-danger" onclick="descargarExcluidosJson()" style="padding: 6px 16px; font-size: 11px;">
+                <h2 style="margin: 0 0 8px 0; color: var(--success); font-size: 18px;" data-i18n="successTitle">Migració
+                    Completada amb Èxit!</h2>
+                <p id="txtResultadoFinal" style="font-size: 13px; color: var(--text-muted); margin: 0 0 20px 0;">S'han
+                    importat correctament 0 registres relacionals en la base de dades.</p>
+
+                <div id="sectionDatosExcluidos"
+                    style="display: none; padding: 16px; border: 1px solid #fca5a5; border-radius: 10px; background: #fff5f5; max-width: 500px; margin: 24px auto;">
+                    <div
+                        style="font-weight: 700; color: var(--danger); font-size: 12px; text-transform: uppercase; margin-bottom: 6px;">
+                        Registres Exclosos / Faltaven Dades</div>
+                    <p style="font-size: 11px; color: #7f1d1d; margin: 0 0 12px 0;">Alguns registres contenien
+                        referències que has omès en el matching o tenien dades buides. Pots descarregar-los en un JSON
+                        de correcció per arreglar-los.</p>
+                    <button class="btn btn-danger" onclick="descargarExcluidosJson()"
+                        style="padding: 6px 16px; font-size: 11px;">
                         📥 Descarregar JSON de Correcció
                     </button>
                 </div>
@@ -931,25 +1050,25 @@
         let selectedFiles = [];
         let backupRealizado = false;
         let backupFilePath = "";
-        
+
         let catalogosLocales = { agentes: [], aparcamientos: [] };
-        
+
         // Mapeos de nombres de entrada a base de datos
         let matchAparcamientosMap = new Map(); // clave: jsonName -> valor: dbId (o 'NEW', o 'SKIP')
         let matchAgentesMap = new Map(); // clave: jsonName -> valor: dbId (o 'NEW', o 'SKIP')
-        
+
         // Estructuras de datos a migrar
         let registrosProcesados = []; // Todos los registros leídos del JSON
         let registrosExcluidos = []; // Registros excluidos de la importación
         let registrosParaInsertar = []; // Registros mapeados listos para base de datos
-        
+
         // Comerciales: datos desencapsulados listos para importar
         let datosAImportar = [];
-        
+
         // Gastos y Kilometraje
         let gastosAImportar = [];
         let empleadoIdUsuario = "";
-        
+
         // Obtener APIs de Electron de forma segura
         const electronApi = window.api || (window.parent && window.parent.api);
         const dbApi = window.dbAPI || (window.parent && window.parent.dbAPI);
@@ -957,17 +1076,16 @@
         async function loadCatalogos() {
             try {
                 if (dbApi) {
-                    // Cargar agentes (empleados con rol Trabajador)
+                    // Cargar agentes (vinculados a empleados para que salgan en Gestión de Trabajadores)
                     catalogosLocales.agentes = await dbApi.read('catalogos', "SELECT id, nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador'", []);
                     // Cargar aparcamientos
-                    catalogosLocales.aparcamientos = await dbApi.read('catalogos', "SELECT id, nombre, coordinador FROM aparcamientos WHERE activo = 1", []);
+                    catalogosLocales.aparcamientos = await dbApi.read('catalogos', "SELECT id, nombre, coordinador_responsable FROM aparcamientos WHERE activo = 1", []);
                 }
             } catch (e) {
                 console.error("Error al cargar catálogos maestros:", e);
             }
         }
 
-        // Al cargar la ventana
         window.addEventListener('load', async () => {
             // Asegurar traducción de la ventana tras cargar
             const finalI18n = window.i18n || (typeof i18n !== 'undefined' ? i18n : null);
@@ -989,19 +1107,19 @@
             datosAImportar = [];
             matchAparcamientosMap.clear();
             matchAgentesMap.clear();
-            
+
             document.getElementById('fileListContainer').style.display = 'none';
             document.getElementById('btnGoToStep2').disabled = true;
             document.getElementById('btnGoToStep3').disabled = true;
             document.getElementById('btnHacerBackup').disabled = false;
             document.getElementById('txtStatusBackup').style.display = 'none';
             document.getElementById('inputArchivoJson').value = '';
-            
+
             // Reset indicators
             for (let i = 1; i <= 5; i++) {
                 const stepEl = document.getElementById(`stepIndicator-${i}`);
                 stepEl.className = i === 1 ? 'step active' : 'step';
-                
+
                 const contentEl = document.getElementById(`stepContent-${i}`);
                 contentEl.className = i === 1 ? 'step-content active' : 'step-content';
             }
@@ -1023,7 +1141,7 @@
             const btnSelectElectron = document.getElementById('btnSelectElectron');
             const btnSelectHtml5 = document.getElementById('btnSelectHtml5');
             const fileListContainer = document.getElementById('fileListContainer');
-            
+
             fileListContainer.style.display = 'none';
             fileListContainer.innerHTML = '';
             selectedFiles = [];
@@ -1032,7 +1150,12 @@
             empleadoIdUsuario = "";
             document.getElementById('btnGoToStep2').disabled = true;
             document.getElementById('inputArchivoJson').value = '';
-            
+
+            const grpCuadranteOverride = document.getElementById('grpCuadranteOverride');
+            if (grpCuadranteOverride) {
+                grpCuadranteOverride.style.display = tipo === 'cuadrante' ? 'block' : 'none';
+            }
+
             if (tipo === 'comerciales') {
                 txtBds.textContent = 'comercial.db';
                 btnSelectElectron.style.display = 'none';
@@ -1041,7 +1164,7 @@
                 txtBds.textContent = 'finanzas_inventario.db';
                 btnSelectElectron.style.display = 'none';
                 btnSelectHtml5.style.display = 'inline-flex';
-txtBds.textContent = 'finanzas_inventario.db';
+                txtBds.textContent = 'finanzas_inventario.db';
                 btnSelectElectron.style.display = 'none';
                 btnSelectHtml5.style.display = 'inline-flex';
             } else {
@@ -1054,12 +1177,12 @@ txtBds.textContent = 'finanzas_inventario.db';
         async function manejarArchivoSeleccionado(event) {
             const files = Array.from(event.target.files);
             if (files.length === 0) return;
-            
+
             const tipo = document.getElementById('tipoMigracion').value;
             const container = document.getElementById('fileListContainer');
             container.innerHTML = '';
             container.style.display = 'block';
-            
+
             // Si la estrategia es 'add', acumulamos archivos, si no, los reemplazamos
             const isAddStrategy = document.getElementById('optAdd') && document.getElementById('optAdd').classList.contains('selected');
             if (!isAddStrategy) {
@@ -1068,11 +1191,11 @@ txtBds.textContent = 'finanzas_inventario.db';
                 gastosAImportar = [];
                 empleadoIdUsuario = "";
             }
-            
+
             let allValid = true;
             const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
             const successMsg = isCa ? "Lectura completada amb èxit" : "Lectura completada con éxito";
-            
+
             // Variable global para detectar encabezados en comerciales
             if (tipo === 'comerciales') {
                 window.columnasDetectadas = window.columnasDetectadas || [];
@@ -1086,20 +1209,20 @@ txtBds.textContent = 'finanzas_inventario.db';
                         reader.onerror = e => reject(e);
                         reader.readAsText(file);
                     });
-                    
+
                     const isCsv = file.name.toLowerCase().endsWith('.csv');
                     let parsedData = null;
-                    
+
                     if (isCsv) {
                         const lines = text.split(/\r?\n/).filter(line => line.trim() !== '');
                         if (lines.length > 0) {
                             const sep = lines[0].includes(';') ? ';' : ',';
                             const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, ''));
-                            
+
                             if (tipo === 'comerciales' && window.columnasDetectadas.length === 0) {
                                 window.columnasDetectadas = headers;
                             }
-                            
+
                             parsedData = [];
                             for (let i = 1; i < lines.length; i++) {
                                 const values = lines[i].split(sep).map(v => v.trim().replace(/^"|"$/g, ''));
@@ -1115,10 +1238,10 @@ txtBds.textContent = 'finanzas_inventario.db';
                     } else {
                         parsedData = JSON.parse(text);
                     }
-                    
+
                     const item = document.createElement('div');
                     item.className = 'file-item';
-                    
+
                     if (tipo === 'comerciales') {
                         if (isCsv) {
                             datosAImportar.push(...parsedData);
@@ -1127,14 +1250,14 @@ txtBds.textContent = 'finanzas_inventario.db';
                                 if (key.includes('last_export_time') || key.includes('last_export_author')) {
                                     continue;
                                 }
-                                
+
                                 let rows = [];
                                 if (typeof value === 'string' && value.startsWith('[[')) {
-                                    try { rows = JSON.parse(value); } catch(e) {}
+                                    try { rows = JSON.parse(value); } catch (e) { }
                                 } else if (Array.isArray(value)) {
                                     rows = value;
                                 }
-                                
+
                                 if (Array.isArray(rows)) {
                                     rows.forEach(row => {
                                         if (Array.isArray(row) && row.length >= 7) {
@@ -1145,7 +1268,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                                     });
                                 }
                             }
-                            
+
                             // Extraer columnas simuladas para JSON si no es CSV y no hay columnas
                             if (window.columnasDetectadas.length === 0 && datosAImportar.length > 0) {
                                 const firstRow = datosAImportar[0];
@@ -1156,14 +1279,14 @@ txtBds.textContent = 'finanzas_inventario.db';
                                 }
                             }
                         }
-                        
+
                         selectedFiles.push({ name: file.name, content: parsedData });
                         item.innerHTML = `
                             <span class="file-name">📄 ${file.name}</span>
                             <span class="file-size">${successMsg}</span>
                         `;
                         container.appendChild(item);
-                        
+
                     } else if (tipo === 'rutas') {
                         let totalKeys = 0;
                         for (const [key, value] of Object.entries(parsedData)) {
@@ -1172,26 +1295,26 @@ txtBds.textContent = 'finanzas_inventario.db';
                             if (parts.length >= 5) totalKeys++;
                         }
                         if (totalKeys === 0) throw new Error(isCa ? "No s'han trobat rutes vàlides." : "No se han encontrado rutas válidas.");
-                        
+
                         selectedFiles.push({ name: file.name, content: parsedData });
                         item.innerHTML = `
                             <span class="file-name">📄 ${file.name}</span>
                             <span class="file-size">${successMsg} (${totalKeys} reg.)</span>
                         `;
                         container.appendChild(item);
-                        
+
                     } else if (tipo === 'gastos') {
                         let totalRows = 0;
                         const empleado = parsedData["nyn_nom_empleat"];
                         if (!empleado) throw new Error(isCa ? "Sense nom empleat." : "Sin nombre empleado.");
-                        
+
                         for (const [key, value] of Object.entries(parsedData)) {
                             if (key.startsWith('nyn_despeses_') && Array.isArray(value)) {
                                 value.forEach(row => { if (Array.isArray(row) && row[0] && row[0] !== "") totalRows++; });
                             }
                         }
                         if (totalRows === 0) throw new Error(isCa ? "No hi ha despeses." : "No hay gastos.");
-                        
+
                         empleadoIdUsuario = empleado;
                         selectedFiles.push({ name: file.name, content: parsedData });
                         item.innerHTML = `
@@ -1205,7 +1328,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                     document.getElementById('btnGoToStep2').disabled = true;
                 }
             }
-            
+
             if (selectedFiles.length > 0) {
                 document.getElementById('btnGoToStep2').disabled = false;
             }
@@ -1238,11 +1361,11 @@ txtBds.textContent = 'finanzas_inventario.db';
                 } else {
                     selectedFiles = result.files;
                 }
-                
+
                 const container = document.getElementById('fileListContainer');
                 container.innerHTML = '';
                 container.style.display = 'block';
-                
+
                 selectedFiles.forEach(file => {
                     const item = document.createElement('div');
                     item.className = 'file-item';
@@ -1252,7 +1375,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                     `;
                     container.appendChild(item);
                 });
-                
+
                 document.getElementById('btnGoToStep2').disabled = false;
             } else if (result.error) {
                 mostrarAlerta("Error al cargar archivos: " + result.error);
@@ -1263,22 +1386,22 @@ txtBds.textContent = 'finanzas_inventario.db';
             const tipo = document.getElementById('tipoMigracion').value;
             const btn = document.getElementById('btnHacerBackup');
             const status = document.getElementById('txtStatusBackup');
-            
+
             btn.disabled = true;
             status.style.display = 'block';
             status.innerHTML = `<span class="spinner"></span> Creant còpia de seguretat preventiva...`;
             status.style.color = 'var(--text-muted)';
-            
+
             try {
                 if (electronApi && electronApi.crearBackupMigracion) {
                     const result = await electronApi.crearBackupMigracion(tipo);
                     if (result.success) {
                         backupRealizado = true;
                         backupFilePath = result.filePath;
-                        
+
                         status.style.color = 'var(--success)';
                         status.innerHTML = `✅ Còpia de seguretat guardada amb èxit a:<br><span style="font-size: 10px; font-family: monospace; word-break: break-all;">${result.filePath}</span>`;
-                        
+
                         document.getElementById('btnGoToStep3').disabled = false;
                     } else if (result.reason) {
                         btn.disabled = false;
@@ -1305,11 +1428,11 @@ txtBds.textContent = 'finanzas_inventario.db';
             // Cambiar indicador
             document.getElementById(`stepIndicator-${pasoActual}`).className = 'step completed';
             document.getElementById(`stepIndicator-${paso}`).className = 'step active';
-            
+
             // Cambiar contenido
             document.getElementById(`stepContent-${pasoActual}`).className = 'step-content';
             document.getElementById(`stepContent-${paso}`).className = 'step-content active';
-            
+
             pasoActual = paso;
         }
 
@@ -1317,32 +1440,32 @@ txtBds.textContent = 'finanzas_inventario.db';
             // Cambiar indicador
             document.getElementById(`stepIndicator-${pasoActual}`).className = 'step';
             document.getElementById(`stepIndicator-${paso}`).className = 'step active';
-            
+
             // Cambiar contenido
             document.getElementById(`stepContent-${pasoActual}`).className = 'step-content';
             document.getElementById(`stepContent-${paso}`).className = 'step-content active';
-            
+
             pasoActual = paso;
         }
 
         // PASO 3: Análisis de catálogos y extracción de entidades
         async function analizarDatosYProceder() {
             const tipo = document.getElementById('tipoMigracion').value;
-            
+
             // Ocultar información de Comerciales, Rutas y Gastos por defecto
             document.getElementById('sectionMatchColumnasComerciales').style.display = 'none';
             document.getElementById('infoComercialesMatching').style.display = 'none';
             document.getElementById('infoRutasMatching').style.display = 'none';
             document.getElementById('infoGastosMatching').style.display = 'none';
-            
+
             let parkingsEnJson = new Set();
             let agentesEnJson = new Set();
             registrosProcesados = [];
-            
+
             // Extraer entidades según el tipo de datos
             selectedFiles.forEach(file => {
                 const content = file.content;
-                
+
                 if (tipo === 'deudas') {
                     const items = Array.isArray(content) ? content : [];
                     items.forEach(item => {
@@ -1370,12 +1493,12 @@ txtBds.textContent = 'finanzas_inventario.db';
                     for (const [key, value] of Object.entries(content)) {
                         if (key === 'comerciales' || key === 'tarifas_comerciales') {
                             if (!value) continue;
-                            
+
                             if (typeof value === 'object' && !Array.isArray(value)) {
                                 for (const [subk, subv] of Object.entries(value)) {
                                     let subRows = [];
                                     if (typeof subv === 'string' && subv.startsWith('[[')) {
-                                        try { subRows = JSON.parse(subv); } catch(e) {}
+                                        try { subRows = JSON.parse(subv); } catch (e) { }
                                     } else if (Array.isArray(subv)) {
                                         subRows = subv;
                                     }
@@ -1391,14 +1514,14 @@ txtBds.textContent = 'finanzas_inventario.db';
                                 }
                                 continue;
                             }
-                            
+
                             let rows = [];
                             if (typeof value === 'string' && value.startsWith('[[')) {
-                                try { rows = JSON.parse(value); } catch(e) {}
+                                try { rows = JSON.parse(value); } catch (e) { }
                             } else if (Array.isArray(value)) {
                                 rows = value;
                             }
-                            
+
                             if (Array.isArray(rows)) {
                                 rows.forEach(row => {
                                     if (Array.isArray(row) && row.length >= 7) {
@@ -1418,44 +1541,54 @@ txtBds.textContent = 'finanzas_inventario.db';
                         if (/_(MATÍ|MATI|TARDA|NIT)_\d+$/i.test(key)) {
                             const parts = key.split('_');
                             if (parts.length < 5) continue;
-                            
+
                             // Extraer datos de atrás hacia adelante (Split Inverso)
                             const dia = parts[parts.length - 1];
                             const turno = parts[parts.length - 2].toUpperCase();
                             const nombreParking = parts[parts.length - 3].toUpperCase().trim();
-                            const mesJS = parts[parts.length - 4];
-                            const año = parts[parts.length - 5];
+                            let mesJS = parts[parts.length - 4];
+                            let año = parts[parts.length - 5];
                             
+                            const overrideMes = document.getElementById('selOverrideMes') ? document.getElementById('selOverrideMes').value : '';
+                            const overrideAno = document.getElementById('txtOverrideAno') ? document.getElementById('txtOverrideAno').value : '';
+                            
+                            if (overrideMes !== "") {
+                                mesJS = overrideMes;
+                            }
+                            if (overrideAno && overrideAno.trim() !== "") {
+                                año = overrideAno.trim();
+                            }
+
                             parkingsEnJson.add(nombreParking);
-                            
+
                             let cellData = {};
                             if (typeof value === 'string') {
-                                try { 
-                                    cellData = JSON.parse(value); 
-                                } catch(e) { 
+                                try {
+                                    cellData = JSON.parse(value);
+                                } catch (e) {
                                     console.error("Error al parsear celda de cuadrante:", e, value);
-                                    continue; 
+                                    continue;
                                 }
                             } else if (value && typeof value === 'object') {
                                 cellData = value;
                             }
-                            
+
                             const wName = (cellData.w || '').trim();
                             if (wName && wName !== '-' && wName !== '') {
                                 agentesEnJson.add(wName);
                             }
-                            
+
                             // Estandarizar rawParts para mantener total compatibilidad con previsualizarImportacion y ejecutarMigracionFinal
                             const rawPartsNormalized = [
-                                null, 
-                                null, 
-                                año, 
-                                mesJS, 
-                                null, 
-                                turno, 
+                                null,
+                                null,
+                                año,
+                                mesJS,
+                                null,
+                                turno,
                                 dia
                             ];
-                            
+
                             registrosProcesados.push({
                                 key: key,
                                 parking: nombreParking,
@@ -1474,20 +1607,20 @@ txtBds.textContent = 'finanzas_inventario.db';
                         if (key.startsWith('METADATA')) continue;
                         const parts = key.split('-');
                         if (parts.length < 5) continue;
-                        
+
                         const worker = parts[0];
                         const year = parts[1];
                         const monthRaw = parseInt(parts[2], 10);
                         const dayRaw = parseInt(parts[3], 10);
                         const stopIndex = parseInt(parts[4], 10);
                         const isHolidayKey = parts[5] === 'holiday';
-                        
+
                         const month = String(monthRaw + 1).padStart(2, '0');
                         const day = String(dayRaw).padStart(2, '0');
                         const formattedDate = `${year}-${month}-${day}`;
-                        
+
                         const groupKey = `${formattedDate}_${worker}`;
-                        
+
                         if (!groups[groupKey]) {
                             groups[groupKey] = {
                                 worker: worker,
@@ -1496,7 +1629,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                                 festivo: false
                             };
                         }
-                        
+
                         if (isHolidayKey) {
                             if (value === "1" || value === 1 || value === true || value === "true") {
                                 groups[groupKey].festivo = true;
@@ -1507,7 +1640,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                             }
                         }
                     }
-                    
+
                     Object.values(groups).forEach(g => {
                         const cleanStops = g.tempStops.filter(stop => stop !== undefined && stop !== null && stop !== "");
                         let concepto = "";
@@ -1516,7 +1649,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                         } else {
                             concepto = cleanStops.join(" ➤ ");
                         }
-                        
+
                         registrosProcesados.push({
                             worker: g.worker,
                             date: g.date,
@@ -1525,7 +1658,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                             concepto: concepto
                         });
                     });
-                    
+
                     // Ordenar por fecha y trabajador
                     registrosProcesados.sort((a, b) => {
                         if (a.date !== b.date) return a.date.localeCompare(b.date);
@@ -1535,7 +1668,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                     // Extraer el nombre del empleado
                     const empleado = content["nyn_nom_empleat"];
                     empleadoIdUsuario = empleado;
-                    
+
                     gastosAImportar = []; // Vaciar
                     for (const [key, value] of Object.entries(content)) {
                         if (key.startsWith('nyn_despeses_') && Array.isArray(value)) {
@@ -1553,7 +1686,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                             });
                         }
                     }
-                    
+
                     // Ordenar por fecha cronológicamente
                     gastosAImportar.sort((a, b) => a.fecha.localeCompare(b.fecha));
                 }
@@ -1561,11 +1694,11 @@ txtBds.textContent = 'finanzas_inventario.db';
 
             // Recargar catálogos maestros antes de analizar
             await loadCatalogos();
-            
+
             // Analizar discrepancias de Aparcamientos
             let discrepanciasParkings = [];
             const dbParkingsUpper = catalogosLocales.aparcamientos.map(p => p.nombre.toUpperCase());
-            
+
             parkingsEnJson.forEach(jsonPkName => {
                 const index = dbParkingsUpper.indexOf(jsonPkName.toUpperCase());
                 if (index === -1) {
@@ -1578,7 +1711,7 @@ txtBds.textContent = 'finanzas_inventario.db';
             // Analizar discrepancias de Agentes (Personas)
             let discrepanciasAgentes = [];
             const dbAgentesUpper = catalogosLocales.agentes.map(a => a.nombre.toUpperCase());
-            
+
             agentesEnJson.forEach(jsonAgName => {
                 const index = dbAgentesUpper.indexOf(jsonAgName.toUpperCase());
                 if (index === -1) {
@@ -1613,7 +1746,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                 if (discrepanciasParkings.length > 0 || discrepanciasAgentes.length > 0) {
                     document.getElementById('alertDiscrepancias').style.display = 'flex';
                     document.getElementById('alertCleanCatalogs').style.display = 'none';
-                    
+
                     buildMatchingUI(discrepanciasParkings, discrepanciasAgentes);
                 } else {
                     document.getElementById('alertDiscrepancias').style.display = 'none';
@@ -1622,7 +1755,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                     document.getElementById('sectionMatchAgentes').style.display = 'none';
                 }
             }
-            
+
             avanzarPaso(3);
         }
 
@@ -1652,7 +1785,7 @@ txtBds.textContent = 'finanzas_inventario.db';
 
         function obtenerPropuestaAparcamiento(nombreJson, catalogosAparcamientos) {
             if (!nombreJson) return 'NEW';
-            
+
             function normalizar(str) {
                 return str.toUpperCase()
                     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
@@ -1660,21 +1793,21 @@ txtBds.textContent = 'finanzas_inventario.db';
                     .replace(/[^A-Z0-9]/g, '')
                     .trim();
             }
-            
+
             const normaJson = normalizar(nombreJson);
             if (!normaJson) return 'NEW';
-            
+
             let mejorMatch = null;
             let mejorScore = 0;
-            
+
             for (const dbPk of catalogosAparcamientos) {
                 const normaDb = normalizar(dbPk.nombre);
                 if (!normaDb) continue;
-                
+
                 if (normaJson === normaDb) {
                     return dbPk.id;
                 }
-                
+
                 if (normaJson.includes(normaDb) || normaDb.includes(normaJson)) {
                     const score = Math.min(normaJson.length, normaDb.length) / Math.max(normaJson.length, normaDb.length);
                     if (score > mejorScore) {
@@ -1682,56 +1815,56 @@ txtBds.textContent = 'finanzas_inventario.db';
                         mejorMatch = dbPk.id;
                     }
                 }
-                
+
                 const dist = levenshteinDistance(normaJson, normaDb);
                 const maxLength = Math.max(normaJson.length, normaDb.length);
                 const similarity = 1 - (dist / maxLength);
-                
+
                 if (similarity > 0.60 && similarity > mejorScore) {
                     mejorScore = similarity;
                     mejorMatch = dbPk.id;
                 }
             }
-            
+
             if (mejorScore > 0.60) {
                 return mejorMatch;
             }
-            
+
             return 'NEW';
         }
 
         function buildMatchingUI(discrepanciasParkings, discrepanciasAgentes) {
             const bodyP = document.getElementById('bodyMatchParkings');
             const bodyA = document.getElementById('bodyMatchAgentes');
-            
+
             bodyP.innerHTML = '';
             bodyA.innerHTML = '';
-            
+
             if (discrepanciasParkings.length > 0) {
                 document.getElementById('sectionMatchParkings').style.display = 'block';
                 discrepanciasParkings.forEach((pk, idx) => {
                     const tr = document.createElement('tr');
-                    
+
                     const propuestaId = obtenerPropuestaAparcamiento(pk, catalogosLocales.aparcamientos);
-                    
+
                     let options = `<option value="SKIP">❌ Ometre registres d'aquest aparcament</option>`;
                     options += `<option value="NEW" ${propuestaId === 'NEW' ? 'selected' : ''}>➕ Crear com a nou aparcament en catàleg</option>`;
-                    
+
                     const pksOrdenados = [...catalogosLocales.aparcamientos].sort((a, b) => {
                         const scoreA = a.nombre.toLowerCase().includes(pk.toLowerCase()) ? 1 : 0;
                         const scoreB = b.nombre.toLowerCase().includes(pk.toLowerCase()) ? 1 : 0;
                         return scoreB - scoreA;
                     });
-                    
+
                     pksOrdenados.forEach(dbPk => {
                         const isSelected = dbPk.id == propuestaId ? 'selected' : '';
                         options += `<option value="${dbPk.id}" ${isSelected}>🚗 Vincular a: ${dbPk.nombre} ${isSelected ? '(Sugerido)' : ''}</option>`;
                     });
-                    
+
                     tr.innerHTML = `
                         <td><span class="badge-entity">${pk}</span></td>
                         <td>
-                            <select id="matchPk-${idx}" data-name="${pk}" onchange="updateMatch('parking', '${pk}', this.value)">
+                            <select id="matchPk-${idx}" data-name="${pk.replace(/"/g, '&quot;')}" onchange="updateMatch('parking', '${pk.replace(/'/g, "\\'")}', this.value)">
                                 ${options}
                             </select>
                         </td>
@@ -1747,24 +1880,24 @@ txtBds.textContent = 'finanzas_inventario.db';
                 document.getElementById('sectionMatchAgentes').style.display = 'block';
                 discrepanciasAgentes.forEach((ag, idx) => {
                     const tr = document.createElement('tr');
-                    
+
                     let options = `<option value="SKIP">❌ Ometre registres d'aquesta persona</option>`;
                     options += `<option value="NEW" selected>➕ Crear com a nou agent en catàleg</option>`;
-                    
+
                     const agsOrdenados = [...catalogosLocales.agentes].sort((a, b) => {
                         const scoreA = a.nombre.toLowerCase().includes(ag.toLowerCase()) ? 1 : 0;
                         const scoreB = b.nombre.toLowerCase().includes(ag.toLowerCase()) ? 1 : 0;
                         return scoreB - scoreA;
                     });
-                    
+
                     agsOrdenados.forEach(dbAg => {
                         options += `<option value="${dbAg.id}">👥 Vincular a: ${dbAg.nombre}</option>`;
                     });
-                    
+
                     tr.innerHTML = `
                         <td><span class="badge-entity">${ag}</span></td>
                         <td>
-                            <select id="matchAg-${idx}" data-name="${ag}" onchange="updateMatch('agente', '${ag}', this.value)">
+                            <select id="matchAg-${idx}" data-name="${ag.replace(/"/g, '&quot;')}" onchange="updateMatch('agente', '${ag.replace(/'/g, "\\'")}', this.value)">
                                 ${options}
                             </select>
                         </td>
@@ -1780,24 +1913,24 @@ txtBds.textContent = 'finanzas_inventario.db';
         function buildComercialesMatchingUI() {
             const body = document.getElementById('bodyMatchColumnasComerciales');
             body.innerHTML = '';
-            
+
             const detectedColumns = window.columnasDetectadas || [];
             const isArrayRows = datosAImportar.length > 0 && Array.isArray(datosAImportar[0]);
-            
+
             const camposBD = [
                 { id: 'match_col_aparcamiento', label: 'Aparcamiento (Centro)', required: true },
                 { id: 'match_col_vacantes', label: 'Plazas Libres (Vacantes)' },
                 { id: 'match_col_tarifa', label: 'Tarifa (€)' },
                 { id: 'match_col_observaciones', label: 'Notas / Observaciones' }
             ];
-            
+
             camposBD.forEach(campo => {
                 const tr = document.createElement('tr');
                 let options = `<option value="">-- No mapear --</option>`;
-                
+
                 detectedColumns.forEach((col, idx) => {
                     const val = isArrayRows ? idx : col;
-                    
+
                     // Extraer el primer valor para mostrarlo de ejemplo (buscando en las primeras 10 filas)
                     let primerValor = "";
                     for (let r = 0; r < Math.min(datosAImportar.length, 10); r++) {
@@ -1809,24 +1942,24 @@ txtBds.textContent = 'finanzas_inventario.db';
                             break;
                         }
                     }
-                    
+
                     let displayLabel = col;
                     // Si empieza por Columna X, intentamos poner el primer valor para que se entienda mejor, 
                     // o lo ponemos siempre como ayuda
                     if (primerValor) {
                         displayLabel = `${col} (Ej: ${primerValor})`;
                     }
-                    
+
                     const colStr = String(col).toLowerCase();
-                    const isSelected = (colStr.includes('aparcam') && campo.id.includes('aparcamiento')) || 
-                                       (colStr.includes('centr') && campo.id.includes('aparcamiento')) || 
-                                       (colStr.includes('vacant') && campo.id.includes('vacantes')) ||
-                                       (colStr.includes('tarifa') && campo.id.includes('tarifa')) ||
-                                       (colStr.includes('nota') && campo.id.includes('observaciones')) ||
-                                       (colStr.includes('observa') && campo.id.includes('observaciones')) ? 'selected' : '';
+                    const isSelected = (colStr.includes('aparcam') && campo.id.includes('aparcamiento')) ||
+                        (colStr.includes('centr') && campo.id.includes('aparcamiento')) ||
+                        (colStr.includes('vacant') && campo.id.includes('vacantes')) ||
+                        (colStr.includes('tarifa') && campo.id.includes('tarifa')) ||
+                        (colStr.includes('nota') && campo.id.includes('observaciones')) ||
+                        (colStr.includes('observa') && campo.id.includes('observaciones')) ? 'selected' : '';
                     options += `<option value="${val}" ${isSelected}>${displayLabel}</option>`;
                 });
-                
+
                 tr.innerHTML = `
                     <td><span class="badge-entity">${campo.label}${campo.required ? ' *' : ''}</span></td>
                     <td>
@@ -1850,12 +1983,12 @@ txtBds.textContent = 'finanzas_inventario.db';
         function previsualizarImportacion() {
             const tipo = document.getElementById('tipoMigracion').value;
             const estrategia = document.querySelector('input[name="estrategia"]:checked').value;
-            
+
             registrosParaInsertar = [];
             registrosExcluidos = [];
-            
+
             const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
-            
+
             if (tipo === 'comerciales') {
                 document.getElementById('lblTotalRegistros').textContent = datosAImportar.length;
             } else if (tipo === 'gastos') {
@@ -1863,44 +1996,44 @@ txtBds.textContent = 'finanzas_inventario.db';
             } else {
                 document.getElementById('lblTotalRegistros').textContent = registrosProcesados.length;
             }
-            
-            document.getElementById('lblEstrategiaTriada').textContent = estrategia === 'add' 
-                ? (isCa ? 'Afegir' : 'Añadir') 
+
+            document.getElementById('lblEstrategiaTriada').textContent = estrategia === 'add'
+                ? (isCa ? 'Afegir' : 'Añadir')
                 : (isCa ? 'Sobrescriure' : 'Sobrescribir');
-            
+
             const head = document.getElementById('headPreview');
             const body = document.getElementById('bodyPreview');
-            
+
             head.innerHTML = '';
             body.innerHTML = '';
-            
+
             let headers = [];
             if (tipo === 'cuadrante') {
-                headers = isCa 
+                headers = isCa
                     ? ['DATA', 'APARCAMENT', 'PERSONA / AGENT', 'TORN', 'HORES', 'ESTAT']
                     : ['FECHA', 'APARCAMIENTO', 'PERSONA / AGENTE', 'TURNO', 'HORAS', 'ESTADO'];
             } else if (tipo === 'vacaciones') {
-                headers = isCa 
+                headers = isCa
                     ? ['AGENT / PERSONA', 'INICI', 'FI', 'ESTAT']
                     : ['AGENTE / PERSONA', 'INICIO', 'FIN', 'ESTADO'];
             } else if (tipo === 'deudas') {
-                headers = isCa 
+                headers = isCa
                     ? ['COMERCIAL', 'CLIENT', 'IMPORT', 'DATA', 'ESTAT']
                     : ['COMERCIAL', 'CLIENTE', 'IMPORTE', 'FECHA', 'ESTADO'];
             } else if (tipo === 'comerciales') {
-                headers = isCa 
+                headers = isCa
                     ? ['NOM', 'PLACES LLIURES', 'TARIFA', 'NOTES']
                     : ['NOMBRE', 'PLAZAS LIBRES', 'TARIFA', 'NOTAS'];
             } else if (tipo === 'rutas') {
-                headers = isCa 
+                headers = isCa
                     ? ['DATA', 'TREBALLADOR', 'TIPUS', 'RECORREGUT (CONCEPTE)', 'ESTAT']
                     : ['FECHA', 'TRABAJADOR', 'TIPO', 'RECORRIDO (CONCEPTO)', 'ESTADO'];
             } else if (tipo === 'gastos') {
-                headers = isCa 
+                headers = isCa
                     ? ['DATA', 'TREBALLADOR', 'RECORREGUT (CONCEPTE)', 'KM', 'TARIFA', 'ESTAT']
                     : ['FECHA', 'TRABAJADOR', 'RECORRIDO (CONCEPTO)', 'KM', 'TARIFA', 'ESTADO'];
             }
-            
+
             const trHead = document.createElement('tr');
             headers.forEach(h => {
                 const th = document.createElement('th');
@@ -1910,13 +2043,13 @@ txtBds.textContent = 'finanzas_inventario.db';
             head.appendChild(trHead);
 
             let countVisible = 0;
-            
+
             if (tipo === 'comerciales') {
                 const colAparcamiento = document.getElementById('match_col_aparcamiento').value;
                 const colVacantes = document.getElementById('match_col_vacantes').value;
                 const colTarifa = document.getElementById('match_col_tarifa').value;
                 const colObservaciones = document.getElementById('match_col_observaciones').value;
-                
+
                 if (colAparcamiento === "") {
                     mostrarAlerta(isCa ? "Has de mapejar almenys la columna d'Aparcament" : "Debes mapear al menos la columna de Aparcamiento");
                     retrocederPaso(3);
@@ -1926,16 +2059,37 @@ txtBds.textContent = 'finanzas_inventario.db';
                 datosAImportar.forEach((row, i) => {
                     const centroName = Array.isArray(row) ? row[parseInt(colAparcamiento)] : row[colAparcamiento];
                     if (centroName === undefined || centroName === null || String(centroName).trim() === '') return;
-                    
+
                     const pkName = String(centroName).trim().toUpperCase();
                     let coordName = 'Desconocido';
-                    
-                    const dbPk = catalogosLocales.aparcamientos.find(a => 
-                        a.nombre.toUpperCase() === pkName || 
-                        a.nombre.toUpperCase().includes(pkName) || 
-                        pkName.includes(a.nombre.toUpperCase())
-                    );
-                    
+
+                    const normalizeName = (name) => {
+                        if (!name) return "";
+                        return name.toUpperCase()
+                            .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+                            .replace(/^(N\.N\.|N\.N|NN|N\.|NUÑEZ|NURIA)\s*/i, "")
+                            .replace(/[-\.\(\)\s]/g, "")
+                            .trim();
+                    };
+
+                    const normInput = normalizeName(pkName);
+                    let dbPk = null;
+                    if (normInput) {
+                        dbPk = catalogosLocales.aparcamientos.find(a => normalizeName(a.nombre) === normInput);
+                        if (!dbPk) {
+                            dbPk = catalogosLocales.aparcamientos.find(a => {
+                                const normDb = normalizeName(a.nombre);
+                                return normDb.startsWith(normInput) || normInput.startsWith(normDb);
+                            });
+                        }
+                        if (!dbPk) {
+                            dbPk = catalogosLocales.aparcamientos.find(a => {
+                                const normDb = normalizeName(a.nombre);
+                                return normDb.substring(0, 5) === normInput.substring(0, 5);
+                            });
+                        }
+                    }
+
                     if (dbPk && dbPk.coordinador) {
                         coordName = dbPk.coordinador;
                     }
@@ -1953,13 +2107,13 @@ txtBds.textContent = 'finanzas_inventario.db';
                         observaciones: observacionesValue || ''
                     });
                 });
-                
+
                 // Mostrar solo los primeros 15 registros de comerciales resueltos
                 const maxPreview = Math.min(15, registrosParaInsertar.length);
                 for (let idx = 0; idx < maxPreview; idx++) {
                     const r = registrosParaInsertar[idx];
                     const tr = document.createElement('tr');
-                    
+
                     const cells = [r.centro, r.vacants, r.tarifa, r.observaciones];
                     cells.forEach(c => {
                         const td = document.createElement('td');
@@ -1973,11 +2127,11 @@ txtBds.textContent = 'finanzas_inventario.db';
                 arrIter.forEach((reg, i) => {
                     let status = 'ok';
                     let cells = [];
-                    
+
                     if (tipo === 'deudas') {
                         const agentName = reg.comercial;
                         const destMatch = matchAgentesMap.get(agentName);
-                        
+
                         if (destMatch === 'SKIP') {
                             status = 'skip';
                             registrosExcluidos.push(reg);
@@ -1991,13 +2145,13 @@ txtBds.textContent = 'finanzas_inventario.db';
                             });
                             status = destMatch === 'NEW' ? 'mapped' : 'ok';
                         }
-                        
+
                         cells = [reg.fecha, reg.comercial, reg.cliente, reg.import];
                     }
                     else if (tipo === 'vacaciones') {
                         const agentName = reg.nombre;
                         const destMatch = matchAgentesMap.get(agentName);
-                        
+
                         if (destMatch === 'SKIP') {
                             status = 'skip';
                             registrosExcluidos.push(reg);
@@ -2010,16 +2164,16 @@ txtBds.textContent = 'finanzas_inventario.db';
                             });
                             status = destMatch === 'NEW' ? 'mapped' : 'ok';
                         }
-                        
+
                         cells = [reg.nombre, reg.fecha_inicio, reg.fecha_fin];
                     }
                     else if (tipo === 'cuadrante') {
                         const pkName = reg.parking;
                         const agName = reg.agente;
-                        
+
                         const destPkMatch = matchAparcamientosMap.get(pkName);
                         const destAgMatch = agName ? matchAgentesMap.get(agName) : null;
-                        
+
                         if (destPkMatch === 'SKIP' || destAgMatch === 'SKIP') {
                             status = 'skip';
                             registrosExcluidos.push(reg);
@@ -2029,11 +2183,11 @@ txtBds.textContent = 'finanzas_inventario.db';
                             const mes = parts[3];
                             const dia = parts[parts.length - 1];
                             const turno = parts[parts.length - 2];
-                            
+
                             const mesNum = (Number(mes) + 1).toString().padStart(2, '0');
                             const diaNum = Number(dia).toString().padStart(2, '0');
                             const fechaStr = `${año}-${mesNum}-${diaNum}`;
-                            
+
                             registrosParaInsertar.push({
                                 fecha: fechaStr,
                                 parking: pkName,
@@ -2047,8 +2201,8 @@ txtBds.textContent = 'finanzas_inventario.db';
                             });
                             status = (destPkMatch === 'NEW' || destAgMatch === 'NEW') ? 'mapped' : 'ok';
                         }
-                        
-                        cells = [reg.rawParts[2] + '-' + (Number(reg.rawParts[3])+1) + '-' + reg.rawParts[reg.rawParts.length-1], reg.parking, reg.agente || '(Vaci)', reg.rawParts[reg.rawParts.length-2], reg.horas];
+
+                        cells = [reg.rawParts[2] + '-' + (Number(reg.rawParts[3]) + 1) + '-' + reg.rawParts[reg.rawParts.length - 1], reg.parking, reg.agente || '(Vaci)', reg.rawParts[reg.rawParts.length - 2], reg.horas];
                     } else if (tipo === 'rutas') {
                         registrosParaInsertar.push({
                             worker: reg.worker,
@@ -2068,7 +2222,7 @@ txtBds.textContent = 'finanzas_inventario.db';
                         });
                         cells = [reg.fecha, empleadoIdUsuario, reg.concepto, reg.km, reg.tarifa];
                     }
-                    
+
                     const maxRows = (tipo === 'rutas' || tipo === 'gastos') ? 15 : 100;
                     if (countVisible < maxRows && status !== 'skip') {
                         const tr = document.createElement('tr');
@@ -2077,23 +2231,23 @@ txtBds.textContent = 'finanzas_inventario.db';
                             td.textContent = c;
                             tr.appendChild(td);
                         });
-                        
+
                         const tdStatus = document.createElement('td');
-                        tdStatus.innerHTML = status === 'mapped' 
-                            ? `<span class="preview-status mapped">${isCa ? 'Nou Catàleg' : 'Nuevo Catálogo'}</span>` 
+                        tdStatus.innerHTML = status === 'mapped'
+                            ? `<span class="preview-status mapped">${isCa ? 'Nou Catàleg' : 'Nuevo Catálogo'}</span>`
                             : `<span class="preview-status ok">${isCa ? 'Correcte' : 'Correcto'}</span>`;
                         tr.appendChild(tdStatus);
-                        
+
                         body.appendChild(tr);
                         countVisible++;
                     }
                 });
             }
-            
+
             const btnImport = document.getElementById('btnEjecutarMigracion');
             btnImport.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
             btnImport.disabled = (registrosParaInsertar.length === 0);
-            
+
             avanzarPaso(4);
         }
 
@@ -2102,67 +2256,73 @@ txtBds.textContent = 'finanzas_inventario.db';
                 mostrarAlerta("API de base de datos no disponible.");
                 return;
             }
-            
+
             const btn = document.getElementById('btnEjecutarMigracion');
             btn.disabled = true;
-            
+
             const tipo = document.getElementById('tipoMigracion').value;
             const estrategia = document.querySelector('input[name="estrategia"]:checked').value;
             const isCa = (window.i18n && window.i18n.getLanguage() === 'ca');
-            
+
             btn.innerHTML = `<span class="spinner"></span> ${isCa ? 'Processant importació...' : 'Procesando importación...'}`;
-            
+
             if (tipo === 'gastos') {
                 try {
                     // Preguntar antes de importar (como pidió el usuario: "recuerda que primero se pregunta")
                     const confirmMsg = estrategia === 'overwrite'
-                        ? (isCa 
+                        ? (isCa
                             ? "⚠️ ATENCIÓ: Es perdran TOTS els registres anteriors de Kilometratge a la base de dades. Vols continuar?"
                             : "⚠️ ATENCIÓN: Se perderán TODOS los registros anteriores de Kilometraje en la base de datos. ¿Deseas continuar?")
                         : (isCa
                             ? "⚠️ Estàs segur que vols importar els gastos? Els registres coincidents de data, treballador i kilometratge seran reemplaçats."
                             : "⚠️ ¿Estás seguro de que deseas importar los gastos? Los registros coincidentes de fecha, trabajador y kilometraje serán reemplazados.");
-                    
+
                     if (!confirm(confirmMsg)) {
                         btn.disabled = false;
                         btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                         return;
                     }
-                    
+
                     // Construir array de operaciones para batch
                     const opsGastos = [];
-                    
+
                     if (estrategia === 'overwrite') {
-                        opsGastos.push({ query: `
+                        opsGastos.push({
+                            query: `
                             DELETE FROM movimientos_economicos 
                             WHERE tipo_movimiento = 'Kilometraje' AND id_usuario = ?
-                        `, params: [empleadoIdUsuario] });
+                        `, params: [empleadoIdUsuario]
+                        });
                     }
-                    
+
                     for (const r of registrosParaInsertar) {
                         if (estrategia === 'add') {
-                            opsGastos.push({ query: `
+                            opsGastos.push({
+                                query: `
                                 DELETE FROM movimientos_economicos 
                                 WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Kilometraje'
-                            `, params: [empleadoIdUsuario, r.fecha] });
+                            `, params: [empleadoIdUsuario, r.fecha]
+                            });
                         }
-                        opsGastos.push({ query: `
+                        opsGastos.push({
+                            query: `
                             INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
                             VALUES (?, ?, 'Kilometraje', ?, 0, ?)
-                        `, params: [empleadoIdUsuario, r.fecha, r.concepto, JSON.stringify({ km: r.km, tarifa: r.tarifa, extras: r.extras })] });
+                        `, params: [empleadoIdUsuario, r.fecha, r.concepto, JSON.stringify({ km: r.km, tarifa: r.tarifa, extras: r.extras })]
+                        });
                     }
-                    
+
                     await window.dbAPI.writeBatch('finanzas', opsGastos);
-                    
+
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    
+
                     document.getElementById('txtResultadoFinal').innerHTML = isCa
                         ? `S'han importat correctament <strong>${registrosParaInsertar.length}</strong> registres de kilometratge per a l'empleat <strong>${empleadoIdUsuario}</strong>.`
                         : `Se han importado correctamente <strong>${registrosParaInsertar.length}</strong> registros de kilometraje para el empleado <strong>${empleadoIdUsuario}</strong>.`;
-                        
+
                     document.getElementById('sectionDatosExcluidos').style.display = 'none';
-                    
+
                     avanzarPaso(5);
                 } catch (errGlobal) {
                     console.error("Error global en migración de gastos:", errGlobal);
@@ -2172,55 +2332,59 @@ txtBds.textContent = 'finanzas_inventario.db';
                 }
                 return;
             }
-            
+
             if (tipo === 'rutas') {
                 try {
                     // Preguntar antes de importar (como pidió el usuario: "recuerda que primero se pregunta")
                     const confirmMsg = estrategia === 'overwrite'
-                        ? (isCa 
+                        ? (isCa
                             ? "⚠️ ATENCIÓ: Es perdran TOTS els registres anteriors de Rutes Comercials a la base de dades. Vols continuar?"
                             : "⚠️ ATENCIÓN: Se perderán TODOS los registros anteriores de Rutas Comerciales en la datos. ¿Deseas continuar?")
                         : (isCa
                             ? "⚠️ Estàs segur que vols importar les rutes? Els registres coincidents de treballador i data seran reemplaçats."
                             : "⚠️ ¿Estás seguro de que deseas importar las rutas? Los registros coincidentes de trabajador y fecha serán reemplazados.");
-                    
+
                     if (!confirm(confirmMsg)) {
                         btn.disabled = false;
                         btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                         return;
                     }
-                    
+
                     // Construir array de operaciones para batch
                     const opsRutas = [];
-                    
+
                     if (estrategia === 'overwrite') {
                         opsRutas.push({ query: "DELETE FROM movimientos_economicos WHERE tipo_movimiento = 'Ruta Comercial'", params: [] });
                     }
-                    
+
                     for (const r of registrosParaInsertar) {
                         if (estrategia === 'add') {
-                            opsRutas.push({ query: `
+                            opsRutas.push({
+                                query: `
                                 DELETE FROM movimientos_economicos 
                                 WHERE id_usuario = ? AND fecha = ? AND tipo_movimiento = 'Ruta Comercial'
-                            `, params: [r.worker, r.date] });
+                            `, params: [r.worker, r.date]
+                            });
                         }
-                        opsRutas.push({ query: `
+                        opsRutas.push({
+                            query: `
                             INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
                             VALUES (?, ?, 'Ruta Comercial', ?, 0, ?)
-                        `, params: [r.worker, r.date, r.concepto, JSON.stringify({ paradas: r.stops, festivo: r.festivo })] });
+                        `, params: [r.worker, r.date, r.concepto, JSON.stringify({ paradas: r.stops, festivo: r.festivo })]
+                        });
                     }
-                    
+
                     await dbApi.writeBatch('finanzas', opsRutas);
-                    
+
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    
+
                     document.getElementById('txtResultadoFinal').innerHTML = isCa
                         ? `S'han importat correctament <strong>${registrosParaInsertar.length}</strong> rutes comercials a la base de dades finances.`
                         : `Se han importado correctamente <strong>${registrosParaInsertar.length}</strong> rutas comerciales en la base de datos finanzas.`;
-                        
+
                     document.getElementById('sectionDatosExcluidos').style.display = 'none';
-                    
+
                     avanzarPaso(5);
                 } catch (errGlobal) {
                     console.error("Error global en migración de rutas:", errGlobal);
@@ -2230,60 +2394,62 @@ txtBds.textContent = 'finanzas_inventario.db';
                 }
                 return;
             }
-            
+
             if (tipo === 'comerciales') {
                 try {
                     // Preguntar antes de importar
                     const confirmMsg = estrategia === 'overwrite'
-                        ? (isCa 
+                        ? (isCa
                             ? "Es perdran TOTS els registres anteriors de Tarifes i Comercials a la base de dades. Vols continuar?"
                             : "Se perderán TODOS los registros anteriores de Tarifas y Comerciales en la base de datos. ¿Deseas continuar?")
                         : (isCa
                             ? "Estàs segur que vols importar els comercials? Els registres coincidents d'aparcament seran actualitzats/reemplaçats."
                             : "¿Estás seguro de que deseas importar los comerciales? Los registros coincidentes de aparcamiento serán actualizados/reemplazados.");
-                    
+
                     if (!confirm(confirmMsg)) {
                         btn.disabled = false;
                         btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
                         return;
                     }
-                    
+
                     // Construir array de operaciones para batch
                     const ops = [];
-                    
+
                     if (estrategia === 'overwrite') {
                         ops.push({ query: "DELETE FROM tarifas_comerciales", params: [] });
                     }
-                    
+
                     for (const r of registrosParaInsertar) {
                         if (estrategia === 'add') {
                             ops.push({ query: "DELETE FROM tarifas_comerciales WHERE aparcamiento = ?", params: [r.centro.toUpperCase()] });
                         }
-                        ops.push({ query: `
+                        ops.push({
+                            query: `
                             INSERT INTO tarifas_comerciales (coordinador, mes, anio, aparcamiento, vacantes, tarifa, observaciones)
                             VALUES (?, ?, ?, ?, ?, ?, ?)
                         `, params: [
-                            r.coordinador || 'Desconocido',
-                            new Date().getMonth() + 1,
-                            new Date().getFullYear(),
-                            r.centro.toUpperCase(),
-                            r.vacants,
-                            r.tarifa,
-                            r.observaciones
-                        ]});
+                                r.coordinador || 'Desconocido',
+                                new Date().getMonth() + 1,
+                                new Date().getFullYear(),
+                                r.centro.toUpperCase(),
+                                r.vacants,
+                                r.tarifa,
+                                r.observaciones
+                            ]
+                        });
                     }
-                    
+
                     await dbApi.writeBatch('comercial', ops);
-                    
+
                     // 3. Mostrar feedback y resetear UI
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;
-                    
-                    const resumenMsg = isCa 
+
+                    const resumenMsg = isCa
                         ? `Migració de Comerciales completada:\n- Èxits: ${registrosParaInsertar.length} registres`
                         : `Migración de Comerciales completada:\n- Éxitos: ${registrosParaInsertar.length} registros`;
                     mostrarAlerta(resumenMsg);
-                    
+
                     reiniciarAsistente();
                 } catch (errGlobal) {
                     console.error("Error global en migración de comerciales:", errGlobal);
@@ -2293,11 +2459,11 @@ txtBds.textContent = 'finanzas_inventario.db';
                 }
                 return;
             }
-            
+
             try {
                 let nuevosAgentes = new Set();
                 let nuevosParkings = new Set();
-                
+
                 if (tipo === 'cuadrante' || tipo === 'deudas' || tipo === 'vacaciones') {
                     matchAgentesMap.forEach((val, key) => {
                         if (val === 'NEW') nuevosAgentes.add(key);
@@ -2308,21 +2474,22 @@ txtBds.textContent = 'finanzas_inventario.db';
                         if (val === 'NEW') nuevosParkings.add(key);
                     });
                 }
-                
+
                 if (nuevosAgentes.size > 0 || nuevosParkings.size > 0) {
                     const opsCatalogos = [];
-                    
+
                     for (const name of nuevosAgentes) {
-                        opsCatalogos.push({ query: "INSERT OR IGNORE INTO empleados (nombre, rol, activo) VALUES (?, 'Trabajador', 1)", params: [name] });
+                        opsCatalogos.push({ query: "INSERT OR IGNORE INTO agentes (nombre, activo) VALUES (?, 1)", params: [name] });
+                        opsCatalogos.push({ query: "INSERT INTO empleados (nombre, rol, activo) VALUES (?, 'Trabajador', 1)", params: [name] });
                     }
                     for (const name of nuevosParkings) {
                         opsCatalogos.push({ query: "INSERT OR IGNORE INTO aparcamientos (nombre, sociedad_id, activo) VALUES (?, 1, 1)", params: [name] });
                     }
-                    
+
                     await dbApi.writeBatch('catalogos', opsCatalogos);
-                    
+
                     await loadCatalogos();
-                    
+
                     if (tipo === 'cuadrante' || tipo === 'deudas' || tipo === 'vacaciones') {
                         matchAgentesMap.forEach((val, key) => {
                             if (val === 'NEW') {
@@ -2343,7 +2510,7 @@ txtBds.textContent = 'finanzas_inventario.db';
 
                 // Construir array de operaciones para batch
                 const opsOperativa = [];
-                
+
                 if (estrategia === 'overwrite') {
                     if (tipo === 'deudas') {
                         opsOperativa.push({ query: "DELETE FROM deutes", params: [] });
@@ -2360,18 +2527,20 @@ txtBds.textContent = 'finanzas_inventario.db';
                 }
 
                 let insertados = 0;
-                
+
                 if (tipo === 'deudas') {
                     for (const r of registrosParaInsertar) {
                         const resolvedAgId = matchAgentesMap.get(r.comercial);
                         if (resolvedAgId && resolvedAgId !== 'SKIP') {
-                            let valorImport = typeof r.import === 'string' 
-                                ? Number(r.import.replace(',', '.')) 
+                            let valorImport = typeof r.import === 'string'
+                                ? Number(r.import.replace(',', '.'))
                                 : Number(r.import);
-                            opsOperativa.push({ query: `
+                            opsOperativa.push({
+                                query: `
                                 INSERT INTO deutes (comercial, cliente, import, fecha, activo)
                                 VALUES (?, ?, ?, ?, 1)
-                            `, params: [r.comercial, r.cliente, valorImport, r.fecha] });
+                            `, params: [r.comercial, r.cliente, valorImport, r.fecha]
+                            });
                             insertados++;
                         }
                     }
@@ -2380,39 +2549,45 @@ txtBds.textContent = 'finanzas_inventario.db';
                     for (const r of registrosParaInsertar) {
                         const resolvedAgId = matchAgentesMap.get(r.nombre);
                         if (resolvedAgId && resolvedAgId !== 'SKIP') {
-                            opsOperativa.push({ query: `
+                            opsOperativa.push({
+                                query: `
                                 INSERT INTO vacances (agente_id, fecha_inicio, fecha_fin)
                                 VALUES (?, ?, ?)
-                            `, params: [resolvedAgId, r.fecha_inicio, r.fecha_fin] });
+                            `, params: [resolvedAgId, r.fecha_inicio, r.fecha_fin]
+                            });
                             insertados++;
                         }
                     }
                 }
                 else if (tipo === 'cuadrante') {
                     for (const r of registrosParaInsertar) {
-                        const resolvedPkId = matchAparcamientosMap.get(r.parking);
-                        const resolvedAgId = r.agente ? matchAgentesMap.get(r.agente) : null;
-                        
-                        if (resolvedPkId && resolvedPkId !== 'SKIP' && (!r.agente || (resolvedAgId && resolvedAgId !== 'SKIP'))) {
-                            opsOperativa.push({ query: `
-                                INSERT OR REPLACE INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, es_substitucio, nota)
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                            `, params: [r.fecha, resolvedPkId, resolvedAgId || 0, r.turno, '06:00', '14:00', r.es_sub, r.nota] });
+                        const agId = r.agente ? matchAgentesMap.get(r.agente) : (r.agenteId || null);
+                        const pkId = r.parking ? matchAparcamientosMap.get(r.parking) : (r.parkingId || null);
+
+                        if (pkId && pkId !== 'SKIP' && (!r.agente || (agId && agId !== 'SKIP'))) {
+                            opsOperativa.push({
+                                query: `
+                                INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, horas_trabajadas, es_substitucio, nota)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                            `, params: [
+                                    r.fecha, pkId, agId || 0, r.turno, r.horas || 0, r.es_sub ? 1 : 0, r.nota || ''
+                                ]
+                            });
                             insertados++;
                         }
                     }
                 }
 
                 await dbApi.writeBatch('operativa', opsOperativa);
-                
+
                 document.getElementById('txtResultadoFinal').innerHTML = `S'han importat correctament <strong>${insertados}</strong> registres relacionals en la base de dades.`;
-                
+
                 if (registrosExcluidos.length > 0) {
                     document.getElementById('sectionDatosExcluidos').style.display = 'block';
                 } else {
                     document.getElementById('sectionDatosExcluidos').style.display = 'none';
                 }
-                
+
                 avanzarPaso(5);
             } catch (err) {
                 btn.disabled = false;
@@ -2423,7 +2598,7 @@ txtBds.textContent = 'finanzas_inventario.db';
 
         function descargarExcluidosJson() {
             if (registrosExcluidos.length === 0) return;
-            
+
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(registrosExcluidos, null, 2));
             const dlAnchorElem = document.createElement('a');
             dlAnchorElem.setAttribute("href", dataStr);
@@ -2431,6 +2606,7 @@ txtBds.textContent = 'finanzas_inventario.db';
             dlAnchorElem.click();
         }
 
-        </script>
+    </script>
 </body>
+
 </html>
