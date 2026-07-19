@@ -567,6 +567,11 @@
     </div>
 </div>
 
+<!-- Loading Overlay -->
+<div x-show="loading" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); background: var(--nyn-verd); color: white; padding: 10px 24px; border-radius: 999px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999; font-weight: 600; display: none;" x-transition>
+    <i class="fas fa-spinner fa-spin mr-2"></i> Guardando cambios...
+</div>
+
 <div class="flex flex-row overflow-hidden" style="display: flex; flex-direction: row; align-items: stretch; min-height: calc(100vh - 120px); width: 100%;">
     <!-- Tabla Principal de Cuadrante -->
     <div class="table-wrapper" style="flex-grow: 1; overflow-x: auto; padding: 16px 24px;">
@@ -604,7 +609,7 @@
                                 
                                 <div class="cell-container" :class="{ 'is-substitucio': dayData.isSub }" style="pointer-events: auto;">
                                     <!-- Trabajador -->
-                                    <select class="select-worker" :value="dayData.worker" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'worker', $event.target.value)">
+                                    <select class="select-worker" :value="dayData.worker" :disabled="loading" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'worker', $event.target.value)">
                                         <option value="-">-</option>
                                         <template x-for="t in listaTrabajadores" :key="t.nombre">
                                             <option :value="t.nombre" x-text="t.nombre" :selected="dayData.worker === t.nombre"></option>
@@ -612,14 +617,14 @@
                                     </select>
 
                                     <!-- Horas -->
-                                    <select class="select-hour" :value="dayData.hours" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'hours', $event.target.value)">
+                                    <select class="select-hour" :value="dayData.hours" :disabled="loading" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'hours', $event.target.value)">
                                         <template x-for="h in listaHorarios" :key="h">
                                             <option :value="h" x-text="h" :selected="dayData.hours === h"></option>
                                         </template>
                                     </select>
 
                                     <!-- Checkbox Sustitución -->
-                                    <input type="checkbox" class="sub-radio" :checked="dayData.isSub" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'isSub', $event.target.checked)">
+                                    <input type="checkbox" class="sub-radio" :checked="dayData.isSub" :disabled="loading" @change="guardarCambio(row.parking, row.turno, dayData.dia, 'isSub', $event.target.checked)">
                                 </div>
                             </td>
                         </template>

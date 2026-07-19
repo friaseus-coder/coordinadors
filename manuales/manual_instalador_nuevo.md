@@ -21,7 +21,11 @@ Este manual detalla los pasos para crear, configurar y distribuir el ejecutable 
 ### v1.4.0 — 2026-07-19
 *   **ACTUALIZACIÓN — Separación de Datos Maestros y Transaccionalidad:**
     *   El módulo de **Datos Maestros** (Aparcamientos y Empleados) se ha extraído de `migrador.html` a su propia vista dedicada `src/maestros/maestros.html`.
-    *   **Transaccionalidad Real en Backend (`main.js`):** La importación de Empleados y Aparcamientos ahora delega la doble escritura atómica al proceso principal, usando `ATTACH DATABASE` y bloqueos `BEGIN TRANSACTION / COMMIT` de SQLite nativo para prevenir datos corruptos.
+    *   **Transaccionalidad Atómica Multishard (`main.js`):** La importación de Empleados y Aparcamientos ahora usa `ATTACH DATABASE` y bloqueos instantáneos con `BEGIN IMMEDIATE TRANSACTION` nativo de SQLite para prevenir _deadlocks_ y corrupción.
+*   **ACTUALIZACIÓN — Control de Concurrencia Optimista (OCC):**
+    *   Implementado en la tabla interactiva de `empleados` en el panel de maestros (vía Alpine.js). Utiliza una columna de `version` para evitar colisiones _Last-Write-Wins_ (el sistema bloquea sobreescrituras si la versión cambió).
+*   **ACTUALIZACIÓN — Consolidación de Esquemas Financieros:**
+    *   Fusión del esquema experimental de `inventario_relacional` directamente dentro de `schema_finanzas.sql`. Eliminación de `schema_finanzas_v2.sql` por redundancia.
 
 ### v1.3.0 — 2026-07-18
 *   **NUEVO — Asistente de Migración de Datos Históricos (`migrador.html`):**

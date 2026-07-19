@@ -165,6 +165,8 @@ Para evitar la corrupción de datos que ocurre cuando múltiples instancias de S
 > [!IMPORTANT]
 > **Bloqueos y Concurrencia**:
 > *   **Mutex de Red (`_<dbKey>.lock`)**: Control físico de bajo nivel a nivel de archivo SQLite para evitar corrupción de base de datos durante operaciones de escritura rápidas. Cuenta con auto-caducidad de 3 minutos y posibilidad de desbloqueo manual forzado por parte del Jefe de Operaciones.
+> *   **Doble Escritura Multishard**: Operaciones complejas que afectan a múltiples bases de datos a la vez (ej. asistentes de importación) utilizan `ATTACH DATABASE` junto con `BEGIN IMMEDIATE TRANSACTION` para asegurar la atomicidad y prevenir deadlocks.
+> *   **Control de Concurrencia Optimista (OCC)**: Implementado en las tablas interactivas (como `empleados`). Se basa en una columna `version` que se incrementa en cada actualización, rechazando escrituras que presenten colisión de versiones con un error `CONFLICT`.
 > *   **Concurrencia Cooperativa Relacional**: Las funciones heredadas de bloqueo relacional cooperativo visual (`~quadrant_[coord].lock`) y cálculo de alertas han sido inhabilitadas para permitir edición concurrente libre a nivel de UI, delegando la consistencia en el mutex físico.
 
 ---
@@ -232,14 +234,12 @@ Centraliza el registro contable de caja chica (gastos) y el control de materiale
     *   `concepto` (TEXT - concepto o descripción del gasto)
     *   `importe` (REAL - importe económico del movimiento)
     *   `json_detalles` (TEXT - metadatos estructurados en formato JSON: origen, destino, kms, estado, etc.)
-*   **`inventari`**: Control de uniformes y materiales entregados a trabajadores.
-    *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
-    *   `comercial` (TEXT)
-    *   `articulo` (TEXT)
-    *   `fecha_entrega` (TEXT - YYYY-MM-DD)
-    *   `estado` (TEXT)
-    *   `observaciones` (TEXT)
-    *   `activo` (INTEGER - 0 o 1)
+*   **`inventari`**: Control legacy de uniformes y materiales entregados a trabajadores.
+*   **Inventario Relacional Consolidado**: Tablas agregadas a `schema_finanzas.sql` para soportar control avanzado y control de concurrencia optimista (OCC).
+    *   **`inventario_articulos`**: Catálogo base (`referencia`, `nombre`, `categoria`).
+    *   **`inventario_almacenes`**: Lugares físicos de almacenaje.
+    *   **`inventario_existencias`**: Stock cruzado entre artículo y almacén. Incluye la columna `version INTEGER DEFAULT 1` para el control de concurrencia optimista y control de dobles descuentos accidentales.
+    *   **`inventario_comandas`**: Historial de pedidos y entregas (`data`, `centre`, `uds`, `estat`).
 *   **Índices de rendimiento:**
     *   `idx_mov_economicos_filtro` ON `movimientos_economicos(tipo_movimiento, fecha)` — Optimiza filtrados por tipo y fecha.
     *   `idx_mov_economicos_usuario` ON `movimientos_economicos(id_usuario)` — Optimiza búsquedas por usuario.
@@ -281,6 +281,7 @@ Contiene la parametrización global del grupo (sociedades, parkings, contratos, 
     *   `email` (TEXT) — Dirección de correo
     *   `rol` (TEXT NOT NULL) — Rol de acceso ('Trabajador', 'Coordinador', 'Comercial', 'Admin')
     *   `activo` (INTEGER DEFAULT 1)
+    *   `version` (INTEGER DEFAULT 1) — Para el Control de Concurrencia Optimista (OCC)
     *   `json_preferencias` (TEXT) — Preferencias operativas: `{"centre": "...", "torn": "...", "zona": "..."}`
 *   **`contratos_agentes`**: Historial de vinculaciones de sociedades con agentes (para control de incompatibilidades en cuadrante).
     *   `id` (INTEGER PRIMARY KEY AUTOINCREMENT)
@@ -425,9 +426,11 @@ INSERT OR IGNORE INTO aparcamientos (numero_obra, nombre, zona, es_remotizado,
 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 ```
 
-#### A.2 Panel de Empleados — Doble Inserción (CRÍTICO)
+#### A.2 Panel de Empleados — Doble Inserción y Edición OCC
 
-Este panel implementa una **doble escritura sincrónica** por cada fila del JSON: una inserción en `catalogos.empleados` y otra en `operativa.ranking`.
+Este panel se divide en dos modos de gestión:
+1. **Edición Individual Interactiva (Alpine.js + OCC):** Una tabla reactiva que permite buscar, editar y crear empleados uno a uno. Incorpora **Control de Concurrencia Optimista (OCC)** verificando que la `version` del empleado no haya sido alterada por otro usuario durante la edición. Si detecta un desajuste, rechaza el guardado y muestra un *Toast* de advertencia (`CONFLICTO`).
+2. **Importación Masiva (CRÍTICA):** Implementa una **doble escritura sincrónica** por cada fila de un JSON subido: una inserción en `catalogos.empleados` y otra en `operativa.ranking`.
 
 **Exportar / Plantilla (formato bidireccional):**
 Al pulsar *Descargar Datos Actuales*, se fusionan automáticamente los datos de `catalogos.empleados` con los de `operativa.ranking`, se deserializa `json_preferencias` en campos planos (`centre`, `societat`, `torn`, `zona`) y se produce un JSON en el formato exacto de la plantilla. Esto permite el ciclo completo: **Descargar → Editar en Excel → Reimportar**.

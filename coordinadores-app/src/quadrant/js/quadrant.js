@@ -53,6 +53,9 @@ document.addEventListener('alpine:init', () => {
         // Reloj en tiempo real
         reloj: '',
 
+        // UI Lockout
+        loading: false,
+
         async init() {
             this.iniciarReloj();
             await this.cargarCatalogos();
@@ -257,7 +260,8 @@ document.addEventListener('alpine:init', () => {
         },
 
         async guardarCambio(park, turno, dia, field, value) {
-            if (this.isMonthLocked()) return;
+            if (this.isMonthLocked() || this.loading) return;
+            this.loading = true;
             try {
                 const mesNum = (parseInt(this.filtros.mes) + 1).toString().padStart(2, '0');
                 const diaNum = dia.toString().padStart(2, '0');
@@ -334,13 +338,18 @@ document.addEventListener('alpine:init', () => {
                 await this.cargarCuadrantes();
             } catch (err) {
                 console.error("Error guardando celda:", err);
+            } finally {
+                this.loading = false;
             }
         },
 
         async resolverConflicto(action) {
+            if (this.loading) return;
+            this.loading = true;
             this.showConflictModal = false;
-            if (action === 'refresh') {
-                await this.cargarCuadrantes();
+            try {
+                if (action === 'refresh') {
+                    await this.cargarCuadrantes();
             } else if (action === 'force') {
                 if (this.pendingConflictSave) {
                     // Actualizamos la versión del cliente con la versión devuelta por el servidor
@@ -352,9 +361,13 @@ document.addEventListener('alpine:init', () => {
                         await this.cargarCuadrantes();
                     }
                 }
+                this.pendingConflictSave = null;
+                this.conflictData = null;
+            } catch(err) {
+                console.error("Error resolviendo conflicto:", err);
+            } finally {
+                this.loading = false;
             }
-            this.pendingConflictSave = null;
-            this.conflictData = null;
         },
 
         /**

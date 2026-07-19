@@ -487,6 +487,7 @@ function empleadosManager() {
         empleados: [],
         newEmp: { nombre: '', rol: 'Trabajador' },
         toast: { show: false, message: '', type: '' },
+        loading: false,
 
         get filteredEmpleados() {
             if (this.search === '') return this.empleados;
@@ -521,6 +522,7 @@ function empleadosManager() {
         },
 
         async saveEmpleado(emp) {
+            this.loading = true;
             try {
                 // OCC Update
                 const query = "UPDATE empleados SET nombre = ?, email = ?, rol = ?, activo = ?, version = version + 1 WHERE id = ? AND version = ?";
@@ -545,10 +547,13 @@ function empleadosManager() {
                 } else {
                     this.showToast('❌ Error: ' + err.message, 'error');
                 }
+            } finally {
+                this.loading = false;
             }
         },
 
         async crearEmpleado() {
+            this.loading = true;
             try {
                 const query = "INSERT INTO empleados (nombre, rol, activo, version) VALUES (?, ?, 1, 1)";
                 const params = [this.newEmp.nombre, this.newEmp.rol];
@@ -563,6 +568,8 @@ function empleadosManager() {
                 }
             } catch (err) {
                 this.showToast('❌ Error: ' + err.message, 'error');
+            } finally {
+                this.loading = false;
             }
         },
 

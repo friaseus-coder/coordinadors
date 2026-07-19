@@ -498,9 +498,10 @@
                                 <td style="padding: 10px; text-align: right;">
                                     <button class="btn btn-amber" 
                                             style="padding: 6px 12px; font-size: 11px;"
-                                            :disabled="!emp.isDirty"
+                                            :disabled="!emp.isDirty || loading"
                                             @click="saveEmpleado(emp)">
-                                        💾 Guardar
+                                        <span x-show="!loading">💾 Guardar</span>
+                                        <span x-show="loading">⏳ Guardando...</span>
                                     </button>
                                 </td>
                             </tr>
@@ -522,8 +523,9 @@
                     <option value="Comercial">Comercial</option>
                     <option value="Admin">Admin</option>
                 </select>
-                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;" :disabled="!newEmp.nombre.trim()" @click="crearEmpleado()">
-                    Añadir
+                <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 11px;" :disabled="!newEmp.nombre.trim() || loading" @click="crearEmpleado()">
+                    <span x-show="!loading">Añadir</span>
+                    <span x-show="loading">⏳...</span>
                 </button>
             </div>
 

@@ -21,6 +21,7 @@ Gestionado individualmente desde los modales de administración en `portal.html`
 | **Email** | `catalogos_maestros.db` | `empleados` | `email` | `TEXT` | Correo electrónico de contacto. |
 | **Rol** | `catalogos_maestros.db` | `empleados` | `rol` | `TEXT` | Roles válidos: `Trabajador`, `Coordinador`, `Comercial`, `Admin`. |
 | **Activo / Estado** | `catalogos_maestros.db` | `empleados` | `activo` | `INTEGER` | `1` = Activo, `0` = Inactivo / Baja. |
+| **Versión (OCC)** | `catalogos_maestros.db` | `empleados` | `version` | `INTEGER` | `1` por defecto. Se incrementa en cada actualización para prevenir colisiones de concurrencia. |
 | **Preferencia Centro/Turno/Zona** | `catalogos_maestros.db` | `empleados` | `json_preferencias` | `TEXT` | Objeto JSON: `{"centre": "...", "torn": "...", "zona": "..."}`. |
 
 ### B. Gestión de Sociedades (Empresas del Grupo)
@@ -140,14 +141,20 @@ Gestionado en el mapa y calendario interactivo de rutas de comerciales (`ruta.ht
 ## 8. Módulo: Inventarios, Stock y Pedidos
 Gestionado en la herramienta de inventariado de oficinas y parkings (`inventari.html`).
 
-*Debido a la flexibilidad del módulo, todos sus datos se guardan en un único documento JSON serializado en la columna `value` con la clave (`key`) `dades [Usuario_Sesión]/inventari`.*
+*Se ha consolidado el modelo en tablas relacionales estructuradas dentro de `finanzas_inventario.db` (Fase 3), abandonando el antiguo almacén JSON KV.*
 
-| Bloque JSON / Interfaz | Base de Datos SQLite | Tabla Física | Columna Física (JSON) | Tipo de Dato | Estructura interna |
+| Campo en Interfaz (UI) | Base de Datos SQLite | Tabla Física | Columna Física | Tipo de Dato | Observaciones |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Catálogo de Material** | `finanzas_inventario.db` | `kv_store` | `value` | `TEXT` | Lista de referencias: `[{"ref": "M-01", "nom": "Papel A4", "cat": "MATERIAL OFIMÀTIC"}]`. |
-| **Stock en Almacén** | `finanzas_inventario.db` | `kv_store` | `value` | `TEXT` | Ubicación y unidades: `[{"id": 1, "ref": "M-01", "magatzem": "CÒRSEGA", "stock": 10}]`. |
-| **Pedidos Realizados** | `finanzas_inventario.db` | `kv_store` | `value` | `TEXT` | Pedidos de centros: `[{"id": 1, "ref": "M-01", "centre": "NN ARAGÓ", "qty": 1, "data": "2026-07-03", "estat": "Enviat"}]`. |
-| **Almacenes** | `finanzas_inventario.db` | `kv_store` | `value` | `TEXT` | Array de texto: `["OFICINES", "PROVENÇA", "CÒRSEGA"]`. |
+| **Catálogo: Referencia** | `finanzas_inventario.db` | `inventario_articulos` | `referencia` | `TEXT` | Código único de artículo (ej. `M-01`). |
+| **Catálogo: Nombre** | `finanzas_inventario.db` | `inventario_articulos` | `nombre` | `TEXT` | Nombre del artículo (ej. `Papel A4`). |
+| **Catálogo: Categoría** | `finanzas_inventario.db` | `inventario_articulos` | `categoria` | `TEXT` | Categoría (ej. `MATERIAL OFIMÀTIC`). |
+| **Almacenes** | `finanzas_inventario.db` | `inventario_almacenes` | `nombre` | `TEXT` | Lugares físicos (`OFICINES`, `PROVENÇA`, etc). |
+| **Stock Actual** | `finanzas_inventario.db` | `inventario_existencias` | `stock` | `INTEGER` | Unidades disponibles del artículo en ese almacén. |
+| **Versión Stock (OCC)** | `finanzas_inventario.db` | `inventario_existencias` | `version` | `INTEGER` | Usado para evitar dobles descuentos concurrentes. |
+| **Pedido: Fecha** | `finanzas_inventario.db` | `inventario_comandas` | `data` | `TEXT` | Fecha del pedido (`YYYY-MM-DD`). |
+| **Pedido: Centro** | `finanzas_inventario.db` | `inventario_comandas` | `centre` | `TEXT` | Centro destino del pedido. |
+| **Pedido: Unidades** | `finanzas_inventario.db` | `inventario_comandas` | `uds` | `INTEGER` | Cantidad pedida. |
+| **Pedido: Estado** | `finanzas_inventario.db` | `inventario_comandas` | `estat` | `TEXT` | `pendent` o `enviat`. |
 
 ---
 

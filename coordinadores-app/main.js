@@ -421,7 +421,7 @@ async function safeWriteCombined(dbKey, query, params, occVersion) {
     });
 
     await new Promise((resolve, reject) => {
-      netDb.run("PRAGMA journal_mode = DELETE;", (err) => {
+      netDb.run("PRAGMA journal_mode = TRUNCATE;", (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -524,7 +524,7 @@ async function safeWriteBatch(dbKey, operations) {
     });
 
     await new Promise((resolve, reject) => {
-      netDb.run("PRAGMA journal_mode = DELETE;", (err) => {
+      netDb.run("PRAGMA journal_mode = TRUNCATE;", (err) => {
         if (err) reject(err);
         else resolve();
       });
@@ -3671,7 +3671,15 @@ ipcMain.handle('importar-empleados-maestros', async (event, datos, modo) => {
           if (err) return reject(err);
         });
 
-        catDb.run(`ATTACH DATABASE ? AS operativa`, [operativaPath], (err) => {
+        // ATENCIÓN (RESOLUCIÓN DE BLOQUEOS MASTER JOURNAL -mj):
+        // SQLite utiliza un protocolo Two-Phase Commit en bases de datos adjuntas, creando temporalmente
+        // un archivo master journal con extensión -mj. Si la red sufre un microcorte en el instante del COMMIT,
+        // el archivo -mj puede quedar huérfano y bloquear accesos futuros de escritura de forma preventiva.
+        // Solución técnica: Ante un bloqueo persistente inexplicable tras una caída física de red,
+        // se debe revisar el servidor SMB de archivos y eliminar de forma segura cualquier residuo con extensión -mj
+        // que haya quedado en la carpeta de la base de datos de red.
+        const sanitizedOperativaPath = operativaPath.replace(/\\/g, '/');
+        catDb.run(`ATTACH DATABASE '${sanitizedOperativaPath}' AS operativa;`, (err) => {
           if (err) {
             catDb.run('ROLLBACK');
             return reject(new Error("Error adjuntando operativa.db: " + err.message));
