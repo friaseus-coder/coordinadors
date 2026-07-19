@@ -244,28 +244,24 @@
             <template x-for="c in comercialesFiltrados" :key="c.id">
                 <tr>
                     <!-- Modo Normal -->
-                    <template x-if="!c.editing">
-                        <td class="font-bold text-gray-800" x-text="c.aparcamiento"></td>
-                        <td :class="getColorDP(c.vacantes)" x-text="c.vacantes"></td>
-                        <td class="font-bold text-gray-800" x-text="c.tarifa"></td>
-                        <td class="text-gray-500 text-xs" x-html="c.observaciones"></td>
-                        <td x-show="canEdit()" class="text-center">
-                            <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto mr-1" @click="c.editing = true"><i class="fas fa-edit"></i></button>
-                            <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto text-red-600 border-red-200 hover:bg-red-50" @click="eliminarComercial(c.id)"><i class="fas fa-trash-alt"></i></button>
-                        </td>
-                    </template>
+                    <td x-show="!c.editing" class="font-bold text-gray-800" x-text="c.aparcamiento"></td>
+                    <td x-show="!c.editing" :class="getColorDP(c.vacantes)" x-text="c.vacantes"></td>
+                    <td x-show="!c.editing" class="font-bold text-gray-800" x-text="c.tarifa"></td>
+                    <td x-show="!c.editing" class="text-gray-500 text-xs" x-html="c.observaciones"></td>
+                    <td x-show="!c.editing && canEdit()" class="text-center">
+                        <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto mr-1" @click="c.editing = true"><i class="fas fa-edit"></i></button>
+                        <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto text-red-600 border-red-200 hover:bg-red-50" @click="eliminarComercial(c.id)"><i class="fas fa-trash-alt"></i></button>
+                    </td>
  
                     <!-- Modo Edición Inline -->
-                    <template x-if="c.editing">
-                        <td><input type="text" x-model="c.aparcamiento" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.vacantes" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.tarifa" style="width: 100%;"></td>
-                        <td><input type="text" x-model="c.observaciones" style="width: 100%;"></td>
-                        <td class="text-center">
-                            <button class="btn-nyn text-xs px-2 py-0.5 h-auto mr-1" @click="guardarEdicion(c)"><i class="fas fa-check"></i></button>
-                            <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto" @click="c.editing = false"><i class="fas fa-times"></i></button>
-                        </td>
-                    </template>
+                    <td x-show="c.editing" x-cloak><input type="text" x-model="c.aparcamiento" style="width: 100%;"></td>
+                    <td x-show="c.editing" x-cloak><input type="text" x-model="c.vacantes" style="width: 100%;"></td>
+                    <td x-show="c.editing" x-cloak><input type="text" x-model="c.tarifa" style="width: 100%;"></td>
+                    <td x-show="c.editing" x-cloak><input type="text" x-model="c.observaciones" style="width: 100%;"></td>
+                    <td x-show="c.editing" x-cloak class="text-center">
+                        <button class="btn-nyn text-xs px-2 py-0.5 h-auto mr-1" @click="guardarEdicion(c)"><i class="fas fa-check"></i></button>
+                        <button class="btn-nyn btn-secondary text-xs px-2 py-0.5 h-auto" @click="c.editing = false"><i class="fas fa-times"></i></button>
+                    </td>
                 </tr>
             </template>
             <template x-if="comercialesFiltrados.length === 0">
