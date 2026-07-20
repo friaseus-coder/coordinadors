@@ -2322,15 +2322,144 @@ ipcMain.handle('rename-aparcamiento', async (event, oldName, newName) => {
 ipcMain.handle('import-json-data', async (event, coordFolder, fileName, jsonContent) => {
   try {
     const relativePath = `${coordFolder}/${fileName}`;
-    const db = await getDatabaseForCoordinator(coordFolder);
+    const dbOp = obtenerConexionLocal('operativa');
     
     // Validar que el jsonContent es válido parseándolo
     const data = typeof jsonContent === 'string' ? JSON.parse(jsonContent) : jsonContent;
     
-    await dbRun(db, 'INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)', [
-      relativePath,
-      JSON.stringify(data)
-    ]);
+    // Insertar en kv_store en operativa_rrhh.db
+    await new Promise((resolve, reject) => {
+      dbOp.run('INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)', [
+        relativePath,
+        JSON.stringify(data)
+      ], function(err) {
+        if (err) reject(err);
+        else resolve(this);
+      });
+    });
+
+    // === MIGRACIÓN A TABLA RELACIONAL quadrant ===
+    // Si el JSON contiene claves nyn_v12_*, es un cuadrante de turnos y debe
+    // migrar a la tabla quadrant de operativa_rrhh.db para que sea visible en pantalla
+    const tieneClavesCuadrante = Object.keys(data).some(k => k.startsWith('nyn_v12_') || k.startsWith('nyn_v10_') || k.startsWith('nyn_v9_'));
+    if (tieneClavesCuadrante) {
+      console.log(`[SQLITE-IMPORT] Detectado JSON de cuadrante: ${fileName}. Migrando a tabla relacional quadrant...`);
+      try {
+        // Leer empleados y aparcamientos para el mapeo nombre -> id (ambos disponibles a través de dbOp por el ATTACH)
+        const empleados = await new Promise((resolve, reject) => {
+          dbOp.all("SELECT id, nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador'", [], (err, rows) => {
+            if (err) reject(err); else resolve(rows);
+          });
+        });
+
+        const parkings = await new Promise((resolve, reject) => {
+          dbOp.all("SELECT id, nombre FROM aparcamientos WHERE activo = 1", [], (err, rows) => {
+            if (err) reject(err); else resolve(rows);
+          });
+        });
+
+        const empleadosMap = new Map(empleados.map(e => [e.nombre.toUpperCase().trim(), e.id]));
+        const parkingsMap  = new Map(parkings.map(p  => [p.nombre.toUpperCase().trim(), p.id]));
+
+        let insertados = 0;
+        let sinAgenteMap = new Set();
+        let sinParkingMap = new Set();
+
+        await new Promise((resolve, reject) => {
+          dbOp.run('BEGIN IMMEDIATE TRANSACTION', (err) => {
+            if (err) reject(err); else resolve();
+          });
+        });
+
+        try {
+          const stmt = dbOp.prepare(`
+            INSERT OR REPLACE INTO quadrant 
+              (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, es_substitucio, nota)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `);
+
+          for (const [key, value] of Object.entries(data)) {
+            // Solo claves de turno: nyn_v12_YYYY_MM_PARKING_TURNO_DIA
+            if (!key.startsWith('nyn_v12_') && !key.startsWith('nyn_v10_') && !key.startsWith('nyn_v9_')) continue;
+
+            const parts = key.split('_');
+            // Estructura mínima: nyn_vXX_YYYY_MM_PARKING_TURNO_DIA → al menos 7 partes
+            if (parts.length < 7) continue;
+
+            const año   = parts[2];
+            const mes   = parts[3];
+            const dia   = parts[parts.length - 1];
+            const turno = parts[parts.length - 2]; // MATÍ, TARDA, NIT
+            const nombreParking = parts.slice(4, parts.length - 2).join(' ').toUpperCase();
+
+            let cellData = {};
+            try {
+              cellData = typeof value === 'string' ? JSON.parse(value) : value;
+            } catch (e) { continue; }
+
+            const wName = (cellData.w || '-').trim();
+            if (wName === '-' || wName === '') continue; // celda vacía
+
+            const esSub   = cellData.s ? 1 : 0;
+            const notaText = cellData.n || '';
+            const hRange  = (cellData.h || '').trim();
+            const hoursParts = hRange.replace(/H/gi, '').split('-');
+            const horaRaw0  = (hoursParts[0] || '06').trim();
+            const horaRaw1  = (hoursParts[1] || '14').trim();
+            // Normalizar: "6" → "06:00", "14" → "14:00"
+            const normalize = h => {
+              const clean = h.replace(/[^0-9]/g, '').padStart(2, '0');
+              return clean.slice(0, 2) + ':00';
+            };
+            const horaInicio = normalize(horaRaw0);
+            const horaFin    = normalize(horaRaw1);
+
+            const mesNum = (Number(mes) + 1).toString().padStart(2, '0');
+            const diaNum = Number(dia).toString().padStart(2, '0');
+            const fechaStr = `${año}-${mesNum}-${diaNum}`;
+
+            // Buscar IDs por nombre (con y sin prefijo "NN ")
+            const parkingId = parkingsMap.get(nombreParking) || parkingsMap.get(nombreParking.replace(/^NN /, ''));
+            const agenteId  = empleadosMap.get(wName.toUpperCase().trim());
+
+            if (!parkingId) { sinParkingMap.add(nombreParking); continue; }
+            if (!agenteId)  { sinAgenteMap.add(wName);   continue; }
+
+            stmt.run(fechaStr, parkingId, agenteId, turno, horaInicio, horaFin, esSub, notaText);
+            insertados++;
+          }
+
+          stmt.finalize();
+
+          await new Promise((resolve, reject) => {
+            dbOp.run('COMMIT', (err) => {
+              if (err) reject(err); else resolve();
+            });
+          });
+        } catch (txErr) {
+          await new Promise((resolve) => {
+            dbOp.run('ROLLBACK', () => resolve());
+          });
+          throw txErr;
+        }
+
+        console.log(`[SQLITE-IMPORT] Migración cuadrante completada: ${insertados} turnos insertados.`);
+        if (sinAgenteMap.size > 0)  console.warn(`[SQLITE-IMPORT] Agentes sin mapear (${sinAgenteMap.size}):`, [...sinAgenteMap].join(', '));
+        if (sinParkingMap.size > 0) console.warn(`[SQLITE-IMPORT] Parkings sin mapear (${sinParkingMap.size}):`, [...sinParkingMap].join(', '));
+
+        console.log(`[SQLITE-IMPORT] Importación manual completada con éxito para: ${relativePath}`);
+        return { 
+          success: true, 
+          insertados,
+          sinAgentes: sinAgenteMap.size, 
+          sinParkings: sinParkingMap.size 
+        };
+      } catch (migrErr) {
+        console.error('[SQLITE-IMPORT] Error en migración relacional quadrant:', migrErr);
+        // No falla todo — la copia en kv_store ya se hizo
+        return { success: true, warning: migrErr.message };
+      }
+    }
 
     // Si es un archivo de Comerciales, migrar también sus datos a la tabla relacional de comerciales.db
     if (fileName.toLowerCase().includes('comercials')) {
@@ -2531,26 +2660,28 @@ ipcMain.handle('migrar-json-cuadrante', async (event, { dataJSON }) => {
   return new Promise(async (resolve) => {
     try {
       const data = typeof dataJSON === 'string' ? JSON.parse(dataJSON) : dataJSON;
+      const dbOp = obtenerConexionLocal('operativa');
       
-      db.serialize(() => {
-        db.run("BEGIN TRANSACTION;");
+      dbOp.serialize(() => {
+        dbOp.run("BEGIN TRANSACTION;");
 
-        db.all("SELECT id, nombre FROM agentes", [], (err, agentes) => {
+        // Leer trabajadores (de la tabla empleados) y aparcamientos
+        dbOp.all("SELECT id, nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador'", [], (err, agentes) => {
           if (err) {
-            db.run("ROLLBACK;");
+            dbOp.run("ROLLBACK;");
             return resolve({ success: false, error: err.message });
           }
 
-          db.all("SELECT id, nombre FROM aparcamientos", [], (err, parkings) => {
+          dbOp.all("SELECT id, nombre FROM aparcamientos WHERE activo = 1", [], (err, parkings) => {
             if (err) {
-              db.run("ROLLBACK;");
+              dbOp.run("ROLLBACK;");
               return resolve({ success: false, error: err.message });
             }
 
-            const agentesMap = new Map(agentes.map(a => [a.nombre.toUpperCase(), a.id]));
-            const parkingsMap = new Map(parkings.map(p => [p.nombre.toUpperCase(), p.id]));
+            const agentesMap = new Map(agentes.map(a => [a.nombre.toUpperCase().trim(), a.id]));
+            const parkingsMap = new Map(parkings.map(p => [p.nombre.toUpperCase().trim(), p.id]));
 
-            const stmt = db.prepare(`
+            const stmt = dbOp.prepare(`
               INSERT OR REPLACE INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, es_substitucio, nota)
               VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             `);
@@ -2560,7 +2691,7 @@ ipcMain.handle('migrar-json-cuadrante', async (event, { dataJSON }) => {
             let parkingsNuevos = new Set();
 
             for (const [key, value] of Object.entries(data)) {
-              if (!key.startsWith('nyn_v12_')) continue;
+              if (!key.startsWith('nyn_v12_') && !key.startsWith('nyn_v10_') && !key.startsWith('nyn_v9_')) continue;
 
               const parts = key.split('_');
               if (parts.length < 7) continue;
@@ -2569,7 +2700,7 @@ ipcMain.handle('migrar-json-cuadrante', async (event, { dataJSON }) => {
               const mes = parts[3];
               const dia = parts[parts.length - 1];
               const turno = parts[parts.length - 2];
-              const nombreParking = parts.slice(4, parts.length - 2).join(' ').toUpperCase();
+              const nombreParking = parts.slice(4, parts.length - 2).join(' ').toUpperCase().trim();
 
               let cellData = {};
               try {
@@ -2585,13 +2716,13 @@ ipcMain.handle('migrar-json-cuadrante', async (event, { dataJSON }) => {
 
               if (wName === "-" || wName === "") continue;
 
-              let parkingId = parkingsMap.get(nombreParking);
+              let parkingId = parkingsMap.get(nombreParking) || parkingsMap.get(nombreParking.replace(/^NN /, ''));
               if (!parkingId) {
                 parkingsNuevos.add(nombreParking);
                 continue;
               }
 
-              let agenteId = agentesMap.get(wName.toUpperCase());
+              let agenteId = agentesMap.get(wName.toUpperCase().trim());
               if (!agenteId) {
                 agentesNuevos.add(wName);
                 continue;
@@ -2612,23 +2743,26 @@ ipcMain.handle('migrar-json-cuadrante', async (event, { dataJSON }) => {
             stmt.finalize();
 
             if (agentesNuevos.size > 0 || parkingsNuevos.size > 0) {
-              // Insertamos los agentes y parkings faltantes preventivamente
-              agentesNuevos.forEach(agName => {
-                db.run("INSERT OR IGNORE INTO agentes (nombre, activo) VALUES (?, 1)", [agName]);
-              });
-              parkingsNuevos.forEach(pkName => {
-                db.run("INSERT OR IGNORE INTO aparcamientos (nombre, sociedad_id, activo) VALUES (?, 1, 1)", [pkName]);
+              // Insertamos los agentes y parkings faltantes preventivamente en 'catalogos_maestros'
+              const dbCat = obtenerConexionLocal('catalogos');
+              dbCat.serialize(() => {
+                agentesNuevos.forEach(agName => {
+                  dbCat.run("INSERT OR IGNORE INTO empleados (nombre, rol, activo) VALUES (?, 'Trabajador', 1)", [agName]);
+                });
+                parkingsNuevos.forEach(pkName => {
+                  dbCat.run("INSERT OR IGNORE INTO aparcamientos (nombre, sociedad_id, activo) VALUES (?, 1, 1)", [pkName]);
+                });
               });
               
-              db.run("ROLLBACK;");
+              dbOp.run("ROLLBACK;");
               resolve({ 
                 success: false, 
-                error: `Catálogos no sincronizados. Hemos insertado preventivamente ${agentesNuevos.size} agentes y ${parkingsNuevos.size} aparcamientos nuevos. Por favor, vuelve a iniciar la importación para migrar los turnos relacionales.`
+                error: `Catálogos no sincronizados. Hemos insertado preventivamente ${agentesNuevos.size} trabajadores y ${parkingsNuevos.size} aparcamientos nuevos. Por favor, vuelve a iniciar la importación para migrar los turnos relacionales.`
               });
             } else {
-              db.run("COMMIT;", (err) => {
+              dbOp.run("COMMIT;", (err) => {
                 if (err) {
-                  db.run("ROLLBACK;");
+                  dbOp.run("ROLLBACK;");
                   resolve({ success: false, error: err.message });
                 } else {
                   resolve({ success: true, total: insertados });

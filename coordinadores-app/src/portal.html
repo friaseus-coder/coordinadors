@@ -897,7 +897,7 @@
                 </div>
             </div>
 
-            <div id="trabajadorList" class="modal-list" style="max-height: 160px; overflow-y: auto; margin-bottom: 16px;"></div>
+            <div id="trabajadorList" class="modal-list" style="max-height: 320px; overflow-y: auto; overflow-x: auto; margin-bottom: 16px;"></div>
             
             <div class="modal-footer" style="display: flex; justify-content: flex-end;">
                 <button class="btn-close-modal" onclick="closeTrabajadorModal()" data-i18n="btnClose">Tancar</button>
@@ -1032,30 +1032,72 @@
             document.querySelectorAll('iframe').forEach(iframe => {
                 iframe.addEventListener('load', () => {
                     try {
-                        if (window.api) {
-                            let newlyInjected = false;
-                            if (!iframe.contentWindow.api) {
-                                try {
-                                    iframe.contentWindow.api = window.api;
-                                    newlyInjected = true;
-                                } catch (err) {
-                                    console.warn('[PORTAL] No se pudo asignar api en contentWindow:', err);
-                                }
+                        let newlyInjected = false;
+                        
+                        // Inyectar api
+                        if (window.api && !iframe.contentWindow.api) {
+                            try {
+                                iframe.contentWindow.api = window.api;
+                                newlyInjected = true;
+                            } catch (err) {
+                                console.warn('[PORTAL] No se pudo asignar api en contentWindow:', err);
                             }
-                            console.log(`[PORTAL] Inicializando iframe: ${iframe.parentNode.id}, newlyInjected=${newlyInjected}`);
-                            if (newlyInjected) {
-                                if (iframe.contentWindow.load) {
-                                    iframe.contentWindow.load();
-                                } else if (iframe.contentWindow.inicialitzar) {
-                                    iframe.contentWindow.inicialitzar();
-                                } else if (iframe.contentWindow.carregar) {
-                                    iframe.contentWindow.carregar();
-                                }
+                        }
+                        
+                        // Inyectar dbAPI
+                        if (window.dbAPI && !iframe.contentWindow.dbAPI) {
+                            try {
+                                iframe.contentWindow.dbAPI = window.dbAPI;
+                                newlyInjected = true;
+                            } catch (err) {
+                                console.warn('[PORTAL] No se pudo asignar dbAPI en contentWindow:', err);
+                            }
+                        }
+                        
+                        // Inyectar databaseAPI
+                        if (window.databaseAPI && !iframe.contentWindow.databaseAPI) {
+                            try {
+                                iframe.contentWindow.databaseAPI = window.databaseAPI;
+                                newlyInjected = true;
+                            } catch (err) {
+                                console.warn('[PORTAL] No se pudo asignar databaseAPI en contentWindow:', err);
+                            }
+                        }
+                        
+                        // Inyectar configAPI
+                        if (window.configAPI && !iframe.contentWindow.configAPI) {
+                            try {
+                                iframe.contentWindow.configAPI = window.configAPI;
+                                newlyInjected = true;
+                            } catch (err) {
+                                console.warn('[PORTAL] No se pudo asignar configAPI en contentWindow:', err);
+                            }
+                        }
+
+                        console.log(`[PORTAL] Inicializando iframe: ${iframe.parentNode.id}, newlyInjected=${newlyInjected}`);
+                        
+                        // Solo llamamos a inicializar si alguna API fue recién inyectada o ya existía
+                        if (newlyInjected || iframe.contentWindow.api) {
+                            if (iframe.contentWindow.load) {
+                                iframe.contentWindow.load();
+                            } else if (iframe.contentWindow.inicialitzar) {
+                                iframe.contentWindow.inicialitzar();
+                            } else if (iframe.contentWindow.carregar) {
+                                iframe.contentWindow.carregar();
                             }
                         }
                     } catch (e) {
                         console.warn('[PORTAL] Error al procesar la carga del iframe:', e);
                     }
+                });
+
+                // FIX ELECTRON: Dar foco al iframe al pasar el cursor para que los selects funcionen al primer clic
+                iframe.addEventListener('mouseenter', () => {
+                    try {
+                        if (iframe.contentWindow) {
+                            iframe.contentWindow.focus();
+                        }
+                    } catch(e) {}
                 });
             });
 
@@ -1992,45 +2034,62 @@
                     return;
                 }
                 
-                trabajadores.forEach(t => {
-                    const item = document.createElement('div');
-                    item.className = 'modal-list-item';
-                    item.style.display = 'flex';
-                    item.style.justifyContent = 'space-between';
-                    item.style.alignItems = 'center';
-                    item.style.padding = '8px 12px';
-                    item.style.borderBottom = '1px solid #f1f5f9';
-                    
+                // Crear tabla formal
+                const table = document.createElement('table');
+                table.style.cssText = 'width:100%; border-collapse:collapse; font-size:11px;';
+                
+                // Cabecera
+                table.innerHTML = `
+                    <thead>
+                        <tr style="background:#f1f5f9; border-bottom:2px solid #e2e8f0;">
+                            <th style="padding:8px 10px; text-align:left; font-weight:700; color:#0f2d4a; white-space:nowrap;">Nom</th>
+                            <th style="padding:8px 10px; text-align:left; font-weight:700; color:#0f2d4a;">Rol</th>
+                            <th style="padding:8px 10px; text-align:left; font-weight:700; color:#0f2d4a;">Email</th>
+                            <th style="padding:8px 10px; text-align:left; font-weight:700; color:#0f2d4a;">Centre</th>
+                            <th style="padding:8px 10px; text-align:left; font-weight:700; color:#0f2d4a;">Torn</th>
+                            <th style="padding:8px 10px; text-align:left; font-weight:700; color:#0f2d4a;">Zona</th>
+                            <th style="padding:8px 10px; text-align:center; font-weight:700; color:#0f2d4a;">Estat</th>
+                            <th style="padding:8px 10px; text-align:center; font-weight:700; color:#0f2d4a;">Accions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="trabajadorTableBody"></tbody>
+                `;
+                list.appendChild(table);
+                const tbody = table.querySelector('#trabajadorTableBody');
+
+                trabajadores.forEach((t, idx) => {
                     let prefs = {};
                     try {
-                        if (t.json_preferencias) {
-                            prefs = JSON.parse(t.json_preferencias);
-                        }
+                        if (t.json_preferencias) prefs = JSON.parse(t.json_preferencias);
                     } catch (e) {}
 
-                    const extraInfo = [];
-                    if (t.email) extraInfo.push(t.email);
-                    if (prefs.centre) extraInfo.push(`📍 ${prefs.centre}`);
-                    if (prefs.torn) extraInfo.push(`⏰ ${prefs.torn}`);
-                    if (prefs.zona) extraInfo.push(`🗺️ ${prefs.zona}`);
-                    
-                    const extraStr = extraInfo.length > 0 ? `<div style="font-size: 10px; color: #64748b; margin-top: 2px;">${extraInfo.join(' | ')}</div>` : '';
-                    
-                    item.innerHTML = `
-                        <div style="flex: 1; min-width: 0; padding-right: 12px;">
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <span style="font-weight: 700; color: #0f2d4a; font-size: 13px;">${t.nombre}</span>
-                                <span style="background: #e2e8f0; color: #475569; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px;">${t.rol}</span>
-                                ${!t.activo ? '<span style="background: #fee2e2; color: #b91c1c; font-size: 9px; font-weight: 600; padding: 2px 6px; border-radius: 4px;">Inactiu</span>' : ''}
-                            </div>
-                            ${extraStr}
-                        </div>
-                        <div style="display: flex; gap: 6px; align-items: center; flex-shrink: 0;">
-                            <button class="btn-manage-coord" onclick="cargarTrabajadorEnFormulario(${t.id})" style="background: #e2e8f0; color: #334155; border: 1px solid #cbd5e1; padding: 4px 8px; font-size: 10px; font-weight: 600; border-radius: 6px; cursor: pointer;">✏️ Editar</button>
-                            <button class="btn-remove-coord" onclick="removeTrabajador(${t.id}, '${t.nombre.replace(/'/g, "\\'")}')" style="background: #fee2e2; color: #dc2626; border: none; border-radius: 6px; padding: 4px 10px; font-size: 10px; font-weight: 600; cursor: pointer;">✕</button>
-                        </div>
+                    const tr = document.createElement('tr');
+                    tr.style.cssText = `border-bottom:1px solid #f1f5f9; background:${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};`;
+                    tr.onmouseenter = () => tr.style.background = '#e8f4fe';
+                    tr.onmouseleave = () => tr.style.background = idx % 2 === 0 ? '#ffffff' : '#f8fafc';
+
+                    const rolColor = t.rol === 'Trabajador' ? '#1e40af' : t.rol === 'Admin' ? '#7c3aed' : t.rol === 'Coordinador' ? '#065f46' : '#78350f';
+                    const rolBg    = t.rol === 'Trabajador' ? '#dbeafe' : t.rol === 'Admin' ? '#ede9fe' : t.rol === 'Coordinador' ? '#d1fae5' : '#fef3c7';
+                    const estatBadge = t.activo
+                        ? '<span style="background:#d1fae5;color:#065f46;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;">Actiu</span>'
+                        : '<span style="background:#fee2e2;color:#b91c1c;font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;">Baixa</span>';
+
+                    tr.innerHTML = `
+                        <td style="padding:7px 10px; font-weight:700; color:#0f2d4a; white-space:nowrap;">${t.nombre}</td>
+                        <td style="padding:7px 10px;">
+                            <span style="background:${rolBg};color:${rolColor};font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;">${t.rol}</span>
+                        </td>
+                        <td style="padding:7px 10px; color:#475569; font-size:10px;">${t.email || '<span style="color:#cbd5e1">—</span>'}</td>
+                        <td style="padding:7px 10px; color:#475569; font-size:10px;">${prefs.centre || '<span style="color:#cbd5e1">—</span>'}</td>
+                        <td style="padding:7px 10px; color:#475569; font-size:10px;">${prefs.torn || '<span style="color:#cbd5e1">—</span>'}</td>
+                        <td style="padding:7px 10px; color:#475569; font-size:10px;">${prefs.zona || '<span style="color:#cbd5e1">—</span>'}</td>
+                        <td style="padding:7px 10px; text-align:center;">${estatBadge}</td>
+                        <td style="padding:7px 10px; text-align:center; white-space:nowrap;">
+                            <button onclick="cargarTrabajadorEnFormulario(${t.id})" style="background:#e2e8f0;color:#334155;border:1px solid #cbd5e1;padding:3px 8px;font-size:10px;font-weight:600;border-radius:5px;cursor:pointer;margin-right:4px;">✏️ Editar</button>
+                            <button onclick="removeTrabajador(${t.id}, '${t.nombre.replace(/'/g, "\\'")}') " style="background:#fee2e2;color:#dc2626;border:none;border-radius:5px;padding:3px 8px;font-size:10px;font-weight:600;cursor:pointer;">✕</button>
+                        </td>
                     `;
-                    list.appendChild(item);
+                    tbody.appendChild(tr);
                 });
             } catch (err) {
                 console.error("Error al cargar la lista de trabajadores:", err);

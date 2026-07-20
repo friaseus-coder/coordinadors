@@ -56,7 +56,7 @@
         margin: 0; 
         background: #f8fafc; 
         color: #1e293b;
-        overflow: visible;
+        overflow: hidden;
     }
     
     .sticky-top { 
@@ -240,7 +240,7 @@
         font-weight: 600;
         position: -webkit-sticky; 
         position: sticky; 
-        top: 110px; 
+        top: 0; 
         z-index: 999; 
         border: none;
         border-bottom: 2px solid #0f172a;
@@ -485,7 +485,7 @@
         accent-color: var(--nyn-substitucio-text) !important;
     }
 
-    html, body { overflow: visible !important; height: auto !important; }
+    html, body { height: 100vh; overflow: hidden; }
 </style>
 
 </head>
@@ -506,7 +506,7 @@
             
             <select x-model="filtros.mes" @change="cargarCuadrantes()">
                 <template x-for="(m, i) in ['Gener','Febrer','Març','Abril','Maig','Juny','Juliol','Agost','Setembre','Octubre','Novembre','Desembre']">
-                    <option :value="i" x-text="m"></option>
+                    <option :value="i.toString()" x-text="m"></option>
                 </template>
             </select>
 
@@ -572,9 +572,9 @@
     <i class="fas fa-spinner fa-spin mr-2"></i> Guardando cambios...
 </div>
 
-<div class="flex flex-row overflow-hidden" style="display: flex; flex-direction: row; align-items: stretch; min-height: calc(100vh - 120px); width: 100%;">
+<div class="flex flex-row overflow-hidden" style="display: flex; flex-direction: row; align-items: stretch; height: calc(100vh - var(--sticky-top, 110px)); width: 100%;">
     <!-- Tabla Principal de Cuadrante -->
-    <div class="table-wrapper" style="flex-grow: 1; overflow-x: auto; padding: 16px 24px;">
+    <div class="table-wrapper" style="flex-grow: 1; overflow: auto; padding: 16px 24px; height: 100%; box-sizing: border-box;">
         <table id="mainTable" :class="{ 'month-locked': isMonthLocked() }">
             <thead>
                 <tr>
@@ -913,5 +913,27 @@
 </div>
 
 <script src="./js/quadrant.js"></script>
+<script>
+    // Calcula dinámicamente el offset top del thead sticky
+    function updateStickyTop() {
+        const stickyEl = document.querySelector('.sticky-top');
+        if (stickyEl) {
+            const h = stickyEl.offsetHeight;
+            document.documentElement.style.setProperty('--sticky-top', h + 'px');
+        }
+    }
+    // Ejecutar tras renderizado inicial y en cada resize
+    window.addEventListener('load', updateStickyTop);
+    window.addEventListener('resize', updateStickyTop);
+    // También al cambiar filtros (Alpine puede cambiar la altura del panel)
+    document.addEventListener('alpine:initialized', () => {
+        setTimeout(updateStickyTop, 200);
+        // Observar cambios de tamaño del panel sticky
+        const stickyEl = document.querySelector('.sticky-top');
+        if (stickyEl && window.ResizeObserver) {
+            new ResizeObserver(updateStickyTop).observe(stickyEl);
+        }
+    });
+</script>
 </body>
 </html>
