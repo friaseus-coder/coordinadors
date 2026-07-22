@@ -452,9 +452,9 @@ let aparcamientosInfo = []; // Array de { nombre, coordinador_responsable }
 
 async function loadAddresses() {
     try {
-        let dbApi = window.dbAPI;
-        if (!dbApi && window.parent && window.parent.dbAPI) {
-            dbApi = window.parent.dbAPI;
+        let dbApi = window.api;
+        if (!dbApi && window.parent && window.parent.window.api) {
+            dbApi = window.parent.window.api;
         }
         if (dbApi) {
             aparcamientosInfo = await dbApi.read('catalogos', "SELECT nombre, coordinador_responsable FROM aparcamientos WHERE activo = 1", []);

@@ -429,13 +429,13 @@ const persistence = (() => {
 
       try {
         // 1. Cargar agentes activos para LLISTES.personal
-        const agentes = await window.dbAPI.read('operativa', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+        const agentes = await window.api.read('operativa', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
         const personal = agentes.map(a => a.nombre);
         originalSetItem.call(localStorage, 'nyn_personal', JSON.stringify(["-", ...personal]));
 
         // 2. Cargar aparcamientos asignados para LLISTES.parkings (Todos los centros activos para visibilidad completa de coordinadores)
         const queryParkings = "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC";
-        const parkings = await window.dbAPI.read('operativa', queryParkings, []);
+        const parkings = await window.api.read('operativa', queryParkings, []);
         const parkingsNames = parkings.map(p => p.nombre);
         originalSetItem.call(localStorage, 'nyn_parkings', JSON.stringify(["-", ...parkingsNames]));
 
@@ -450,7 +450,7 @@ const persistence = (() => {
           JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
           WHERE q.fecha >= ? AND q.fecha <= ?
         `;
-        const turnos = await window.dbAPI.read('operativa', queryTurnos, [fechaInicio, fechaFin]);
+        const turnos = await window.api.read('operativa', queryTurnos, [fechaInicio, fechaFin]);
  
         turnos.forEach(row => {
           const dia = parseInt(row.fecha.split('-')[2]);
@@ -465,7 +465,7 @@ const persistence = (() => {
 
         // 4. Cargar marcadores de pendientes del mes desde kv_store
         const keyPendientesPattern = `nyn_pendent_${any}_${mes}_%`;
-        const pendientes = await window.dbAPI.read('operativa', "SELECT key, value FROM kv_store WHERE key LIKE ?", [keyPendientesPattern]);
+        const pendientes = await window.api.read('operativa', "SELECT key, value FROM kv_store WHERE key LIKE ?", [keyPendientesPattern]);
         pendientes.forEach(row => {
           combinedData[row.key] = JSON.parse(row.value);
         });
@@ -486,16 +486,16 @@ const persistence = (() => {
 
       try {
         // Cargar agentes y aparcamientos para LLISTES.centres y LLISTES.plantilla
-        const agentes = await window.dbAPI.read('catalogos', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
+        const agentes = await window.api.read('catalogos', "SELECT nombre FROM agentes WHERE activo = 1 ORDER BY nombre ASC", []);
         const plantilla = agentes.map(a => a.nombre);
         originalSetItem.call(localStorage, 'nyn_plantilla', JSON.stringify(plantilla));
 
-        const parkings = await window.dbAPI.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+        const parkings = await window.api.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
         const centres = parkings.map(p => p.nombre);
         originalSetItem.call(localStorage, 'nyn_centres', JSON.stringify(centres));
 
         // Cargar vacaciones JSON estructuradas de kv_store
-        const rows = await window.dbAPI.read('operativa', "SELECT value FROM kv_store WHERE key = ?", [key]);
+        const rows = await window.api.read('operativa', "SELECT value FROM kv_store WHERE key = ?", [key]);
         if (rows && rows.length > 0 && rows[0].value) {
           combinedData[key] = JSON.parse(rows[0].value);
         } else {
@@ -515,7 +515,7 @@ const persistence = (() => {
     // Caso general para otros módulos (Gastos, etc.) usando la tabla kv_store en el shard correspondiente
     try {
       const dbKey = activeModuleName === 'finanzas' || activeModuleName === 'despeses' || activeModuleName === 'inventari' ? 'finanzas' : 'operativa';
-      const rows = await window.dbAPI.read(dbKey, "SELECT value FROM kv_store WHERE key = ?", [currentFilePath]);
+      const rows = await window.api.read(dbKey, "SELECT value FROM kv_store WHERE key = ?", [currentFilePath]);
       if (rows && rows.length > 0 && rows[0].value) {
         return JSON.parse(rows[0].value);
       }
@@ -555,16 +555,16 @@ const persistence = (() => {
 
             if (trabajador === "-" || trabajador === "") {
               // Buscar ID del aparcamiento para poder eliminar por ID
-              const pRow = await window.dbAPI.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
+              const pRow = await window.api.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
               if (pRow && pRow.length > 0) {
                 const parkingId = pRow[0].id;
                 // Eliminar turno si está vacío
-                await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
+                await window.api.write('operativa', "DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
               }
             } else {
               // Buscar IDs
-              const pRow = await window.dbAPI.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
-              const aRow = await window.dbAPI.read('operativa', "SELECT id FROM agentes WHERE nombre = ?", [trabajador]);
+              const pRow = await window.api.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [nombreParking]);
+              const aRow = await window.api.read('operativa', "SELECT id FROM agentes WHERE nombre = ?", [trabajador]);
 
               if (pRow && pRow.length > 0 && aRow && aRow.length > 0) {
                 const parkingId = pRow[0].id;
@@ -582,15 +582,15 @@ const persistence = (() => {
                 const horasTrabajadas = endHour - startHour;
 
                 // Guardar/Actualizar turno de forma atómica en red
-                const checkRow = await window.dbAPI.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
+                const checkRow = await window.api.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
                 if (checkRow && checkRow.length > 0) {
-                  await window.dbAPI.write('operativa', `
+                  await window.api.write('operativa', `
                     UPDATE quadrant 
                     SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ? 
                     WHERE id = ?
                   `, [agenteId, horaInicio, horaFin, horasTrabajadas, checkRow[0].id]);
                 } else {
-                  await window.dbAPI.write('operativa', `
+                  await window.api.write('operativa', `
                     INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                   `, [fechaStr, parkingId, agenteId, turno, horaInicio, horaFin, horasTrabajadas]);
@@ -599,7 +599,7 @@ const persistence = (() => {
             }
           } else if (key.startsWith('nyn_pendent_')) {
             // Guardar marcador de pendientes del mes en kv_store
-            await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+            await window.api.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
               key, JSON.stringify(value)
             ]);
           }
@@ -626,7 +626,7 @@ const persistence = (() => {
             rawVacances = [];
           }
         }
-        await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+        await window.api.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
           key, JSON.stringify(rawVacances)
         ]);
 
@@ -642,7 +642,7 @@ const persistence = (() => {
     // Caso general para otros módulos, guardando en la tabla kv_store
     try {
       const dbKey = activeModuleName === 'finanzas' || activeModuleName === 'despeses' || activeModuleName === 'inventari' ? 'finanzas' : 'operativa';
-      await window.dbAPI.write(dbKey, "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+      await window.api.write(dbKey, "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
         currentFilePath, JSON.stringify(data)
       ]);
       return true;
@@ -799,7 +799,7 @@ const persistence = (() => {
 async function loadAparcamientos() {
     console.log("Cargando aparcamientos desde SQLite...");
     try {
-        const data = await window.dbAPI.read('catalogos', "SELECT * FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+        const data = await window.api.read('catalogos', "SELECT * FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
         return data || [];
     } catch (e) {
         console.error("Error al cargar aparcamientos:", e);
@@ -811,7 +811,7 @@ async function loadAparcamientos() {
 async function loadCoordinadores() {
     console.log("Cargando personal (empleados) desde SQLite...");
     try {
-        const data = await window.dbAPI.read('catalogos', "SELECT * FROM empleados WHERE activo = 1 ORDER BY nombre ASC", []);
+        const data = await window.api.read('catalogos', "SELECT * FROM empleados WHERE activo = 1 ORDER BY nombre ASC", []);
         return data.map(emp => ({
             id: emp.id,
             nombre: emp.nombre,
@@ -846,7 +846,7 @@ async function loadQuadrant(coordinadorId, month, year) {
       JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
       WHERE q.fecha >= ? AND q.fecha <= ?
     `;
-    const turnosSQLite = await window.dbAPI.read('operativa', query, [startDate, endDate]);
+    const turnosSQLite = await window.api.read('operativa', query, [startDate, endDate]);
     const dataReconstruida = {};
     
     turnosSQLite.forEach(turno => {
@@ -890,15 +890,15 @@ async function saveQuadrant(coordinadorId, month, year, data) {
               const agenteId = agenteObj.id;
               const horasTrabajadas = 8;
               
-              const checkRow = await window.dbAPI.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaSQL, parkingId, turnoTexto]);
+              const checkRow = await window.api.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaSQL, parkingId, turnoTexto]);
               if (checkRow && checkRow.length > 0) {
-                await window.dbAPI.write('operativa', `
+                await window.api.write('operativa', `
                   UPDATE quadrant 
                   SET agente_id = ?, hora_inicio = ?, hora_fin = ?, horas_trabajadas = ? 
                   WHERE id = ?
                 `, [agenteId, hIni, hFin, horasTrabajadas, checkRow[0].id]);
               } else {
-                await window.dbAPI.write('operativa', `
+                await window.api.write('operativa', `
                   INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas)
                   VALUES (?, ?, ?, ?, ?, ?, ?)
                 `, [fechaSQL, parkingId, agenteId, turnoTexto, hIni, hFin, horasTrabajadas]);
@@ -925,7 +925,7 @@ async function loadVacacionesSQLite() {
           WHERE i.tipo_incidencia = 'Vacaciones'
           ORDER BY i.fecha_inicio ASC
         `;
-        return await window.dbAPI.read('operativa', sql, []);
+        return await window.api.read('operativa', sql, []);
     } catch (error) {
         console.error("Error cargando vacaciones SQLite:", error);
         return [];
@@ -934,7 +934,7 @@ async function loadVacacionesSQLite() {
 
 async function saveVacacionSQLite(agenteId, fechaInicio, fechaFin) {
     try {
-        const res = await window.dbAPI.write('operativa', `
+        const res = await window.api.write('operativa', `
             INSERT INTO incidencias_horarias (id_trabajador, fecha_inicio, fecha_fin, tipo_incidencia, estado) 
             VALUES (?, ?, ?, 'Vacaciones', 'Aprobado')
         `, [String(agenteId), fechaInicio, fechaFin]);
@@ -947,7 +947,7 @@ async function saveVacacionSQLite(agenteId, fechaInicio, fechaFin) {
 
 async function deleteVacacionSQLite(id) {
     try {
-        await window.dbAPI.write('operativa', "DELETE FROM incidencias_horarias WHERE id = ?", [id]);
+        await window.api.write('operativa', "DELETE FROM incidencias_horarias WHERE id = ?", [id]);
         return { success: true };
     } catch (error) {
         console.error("Error borrando vacación SQLite:", error);
@@ -964,7 +964,7 @@ async function loadDeutes(coordinadorId) {
           WHERE tipo_incidencia = 'Deuda Horas (-)'
           ORDER BY fecha_inicio DESC
         `;
-        return await window.dbAPI.read('operativa', query, []);
+        return await window.api.read('operativa', query, []);
     } catch (e) {
         console.error(e);
         return [];
@@ -974,9 +974,9 @@ async function loadDeutes(coordinadorId) {
 async function saveDeutes(coordinadorId, data) {
     try {
         if (Array.isArray(data)) {
-            await window.dbAPI.write('operativa', "DELETE FROM incidencias_horarias WHERE tipo_incidencia = 'Deuda Horas (-)'", []);
+            await window.api.write('operativa', "DELETE FROM incidencias_horarias WHERE tipo_incidencia = 'Deuda Horas (-)'", []);
             for (let item of data) {
-                await window.dbAPI.write('operativa', `
+                await window.api.write('operativa', `
                   INSERT INTO incidencias_horarias (id_trabajador, comentarios, impacto_horas, fecha_inicio, tipo_incidencia, estado)
                   VALUES (?, ?, ?, ?, 'Deuda Horas (-)', 'Aprobado')
                 `, [item.comercial, item.cliente, item.import, item.fecha]);
@@ -992,7 +992,7 @@ async function saveDeutes(coordinadorId, data) {
 // --- GASTOS ---
 async function loadDespeses(coordinadorId) {
     try {
-        const rows = await window.dbAPI.read('finanzas', `
+        const rows = await window.api.read('finanzas', `
             SELECT id, fecha, id_usuario as comercial, concepto, importe, json_detalles
             FROM movimientos_economicos
             WHERE tipo_movimiento = 'Gasto Material'
@@ -1024,13 +1024,13 @@ async function loadDespeses(coordinadorId) {
 async function saveDespeses(coordinadorId, data) {
     try {
         if (Array.isArray(data)) {
-            await window.dbAPI.write('finanzas', "DELETE FROM movimientos_economicos WHERE tipo_movimiento = 'Gasto Material'", []);
+            await window.api.write('finanzas', "DELETE FROM movimientos_economicos WHERE tipo_movimiento = 'Gasto Material'", []);
             for (let item of data) {
                 const detalles = JSON.stringify({
                     estado: item.estado,
                     coordinador: item.coordinador
                 });
-                await window.dbAPI.write('finanzas', `
+                await window.api.write('finanzas', `
                   INSERT INTO movimientos_economicos (id_usuario, fecha, tipo_movimiento, concepto, importe, json_detalles)
                   VALUES (?, ?, 'Gasto Material', ?, ?, ?)
                 `, [item.comercial, item.fecha, item.concepto, parseFloat(item.importe) || 0, detalles]);
@@ -1046,7 +1046,7 @@ async function saveDespeses(coordinadorId, data) {
 // --- INVENTARIO ---
 async function loadInventari(coordinadorId) {
     try {
-        return await window.dbAPI.read('finanzas', "SELECT * FROM inventari WHERE activo = 1 ORDER BY fecha_entrega DESC", []);
+        return await window.api.read('finanzas', "SELECT * FROM inventari WHERE activo = 1 ORDER BY fecha_entrega DESC", []);
     } catch (e) {
         console.error(e);
         return [];
@@ -1056,9 +1056,9 @@ async function loadInventari(coordinadorId) {
 async function saveInventari(coordinadorId, data) {
     try {
         if (Array.isArray(data)) {
-            await window.dbAPI.write('finanzas', "DELETE FROM inventari", []);
+            await window.api.write('finanzas', "DELETE FROM inventari", []);
             for (let item of data) {
-                await window.dbAPI.write('finanzas', `
+                await window.api.write('finanzas', `
                   INSERT INTO inventari (comercial, articulo, fecha_entrega, estado, observaciones, activo)
                   VALUES (?, ?, ?, ?, ?, 1)
                 `, [item.comercial, item.articulo, item.fecha_entrega, item.estado, item.observaciones]);

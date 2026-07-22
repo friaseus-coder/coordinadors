@@ -18,15 +18,27 @@ document.addEventListener('alpine:init', () => {
         userRole: sessionStorage.getItem('userRole') || 'coordinador',
 
         async init() {
+            if (window.api && window.api.setSession) {
+                window.api.setSession(this.usuarioActual, this.userRole);
+            }
             await this.cargarCentres();
             await this.carregar();
+
+            if (window.api && window.api.onDataChanged) {
+                window.api.onDataChanged((event) => {
+                    if (event && (event.dbKey === 'finanzas' || event.table?.includes('inventario'))) {
+                        console.log('[INVENTARI UI] Delta extern detectat, actualitzant dades...');
+                        this.carregar();
+                    }
+                });
+            }
         },
 
         async cargarCentres() {
             try {
-                if (window.dbAPI) {
-                    const rows = await window.dbAPI.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
-                    this.centresLlista = [...rows.map(r => r.nombre), "OFICINA CENTRAL"].sort();
+                if (window.api && window.api.maestros) {
+                    const rows = await window.api.maestros.obtenerAparcamientos();
+                    this.centresLlista = [...(rows || []).map(r => r.nombre), "OFICINA CENTRAL"].sort();
                 } else {
                     this.centresLlista = ["OFICINES", "PROVENÇA", "CÒRSEGA", "OFICINA CENTRAL"].sort();
                 }
@@ -53,11 +65,6 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async guardar() {
-            // El guardado masivo ya no se utiliza en el modelo relacional.
-            // Las modificaciones se hacen individualmente para asegurar la atomicidad y control de concurrencia.
-        },
-
         getCatClass(ref) {
             const m = this.dades.cataleg.find(x => x.ref === ref);
             if (!m) return "";
@@ -79,35 +86,24 @@ document.addEventListener('alpine:init', () => {
             if (item) {
                 const newStock = Math.max(0, item.stock + delta);
                 try {
-                    await window.AppServices.Finanzas.Inventario.actualizarStock(stockId, newStock, item.version);
+                    const res = await window.AppServices.Finanzas.Inventario.actualizarStock(stockId, newStock, item.version);
+                    if (res && res.code === 'OCC_CONFLICT') {
+                        alert("⚠️ Conflicte de concurrencia: Algú ha modificat aquest stock abans. S'actualitzaran les dades.");
+                        await this.carregar();
+                        return;
+                    }
                     item.stock = newStock;
                     item.version += 1;
                 } catch(e) {
-                    if (e.message.includes('OCC_CONFLICT')) {
-                        alert("Algú ha modificat aquest stock abans. S'actualitzaran les dades.");
-                    } else {
-                        alert("Error actualitzant stock: " + e.message);
-                    }
+                    alert("Error actualitzant stock: " + e.message);
                     await this.carregar();
                 }
             }
         },
 
-        async canviarMag(stockId, value) {
-            // En versión relacional, no se permite cambiar de almacén al vuelo,
-            // habría que borrar el stock o moverlo. Por ahora, se recargará.
-            await this.carregar();
-        },
-
-        async canviarItemStock(stockId, value) {
-            // Relacional: esto no se soporta al vuelo, se requiere borrar y crear nuevo registro
-            await this.carregar();
-        },
-
         async afegirFilaStock() {
             const articulo_id = prompt("ID del Artículo a añadir (vea el catálogo):");
             if (!articulo_id) return;
-            // Para simplicidad por defecto toma el primer almacén:
             const almacenes = await window.AppServices.Finanzas.Inventario.obtenerAlmacenes();
             if (almacenes.length === 0) return;
             
@@ -150,7 +146,7 @@ document.addEventListener('alpine:init', () => {
 
         async canviarEstat(index) {
             const c = this.dades.comandes[index];
-            const s = this.dades.stock.find(x => x.articulo_id === c.articulo_id && x.magatzem === 'OFICINA CENTRAL'); // O el que pertoqui
+            const s = this.dades.stock.find(x => x.articulo_id === c.articulo_id && x.magatzem === 'OFICINA CENTRAL');
             
             if (c.estat === 'pendent') {
                 if (!s || s.stock < c.uds) {
@@ -169,7 +165,6 @@ document.addEventListener('alpine:init', () => {
                     await this.carregar();
                 }
             } else {
-                // Revertir (només conceptual, necessitaria control de versió sobre s)
                 if (s) {
                     const newStock = s.stock + c.uds;
                     try {
@@ -232,31 +227,6 @@ document.addEventListener('alpine:init', () => {
                     alert("No s'ha pogut esborrar, potser està en ús en l'stock: " + e.message);
                 }
             }
-        },
-
-        exportarJSON() {
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(this.dades)], { type: "application/json" }));
-            a.download = "inventari.json";
-            a.click();
-        },
-
-        importarJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    this.dades = parsed;
-                    await this.guardar();
-                    alert("✅ Inventari importat correctament.");
-                } catch (err) {
-                    console.error(err);
-                    alert("❌ El fitxer seleccionat no és un JSON d'inventari vàlid.");
-                }
-            };
-            reader.readAsText(file);
         }
     }));
 });

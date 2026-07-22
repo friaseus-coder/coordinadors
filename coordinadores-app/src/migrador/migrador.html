@@ -1071,7 +1071,7 @@
 
         // Obtener APIs de Electron de forma segura
         const electronApi = window.api || (window.parent && window.parent.api);
-        const dbApi = window.dbAPI || (window.parent && window.parent.dbAPI);
+        const dbApi = window.api || (window.parent && window.parent.window.api);
 
         async function loadCatalogos() {
             try {
@@ -2312,7 +2312,7 @@
                         });
                     }
 
-                    await window.dbAPI.writeBatch('finanzas', opsGastos);
+                    await window.api.writeBatch('finanzas', opsGastos);
 
                     btn.disabled = false;
                     btn.innerHTML = `🚀 ${isCa ? 'Confirmar i Importar' : 'Confirmar e Importar'}`;

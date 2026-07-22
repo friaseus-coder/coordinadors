@@ -151,7 +151,7 @@
            const selectEl = document.getElementById('notif-parking');
            if (!selectEl) return;
            try {
-               if (window.dbAPI) {
+               if (window.api) {
                    const query = `
                        SELECT a.numero_obra, a.nombre, a.zona, s.nombre_fiscal
                        FROM aparcamientos a
@@ -159,7 +159,7 @@
                        WHERE a.activo = 1
                        ORDER BY a.nombre ASC
                    `;
-                   const rows = await window.dbAPI.read('catalogos', query, []);
+                   const rows = await window.api.read('catalogos', query, []);
                    if (rows && rows.length > 0) {
                        selectEl.innerHTML = '';
                        rows.forEach(p => {

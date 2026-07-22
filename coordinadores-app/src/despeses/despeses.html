@@ -138,6 +138,11 @@
         <div>
             <h2>Gestió de Despeses</h2>
         </div>
+        <div class="no-print">
+            <button @click="importarRutas()" style="background-color: var(--nyn-verd-accent); border-color: var(--nyn-verd-accent);">
+                🔄 Importar Rutas
+            </button>
+        </div>
     </div>
 
     <!-- Formulario de Registro de Gastos -->
@@ -160,6 +165,7 @@
                 <th style="width: 150px;">FECHA</th>
                 <th>CONCEPTO</th>
                 <th style="width: 150px; text-align: right;">IMPORTE</th>
+                <th class="no-print" style="width: 80px; text-align: center;" x-show="userRole === 'admin' || userRole === 'finanzas'">ACCIONES</th>
             </tr>
         </thead>
         <tbody>
@@ -168,11 +174,16 @@
                     <td x-text="gasto.fecha"></td>
                     <td x-text="gasto.concepto"></td>
                     <td style="text-align: right; font-weight: bold; color: var(--nyn-verd-accent);" x-text="parseFloat(gasto.importe).toFixed(2).replace('.', ',') + ' €'"></td>
+                    <td class="no-print" style="text-align: center;" x-show="userRole === 'admin' || userRole === 'finanzas'">
+                        <button @click="eliminarGasto(gasto.id)" style="background: #dc2626; border-color: #dc2626; padding: 4px 8px !important; height: 26px !important; font-size: 11px !important;">
+                            ✕
+                        </button>
+                    </td>
                 </tr>
             </template>
             <template x-if="listaGastos.length === 0">
                 <tr>
-                    <td colspan="3" style="text-align: center; color: #64748b; font-style: italic; padding: 20px;">
+                    <td x-bind:colspan="userRole === 'admin' || userRole === 'finanzas' ? 4 : 3" style="text-align: center; color: #64748b; font-style: italic; padding: 20px;">
                         No hi ha despeses registrades per a aquest període.
                     </td>
                 </tr>

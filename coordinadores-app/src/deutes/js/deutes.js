@@ -17,14 +17,27 @@ document.addEventListener('alpine:init', () => {
         userRole: sessionStorage.getItem('userRole') || 'coordinador',
 
         async init() {
+            if (window.api && window.api.setSession) {
+                window.api.setSession(this.usuarioActual, this.userRole);
+            }
             await this.cargarCatalogos();
             await this.cargarIncidencias();
+
+            if (window.api && window.api.onDataChanged) {
+                window.api.onDataChanged((event) => {
+                    if (event && (event.dbKey === 'operativa' || event.dbKey === 'finanzas' || event.table === 'incidencias_horarias' || event.table === 'deutes')) {
+                        this.cargarIncidencias();
+                    }
+                });
+            }
         },
 
         async cargarCatalogos() {
             try {
-                const rows = await window.dbAPI.read('catalogos', "SELECT nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador' ORDER BY nombre ASC", []);
-                this.listaAgentes = rows.map(r => r.nombre);
+                if (window.api && window.api.maestros) {
+                    const rows = await window.api.maestros.obtenerTrabajadores();
+                    this.listaAgentes = (rows || []).map(r => r.nombre || r);
+                }
             } catch (err) {
                 console.error("Error al cargar agentes:", err);
             }
@@ -32,13 +45,10 @@ document.addEventListener('alpine:init', () => {
 
         async cargarIncidencias() {
             try {
-                const query = `
-                    SELECT * FROM incidencias_horarias 
-                    WHERE tipo_incidencia IN ('Deuda Horas (-)', 'Bolsa Horas (+)')
-                    ORDER BY fecha_inicio DESC
-                `;
-                const rows = await window.dbAPI.read('operativa', query, []);
-                this.incidencias = rows;
+                if (window.api && window.api.deutes) {
+                    const rows = await window.api.deutes.obtener();
+                    this.incidencias = rows || [];
+                }
             } catch (err) {
                 console.error("Error al cargar incidencias:", err);
             }
@@ -50,11 +60,11 @@ document.addEventListener('alpine:init', () => {
                 map[name] = 0;
             });
             this.incidencias.forEach(inc => {
-                const worker = inc.id_trabajador;
+                const worker = inc.id_trabajador || inc.comercial;
                 if (map[worker] === undefined) {
                     map[worker] = 0;
                 }
-                const hrs = Math.abs(parseFloat(inc.impacto_horas || 0));
+                const hrs = Math.abs(parseFloat(inc.impacto_horas || inc.import || 0));
                 if (inc.tipo_incidencia === 'Bolsa Horas (+)') {
                     map[worker] += hrs;
                 } else if (inc.tipo_incidencia === 'Deuda Horas (-)') {
@@ -66,7 +76,8 @@ document.addEventListener('alpine:init', () => {
 
         get incidenciasFiltradas() {
             return this.incidencias.filter(inc => {
-                const coincideAgente = this.filtros.agente === 'ALL' || inc.id_trabajador === this.filtros.agente;
+                const worker = inc.id_trabajador || inc.comercial;
+                const coincideAgente = this.filtros.agente === 'ALL' || worker === this.filtros.agente;
                 const coincideTipo = this.filtros.tipo === 'ALL' || inc.tipo_incidencia === this.filtros.tipo;
                 return coincideAgente && coincideTipo;
             });
@@ -82,22 +93,20 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const query = `
-                INSERT INTO incidencias_horarias (id_trabajador, fecha_inicio, tipo_incidencia, impacto_horas, coordinador, estado, comentarios)
-                VALUES (?, ?, ?, ?, ?, 'Aprobado', ?)
-            `;
-            const params = [
-                this.nuevaIncidencia.agente,
-                this.nuevaIncidencia.fecha,
-                this.nuevaIncidencia.tipo,
-                this.nuevaIncidencia.horas,
-                this.usuarioActual,
-                this.nuevaIncidencia.comentarios.trim()
-            ];
+            const datos = {
+                id_trabajador: this.nuevaIncidencia.agente,
+                fecha_inicio: this.nuevaIncidencia.fecha,
+                tipo_incidencia: this.nuevaIncidencia.tipo,
+                impacto_horas: this.nuevaIncidencia.horas,
+                coordinador: this.usuarioActual,
+                estado: 'Aprobado',
+                comentarios: this.nuevaIncidencia.comentarios.trim()
+            };
 
             try {
-                await window.dbAPI.write('operativa', query, params);
-                // Limpiar formulario
+                if (window.api && window.api.incidencias) {
+                    await window.api.incidencias.guardar(datos);
+                }
                 this.nuevaIncidencia.agente = '';
                 this.nuevaIncidencia.horas = 0;
                 this.nuevaIncidencia.comentarios = '';
@@ -105,7 +114,7 @@ document.addEventListener('alpine:init', () => {
                 alert("✅ Ajuste de horas guardado correctamente.");
             } catch (err) {
                 console.error("Error al registrar incidencia:", err);
-                alert("❌ Error al guardar el ajuste de horas.");
+                alert("❌ Error al guardar el ajuste de horas: " + err.message);
             }
         },
 
@@ -116,11 +125,13 @@ document.addEventListener('alpine:init', () => {
         async eliminarIncidencia(id) {
             if (!confirm("¿Estás seguro de que deseas eliminar este registro de horas?")) return;
             try {
-                await window.dbAPI.write('operativa', "DELETE FROM incidencias_horarias WHERE id = ?", [id]);
+                if (window.api && window.api.deutes) {
+                    await window.api.deutes.eliminar(id);
+                }
                 await this.cargarIncidencias();
             } catch (err) {
                 console.error("Error al eliminar registro:", err);
-                alert("❌ Error al eliminar el registro.");
+                alert("❌ Error al eliminar el registro: " + err.message);
             }
         }
     }));

@@ -48,7 +48,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 // Leemos directamente del catálogo de reglas
                 const sql = "SELECT clave, value, tipo, categoria, descripcion FROM reglas_config ORDER BY clave ASC";
-                this.rules = await window.dbAPI.read('catalogos', sql, []);
+                this.rules = await window.api.read('catalogos', sql, []);
                 this.editedRules = {};
             } catch (err) {
                 console.error("Error al cargar reglas:", err);
@@ -69,7 +69,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 for (const clave in this.editedRules) {
                     const value = this.editedRules[clave];
-                    await window.dbAPI.write('catalogos', "UPDATE reglas_config SET value = ? WHERE clave = ?", [value, clave]);
+                    await window.api.write('catalogos', "UPDATE reglas_config SET value = ? WHERE clave = ?", [value, clave]);
                 }
                 this.showToastNotification(i18n.t('successSaveRules') || "Reglas guardadas correctamente.", "success");
                 await this.loadRules();
@@ -100,7 +100,7 @@ document.addEventListener('alpine:init', () => {
                     this.nuevaRegla.categoria,
                     this.nuevaRegla.descripcion.trim()
                 ];
-                await window.dbAPI.write('catalogos', sql, params);
+                await window.api.write('catalogos', sql, params);
                 this.showToastNotification("Regla añadida correctamente.", "success");
                 
                 // Reset form
@@ -175,7 +175,7 @@ document.addEventListener('alpine:init', () => {
 
         async loadAparcamientos() {
             try {
-                const rows = await window.dbAPI.read('catalogos', "SELECT id, nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+                const rows = await window.api.read('catalogos', "SELECT id, nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
                 this.aparcamientos = rows;
                 if (rows.length > 0) {
                     this.nuevaCobertura.aparcamiento_id = rows[0].id.toString();
@@ -194,7 +194,7 @@ document.addEventListener('alpine:init', () => {
                     WHERE c.activo = 1 AND c.dia_semana IS NULL AND c.fecha IS NOT NULL
                     ORDER BY c.fecha ASC, c.hora_inicio ASC
                 `;
-                this.coberturas = await window.dbAPI.read('catalogos', sql, []);
+                this.coberturas = await window.api.read('catalogos', sql, []);
             } catch (err) {
                 console.error("Error al cargar coberturas:", err);
             }
@@ -223,7 +223,7 @@ document.addEventListener('alpine:init', () => {
 
             try {
                 const checkSql = "SELECT id FROM coberturas_requeridas WHERE aparcamiento_id = ? AND fecha = ? AND turno = ? AND activo = 1";
-                const existing = await window.dbAPI.read('catalogos', checkSql, [cob.aparcamiento_id, cob.fecha, cob.turno]);
+                const existing = await window.api.read('catalogos', checkSql, [cob.aparcamiento_id, cob.fecha, cob.turno]);
                 if (existing && existing.length > 0) {
                     alert("Ya existe una cobertura requerida para ese centro, fecha y turno.");
                     return;
@@ -233,7 +233,7 @@ document.addEventListener('alpine:init', () => {
                     INSERT INTO coberturas_requeridas (aparcamiento_id, dia_semana, fecha, turno, hora_inicio, hora_fin, activo)
                     VALUES (?, NULL, ?, ?, ?, ?, 1)
                 `;
-                await window.dbAPI.write('catalogos', sql, [cob.aparcamiento_id, cob.fecha, cob.turno, cob.hora_inicio, cob.hora_fin]);
+                await window.api.write('catalogos', sql, [cob.aparcamiento_id, cob.fecha, cob.turno, cob.hora_inicio, cob.hora_fin]);
                 this.showToastNotification("Cobertura añadida correctamente.", "success");
                 
                 // Reset form
@@ -252,7 +252,7 @@ document.addEventListener('alpine:init', () => {
         async deleteCobertura(id) {
             if (!confirm("¿Estás seguro de que deseas eliminar esta cobertura requerida?")) return;
             try {
-                await window.dbAPI.write('catalogos', "DELETE FROM coberturas_requeridas WHERE id = ?", [id]);
+                await window.api.write('catalogos', "DELETE FROM coberturas_requeridas WHERE id = ?", [id]);
                 this.showToastNotification("Cobertura obligatoria eliminada.", "success");
                 await this.loadCoberturas();
             } catch (err) {

@@ -253,7 +253,7 @@
                     WHERE a.activo = 1
                     ORDER BY a.nombre ASC
                 `;
-                const parkings = await window.dbAPI.read('catalogos', query, []);
+                const parkings = await window.api.read('catalogos', query, []);
                 
                 // Conservar la opción inicial y vaciar el resto
                 const defaultOption = select.options[0];

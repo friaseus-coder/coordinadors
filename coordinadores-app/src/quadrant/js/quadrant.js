@@ -57,6 +57,14 @@ document.addEventListener('alpine:init', () => {
         loading: false,
 
         async init() {
+            if (window.api && window.api.onDataChanged) {
+                window.api.onDataChanged((event) => {
+                    if (event && (event.dbKey === 'operativa' || event.table === 'quadrant')) {
+                        console.log('[CUADRANTE UI] Refresco automático por delta externo detectado');
+                        this.cargarCuadrantes();
+                    }
+                });
+            }
             this.iniciarReloj();
             await this.cargarCatalogos();
             await this.cargarCuadrantes();
@@ -74,8 +82,8 @@ document.addEventListener('alpine:init', () => {
         async cargarCatalogos() {
             try {
                 // Gracias a ATTACH en main.js, podemos consultar empleados y aparcamientos desde 'operativa'
-                this.listaTrabajadores = await window.dbAPI.read('operativa', "SELECT nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador' ORDER BY nombre ASC", []);
-                this.listaParkings = await window.dbAPI.read('operativa', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+                this.listaTrabajadores = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT nombre FROM empleados WHERE activo = 1 AND rol = 'Trabajador' ORDER BY nombre ASC", []);
+                this.listaParkings = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
             } catch (err) {
                 console.error("Error al cargar catálogos:", err);
             }
@@ -94,11 +102,11 @@ document.addEventListener('alpine:init', () => {
                     JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
                     WHERE q.fecha LIKE ?
                 `;
-                this.turnosDB = await window.dbAPI.read('operativa', query, [pattern]);
+                this.turnosDB = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', query, [pattern]);
 
                 // Cargar marcadores de pendientes
                 const keyPendientesPattern = `nyn_pendent_${this.filtros.anio}_${this.filtros.mes}_%`;
-                const pendientes = await window.dbAPI.read('operativa', "SELECT key, value FROM kv_store WHERE key LIKE ?", [keyPendientesPattern]);
+                const pendientes = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT key, value FROM kv_store WHERE key LIKE ?", [keyPendientesPattern]);
                 const map = {};
                 pendientes.forEach(r => {
                     const park = r.key.split('_').slice(4).join('_');
@@ -108,7 +116,7 @@ document.addEventListener('alpine:init', () => {
 
                 // Cargar bloqueo del mes
                 const lockKey = `nyn_locked_${this.filtros.anio}_${this.filtros.mes}`;
-                const lockRow = await window.dbAPI.read('operativa', "SELECT value FROM kv_store WHERE key = ?", [lockKey]);
+                const lockRow = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT value FROM kv_store WHERE key = ?", [lockKey]);
                 this.lockedMonths[lockKey] = lockRow && lockRow.length > 0 ? JSON.parse(lockRow[0].value) : false;
 
             } catch (err) {
@@ -130,7 +138,7 @@ document.addEventListener('alpine:init', () => {
                     ? "Si cierras el Mes no podrás editar sus datos hasta que lo vuelvas a abrir y requiere CONTRASEÑA. ¿Deseas continuar?"
                     : "Si tanques el Mes no podràs editar-ne les dades fins que el tornis a obrir i requereix PASSWORD. Vols continuar?";
                 if (confirm(lockConfirmMsg)) {
-                    await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+                    await window.api.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
                         lockKey, JSON.stringify(true)
                     ]);
                     this.lockedMonths[lockKey] = true;
@@ -139,7 +147,7 @@ document.addEventListener('alpine:init', () => {
                     try {
                         const mesNum = (parseInt(this.filtros.mes) + 1).toString().padStart(2, '0');
                         const patronFecha = `${this.filtros.anio}-${mesNum}-%`;
-                        await window.dbAPI.write('catalogos', "DELETE FROM coberturas_requeridas WHERE fecha LIKE ? AND dia_semana IS NULL", [patronFecha]);
+                        await window.api.write('catalogos', "DELETE FROM coberturas_requeridas WHERE fecha LIKE ? AND dia_semana IS NULL", [patronFecha]);
                     } catch (err) {
                         console.error("Error al borrar coberturas requeridas temporales:", err);
                     }
@@ -151,7 +159,7 @@ document.addEventListener('alpine:init', () => {
                 if (confirm(unlockConfirmMsg)) {
                     const codeLabel = i18n.getLanguage() === 'es' ? "Código:" : "Codi:";
                     if (prompt(codeLabel) === "1234") {
-                        await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+                        await window.api.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
                             lockKey, JSON.stringify(false)
                         ]);
                         this.lockedMonths[lockKey] = false;
@@ -267,7 +275,7 @@ document.addEventListener('alpine:init', () => {
                 const diaNum = dia.toString().padStart(2, '0');
                 const fechaStr = `${this.filtros.anio}-${mesNum}-${diaNum}`;
 
-                const pRow = await window.dbAPI.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [park]);
+                const pRow = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [park]);
                 if (!pRow || pRow.length === 0) return;
                 const parkingId = pRow[0].id;
 
@@ -278,9 +286,9 @@ document.addEventListener('alpine:init', () => {
                 let isSub = field === 'isSub' ? (value ? 1 : 0) : (reg.es_substitucio || 0);
 
                 if (workerName === "-" || workerName === "") {
-                    await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
+                    await window.api.write('operativa', "DELETE FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
                 } else {
-                    const aRow = await window.dbAPI.read('operativa', "SELECT id FROM empleados WHERE nombre = ?", [workerName]);
+                    const aRow = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id FROM empleados WHERE nombre = ?", [workerName]);
                     if (!aRow || aRow.length === 0) return;
                     const agenteId = aRow[0].id;
 
@@ -288,7 +296,7 @@ document.addEventListener('alpine:init', () => {
                     // Comprobar si el trabajador ya tiene un turno asignado ese día en cualquier otro parking/turno.
                     // Si se está actualizando la misma celda (mismo parking + mismo turno), excluirla de la comprobación.
                     const esActualizacion = (checkRow) => checkRow && checkRow.length > 0;
-                    const checkExistente = await window.dbAPI.read(
+                    const checkExistente = await window.api.read(
                         'operativa',
                         "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?",
                         [fechaStr, parkingId, turno]
@@ -326,7 +334,7 @@ document.addEventListener('alpine:init', () => {
                         version: reg.version || 1
                     };
 
-                    const response = await window.dbAPI.saveTurnoCuadranteSeguro(turnoData);
+                    const response = await window.api.cuadrante.guardarTurno(turnoData);
                     if (!response.success && response.conflict) {
                         this.conflictData = response;
                         this.pendingConflictSave = turnoData;
@@ -354,7 +362,7 @@ document.addEventListener('alpine:init', () => {
                     if (this.pendingConflictSave) {
                         // Actualizamos la versión del cliente con la versión devuelta por el servidor
                         this.pendingConflictSave.version = this.conflictData.serverVersion;
-                        const response = await window.dbAPI.saveTurnoCuadranteSeguro(this.pendingConflictSave);
+                        const response = await window.api.cuadrante.guardarTurno(this.pendingConflictSave);
                         if (!response.success && response.conflict) {
                             alert("Ha ocurrido otro conflicto, por favor refresca la tabla.");
                         } else {
@@ -384,14 +392,14 @@ document.addEventListener('alpine:init', () => {
                 let rows;
                 if (idExistente) {
                     // Actualizar celda existente: excluir ese registro para no bloquearse a sí mismo
-                    rows = await window.dbAPI.read(
+                    rows = await window.api.read(
                         'operativa',
                         "SELECT id FROM quadrant WHERE agente_id = ? AND fecha = ? AND id != ?",
                         [agenteId, fechaStr, idExistente]
                     );
                 } else {
                     // Nueva asignación: buscar cualquier registro del agente en esa fecha
-                    rows = await window.dbAPI.read(
+                    rows = await window.api.read(
                         'operativa',
                         "SELECT id FROM quadrant WHERE agente_id = ? AND fecha = ?",
                         [agenteId, fechaStr]
@@ -409,7 +417,7 @@ document.addEventListener('alpine:init', () => {
         async toggleMarcador(park, val) {
             try {
                 const key = `nyn_pendent_${this.filtros.anio}_${this.filtros.mes}_${park}`;
-                await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+                await window.api.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
                     key, JSON.stringify(val)
                 ]);
                 this.pendientesParkings[park] = val;
@@ -435,7 +443,7 @@ document.addEventListener('alpine:init', () => {
                     const mesNum = (parseInt(this.filtros.mes) + 1).toString().padStart(2, '0');
                     const pattern = `${this.filtros.anio}-${mesNum}-%`;
 
-                    await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ?", [pattern]);
+                    await window.api.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ?", [pattern]);
                     await this.cargarCuadrantes();
                     alert(i18n.getLanguage() === 'es' ? "Datos borrados correctamente." : "Dades esborrades correctament.");
                 } else {
@@ -463,7 +471,7 @@ document.addEventListener('alpine:init', () => {
                 const destPattern = `${nY}-${destMesNum}-%`;
 
                 // 1. Limpieza absoluta del mes de destino
-                await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ?", [destPattern]);
+                await window.api.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ?", [destPattern]);
 
                 // 2. Recorremos cada día del mes de destino
                 const diesMesSeguent = new Date(nY, nMI + 1, 0).getDate();
@@ -501,7 +509,7 @@ document.addEventListener('alpine:init', () => {
                             }
 
                             if (dadesCopiades) {
-                                await window.dbAPI.write('operativa', `
+                                await window.api.write('operativa', `
                                     INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio)
                                     VALUES (?, ?, ?, ?, ?, ?, ?, 0)
                                 `, [
@@ -607,7 +615,7 @@ document.addEventListener('alpine:init', () => {
             this.asistenteData.descartados = [];
 
             try {
-                const dbPark = await window.dbAPI.read('catalogos', "SELECT id FROM aparcamientos WHERE nombre = ?", [park.toUpperCase()]);
+                const dbPark = await window.api.read('catalogos', "SELECT id FROM aparcamientos WHERE nombre = ?", [park.toUpperCase()]);
                 if (dbPark && dbPark.length > 0) {
                     const aparcamientoId = dbPark[0].id;
                     if (typeof obtenerAsistenteAsignacion === 'function') {
@@ -669,15 +677,15 @@ document.addEventListener('alpine:init', () => {
                 const diaNum = dia.toString().padStart(2, '0');
                 const fechaStr = `${this.filtros.anio}-${mesNum}-${diaNum}`;
 
-                const pRow = await window.dbAPI.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [park]);
+                const pRow = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id FROM aparcamientos WHERE nombre = ?", [park]);
                 if (pRow && pRow.length > 0) {
                     const parkingId = pRow[0].id;
-                    const checkRow = await window.dbAPI.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
+                    const checkRow = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id FROM quadrant WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?", [fechaStr, parkingId, turno]);
                     
                     if (checkRow && checkRow.length > 0) {
-                        await window.dbAPI.write('operativa', "UPDATE quadrant SET nota = ? WHERE id = ?", [this.noteText, checkRow[0].id]);
+                        await window.api.write('operativa', "UPDATE quadrant SET nota = ? WHERE id = ?", [this.noteText, checkRow[0].id]);
                     } else {
-                        await window.dbAPI.write('operativa', `
+                        await window.api.write('operativa', `
                             INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, nota)
                             VALUES (?, ?, 0, ?, '06:00', '14:00', 8, ?)
                         `, [fechaStr, parkingId, turno, this.noteText]);
@@ -962,8 +970,8 @@ document.addEventListener('alpine:init', () => {
                 const mesNum = (parseInt(this.importExcelMes) + 1).toString().padStart(2, '0');
                 const numDays = new Date(parseInt(this.importExcelAnio), parseInt(this.importExcelMes) + 1, 0).getDate();
                 
-                const empleadosBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM empleados", []);
-                const parkingsBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
+                const empleadosBD = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id, nombre FROM empleados", []);
+                const parkingsBD = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
                 
                 const normalizar = (str) => {
                     if (!str) return "";
@@ -990,7 +998,7 @@ document.addEventListener('alpine:init', () => {
                     JOIN aparcamientos ap ON q.aparcamiento_id = ap.id
                     WHERE q.fecha LIKE ?
                 `;
-                const turnosActuales = await window.dbAPI.read('operativa', query, [pattern]);
+                const turnosActuales = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', query, [pattern]);
                 
                 const getTurnoActual = (parkingNorm, turno, dia) => {
                     const fechaStr = `${this.importExcelAnio}-${mesNum}-${dia.toString().padStart(2, '0')}`;
@@ -1131,8 +1139,8 @@ document.addEventListener('alpine:init', () => {
                 const mesNum = (parseInt(this.importExcelMes) + 1).toString().padStart(2, '0');
                 const numDays = new Date(parseInt(this.importExcelAnio), parseInt(this.importExcelMes) + 1, 0).getDate();
                 
-                const empleadosBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM empleados", []);
-                const parkingsBD = await window.dbAPI.read('operativa', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
+                const empleadosBD = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id, nombre FROM empleados", []);
+                const parkingsBD = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', "SELECT id, nombre FROM aparcamientos WHERE activo = 1", []);
                 
                 const normalizar = (str) => {
                     if (!str) return "";
@@ -1154,10 +1162,10 @@ document.addEventListener('alpine:init', () => {
                 const rows = this.importExcelRows;
                 const pattern = `${this.importExcelAnio}-${mesNum}-%`;
                 
-                await window.dbAPI.write('operativa', "BEGIN TRANSACTION;", []);
+                await window.api.write('operativa', "BEGIN TRANSACTION;", []);
                 
                 if (this.importExcelModo === 'overwrite') {
-                    await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ?", [pattern]);
+                    await window.api.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ?", [pattern]);
                 }
                 
                 const centresProcesados = new Set();
@@ -1189,7 +1197,7 @@ document.addEventListener('alpine:init', () => {
                     const parkingId = parkingRef.id;
                     
                     if (this.importExcelModo === 'centres' && !centresProcesados.has(parkingId)) {
-                        await window.dbAPI.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ? AND aparcamiento_id = ?", [pattern, parkingId]);
+                        await window.api.write('operativa', "DELETE FROM quadrant WHERE fecha LIKE ? AND aparcamiento_id = ?", [pattern, parkingId]);
                         centresProcesados.add(parkingId);
                     }
                     
@@ -1223,13 +1231,13 @@ document.addEventListener('alpine:init', () => {
                 }
                 
                 for (const asig of asignacionesAInsertar) {
-                    await window.dbAPI.write('operativa', `
+                    await window.api.write('operativa', `
                         INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio)
                         VALUES (?, ?, ?, ?, ?, ?, 8, 0)
                     `, [asig.fecha, asig.aparcamiento_id, asig.agente_id, asig.turno, asig.hora_inicio, asig.hora_fin]);
                 }
                 
-                await window.dbAPI.write('operativa', "COMMIT;", []);
+                await window.api.write('operativa', "COMMIT;", []);
                 
                 this.filtros.mes = this.importExcelMes;
                 this.filtros.anio = this.importExcelAnio;
@@ -1246,7 +1254,7 @@ document.addEventListener('alpine:init', () => {
                 }
                 alert(successMsg);
             } catch (err) {
-                await window.dbAPI.write('operativa', "ROLLBACK;", []);
+                await window.api.write('operativa', "ROLLBACK;", []);
                 console.error("Error en importación directa:", err);
                 alert("Fallo al guardar los datos en la base de datos.");
             }
@@ -1254,24 +1262,24 @@ document.addEventListener('alpine:init', () => {
         
         async aplicarCambiosSeleccionados() {
             try {
-                await window.dbAPI.write('operativa', "BEGIN TRANSACTION;", []);
+                await window.api.write('operativa', "BEGIN TRANSACTION;", []);
                 
                 const cambiosAAplicar = this.importExcelCambios.filter(c => c.aplicar && !c.error);
                 
                 for (const c of cambiosAAplicar) {
                     if (c.workerPropuesto === "-" || c.propAgenteId === 0) {
-                        await window.dbAPI.write('operativa', `
+                        await window.api.write('operativa', `
                             DELETE FROM quadrant 
                             WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?
                         `, [c.fecha, c.parkingId, c.turno]);
                     } else {
-                        const check = await window.dbAPI.read('operativa', `
+                        const check = await window.api.cuadrante ? window.api.cuadrante.obtenerCuadrantes : window.api.read('operativa', `
                             SELECT id FROM quadrant 
                             WHERE fecha = ? AND aparcamiento_id = ? AND turno = ?
                         `, [c.fecha, c.parkingId, c.turno]);
                         
                         if (check && check.length > 0) {
-                            await window.dbAPI.write('operativa', `
+                            await window.api.write('operativa', `
                                 UPDATE quadrant 
                                 SET agente_id = ? 
                                 WHERE id = ?
@@ -1282,7 +1290,7 @@ document.addEventListener('alpine:init', () => {
                             if (c.turno === "TARDA") { horaInicio = "14:00"; horaFin = "22:00"; }
                             else if (c.turno === "NIT") { horaInicio = "22:00"; horaFin = "06:00"; }
                             
-                            await window.dbAPI.write('operativa', `
+                            await window.api.write('operativa', `
                                 INSERT INTO quadrant (fecha, aparcamiento_id, agente_id, turno, hora_inicio, hora_fin, horas_trabajadas, es_substitucio)
                                 VALUES (?, ?, ?, ?, ?, ?, 8, 0)
                             `, [c.fecha, c.parkingId, c.propAgenteId, c.turno, horaInicio, horaFin]);
@@ -1290,7 +1298,7 @@ document.addEventListener('alpine:init', () => {
                     }
                 }
                 
-                await window.dbAPI.write('operativa', "COMMIT;", []);
+                await window.api.write('operativa', "COMMIT;", []);
                 
                 this.filtros.mes = this.importExcelMes;
                 this.filtros.anio = this.importExcelAnio;
@@ -1302,7 +1310,7 @@ document.addEventListener('alpine:init', () => {
                     ? "✅ Cambios aplicados correctamente."
                     : "✅ Canvis aplicats correctament.");
             } catch (err) {
-                await window.dbAPI.write('operativa', "ROLLBACK;", []);
+                await window.api.write('operativa', "ROLLBACK;", []);
                 console.error("Error al aplicar cambios seleccionados:", err);
                 alert("Fallo al aplicar las modificaciones.");
             }

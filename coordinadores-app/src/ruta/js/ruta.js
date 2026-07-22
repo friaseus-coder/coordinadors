@@ -18,7 +18,7 @@ document.addEventListener('alpine:init', () => {
         async cargarCatalogos() {
             try {
                 // Podemos usar 'finanzas' o 'operativa' (catalogos está adjunto en ambos, o 'catalogos' directamente)
-                const rows = await window.dbAPI.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
+                const rows = await window.api.read('catalogos', "SELECT nombre FROM aparcamientos WHERE activo = 1 ORDER BY nombre ASC", []);
                 this.listaParkings = rows.map(r => r.nombre);
             } catch (err) {
                 console.error("Error al cargar aparcamientos:", err);
@@ -28,7 +28,7 @@ document.addEventListener('alpine:init', () => {
         async cargarRutas() {
             try {
                 const query = "SELECT * FROM movimientos_economicos WHERE tipo_movimiento = 'Ruta Comercial' ORDER BY fecha DESC";
-                const rows = await window.dbAPI.read('finanzas', query, []);
+                const rows = await window.api.read('finanzas', query, []);
                 this.rutas = rows.map(r => {
                     let paradas = [];
                     try {
@@ -87,7 +87,7 @@ document.addEventListener('alpine:init', () => {
             ];
 
             try {
-                await window.dbAPI.write('finanzas', query, params);
+                await window.api.write('finanzas', query, params);
                 // Limpiar formulario
                 this.nuevaRuta.concepto = '';
                 this.nuevaRuta.paradas = [''];
@@ -102,7 +102,7 @@ document.addEventListener('alpine:init', () => {
         async eliminarRuta(id) {
             if (!confirm("¿Estás seguro de que deseas eliminar esta ruta comercial?")) return;
             try {
-                await window.dbAPI.write('finanzas', "DELETE FROM movimientos_economicos WHERE id = ?", [id]);
+                await window.api.write('finanzas', "DELETE FROM movimientos_economicos WHERE id = ?", [id]);
                 await this.cargarRutas();
             } catch (err) {
                 console.error("Error al eliminar ruta:", err);

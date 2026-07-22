@@ -1044,13 +1044,13 @@
                             }
                         }
                         
-                        // Inyectar dbAPI
-                        if (window.dbAPI && !iframe.contentWindow.dbAPI) {
+                        // Inyectar window.api
+                        if (window.api && !iframe.contentWindow.window.api) {
                             try {
-                                iframe.contentWindow.dbAPI = window.dbAPI;
+                                iframe.contentWindow.window.api = window.api;
                                 newlyInjected = true;
                             } catch (err) {
-                                console.warn('[PORTAL] No se pudo asignar dbAPI en contentWindow:', err);
+                                console.warn('[PORTAL] No se pudo asignar window.api en contentWindow:', err);
                             }
                         }
                         
@@ -1784,7 +1784,7 @@
                     }
                     
                     // Iniciar transacción en SQLite
-                    await window.dbAPI.write('catalogos', "BEGIN TRANSACTION;", []);
+                    await window.api.write('catalogos', "BEGIN TRANSACTION;", []);
                     
                     let importados = 0;
                     let actualizados = 0;
@@ -1821,9 +1821,9 @@
                         if (!nombre) continue;
                         
                         if (id) {
-                            const check = await window.dbAPI.read('catalogos', "SELECT id FROM aparcamientos WHERE id = ?", [id]);
+                            const check = await window.api.read('catalogos', "SELECT id FROM aparcamientos WHERE id = ?", [id]);
                             if (check && check.length > 0) {
-                                await window.dbAPI.write('catalogos', `
+                                await window.api.write('catalogos', `
                                     UPDATE aparcamientos SET 
                                         numero_obra = ?, nombre = ?, zona = ?, es_remotizado = ?, 
                                         tipo_gestion = ?, permitir_vacio_laborables = ?, sociedad_id = ?, 
@@ -1832,7 +1832,7 @@
                                 `, [numObra || `OB-${id}`, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable, id]);
                                 actualizados++;
                             } else {
-                                await window.dbAPI.write('catalogos', `
+                                await window.api.write('catalogos', `
                                     INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
                                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
                                 `, [id, numObra || `OB-${id}`, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable]);
@@ -1840,7 +1840,7 @@
                             }
                         } else {
                             const generatedNumObra = numObra || `OB-${Date.now() + i}`;
-                            await window.dbAPI.write('catalogos', `
+                            await window.api.write('catalogos', `
                                 INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
                             `, [generatedNumObra, nombre, zona, esRemoto, gestion, vacioLab, sociedadId, responsable]);
@@ -1848,7 +1848,7 @@
                         }
                     }
                     
-                    await window.dbAPI.write('catalogos', "COMMIT;", []);
+                    await window.api.write('catalogos', "COMMIT;", []);
                     
                     // Sincronizar catálogo maestro en red
                     const updatedAparcamientos = await window.api.getAparcamientos();
@@ -1867,7 +1867,7 @@
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
                     showCustomAlert(i18n.t('portalImportCsvSuccess', { importados: importados, actualizados: actualizados }), 'success');
                 } catch (err) {
-                    await window.dbAPI.write('catalogos', "ROLLBACK;", []);
+                    await window.api.write('catalogos', "ROLLBACK;", []);
                     input.value = "";
                     if (loadingOverlay) loadingOverlay.style.display = 'none';
                     console.error("Error al importar aparcamientos CSV:", err);
@@ -2025,7 +2025,7 @@
             list.innerHTML = '<div style="padding:8px;color:#999;font-size:12px;">Carregant...</div>';
             
             try {
-                const trabajadores = await window.dbAPI.read('catalogos', "SELECT * FROM empleados ORDER BY nombre ASC", []);
+                const trabajadores = await window.api.read('catalogos', "SELECT * FROM empleados ORDER BY nombre ASC", []);
                 _trabajadoresCache = trabajadores;
                 list.innerHTML = '';
                 
@@ -2128,15 +2128,15 @@
 
                 try {
                     // Asegurar que exista en la tabla 'agentes' (vinculada por nombre)
-                    let agenteRow = await window.dbAPI.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [t.nombre]);
+                    let agenteRow = await window.api.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [t.nombre]);
                     let agenteId = null;
                     
                     if (agenteRow && agenteRow.length > 0) {
                         agenteId = agenteRow[0].id;
                     } else {
                         // Creamos el agente
-                        await window.dbAPI.write('catalogos', "INSERT INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)", [t.nombre, t.activo]);
-                        const newRow = await window.dbAPI.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [t.nombre]);
+                        await window.api.write('catalogos', "INSERT INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)", [t.nombre, t.activo]);
+                        const newRow = await window.api.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [t.nombre]);
                         if (newRow && newRow.length > 0) {
                             agenteId = newRow[0].id;
                         }
@@ -2206,7 +2206,7 @@
                     const oldWorker = _trabajadoresCache.find(x => x.id === Number(id));
                     
                     // Actualizar en empleados
-                    await window.dbAPI.write('catalogos', 
+                    await window.api.write('catalogos', 
                         "UPDATE empleados SET nombre = ?, email = ?, rol = ?, activo = ?, json_preferencias = ? WHERE id = ?",
                         [nom, email, rol, activo, jsonPrefs, Number(id)]
                     );
@@ -2214,21 +2214,21 @@
                     // Sincronizar en la tabla agentes
                     if (oldWorker) {
                         if (rol === 'Trabajador') {
-                            const existsAg = await window.dbAPI.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [oldWorker.nombre]);
+                            const existsAg = await window.api.read('catalogos', "SELECT id FROM agentes WHERE LOWER(nombre) = LOWER(?)", [oldWorker.nombre]);
                             if (existsAg && existsAg.length > 0) {
-                                await window.dbAPI.write('catalogos',
+                                await window.api.write('catalogos',
                                     "UPDATE agentes SET nombre = ?, activo = ? WHERE LOWER(nombre) = LOWER(?)",
                                     [nom, activo, oldWorker.nombre]
                                 );
                             } else {
-                                await window.dbAPI.write('catalogos',
+                                await window.api.write('catalogos',
                                     "INSERT INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)",
                                     [nom, activo]
                                 );
                             }
                         } else {
                             // Si el rol ya no es Trabajador, lo eliminamos de la tabla agentes
-                            await window.dbAPI.write('catalogos',
+                            await window.api.write('catalogos',
                                 "DELETE FROM agentes WHERE LOWER(nombre) = LOWER(?)",
                                 [oldWorker.nombre]
                             );
@@ -2238,21 +2238,21 @@
                     alert("✅ Treballador actualitzat correctament.");
                 } else {
                     // Crear nuevo
-                    const exists = await window.dbAPI.read('catalogos', "SELECT id FROM empleados WHERE LOWER(nombre) = LOWER(?)", [nom]);
+                    const exists = await window.api.read('catalogos', "SELECT id FROM empleados WHERE LOWER(nombre) = LOWER(?)", [nom]);
                     if (exists && exists.length > 0) {
                         if (loadingOverlay) loadingOverlay.style.display = 'none';
                         alert(`⚠️ El treballador "${nom}" ja existeix.`);
                         return;
                     }
 
-                    await window.dbAPI.write('catalogos', 
+                    await window.api.write('catalogos', 
                         "INSERT INTO empleados (nombre, email, rol, activo, json_preferencias) VALUES (?, ?, ?, ?, ?)",
                         [nom, email, rol, activo, jsonPrefs]
                     );
 
                     if (rol === 'Trabajador') {
                         // Crear preventivamente en agentes
-                        await window.dbAPI.write('catalogos',
+                        await window.api.write('catalogos',
                             "INSERT OR IGNORE INTO agentes (nombre, activo, ranking_score) VALUES (?, ?, 50)",
                             [nom, activo]
                         );
@@ -2287,10 +2287,10 @@
             
             try {
                 // Eliminar de empleados
-                await window.dbAPI.write('catalogos', "DELETE FROM empleados WHERE id = ?", [id]);
+                await window.api.write('catalogos', "DELETE FROM empleados WHERE id = ?", [id]);
                 
                 // Eliminar de agentes
-                await window.dbAPI.write('catalogos', "DELETE FROM agentes WHERE LOWER(nombre) = LOWER(?)", [name]);
+                await window.api.write('catalogos', "DELETE FROM agentes WHERE LOWER(nombre) = LOWER(?)", [name]);
 
                 if (loadingOverlay) loadingOverlay.style.display = 'none';
                 
@@ -2831,8 +2831,8 @@
 
             // Registrar listener de estado de red
             try {
-                if (window.dbAPI && typeof window.dbAPI.onNetworkStatus === 'function') {
-                    window.dbAPI.onNetworkStatus((data) => {
+                if (window.api && typeof window.api.onNetworkStatus === 'function') {
+                    window.api.onNetworkStatus((data) => {
                         const toast = document.getElementById('network-error-toast');
                         if (toast) {
                             toast.innerText = data.message;

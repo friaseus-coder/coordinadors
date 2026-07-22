@@ -55,7 +55,7 @@ document.addEventListener('alpine:init', () => {
         async carregar() {
             try {
                 const keyPath = `dades ${this.usuarioActual}/ranking`;
-                const rows = await window.dbAPI.read('operativa', "SELECT value FROM kv_store WHERE key = ?", [keyPath]);
+                const rows = await window.api.read('operativa', "SELECT value FROM kv_store WHERE key = ?", [keyPath]);
                 if (rows && rows.length > 0 && rows[0].value) {
                     this.dades = JSON.parse(rows[0].value);
                 } else {
@@ -80,7 +80,7 @@ document.addEventListener('alpine:init', () => {
             try {
                 const keyPath = `dades ${this.usuarioActual}/ranking`;
                 const serialized = JSON.stringify(this.dades);
-                await window.dbAPI.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
+                await window.api.write('operativa', "INSERT OR REPLACE INTO kv_store (key, value, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)", [
                     keyPath, serialized
                 ]);
             } catch (err) {

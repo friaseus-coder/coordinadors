@@ -1,4 +1,18 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const crypto = require('crypto');
+
+const CLIENT_ID = crypto.randomUUID();
+let currentSession = { user: 'Desconocido', role: 'Invitado' };
+
+function verifyRole(allowedRoles = []) {
+  const role = (currentSession.role || '').toLowerCase();
+  if (role === 'admin' || role === 'jefe operaciones') return true;
+  const normalized = allowedRoles.map(r => r.toLowerCase());
+  if (!normalized.includes(role)) {
+    throw new Error("Acceso denegado: El rol '" + currentSession.role + "' no tiene permisos suficientes para esta operación.");
+  }
+  return true;
+}
 const path = require('path');
 const fs = require('fs');
 const sqlite3 = require('sqlite3');
@@ -187,8 +201,14 @@ async function conectarBaseDatosUnica(rutaCompartida) {
   NETWORK_DIR = rutaCompartida;
   currentDbPath = path.join(NETWORK_DIR, 'dades.db');
 
-  console.log(`[DB INIT] Inicializando Triple Estrategia en red: ${NETWORK_DIR}`);
-  await syncAllToLocal();
+  console.log("[DB INIT] Inicializando persistencia local + Motor de deltas en: " + NETWORK_DIR);
+
+  for (const key of Object.keys(DBS)) {
+    obtenerConexionLocal(key);
+  }
+
+  startDeltaWatcher();
+  realizarBackupDiarioYRotacion();
 
   return db;
 }
@@ -287,1084 +307,294 @@ async function inicializarBasesDeDatosEnRed() {
   }
 }
 
-async function syncAllToLocal() {
-  console.log("[DB SYNC] Sincronizando bases de datos desde red a caché local...");
-  await inicializarBasesDeDatosEnRed();
+
+// ==========================================
+// MOTOR DE DELTAS EN SMB & PERSISTENCIA LOCAL
+// ==========================================
+
+function asegurarColumnaVersion(dbConn, tableName) {
+  dbConn.all("PRAGMA table_info(" + tableName + ")", [], (err, columns) => {
+    if (err || !columns) return;
+    const hasVersion = columns.some(c => c.name === 'version');
+    if (!hasVersion) {
+      dbConn.run("ALTER TABLE " + tableName + " ADD COLUMN version INTEGER DEFAULT 1", (alterErr) => {
+        if (!alterErr) console.log("[DB SCHEMA] Columna 'version' añadida a " + tableName + ".");
+      });
+    }
+  });
+}
+
+function obtenerConexionLocal(dbKey) {
+  if (localConnections[dbKey]) {
+    return localConnections[dbKey];
+  }
+
+  const dbFile = DBS[dbKey];
+  if (!dbFile) {
+    throw new Error("Clave de base de datos no válida: " + dbKey);
+  }
+
+  const localDbPath = path.join(localDir, dbFile);
+  const dbConn = new sqlite3.Database(localDbPath, sqlite3.OPEN_READWRITE | sqlite3.OPEN_CREATE);
+
+  dbConn.run("PRAGMA foreign_keys = ON;");
+  dbConn.run("CREATE TABLE IF NOT EXISTS _applied_deltas (id TEXT PRIMARY KEY, applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
+
+  if (dbKey !== 'catalogos') {
+    const catalogosPath = path.join(localDir, DBS.catalogos).replace(/\\/g, '/');
+    dbConn.run("ATTACH DATABASE '" + catalogosPath + "' AS catalogos;", (err) => {
+      if (err) console.error("[DB LOCAL] Error al adjuntar catalogos en " + dbKey + ":", err.message);
+    });
+  }
+
+  if (dbKey === 'comercial') {
+    dbConn.run(`
+      CREATE TABLE IF NOT EXISTS comerciales (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL,
+        direccion TEXT,
+        plantas TEXT,
+        capacidad TEXT,
+        plazas_libres TEXT,
+        tarifa TEXT,
+        notas TEXT,
+        version INTEGER DEFAULT 1
+      )
+    `);
+    asegurarColumnaVersion(dbConn, 'comerciales');
+  }
+
+  if (dbKey === 'operativa') {
+    asegurarColumnaVersion(dbConn, 'quadrant');
+  }
+
+  if (dbKey === 'finanzas') {
+    asegurarColumnaVersion(dbConn, 'inventario_existencias');
+  }
+
+  if (dbKey === 'catalogos') {
+    asegurarColumnaVersion(dbConn, 'empleados');
+  }
+
+  localConnections[dbKey] = dbConn;
+  return dbConn;
+}
+
+// MOTOR DE DELTAS EN SMB (/deltas/)
+async function applyLocalAndWriteDelta(dbKey, action, table, sql, params, expectedVersion = null) {
+  const localDb = obtenerConexionLocal(dbKey);
+
+  // 1. Control de concurrencia optimista (OCC) para UPDATEs
+  if (action === 'UPDATE' && expectedVersion !== null && expectedVersion !== undefined) {
+    const occMatch = sql.match(/WHERE\s+id\s*=\s*\?/i);
+    if (occMatch) {
+      const idVal = params[params.length - (sql.includes('version =') ? 2 : 1)];
+      const current = await new Promise((res, rej) => {
+        localDb.get("SELECT version FROM " + table + " WHERE id = ?", [idVal], (err, r) => err ? rej(err) : res(r));
+      });
+      if (!current) {
+        return { success: false, code: 'OCC_CONFLICT', message: 'Registro no encontrado.' };
+      }
+      if (current.version !== undefined && current.version !== expectedVersion) {
+        return { success: false, code: 'OCC_CONFLICT', message: 'El registro fue modificado por otro usuario.' };
+      }
+    }
+  }
+
+  // Ejecutar cambio en SQLite local
+  const result = await new Promise((resolve, reject) => {
+    localDb.run(sql, params, function(err) {
+      if (err) reject(err);
+      else resolve({ lastID: this.lastID, changes: this.changes });
+    });
+  });
+
+  if (action === 'UPDATE' && expectedVersion !== null && result.changes === 0) {
+    return { success: false, code: 'OCC_CONFLICT', message: 'El registro no fue modificado (versión desactualizada).' };
+  }
+
+  // 2. Generar archivo JSON de delta único en SMB
+  const deltaId = crypto.randomUUID();
+  const timestamp = Date.now();
+  const deltaObj = {
+    id: deltaId,
+    timestamp,
+    dbKey,
+    action,
+    table,
+    sql,
+    params,
+    clientId: CLIENT_ID,
+    userName: currentSession.user,
+    userRole: currentSession.role
+  };
+
+  // Registrar localmente en _applied_deltas
+  await new Promise((res) => {
+    localDb.run("INSERT OR IGNORE INTO _applied_deltas (id) VALUES (?)", [deltaId], () => res());
+  });
+
+  // Escribir JSON en NETWORK_DIR/deltas/
+  if (NETWORK_DIR) {
+    const deltasDir = path.join(NETWORK_DIR, 'deltas');
+    if (!fs.existsSync(deltasDir)) {
+      try { fs.mkdirSync(deltasDir, { recursive: true }); } catch (e) {}
+    }
+    const deltaFileName = `${timestamp}_${deltaId}_${dbKey}.json`;
+    const deltaFilePath = path.join(deltasDir, deltaFileName);
+    try {
+      fs.writeFileSync(deltaFilePath, JSON.stringify(deltaObj, null, 2), 'utf8');
+    } catch (err) {
+      console.error("[DELTA ENGINE ERROR] Fallo al escribir delta JSON en SMB:", err.message);
+    }
+  }
+
+  // Broadcast IPC local
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('app:delta-applied', deltaObj);
+    mainWindow.webContents.send('app:data-changed', { dbKey, table, action });
+  }
+
+  return { success: true, lastID: result.lastID, changes: result.changes };
+}
+
+// Vigilancia y replicación de deltas en red
+const processedDeltas = new Set();
+
+async function processNetworkDeltas() {
+  if (!NETWORK_DIR) return;
+  const deltasDir = path.join(NETWORK_DIR, 'deltas');
+  if (!fs.existsSync(deltasDir)) return;
+
+  try {
+    const files = fs.readdirSync(deltasDir).filter(f => f.endsWith('.json')).sort();
+    for (const file of files) {
+      if (processedDeltas.has(file)) continue;
+
+      const filePath = path.join(deltasDir, file);
+      try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        const delta = JSON.parse(content);
+
+        processedDeltas.add(file);
+
+        if (delta.clientId === CLIENT_ID) continue; // Delta generado por esta terminal
+
+        const localDb = obtenerConexionLocal(delta.dbKey);
+
+        const alreadyApplied = await new Promise((res) => {
+          localDb.get("SELECT id FROM _applied_deltas WHERE id = ?", [delta.id], (err, r) => res(!!r));
+        });
+
+        if (alreadyApplied) continue;
+
+        // Aplicar sentencia SQL en SQLite local
+        await new Promise((res) => {
+          localDb.run(delta.sql, delta.params, (err) => {
+            if (err) console.error("[DELTA APPLY ERROR] Error aplicando delta " + file + ":", err.message);
+            res();
+          });
+        });
+
+        await new Promise((res) => {
+          localDb.run("INSERT OR IGNORE INTO _applied_deltas (id) VALUES (?)", [delta.id], () => res());
+        });
+
+        console.log("[DELTA ENGINE] Delta replicado desde red: " + file + " (" + delta.action + " en " + delta.table + ")");
+
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('app:delta-applied', delta);
+          mainWindow.webContents.send('app:data-changed', { dbKey: delta.dbKey, table: delta.table, action: delta.action });
+        }
+      } catch (e) {
+        console.error("[DELTA ENGINE] Error leyendo delta " + file + ":", e.message);
+      }
+    }
+  } catch (err) {
+    console.error("[DELTA ENGINE] Error procesando carpeta deltas:", err.message);
+  }
+}
+
+function startDeltaWatcher() {
+  if (!NETWORK_DIR) return;
+  const deltasDir = path.join(NETWORK_DIR, 'deltas');
+  if (!fs.existsSync(deltasDir)) {
+    try { fs.mkdirSync(deltasDir, { recursive: true }); } catch (e) {}
+  }
+
+  processNetworkDeltas();
+
+  try {
+    fs.watch(deltasDir, (eventType, filename) => {
+      if (filename && filename.endsWith('.json')) {
+        processNetworkDeltas();
+      }
+    });
+  } catch (e) {}
+
+  setInterval(processNetworkDeltas, 1500);
+}
+
+// BACKUP DIARIO CON ROTACIÓN DE 7 DÍAS Y PURGA DE DELTAS (>14 DÍAS)
+function realizarBackupDiarioYRotacion() {
+  if (!NETWORK_DIR) return;
+  const backupsDir = path.join(NETWORK_DIR, 'Backups');
+  if (!fs.existsSync(backupsDir)) {
+    try { fs.mkdirSync(backupsDir, { recursive: true }); } catch(e){}
+  }
+
+  const todayStr = new Date().toISOString().split('T')[0];
 
   for (const [key, dbFile] of Object.entries(DBS)) {
-    const netDbPath = path.join(NETWORK_DIR, dbFile);
     const localDbPath = path.join(localDir, dbFile);
-
-    if (localConnections[key]) {
-      try {
-        localConnections[key].close();
-        localConnections[key] = null;
-      } catch (e) {}
-    }
-
+    const backupDest = path.join(backupsDir, "daily_" + todayStr + "_" + dbFile);
     try {
-      if (fs.existsSync(netDbPath)) {
-        fs.copyFileSync(netDbPath, localDbPath);
-        console.log(`[DB SYNC] Copiado ${dbFile} a caché local.`);
+      if (fs.existsSync(localDbPath)) {
+        fs.copyFileSync(localDbPath, backupDest);
+        console.log("[BACKUP DIARIO] Copia local respaldada en red: " + backupDest);
       }
-    } catch (err) {
-      console.error(`[DB SYNC] Error copiando ${dbFile} a local:`, err.message);
-    }
-
-    try {
-      obtenerConexionLocal(key);
     } catch (e) {
-      console.error(`[DB SYNC] Error abriendo conexión local para ${key}:`, e.message);
-    }
-  }
-}
-
-function syncToLocal(dbKey) {
-  const dbFile = DBS[dbKey];
-  const netDbPath = path.join(NETWORK_DIR, dbFile);
-  const localDbPath = path.join(localDir, dbFile);
-
-  if (localConnections[dbKey]) {
-    try {
-      localConnections[dbKey].close();
-      localConnections[dbKey] = null;
-      console.log(`[DB SYNC] Cerrada conexión local de ${dbKey} para sincronización.`);
-    } catch (e) {
-      console.error(`[DB SYNC] Error cerrando conexión local para copiar:`, e.message);
+      console.error("[BACKUP ERROR] Error creando copia diaria de " + dbFile + ":", e.message);
     }
   }
 
+  // Rotación: eliminar backups mayores a 7 días
   try {
-    if (fs.existsSync(netDbPath)) {
-      fs.copyFileSync(netDbPath, localDbPath);
-      console.log(`[DB SYNC] Sincronizado ${dbFile} desde red a caché local.`);
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    const files = fs.readdirSync(backupsDir);
+    for (const file of files) {
+      const filePath = path.join(backupsDir, file);
+      const stat = fs.statSync(filePath);
+      if (stat.isFile() && stat.mtimeMs < sevenDaysAgo) {
+        fs.unlinkSync(filePath);
+        console.log("[BACKUP ROTATION] Backup antiguo eliminado: " + file);
+      }
     }
-  } catch (err) {
-    console.error(`[DB SYNC] Error copiando ${dbFile} de red a local:`, err.message);
-  }
-
-  try {
-    obtenerConexionLocal(dbKey);
   } catch (e) {
-    console.error(`[DB SYNC] Error reabriendo conexión local de ${dbKey}:`, e.message);
-  }
-}
-
-
-const VERSIONED_TABLES = {
-  'inventario_existencias': { pk: 'id', versionColumn: 'version' },
-  'empleados': { pk: 'id', versionColumn: 'version' }
-};
-
-async function processOccMiddleware(netDb, query, params, occVersion) {
-  if (occVersion === undefined || occVersion === null) return { query, params };
-  
-  const occMatch = query.match(/^UPDATE\s+(\w+)\s+SET\s+(.+?)\s+WHERE\s+(\w+)\s*=\s*\?/i);
-  if (!occMatch) return { query, params };
-  
-  const tableName = occMatch[1].toLowerCase();
-  const config = VERSIONED_TABLES[tableName];
-  if (!config) return { query, params };
-  
-  const pkField = occMatch[3].toLowerCase();
-  if (pkField !== config.pk) return { query, params };
-  
-  const pkValue = params[params.length - 1];
-  
-  const currentData = await new Promise((resolve, reject) => {
-    netDb.get(`SELECT ${config.versionColumn} FROM ${tableName} WHERE ${config.pk} = ?`, [pkValue], (err, row) => {
-      if (err) reject(err); else resolve(row);
-    });
-  });
-  
-  if (!currentData) {
-    throw new Error('OCC_CONFLICT: Registro no encontrado.');
-  }
-  
-  if (currentData[config.versionColumn] !== occVersion) {
-    throw new Error(`OCC_CONFLICT: Versión desactualizada. Esperada ${occVersion}, actual ${currentData[config.versionColumn]}`);
-  }
-  
-  const newQuery = query.replace(
-    new RegExp(`SET\\s+(.+?)\\s+WHERE`, 'i'), 
-    `SET $1, ${config.versionColumn} = ${config.versionColumn} + 1 WHERE`
-  );
-  
-  return { query: newQuery, params };
-}
-
-async function safeWriteCombined(dbKey, query, params, occVersion) {
-  const dbFile = DBS[dbKey];
-  if (!dbFile) {
-    throw new Error(`Base de datos no válida: ${dbKey}`);
+    console.error("[BACKUP ROTATION ERROR]", e.message);
   }
 
-  const netDbPath = path.join(NETWORK_DIR, dbFile);
-  let netDb = null;
-
+  // Purga: eliminar deltas mayores a 14 días
   try {
-    netDb = await new Promise((resolve, reject) => {
-      const conn = new sqlite3.Database(netDbPath, sqlite3.OPEN_READWRITE, (err) => {
-        if (err) reject(err);
-        else {
-          conn.configure("busyTimeout", 20000); // 20 segundos de timeout
-          resolve(conn);
+    const deltasDir = path.join(NETWORK_DIR, 'deltas');
+    if (fs.existsSync(deltasDir)) {
+      const fourteenDaysAgo = Date.now() - (14 * 24 * 60 * 60 * 1000);
+      const deltaFiles = fs.readdirSync(deltasDir);
+      for (const file of deltaFiles) {
+        const filePath = path.join(deltasDir, file);
+        const stat = fs.statSync(filePath);
+        if (stat.isFile() && stat.mtimeMs < fourteenDaysAgo) {
+          fs.unlinkSync(filePath);
+          console.log("[DELTA PURGE] Delta antiguo purgado: " + file);
         }
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      netDb.run("PRAGMA foreign_keys = ON;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      netDb.run("PRAGMA journal_mode = TRUNCATE;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    // Iniciar transacción exclusiva nativa de SQLite
-    await new Promise((resolve, reject) => {
-      netDb.run("BEGIN IMMEDIATE TRANSACTION;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    const processed = await processOccMiddleware(netDb, query, params, occVersion);
-
-    const result = await new Promise((resolve, reject) => {
-      netDb.run(processed.query, processed.params, function(err) {
-        if (err) reject(err);
-        else resolve({ lastID: this.lastID, changes: this.changes });
-      });
-    });
-
-    // Commit de la transacción
-    await new Promise((resolve, reject) => {
-      netDb.run("COMMIT;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      netDb.close((err) => {
-        if (err) reject(err);
-        else {
-          netDb = null;
-          resolve();
-        }
-      });
-    });
-
-    syncToLocal(dbKey);
-
-    return result;
-
-  } catch (error) {
-    console.error(`[MUTEX safeWrite] Error en escritura atómica para ${dbKey}:`, error.message);
-    if (netDb) {
-      // Intentar hacer rollback por si quedó a medias
-      try { await new Promise((res) => netDb.run("ROLLBACK;", res)); } catch(e) {}
-      try { netDb.close(); } catch (e) {}
-    }
-    
-    // Capturar caída de red y notificar al frontend
-    if (error.code === 'ENOENT' || error.message.includes('EBUSY') || error.message.includes('ENOENT')) {
-      BrowserWindow.getAllWindows().forEach(win => {
-        win.webContents.send('network-status', { error: true, message: 'Red inaccesible. Modo de solo lectura activado.' });
-      });
-    }
-    
-    throw error;
-  }
-}
-
-
-// ============================================================
-
-/**
- * Ejecuta múltiples queries en una sola conexión de red dentro de una transacción real.
- * Resuelve el problema de que safeWriteCombined abre/cierra conexión por cada query,
- * impidiendo que BEGIN/COMMIT/ROLLBACK funcionen.
- * @param {string} dbKey - Identificador del shard de base de datos
- * @param {Array<{query: string, params: Array}>} operations - Array de operaciones {query, params}
- * @returns {Promise<{success: boolean, results: Array, totalChanges: number}>}
- */
-async function safeWriteBatch(dbKey, operations) {
-  const dbFile = DBS[dbKey];
-  if (!dbFile) {
-    throw new Error(`Base de datos no válida: ${dbKey}`);
-  }
-
-  const netDbPath = path.join(NETWORK_DIR, dbFile);
-  let netDb = null;
-
-  try {
-    netDb = await new Promise((resolve, reject) => {
-      const conn = new sqlite3.Database(netDbPath, sqlite3.OPEN_READWRITE, (err) => {
-        if (err) reject(err);
-        else {
-          conn.configure("busyTimeout", 20000); // 20 segundos de timeout
-          resolve(conn);
-        }
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      netDb.run("PRAGMA foreign_keys = ON;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      netDb.run("PRAGMA journal_mode = TRUNCATE;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    // Iniciar transacción real en ESTA conexión de forma exclusiva
-    await new Promise((resolve, reject) => {
-      netDb.run("BEGIN IMMEDIATE TRANSACTION;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    const results = [];
-    let totalChanges = 0;
-
-    for (const op of operations) {
-      const processed = await processOccMiddleware(netDb, op.query, op.params, op.occVersion);
-      const result = await new Promise((resolve, reject) => {
-        netDb.run(processed.query, processed.params, function(err) {
-          if (err) reject(err);
-          else resolve({ lastID: this.lastID, changes: this.changes });
-        });
-      });
-      results.push(result);
-      totalChanges += result.changes;
-    }
-
-    // Commit real en la MISMA conexión
-    await new Promise((resolve, reject) => {
-      netDb.run("COMMIT;", (err) => {
-        if (err) reject(err);
-        else resolve();
-      });
-    });
-
-    await new Promise((resolve, reject) => {
-      netDb.close((err) => {
-        if (err) reject(err);
-        else {
-          netDb = null;
-          resolve();
-        }
-      });
-    });
-
-    syncToLocal(dbKey);
-
-    return { success: true, results, totalChanges };
-
-  } catch (error) {
-    console.error(`[MUTEX safeWriteBatch] Error en escritura batch para ${dbKey}:`, error.message);
-    // Intentar rollback si la conexión sigue abierta
-    if (netDb) {
-      try { await new Promise((res) => netDb.run("ROLLBACK;", res)); } catch(e) {}
-      try { netDb.close(); } catch (e) {}
-    }
-
-    if (error.code === 'ENOENT' || error.message.includes('EBUSY') || error.message.includes('ENOENT')) {
-      BrowserWindow.getAllWindows().forEach(win => {
-        win.webContents.send('network-status', { error: true, message: 'Red inaccesible. Modo de solo lectura activado.' });
-      });
-    }
-
-    throw error;
-  }
-}
-
-// SISTEMA DE MIGRACIONES VERSIONADO
-// ============================================================
-
-function aplicarSchemaCanonicoYMigrar(dbConnection) {
-  // schema.sql eliminado (arquitectura de Sharding completada).
-  // Las tablas se crean con CREATE TABLE IF NOT EXISTS en las propias migraciones versionadas.
-  comprobarVersionYMigrar(dbConnection);
-}
-
-function comprobarVersionYMigrar(dbConnection) {
-  // Asegurar que la tabla schema_version existe
-  dbConnection.run(`
-    CREATE TABLE IF NOT EXISTS schema_version (
-      version INTEGER PRIMARY KEY,
-      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `, () => {
-    dbConnection.get('SELECT version FROM schema_version ORDER BY version DESC LIMIT 1', [], (err, row) => {
-      const versionActual = (row && row.version) || 0;
-      console.log(`[DB] Versión del esquema actual: ${versionActual}`);
-
-      if (versionActual < 2) {
-        console.log('[DB] Iniciando migración v1 → v2 (Modelo Multisociedad)...');
-        migrarV1aV2(dbConnection);
-      } else {
-        console.log('[DB] Esquema actualizado. No se necesitan migraciones.');
-        // Asegurar reglas de negocio completas
-        inicializarReglasDeNegocio(dbConnection);
-        sincronizarCatalogosIniciales(dbConnection);
-        sincronizarAgentesIniciales(dbConnection);
-      }
-    });
-  });
-}
-
-function migrarV1aV2(dbConnection) {
-  dbConnection.serialize(() => {
-    dbConnection.run('BEGIN TRANSACTION;');
-
-    // A. Asegurar sociedad por defecto
-    dbConnection.run(`
-      INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo)
-      VALUES (1, 'Sociedad General', 'SG', 1)
-    `);
-
-    // B. Migrar los 31 parkings del aparcamientos.json a la tabla relacional
-    const jsonPath = path.join(dadesDir, 'aparcamientos.json');
-    if (fs.existsSync(jsonPath)) {
-      try {
-        const raw = fs.readFileSync(jsonPath, 'utf8');
-        const data = JSON.parse(raw);
-        const parkings = data.aparcamientos || [];
-
-        const stmt = dbConnection.prepare(`
-          INSERT INTO aparcamientos (numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
-          ON CONFLICT(numero_obra) DO UPDATE SET
-            nombre = excluded.nombre,
-            coordinador_responsable = excluded.coordinador_responsable
-        `);
-
-        parkings.forEach((p, idx) => {
-          const numObra = p.numero_obra || `OB-${1000 + idx}`;
-          const nombreUpper = p.nombre.toUpperCase();
-          const esRemoto = p.es_remotizado ? 1 : 0;
-          const gestion = p.tipo_gestion || 'propio';
-          const vacioLab = p.permitir_vacio_laborables ? 1 : 0;
-          const sociedad = p.sociedad_id || 1;
-
-          let responsable = 'Ambos';
-          if (p.coordinadorId === 'albert') responsable = 'Albert';
-          else if (p.coordinadorId === 'laura') responsable = 'Laura';
-
-          stmt.run(numObra, nombreUpper, p.zona || '', esRemoto, gestion, vacioLab, sociedad, responsable);
-        });
-
-        stmt.finalize();
-        console.log(`[Migración v2] ${parkings.length} aparcamientos migrados desde JSON a SQLite.`);
-      } catch (jsonErr) {
-        console.error('[Migración v2] Error al leer/parsear aparcamientos.json:', jsonErr.message);
       }
     }
-
-    // C. Insertar las 5 reglas de negocio completas
-    const stmtRegla = dbConnection.prepare(`
-      INSERT OR IGNORE INTO reglas_config (clave, value, tipo, categoria, descripcion)
-      VALUES (?, ?, ?, ?, ?)
-    `);
-    stmtRegla.run('max_horas_semanales', '40', 'numero', 'agentes',
-      'Límite máximo de horas que un agente propio puede trabajar a la semana.');
-    stmtRegla.run('max_dias_mensuales', '22', 'numero', 'agentes',
-      'Tope de días de trabajo que un agente estándar puede tener asignados en el mes.');
-    stmtRegla.run('permitir_vacio_laborables', '0', 'booleano', 'aparcamientos',
-      'Permitir dejar un aparcamiento presencial obligatorio vacío durante 24h de lunes a viernes (0 = Alerta, 1 = Permitido).');
-    stmtRegla.run('bloquear_cruce_sociedades', '0', 'booleano', 'aparcamientos',
-      'Controlar traslados de agentes a parkings que pertenezcan a sociedades ajenas a su contrato (0 = Aviso, 1 = Bloquear).');
-    stmtRegla.run('min_horas_descanso_entre_turnos', '12', 'numero', 'agentes',
-      'Horas de descanso mínimo obligatorio requeridas entre la hora de fin de un turno y la hora de inicio del siguiente.');
-    stmtRegla.finalize();
-
-    // D. Actualizar la versión del esquema a 2
-    dbConnection.run(`INSERT OR REPLACE INTO schema_version (version, updated_at) VALUES (2, datetime('now', 'localtime'))`);
-
-    dbConnection.run('COMMIT;', (err) => {
-      if (err) {
-        console.error('[Migración v2] ERROR en COMMIT:', err.message);
-        dbConnection.run('ROLLBACK;');
-      } else {
-        console.log('[Migración v2] ✅ Migración v1 → v2 completada exitosamente.');
-        console.log('[Migración v2] Esquema multisociedad activo. Trigger de auditoría instalado.');
-        sincronizarCatalogosIniciales(dbConnection);
-        sincronizarAgentesIniciales(dbConnection);
-      }
-    });
-  });
-}
-
-async function getDatabaseForCoordinator(coordFolder) {
-  if (!db) {
-    throw new Error("Base de datos única no inicializada.");
-  }
-  return db;
-}
-
-
-// Ruta base para los datos y copias de seguridad (dinámica mediante archivo config.json)
-const rootDir = app.isPackaged 
-  ? path.dirname(process.execPath) 
-  : __dirname;
-
-const configFile = path.join(rootDir, 'config.json');
-let dadesDir = path.join(rootDir, 'dades');
-let backupsDir = path.join(rootDir, 'Backups');
-
-// Intentar leer el archivo de configuración config.json
-if (fs.existsSync(configFile)) {
-  try {
-    const configContent = fs.readFileSync(configFile, 'utf8');
-    const config = JSON.parse(configContent);
-    if (config.dadesPath) {
-      dadesDir = path.isAbsolute(config.dadesPath)
-        ? config.dadesPath
-        : path.resolve(rootDir, config.dadesPath);
-      console.log(`[CONFIG] Usando ruta de datos personalizada: ${dadesDir}`);
-    }
-    if (config.backupsPath) {
-      backupsDir = path.isAbsolute(config.backupsPath)
-        ? config.backupsPath
-        : path.resolve(rootDir, config.backupsPath);
-      console.log(`[CONFIG] Usando ruta de backups personalizada: ${backupsDir}`);
-    }
-  } catch (error) {
-    console.error('[CONFIG] Error al leer config.json, usando valores por defecto:', error);
-  }
-} else {
-  // Crear un config.json por defecto al lado del ejecutable para que sea fácilmente editable
-  try {
-    const defaultConfig = {
-      dadesPath: "./dades",
-      backupsPath: "./Backups",
-      _comentario: "Puedes cambiar dadesPath a una ruta de red compartida, por ejemplo: Z:/Coordinadores/dades o \\\\Servidor\\Coordinadores\\dades"
-    };
-    fs.writeFileSync(configFile, JSON.stringify(defaultConfig, null, 2), 'utf8');
-    console.log(`[CONFIG] Creado config.json por defecto en: ${configFile}`);
-  } catch (error) {
-    console.error('[CONFIG] No se pudo crear el config.json por defecto:', error);
+  } catch (e) {
+    console.error("[DELTA PURGE ERROR]", e.message);
   }
 }
 
-const tempDir = path.join(dadesDir, 'temp');
-const tempLogFile = path.join(tempDir, 'cambios.jsonl');
 
-// Crear la carpeta de datos si no existiera por alguna razón
-if (!fs.existsSync(dadesDir)) {
-  fs.mkdirSync(dadesDir, { recursive: true });
-}
-
-// Inicializar aparcamientos.json si no existe
-const aparcamientosFile = path.join(dadesDir, 'aparcamientos.json');
-if (!fs.existsSync(aparcamientosFile)) {
-  const defaultAparcamientos = {
-    aparcamientos: [
-      { "nombre": "NN CONCEPT", "coordinadorId": "albert" },
-      { "nombre": "NN LA TAMARITA", "coordinadorId": "albert" },
-      { "nombre": "NN BONANOVA", "coordinadorId": "albert" },
-      { "nombre": "NN ARAGÓ", "coordinadorId": "albert" },
-      { "nombre": "NN URGELL 2", "coordinadorId": "albert" },
-      { "nombre": "NN VALENCIA", "coordinadorId": "albert" },
-      { "nombre": "NN VALENCIA 2", "coordinadorId": "albert" },
-      { "nombre": "NN VALENCIA 3", "coordinadorId": "albert" },
-      { "nombre": "NN BRUC", "coordinadorId": "albert" },
-      { "nombre": "NN SANT GERVASI", "coordinadorId": "albert" },
-      { "nombre": "NN LA ROTONDA", "coordinadorId": "albert" },
-      { "nombre": "NN MASTER CATALONIA", "coordinadorId": "albert" },
-      { "nombre": "NN TORRE NIN", "coordinadorId": "albert" },
-      { "nombre": "NN ESPRONCEDA", "coordinadorId": "albert" },
-      { "nombre": "NN URGELL", "coordinadorId": "albert" },
-      { "nombre": "NN EL PALLOL", "coordinadorId": "albert" },
-      { "nombre": "NN ILLA AUGUSTA", "coordinadorId": "albert" },
-      { "nombre": "NN DIAGONAL", "coordinadorId": "laura" },
-      { "nombre": "NN HERCEGOVINA", "coordinadorId": "laura" },
-      { "nombre": "NN GRAN VIA", "coordinadorId": "laura" },
-      { "nombre": "NN GEIGLE", "coordinadorId": "laura" },
-      { "nombre": "NN SENTMENAT 2", "coordinadorId": "laura" },
-      { "nombre": "NN ROCAFORT", "coordinadorId": "laura" },
-      { "nombre": "NN SANTALÓ", "coordinadorId": "laura" },
-      { "nombre": "NN BORRELL", "coordinadorId": "laura" },
-      { "nombre": "NN ZONA FRANCA", "coordinadorId": "laura" },
-      { "nombre": "NN ESTEVE TARRADAS", "coordinadorId": "laura" },
-      { "nombre": "NN VÍA AUGUSTA", "coordinadorId": "laura" },
-      { "nombre": "NN TRAVESSERA", "coordinadorId": "laura" },
-      { "nombre": "NN PEDRALBES", "coordinadorId": "laura" },
-      { "nombre": "NN CÓRSEGA", "coordinadorId": "laura" }
-    ]
-  };
-  try {
-    fs.writeFileSync(aparcamientosFile, JSON.stringify(defaultAparcamientos, null, 2), 'utf8');
-    console.log(`[CONFIG] Inicializado aparcamientos.json con ${defaultAparcamientos.aparcamientos.length} registros en: ${aparcamientosFile}`);
-  } catch (err) {
-    console.error('[CONFIG] Error al crear aparcamientos.json inicial:', err);
-  }
-}
-
-// Crear la carpeta temporal si no existiera
-if (!fs.existsSync(tempDir)) {
-  fs.mkdirSync(tempDir, { recursive: true });
-}
-
-// Resolución segura de rutas para evitar saltos de directorio (Directory Traversal)
-function getSafePath(relativePath) {
-  const safePath = path.normalize(path.join(dadesDir, relativePath));
-  if (!safePath.startsWith(dadesDir)) {
-    throw new Error('Acceso no autorizado fuera de la carpeta de datos');
-  }
-  return safePath;
-}
-
-// Obtener ruta del archivo de bloqueo .lock correspondiente a un archivo de datos
-function getLockPath(safeFilePath) {
-  const dir = path.dirname(safeFilePath);
-  const base = path.basename(safeFilePath);
-  return path.join(dir, `~${base}.lock`);
-}
-
-// Función silenciosa para realizar el backup mensual al iniciar la aplicación
-function checkAndRunBackup() {
-  try {
-    const now = new Date();
-    // Formato AAAA-MM (ej: 2026-06)
-    const monthFolder = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    const destinationFolder = path.join(backupsDir, monthFolder);
-
-    if (!fs.existsSync(destinationFolder)) {
-      console.log(`[BACKUP] Iniciando copia de seguridad mensual en: ${destinationFolder}`);
-      fs.mkdirSync(destinationFolder, { recursive: true });
-      copyFolderSync(dadesDir, destinationFolder);
-      console.log(`[BACKUP] Copia de seguridad mensual finalizada correctamente.`);
-      
-      // Borrar la carpeta temporal (tempDir) una vez hecho el traspaso mensual
-      if (fs.existsSync(tempDir)) {
-        console.log(`[BACKUP] Limpiando la carpeta de logs temporales (traspaso mensual)...`);
-        fs.rmSync(tempDir, { recursive: true, force: true });
-        fs.mkdirSync(tempDir, { recursive: true });
-        console.log(`[BACKUP] Logs temporales vaciados correctamente para el nuevo mes.`);
-      }
-    } else {
-      console.log(`[BACKUP] Ya existe la copia de seguridad para el mes actual (${monthFolder}).`);
-    }
-  } catch (error) {
-    console.error('[BACKUP] Error al realizar la copia de seguridad:', error);
-  }
-}
-
-// Copiar carpetas de forma recursiva (función auxiliar)
-function copyFolderSync(from, to) {
-  if (!fs.existsSync(to)) {
-    fs.mkdirSync(to, { recursive: true });
-  }
-  
-  const elements = fs.readdirSync(from);
-  for (const element of elements) {
-    // Evitar copiar archivos temporales .lock a las copias de seguridad
-    if (element.startsWith('~') && element.endsWith('.lock')) {
-      continue;
-    }
-
-    const fromPath = path.join(from, element);
-    const toPath = path.join(to, element);
-    const stat = fs.lstatSync(fromPath);
-
-    if (stat.isDirectory()) {
-      copyFolderSync(fromPath, toPath);
-    } else {
-      fs.copyFileSync(fromPath, toPath);
-    }
-  }
-}
-
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1280,
-    height: 800,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-      nodeIntegrationInSubFrames: true
-    }
-  });
-
-  // Intentar cargar la interfaz desde una carpeta externa 'src' al lado del ejecutable si existe.
-  // Esto permite realizar modificaciones en caliente de HTML/CSS/JS sin volver a compilar.
-  const externalIndexPath = path.join(rootDir, 'src', 'index.html');
-  const internalIndexPath = path.join(__dirname, 'src', 'index.html');
-
-  if (fs.existsSync(externalIndexPath)) {
-    console.log(`[LOAD] Cargando interfaz externa activa desde: ${externalIndexPath}`);
-    mainWindow.loadFile(externalIndexPath);
-  } else {
-    console.log(`[LOAD] Cargando interfaz interna empaquetada desde: ${internalIndexPath}`);
-    mainWindow.loadFile(internalIndexPath);
-  }
-
-  // Abre las herramientas de desarrollo en modo desarrollo (descomenta si es necesario)
-  // mainWindow.webContents.openDevTools();
-
-  // Capturar e imprimir los logs de consola del renderizador en la terminal
-  mainWindow.webContents.on('console-message', (event, level, message, line, sourceId) => {
-    console.log(`[CONSOLE L${level}] ${message} (en ${path.basename(sourceId)}:${line})`);
-  });
-
-  mainWindow.on('closed', function () {
-    mainWindow = null;
-  });
-}
-
-// [ELIMINADO] sincronizarCatalogosIniciales() — Su lógica se ha integrado en migrarV1aV2()
-// La migración de JSON a SQLite ahora ocurre una sola vez al detectar schema_version < 2
-
-// Handler de exportación de aparcamientos a CSV (compatible con Excel España)
-ipcMain.handle('exportar-aparcamientos-csv', async () => {
-  const { filePath } = await dialog.showSaveDialog({
-    title: 'Guardar aparcamientos para Excel',
-    defaultPath: path.join(app.getPath('documents'), 'aparcamientos_operaciones.csv'),
-    filters: [{ name: 'CSV (delimitado por punto y coma)', extensions: ['csv'] }]
-  });
-
-  if (!filePath) return { success: false, reason: 'Cancelado' };
-
-  return new Promise((resolve) => {
-    db.all("SELECT * FROM aparcamientos WHERE activo = 1", [], (err, rows) => {
-      if (err) return resolve({ success: false, error: err.message });
-
-      // Cabecera delimitada por punto y coma
-      let csv = "id;numero_obra;nombre;zona;es_remotizado;tipo_gestion;permitir_vacio_laborables;sociedad_id;coordinador_responsable\n";
-
-      rows.forEach(r => {
-        const nombreEscapado = r.nombre.replace(/"/g, '""');
-        const zonaEscapada = (r.zona || '').replace(/"/g, '""');
-        csv += `${r.id};"${r.numero_obra || ''}";"${nombreEscapado}";"${zonaEscapada}";${r.es_remotizado};"${r.tipo_gestion}";${r.permitir_vacio_laborables};${r.sociedad_id || ''};"${r.coordinador_responsable}"\n`;
-      });
-
-      // Añadimos el BOM para asegurar la detección de acentos en Excel
-      const BOM = "\uFEFF";
-      try {
-        fs.writeFileSync(filePath, BOM + csv, 'utf8');
-        resolve({ success: true, path: filePath });
-      } catch (writeErr) {
-        resolve({ success: false, error: writeErr.message });
-      }
-    });
-  });
-});
-
-// Handler de importación de aparcamientos desde CSV (actualización masiva)
-ipcMain.handle('importar-aparcamientos-csv', async () => {
-  const { filePaths } = await dialog.showOpenDialog({
-    title: 'Seleccionar archivo CSV modificado en Excel',
-    properties: ['openFile'],
-    filters: [{ name: 'Archivos CSV', extensions: ['csv'] }]
-  });
-
-  if (!filePaths || filePaths.length === 0) return { success: false, reason: 'Cancelado' };
-  const filePath = filePaths[0];
-
-  try {
-    const raw = fs.readFileSync(filePath, 'utf8').replace(/^\uFEFF/, '');
-    const lineas = raw.split(/\r?\n/).filter(l => l.trim() !== '');
-    if (lineas.length <= 1) return { success: false, error: 'El archivo está vacío o solo contiene la cabecera' };
-
-    return new Promise((resolve) => {
-      db.serialize(() => {
-        db.run("BEGIN TRANSACTION;");
-
-        // Primero nos aseguramos de que existan las sociedades necesarias
-        db.run(`
-          INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo)
-          VALUES (1, 'Sociedad General', 'SG', 1)
-        `);
-
-        const stmt = db.prepare(`
-          INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-          ON CONFLICT(id) DO UPDATE SET
-            numero_obra = excluded.numero_obra,
-            nombre = excluded.nombre,
-            zona = excluded.zona,
-            es_remotizado = excluded.es_remotizado,
-            tipo_gestion = excluded.tipo_gestion,
-            permitir_vacio_laborables = excluded.permitir_vacio_laborables,
-            sociedad_id = excluded.sociedad_id,
-            coordinador_responsable = excluded.coordinador_responsable
-        `);
-
-        for (let i = 1; i < lineas.length; i++) {
-          const columnas = lineas[i].split(/;(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(col => {
-            let limpia = col.trim();
-            if (limpia.startsWith('"') && limpia.endsWith('"')) {
-              limpia = limpia.substring(1, limpia.length - 1);
-            }
-            return limpia.replace(/""/g, '"');
-          });
-
-          if (columnas.length < 5) continue;
-
-          const id = columnas[0] === '' ? null : Number(columnas[0]);
-          const numero_obra = columnas[1] || null;
-          const nombre = columnas[2].toUpperCase();
-          const zona = columnas[3] || '';
-          const es_remotizado = Number(columnas[4]) || 0;
-          const tipo_gestion = columnas[5] || 'propio';
-          const permitir_vacio_laborables = Number(columnas[6]) || 0;
-          const sociedad_id = columnas[7] === '' ? null : Number(columnas[7]);
-          const coordinador_responsable = columnas[8] || 'Ambos';
-
-          stmt.run(id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable);
-        }
-
-        stmt.finalize();
-        db.run("COMMIT;", (err) => {
-          if (err) {
-            db.run("ROLLBACK;");
-            resolve({ success: false, error: err.message });
-          } else {
-            resolve({ success: true, total: lineas.length - 1 });
-          }
-        });
-      });
-    });
-  } catch (error) {
-    return { success: false, error: error.message };
-  }
-});
-
-function inicializarReglasDeNegocio(dbConnection) {
-  // Insertar reglas faltantes de forma idempotente (INSERT OR IGNORE)
-  const stmtRegla = dbConnection.prepare(`
-    INSERT OR IGNORE INTO reglas_config (clave, value, tipo, categoria, descripcion)
-    VALUES (?, ?, ?, ?, ?)
-  `);
-  stmtRegla.run('max_horas_semanales', '40', 'numero', 'agentes',
-    'Límite máximo de horas que un agente propio puede trabajar a la semana.');
-  stmtRegla.run('max_dias_mensuales', '22', 'numero', 'agentes',
-    'Tope de días de trabajo que un agente estándar puede tener asignados en el mes.');
-  stmtRegla.run('permitir_vacio_laborables', '0', 'booleano', 'aparcamientos',
-    'Permitir dejar un aparcamiento presencial obligatorio vacío durante 24h de lunes a viernes (0 = Alerta, 1 = Permitido).');
-  stmtRegla.run('bloquear_cruce_sociedades', '0', 'booleano', 'aparcamientos',
-    'Controlar traslados de agentes a parkings que pertenezcan a sociedades ajenas a su contrato (0 = Aviso, 1 = Bloquear).');
-  stmtRegla.run('min_horas_descanso_entre_turnos', '12', 'numero', 'agentes',
-    'Horas de descanso mínimo obligatorio requeridas entre la hora de fin de un turno y la hora de inicio del siguiente.');
-  stmtRegla.finalize(() => {
-    console.log('[Reglas] 5 reglas de negocio verificadas/inicializadas.');
-  });
-}
-
-function stringToId(str) {
-  if (!str) return 0;
-  if (!isNaN(str)) return parseInt(str);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    hash = str.charCodeAt(i) + ((hash << 5) - hash);
-  }
-  return Math.abs(hash) || 1;
-}
-
-// --- SINCRONIZACIÓN DE CATÁLOGOS JSON A SQLITE ---
-function sincronizarCatalogosIniciales(dbConnection) {
-  const jsonPath = path.join(__dirname, 'dades', 'aparcamientos.json');
-  if (!fs.existsSync(jsonPath)) return;
-  
-  try {
-    const rawData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    const parkings = Array.isArray(rawData) ? rawData : (rawData.aparcamientos || []);
-    dbConnection.serialize(() => {
-      dbConnection.run("BEGIN TRANSACTION;");
-      
-      // Asegurar sociedad por defecto
-      dbConnection.run("INSERT OR IGNORE INTO sociedades (id, nombre_fiscal, codigo_corto, activo) VALUES (1, 'Empresa Principal', 'EMP_01', 1)");
-      
-      const stmt = dbConnection.prepare(`
-        INSERT INTO aparcamientos (id, numero_obra, nombre, zona, es_remotizado, tipo_gestion, permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
-        ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre, zona = excluded.zona;
-      `);
-      
-      parkings.forEach((p, idx) => {
-        const idAparcamiento = p.id || (idx + 1);
-        stmt.run(
-          idAparcamiento, 
-          p.numero_obra || `OB-${idAparcamiento}`, 
-          p.nombre, 
-          p.zona || 'General', 
-          p.es_remotizado ? 1 : 0, 
-          p.tipo_gestion || 'propio', 
-          p.permitir_vacio_laborables ? 1 : 0, 
-          p.sociedad_id || 1, 
-          p.coordinador_responsable || 'Ambos'
-        );
-      });
-      
-      stmt.finalize();
-      dbConnection.run("COMMIT;");
-      console.log("[DB] Aparcamientos sincronizados desde JSON.");
-    });
-  } catch (error) { 
-    console.error("[DB Error] Error sincronizando aparcamientos:", error); 
-  }
-}
-
-function sincronizarAgentesIniciales(dbConnection) {
-  const jsonPath = path.join(__dirname, 'dades', 'coordinadores.json');
-  if (!fs.existsSync(jsonPath)) return;
-  
-  try {
-    const rawData = JSON.parse(fs.readFileSync(jsonPath, 'utf8'));
-    const coordinadores = Array.isArray(rawData) ? rawData : (rawData.coordinadores || []);
-    dbConnection.serialize(() => {
-      dbConnection.run("BEGIN TRANSACTION;");
-      
-      const stmtAgente = dbConnection.prepare(`
-        INSERT INTO agentes (id, nombre, zona_habitual, ranking_score, es_empresa_externa, activo)
-        VALUES (?, ?, ?, 50, 0, 1) 
-        ON CONFLICT(id) DO UPDATE SET nombre = excluded.nombre;
-      `);
-      
-      const stmtContrato = dbConnection.prepare("INSERT OR IGNORE INTO contratos_agentes (agente_id, sociedad_id, fecha_inicio) VALUES (?, 1, date('now', 'start of month'));");
-      
-      coordinadores.forEach(c => {
-        const nombreCompleto = c.nombre ? c.nombre : `${c.nom || ''} ${c.cognoms || ''}`.trim() || 'Agente';
-        const agenteIntId = stringToId(c.id);
-        stmtAgente.run(agenteIntId, nombreCompleto, c.zona || 'General');
-        stmtContrato.run(agenteIntId);
-      });
-      
-      stmtAgente.finalize();
-      stmtContrato.finalize();
-      dbConnection.run("COMMIT;");
-      console.log("[DB] Agentes sincronizados desde JSON.");
-    });
-  } catch (error) { 
-    console.error("[DB Error] Error sincronizando agentes:", error); 
-  }
-}
-
-function obtenerReglasConfiguradas(dbConnection) {
-  return new Promise((resolve, reject) => {
-    const sql = "SELECT clave, value, tipo FROM reglas_config";
-    dbConnection.all(sql, [], (err, rows) => {
-      if (err) return reject(err);
-
-      const reglas = {};
-      rows.forEach(row => {
-        if (row.tipo === 'numero') {
-          reglas[row.clave] = Number(row.value);
-        } else if (row.tipo === 'booleano') {
-          reglas[row.clave] = (row.value === '1' || row.value === 'true');
-        } else {
-          reglas[row.clave] = row.value;
-        }
-      });
-      resolve(reglas);
-    });
-  });
-}
-
-// Inicialización de la aplicación
-app.on('ready', async () => {
-  const configPath = configFile;
-  let rutaCompartida = path.join(app.getPath('documents'), 'Coordinadores_Local'); // Fallback
-  
-  try {
-    const configData = JSON.parse(fs.readFileSync(configPath, 'utf8'));
-    if (configData.ruta_compartida) {
-      rutaCompartida = configData.ruta_compartida;
-    }
-  } catch (error) {
-    console.warn("No se pudo leer la ruta_compartida de config.json, usando local por defecto.");
-  }
-
-  // Nos aseguramos de que la ruta de red existe
-  if (!fs.existsSync(rutaCompartida)) {
-    try { fs.mkdirSync(rutaCompartida, { recursive: true }); } 
-    catch(e) { console.error("No se pudo crear la carpeta en la unidad compartida.", e); }
-  }
-  
-  try {
-    await conectarBaseDatosUnica(rutaCompartida);
-  } catch (err) {
-    console.error("Error crítico al inicializar base de datos única:", err);
-  }
-  // Ejecutar el backup silencioso mensual
-  checkAndRunBackup();
-  createWindow();
-});
-
-app.on('window-all-closed', function () {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
-});
-
-app.on('activate', function () {
-  if (mainWindow === null) {
-    createWindow();
-  }
-});
-
-// ==========================================
-// CONTROLADORES IPC (LECTURA/ESCRITURA E HILOS)
-// ==========================================
-
-const LOCK_TTL = 3 * 60 * 60 * 1000; // 3 horas en milisegundos
-
-function obtenerRutaLock() {
-  return currentDbPath ? currentDbPath + '.lock' : null;
-}
-
-// 1. Ejecutar consultas directas parametrizadas (Relacional) - Enrutamiento inteligente a Shards
-ipcMain.handle('db-query', async (event, { sql, params }) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const dbKey = resolverDbKeyDesdeSql(sql);
-      const localDb = obtenerConexionLocal(dbKey);
-      localDb.all(sql, params, (err, rows) => {
-        if (err) {
-          console.error(`[SQL Error] Consulta fallida: ${sql} | Error: ${err.message}`);
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      });
-    } catch (e) {
-      reject(e);
-    }
-  });
-});
-
-// 2. Ejecutar sentencias de escritura parametrizadas (Relacional) - Escritura atómica con Mutex en red
-ipcMain.handle('db-execute', async (event, { sql, params }) => {
-  try {
-    const dbKey = resolverDbKeyDesdeSql(sql);
-    const result = await safeWriteCombined(dbKey, sql, params);
-    return result;
-  } catch (err) {
-    console.error(`[SQL Error] Escritura fallida: ${sql} | Error: ${err.message}`);
-    throw err;
-  }
-});
-
-// ==========================================
-// MIDDLEWARE DE SEGURIDAD ANTI-INYECCIÓN SQL
-// ==========================================
-
-/**
- * Valida la consulta SQL y los permisos del usuario antes de ejecutar cualquier escritura.
- * Lanza un Error con un mensaje descriptivo si la operación no está permitida.
- * @param {string} dbKey   - Identificador del shard de base de datos
- * @param {string} query   - Consulta SQL que se pretende ejecutar
- * @param {string} userRole - Rol del usuario obtenido del sessionStorage
- * @param {string} userName - Nombre del usuario obtenido del sessionStorage
- */
-function validateSecurity(dbKey, query, userRole, userName) {
-  const queryUpper = query.toUpperCase();
-  const role = (userRole || '').toLowerCase();
-
-  // --- REGLA 1: Bloqueo Absoluto (Nivel Dios) ---
-  // Ningún usuario, ni admins, puede ejecutar comandos destructivos de esquema desde la UI.
-  const COMANDOS_DESTRUCTIVOS = ['DROP TABLE', 'TRUNCATE', 'ALTER TABLE', 'GRANT'];
-  for (const cmd of COMANDOS_DESTRUCTIVOS) {
-    if (queryUpper.includes(cmd)) {
-      throw new Error(
-        `ALERTA DE SEGURIDAD: Comando SQL destructivo bloqueado. (Detectado: ${cmd})`
-      );
-    }
-  }
-
-  // --- REGLA 2: Protección de Borrado ---
-  // Solo los administradores y el Jefe de Operaciones pueden ejecutar DELETE FROM.
-  if (queryUpper.includes('DELETE FROM')) {
-    if (role !== 'admin' && role !== 'jefe operaciones') {
-      throw new Error(
-        'Permisos insuficientes: Solo los administradores pueden borrar registros.'
-      );
-    }
-  }
-
-  // --- REGLA 3: Protección Financiera ---
-  // En el shard 'finanzas', los UPDATE y DELETE solo están permitidos para roles admin o finanzas.
-  // Los coordinadores estándar únicamente pueden hacer INSERT de nuevos gastos.
-  if (dbKey === 'finanzas') {
-    const esModificacion = queryUpper.includes('UPDATE') || queryUpper.includes('DELETE');
-    if (esModificacion && role !== 'admin' && role !== 'finanzas') {
-      throw new Error(
-        'Permisos insuficientes: Solo los roles admin o finanzas pueden modificar o borrar registros financieros.'
-      );
-    }
-  }
-}
-
-// NUEVO: Canalización explícita para la API window.dbAPI (Tarea 4)
-ipcMain.handle('read-db', async (event, { dbKey, query, params }) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const localDb = obtenerConexionLocal(dbKey);
-      localDb.all(query, params, (err, rows) => {
-        if (err) {
-          console.error(`[dbAPI Read Error] dbKey: ${dbKey} | Query: ${query} | Error: ${err.message}`);
-          reject(err);
-        } else {
-          resolve(rows);
-        }
-      });
-    } catch (e) {
-      reject(e);
-    }
-  });
-});
-
-ipcMain.handle('write-db', async (event, { dbKey, query, params, occVersion, userRole, userName }) => {
-  try {
-    // 1. Pasar por el control de seguridad antes de adquirir el Mutex
-    validateSecurity(dbKey, query, userRole, userName);
-
-    // 2. Ejecutar la escritura segura con Mutex (safeWriteCombined)
-    return await safeWriteCombined(dbKey, query, params, occVersion);
-  } catch (error) {
-    console.warn(
-      `[Seguridad/DB] Intento fallido de ${userName || 'Desconocido'} (${userRole || 'sin-rol'}) en ${dbKey}: ${query}`
-    );
-    throw new Error(error.message);
-  }
-});
-
-// Handler para escritura batch: ejecuta múltiples queries en una sola transacción real
-ipcMain.handle('write-db-batch', async (event, { dbKey, operations, userRole, userName }) => {
-  try {
-    // Validar seguridad de cada operación antes de ejecutar
-    for (const op of operations) {
-      validateSecurity(dbKey, op.query, userRole, userName);
-    }
-
-    // Ejecutar todas las operaciones en una sola transacción
-    return await safeWriteBatch(dbKey, operations);
-  } catch (error) {
-    console.warn(
-      `[Seguridad/DB Batch] Intento fallido de ${userName || 'Desconocido'} (${userRole || 'sin-rol'}) en ${dbKey}: ${error.message}`
-    );
-    throw new Error(error.message);
-  }
-});
-
-// --- Configuracion dinamica ---
 ipcMain.handle('validate-network-path', async (event, testPath) => {
   try {
     fs.accessSync(testPath, fs.constants.R_OK | fs.constants.W_OK);

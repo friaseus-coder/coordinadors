@@ -312,7 +312,7 @@ function onArchivoMaestrosSeleccionado(tabla, inputEl) {
  * Descarga los datos actuales de una tabla maestros o una plantilla si está vacía.
  */
 async function descargarDatosMaestros(tabla) {
-    if (!window.dbAPI) {
+    if (!window.api) {
         mostrarAlerta('API de base de datos no disponible.');
         return;
     }
@@ -324,10 +324,10 @@ async function descargarDatosMaestros(tabla) {
         let datosExport = [];
 
         if (tabla === 'empleados') {
-            const filas = await window.dbAPI.read('catalogos', `SELECT * FROM empleados`, []);
+            const filas = await window.api.maestros.obtenerEmpleados();
             let rankingMap = {};
             try {
-                const rankingRows = await window.dbAPI.read('operativa',
+                const rankingRows = await window.api.read('operativa',
                     `SELECT id_trabajador, coneixements, atencio, disponibilitat, actitud, valoracio, observacions FROM ranking`, []);
                 if (rankingRows) {
                     for (const r of rankingRows) {
@@ -369,7 +369,7 @@ async function descargarDatosMaestros(tabla) {
             }
 
         } else if (tabla === 'aparcamientos') {
-            const filas = await window.dbAPI.read('catalogos',
+            const filas = await window.api.read('catalogos',
                 `SELECT numero_obra, nombre, zona, es_remotizado, tipo_gestion,
                         permitir_vacio_laborables, sociedad_id, coordinador_responsable, activo
                  FROM aparcamientos`, []);
@@ -511,7 +511,7 @@ function empleadosManager() {
 
         async loadEmpleados() {
             try {
-                const filas = await window.dbAPI.read('catalogos', 'SELECT * FROM empleados ORDER BY nombre ASC', []);
+                const filas = await window.api.read('catalogos', 'SELECT * FROM empleados ORDER BY nombre ASC', []);
                 this.empleados = filas.map(f => ({
                     ...f,
                     isDirty: false
@@ -528,7 +528,7 @@ function empleadosManager() {
                 const query = "UPDATE empleados SET nombre = ?, email = ?, rol = ?, activo = ?, version = version + 1 WHERE id = ? AND version = ?";
                 const params = [emp.nombre, emp.email || null, emp.rol, emp.activo, emp.id, emp.version];
                 
-                const result = await window.dbAPI.write('catalogos', query, params, emp.version);
+                const result = await window.api.write('catalogos', query, params, emp.version);
 
                 if (result.success) {
                     this.showToast(`✅ Empleado ${emp.nombre} guardado correctamente.`, 'success');
@@ -557,7 +557,7 @@ function empleadosManager() {
             try {
                 const query = "INSERT INTO empleados (nombre, rol, activo, version) VALUES (?, ?, 1, 1)";
                 const params = [this.newEmp.nombre, this.newEmp.rol];
-                const result = await window.dbAPI.write('catalogos', query, params);
+                const result = await window.api.write('catalogos', query, params);
                 
                 if (result.success) {
                     this.showToast(`✅ Nuevo empleado añadido: ${this.newEmp.nombre}`, 'success');
