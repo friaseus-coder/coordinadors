@@ -18,6 +18,32 @@ Este manual detalla los pasos para crear, configurar y distribuir el ejecutable 
 
 ## 2. Changelog de Versiones
 
+### v1.5.1 — 2026-07-22
+*   **SISTEMA DE COMPACTACIÓN Y PURGA AUTOMÁTICA DE DELTAS (`/deltas/`):**
+    *   **Proceso Consolidador**: Si la carpeta `NETWORK_DIR/deltas/` acumula más de 100 archivos delta (`MAX_DELTAS_THRESHOLD = 100`), la aplicación adquiere el candado de red `_compaction.lock` y consolida todas las transacciones sobre las bases de datos máster SQLite en red (`NETWORK_DIR/*.db`).
+    *   **Subcarpeta de Archivo**: Los deltas consolidados con antigüedad > 7 días se trasladan automáticamente a `NETWORK_DIR/deltas/archive/` para mantener la carpeta de deltas limpia y evitar degradación de lecturas SMB.
+    *   **Tolerancia a Fallos**: Las terminales concurrentes detectan `_compaction.lock` y pausan automáticamente 2 segundos la lectura para evitar colisiones durante la consolidación.
+*   **NORMALIZACIÓN DE TIEMPOS Y TOLERANCIA A CLOCK DRIFT:**
+    *   **Nomenclatura ISO UTC**: Cambio de formato de archivo delta a `[timestamp_ISO_UTC]_[hostname]_[uuid]_[dbKey].json` para independencia de husos horarios y cambios de hora de verano/invierno.
+    *   **Detección de Desvío de Reloj**: Al iniciar, escribe el archivo de comprobación `.clock_check_[uuid]` en SMB y compara la fecha local con `mtimeMs`. Si la diferencia supera los 60 segundos, emite una alerta no bloqueante notificando el desajuste de reloj de Windows al usuario.
+*   **EXTENSIÓN DE OCC A MÓDULOS SECUNDARIOS:**
+    *   **Columna Versión**: Incorporación del campo `version INTEGER DEFAULT 1` en las tablas `incidencias_horarias`, `movimientos_economicos`, `despeses`, `deutes`, `inventario_existencias` y `comerciales`.
+    *   **Validación de UPDATE**: Consultas de actualización utilizan `WHERE id = ? AND version = ?`. Si las filas afectadas son 0, la API responde `OCC_CONFLICT` y el cliente Alpine.js notifica y recarga los datos sin sobrescribir información ajena.
+
+### v1.5.0 — 2026-07-22
+*   **REFACTORIZACIÓN ARQUITECTÓNICA — Motor de Deltas en SMB (100% Serverless / Zero-Backend):**
+    *   **Eliminación de Copia de `.db` Completa**: Erradicados los errores `SQLITE_CORRUPT` y las transferencias de bases de datos enteras (`syncToLocal`) y candados `.lock`.
+    *   **Persistencia Local y Motor de Deltas**: Lecturas en SQLite local (`%LocalAppData%/IntranetCoordinadores/db_cache/`). Escrituras atómicas produciendo archivos JSON de delta en `NETWORK_DIR/deltas/[timestamp]_[uuid]_[dbKey].json`.
+    *   **Replicación y Refresco UI en Tiempo Real**: Proceso de vigilancia en `main.js` (`fs.watch` + polling a 1.5s) que aplica sentencias SQL locales y emite `app:data-changed` a Alpine.js para refrescar la UI en < 3 segundos sin reiniciar la app.
+    *   **Copia de Seguridad Diaria y Política de Rotación**: Copia diaria automática en `NETWORK_DIR/Backups/daily_YYYY-MM-DD_*.db` con eliminación automática de backups mayores a 7 días y purga de deltas antiguos de más de 14 días.
+*   **BLINDAJE DE SEGURIDAD E IPC HANDLERS DE DOMINIO:**
+    *   **Eliminación de API IPC Genérica**: Retirados totalmente los canales `write-db` y `read-db` que aceptaban SQL en texto plano desde el Proceso de Renderizado.
+    *   **IPC Handlers de Dominio**: Endpoints explícitos parametrizados (`app:cuadrante:guardarTurno`, `app:comerciales:actualizar`, `app:inventario:actualizarStock`, `app:despeses:guardar`, etc.).
+    *   **RBAC Real en Node.js**: Verificación de permisos y rol en `main.js`. Rechazo inmediato en Node.js si un rol no autorizado intenta ejecutar operaciones restringidas.
+    *   **Protección de Producción**: Desactivación total de DevTools en ejecutables compilados (`app.isPackaged`). El cargador híbrido de carpetas externas solo se permite en entorno de desarrollo.
+*   **CONTROL DE CONCURRENCIA OPTIMISTA (OCC):**
+    *   Validación del campo `version` en `UPDATE` (`WHERE id = ? AND version = ?`). Retorno de `OCC_CONFLICT` si otro usuario modificó el registro.
+
 ### v1.4.0 — 2026-07-19
 *   **ACTUALIZACIÓN — Separación de Datos Maestros y Transaccionalidad:**
     *   El módulo de **Datos Maestros** (Aparcamientos y Empleados) se ha extraído de `migrador.html` a su propia vista dedicada `src/maestros/maestros.html`.

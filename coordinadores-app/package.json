@@ -1,6 +1,6 @@
 {
   "name": "coordinadores-app",
-  "version": "1.4.0",
+  "version": "1.5.1",
   "description": "Intranet de Coordinadores con Electron",
   "main": "main.js",
   "scripts": {

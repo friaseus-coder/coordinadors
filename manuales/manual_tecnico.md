@@ -10,8 +10,10 @@ La aplicación se ha diseñado para funcionar sin servidores de backend ni bases
 *   **Frontend (Capa de Presentación):** HTML5, Vanilla CSS3 (diseño responsivo con flexbox y variables CSS), **Alpine.js (v3.x.x)** como micro-framework reactivo para módulos como el de comerciales, y JavaScript nativo ES6.
 *   **Internacionalización (i18n):** Módulo propio (`i18n.js`) para traducción dinámica de la interfaz y elementos estáticos.
 *   **Fuentes de Texto:** Carga de la tipografía premium **Outfit** desde Google Fonts.
-*   **Persistencia y Triple Estrategia (Sharding Lógico + Caché Local):** La persistencia se divide en 4 bases de datos SQLite independientes según áreas de negocio: `operativa_rrhh.db`, `finanzas_inventario.db`, `comercial.db` y `catalogos_maestros.db`. En el arranque, Electron realiza una copia de caché en el almacenamiento local del usuario (`app.getPath('userData')/db_cache`). Todas las lecturas se resuelven exclusivamente sobre esta caché local, eliminando latencias de red y cuelgues por conectividad lenta.
-*   **Concurrencia (Mutex de Red con Auto-caducidad y Override):** Para evitar la corrupción de datos por concurrencia multi-usuario, las escrituras en red están controladas por un Candado Mutex de directorio físico (`_<dbKey>.lock`). Antes de modificar una base de datos en red, el proceso realiza un intento de creación de carpeta (`fs.mkdirSync`). Si la carpeta ya existe por un fallo anterior (cuelgue de otro usuario), la aplicación evalúa su antigüedad mediante `fs.statSync`. Si es superior a 3 minutos (180,000 ms), se asume que es un candado fantasma y se auto-elimina (`fs.rmSync`) de forma segura antes de reintentar. Además, los usuarios con rol de "Jefe de Operaciones" pueden forzar el desbloqueo desde la interfaz mediante un canal IPC dedicado.
+*   **Persistencia y Motor de Deltas en SMB (100% Serverless / Zero-Backend):** La persistencia se divide en 4 bases de datos SQLite independientes según áreas de negocio: `operativa_rrhh.db`, `finanzas_inventario.db`, `comercial.db` y `catalogos_maestros.db`. Todas las operaciones de lectura (`SELECT`) se resuelven exclusivamente sobre la caché local en `%LocalAppData%/IntranetCoordinadores/db_cache/`. Todas las escrituras (`INSERT`, `UPDATE`, `DELETE`) aplican el cambio localmente y generan un archivo de delta JSON atómico en `NETWORK_DIR/deltas/[timestamp]_[uuid]_[dbKey].json`. Esto erradica los errores `SQLITE_CORRUPT` y elimina el copiado ineficiente de archivos `.db` completos por red.
+*   **Replicación y Refresco en Tiempo Real:** Un proceso en segundo plano en `main.js` vigila la carpeta de deltas mediante `fs.watch` y polling continuo a 1.5s. Al recibir un delta externo, aplica el cambio en SQLite local y emite un evento IPC `app:data-changed` notificando a Alpine.js para refrescar la interfaz en menos de 3 segundos sin reiniciar la app.
+*   **Copias de Seguridad Diarias y Política de Rotación:** Al iniciar la aplicación y cada 24 horas, se ejecuta `realizarBackupDiarioYRotacion()`, que copia las bases de datos locales a `NETWORK_DIR/Backups/daily_YYYY-MM-DD_*.db`. Aplica una rotación automática manteniendo únicamente los últimos 7 días de backups y purgando los archivos de deltas en red con antigüedad superior a 14 días.
+*   **Blindaje de Seguridad e IPC Handlers de Dominio (RBAC Real):** Se han eliminado los canales genéricos `write-db` y `read-db`. Todas las operaciones se canalizan a través de IPC Handlers de Dominio parametrizados (`app:cuadrante:guardarTurno`, `app:comerciales:actualizar`, etc.) con validación de roles en Node.js en `main.js` (`verifyRole()`). DevTools está deshabilitado en producción (`app.isPackaged`) y el cargador híbrido de código externo se limita a desarrollo.
 
 ---
 
@@ -61,123 +63,98 @@ La aplicación aprovecha la separación de procesos de Electron para ofrecer seg
 ### A. Proceso Principal (Main Process - `main.js`)
 *   Se ejecuta en un entorno completo de Node.js con acceso a las APIs del sistema operativo de Windows y librerías nativas como `sqlite3`.
 *   Crea y gestiona la ventana de visualización (`BrowserWindow`).
-*   Configura las rutas dinámicas y de red compartida leyendo el archivo `config.json` al iniciar, extrayendo la propiedad `ruta_compartida` (`NETWORK_DIR`) e inicializando los 4 archivos SQLite en red si no existieran.
-*   **Inicialización y Sincronización Inicial (Sharding):** Al arrancar, el programa ejecuta `syncAllToLocal()`. Si alguna de las 4 bases de datos no existe en red, la crea aplicando su respectivo esquema SQL (`schema_operativa.sql`, `schema_finanzas.sql`, `schema_comercial.sql` o `schema_catalogos.sql`). Luego, copia los 4 archivos SQLite a la caché local (`app.getPath('userData')/db_cache`).
-*   **Mapeo y Enrutamiento de Consultas (Compatibilidad):** El Proceso Principal redirige dinámicamente las peticiones legadas de `db-query` y `db-execute` al shard correspondiente analizando el texto de la consulta SQL (mediante `resolverDbKeyDesdeSql`), permitiendo que el software heredado funcione sin modificaciones.
+*   Configura las rutas dinámicas y de red compartida leyendo el archivo `config.json` al iniciar, extrayendo la propiedad `ruta_compartida` (`NETWORK_DIR`) e inicializando la caché local en `%LocalAppData%/IntranetCoordinadores/db_cache`.
 *   **Mapeo de Claves Foráneas (Joins Cruzados):** Al establecer la conexión local con `operativa`, `finanzas` o `comercial`, Electron ejecuta automáticamente la sentencia `ATTACH DATABASE '<ruta_de_catalogos>' AS catalogos;`. Esto hace que las tablas maestras de catálogos estén disponibles en los otros shards para consultas de unión (`JOIN`) transparentemente.
-*   **Canales IPC de Base de Datos y Exclusión Mutua:**
-    *   `read-db` (Consulta de Caché Local): Devuelve de forma instantánea el resultado de leer de la conexión SQLite local de la clave indicada (`dbKey`).
-    *   `write-db` (Escritura con Mutex): Recibe la query, adquiere un bloqueo exclusivo de carpeta en red (`acquireLock(dbKey)`), abre el archivo SQLite físico de red, ejecuta la query con `journal_mode = DELETE`, cierra el archivo de red, libera el bloqueo (`releaseLock`) y sincroniza la modificación a local para mantener la caché al día.
-    *   Los handlers de base de datos específicos (`get-turnos-cuadrante`, `save-turno-cuadrante`, `delete-turno-cuadrante`, `save-vacacion-relacional`, etc.) fueron adaptados para operar sobre sus respectivos shards y aplicar el mutex de red de manera segura.
+*   **Canales IPC de Dominio e Inyección de Seguridad (RBAC Real):**
+    *   Eliminados totalmente los canales IPC genéricos vulnerables (`read-db`, `write-db`, `db-query`, `db-execute`).
+    *   Todas las acciones se procesan mediante IPC Handlers de Dominio parametrizados (`app:cuadrante:guardarTurno`, `app:comerciales:actualizar`, etc.) respaldados por validación de roles en Node.js mediante `verifyRole()`.
 
 ### B. Proceso de Renderizado (Renderer Process - Carpeta `src/`)
 *   Muestra la interfaz gráfica dentro del contenedor Chromium de forma aislada.
 *   No tiene acceso directo al sistema operativo ni a Node.js por motivos de seguridad informática (prevención de ataques XSS).
-*   Se comunica con el proceso principal mediante las funciones expuestas en el puente `preload.js` (`window.api` y `window.dbAPI`).
-*   **Puente del Motor de Persistencia Relacional (`window.dbAPI`):** En `preload.js` se definen y exponen los métodos `read(dbKey, query, params)` y `write(dbKey, query, params)` que permiten al frontend realizar consultas de selección (SELECT) en la caché local o sentencias de modificación (INSERT/UPDATE/DELETE) atómicas con Mutex en red de forma directa. Toda la persistencia de `persistence.js` fue migrada a esta API, conservando `window.databaseAPI` únicamente para obtener configuración de sesión (`getUserConfig`), habiéndose removido por completo lógicas auxiliares del frontend como el Asistente de Asignación y el control de concurrencia cooperativo a nivel relacional de la UI para mayor simplicidad y rendimiento.
+*   Se comunica con el proceso principal mediante las funciones de dominio expuestas en el puente `preload.js` (`window.api`).
+*   **Refresco Reactivo en Tiempo Real:** Las vistas Alpine.js se suscriben a `window.api.onDataChanged(callback)`, recargando automáticamente las tablas cuando otra terminal escribe un delta en SMB en menos de 3 segundos.
 
 ### C. Cargador Híbrido Dinámico (Modificaciones en Caliente)
-Para evitar tener que generar y distribuir un nuevo ejecutable `.exe` de 180MB cada vez que se hace un cambio estético de HTML o CSS, el método `createWindow()` en `main.js` realiza la siguiente validación:
+El método `createWindow()` en `main.js` realiza la siguiente validación de seguridad:
 
 ```javascript
 const externalIndexPath = path.join(rootDir, 'src', 'index.html');
 const internalIndexPath = path.join(__dirname, 'src', 'index.html');
 
-if (fs.existsSync(externalIndexPath)) {
-  // Carga el código fuente directamente de la carpeta física externa
+if (!app.isPackaged && fs.existsSync(externalIndexPath)) {
+  // Carga interfaz externa solo en desarrollo
   mainWindow.loadFile(externalIndexPath);
 } else {
-  // Carga el código fuente empaquetado dentro del .exe (app.asar)
+  // En producción carga exclusivamente la interfaz interna empaquetada
   mainWindow.loadFile(internalIndexPath);
 }
 ```
-*   **Efecto:** Si copias tu carpeta de desarrollo `src/` al lado de `coordinadores.exe`, la aplicación la prioriza, permitiéndote actualizar pantallas modificando archivos de texto en caliente.
 
 ---
 
 ## 4. Persistencia, Sincronización y Control de Concurrencia (Red)
-La arquitectura de persistencia se basa en la **Triple Estrategia (Sharding Lógico + Caché Local de Lectura + Mutex de Carpeta en Red)** para maximizar la estabilidad y el rendimiento en entornos sin servidor que acceden a una unidad de red compartida (SMB).
+La arquitectura de persistencia se basa en la **Estrategia Serverless por Motor de Deltas (Lectura Local Única + Cola de Cambios Atómicos JSON en SMB)** para erradicar los errores `SQLITE_CORRUPT`, eliminar la transferencia ineficiente de bases de datos enteras y ofrecer un refresco reactivo en tiempo real en entornos sin servidor.
 
 ```
-                  +---------------------------+
-                  |  persistence.js (Frontend)|
-                  +---------------------------+
-                     /                     \
-       (Consultas Locales / SELECT)     (Escrituras / IPC Bridge)
-                   /                         \
-      +-------------------------+      +---------------------------+
-      |  Conexiones Caché Local |      |   main.js (Electron Main) |
-      |  %LocalAppData%/db_cache|      +---------------------------+
-      +-------------------------+                    |
-                   |                    (Adquisición de Mutex en Red)
-             [ATTACH DATABASE]                       |
-                   |                   +----------------------------+
-                   v                   | Carpeta _<dbKey>.lock/     |
-      +-------------------------+      +----------------------------+
-      | catalogos_maestros.db  |                     |
-      |   (Maestros Adjuntos)   |         (Escritura Física en Red)
-      +-------------------------+                    |
-                                                     v
-                                       +----------------------------+
-                                       | Archivos Shards en Red     |
-                                       | - operativa_rrhh.db        |
-                                       | - finanzas_inventario.db   |
-                                       | - comercial.db             |
-                                       | - catalogos_maestros.db    |
-                                       +----------------------------+
-                                                     |
-                                            (Libera Mutex y Sync)
-                                                     v
-                                       +----------------------------+
-                                       | Sobrescribe Caché Local    |
-                                       +----------------------------+
+                  +-----------------------------------+
+                  |   Frontend (Alpine.js / JS UI)    |
+                  +-----------------------------------+
+                     /                             \
+     (Lecturas Locales / SELECT)         (IPC Domain Calls / Dominio)
+                   /                                 \
+      +-------------------------+        +---------------------------+
+      |  Conexiones SQLite      |        |   main.js (Electron Main) |
+      |  %LocalAppData%/db_cache|        +---------------------------+
+      +-------------------------+                      |
+                   |                    (1. Aplica cambio localmente)
+             [ATTACH DATABASE]                         |
+                   |                    (2. Genera Delta JSON GUID)
+                   v                                   v
+      +-------------------------+        +---------------------------+
+      | catalogos_maestros.db   |        | NETWORK_DIR/deltas/       |
+      |   (Maestros Adjuntos)   |        | [timestamp]_[guid].json   |
+      +-------------------------+        +---------------------------+
+                                                       |
+                                           (Vigilancia / fs.watch 1.5s)
+                                                       v
+                                         +---------------------------+
+                                         | Replicación a terminales  |
+                                         | Evento app:data-changed   |
+                                         +---------------------------+
 ```
 
-### A. Inicialización, Caché Local y Sincronización
-Para mitigar la latencia de red de Windows (SMB) y evitar bloqueos en lecturas concurrentes, la aplicación opera bajo un modelo de lectura local:
-1.  **Cargador Inicial**: Al arrancar la aplicación, el proceso principal (`main.js`) detecta la ruta del servidor compartida leyendo la clave `ruta_compartida` (o `NETWORK_DIR`) desde el archivo `config.json`.
-2.  **Inicialización de Archivos**: Si alguno de los 4 archivos SQLite shards no existe en la ruta de red, la aplicación lo crea de forma limpia en el servidor y ejecuta su correspondiente esquema SQL canónico (`schema_operativa.sql`, `schema_finanzas.sql`, `schema_comercial.sql` o `schema_catalogos.sql`).
-3.  **Copia en Caché Local (`syncAllToLocal()`)**: Tras verificar los archivos en red, la aplicación cierra cualquier conexión local abierta y copia los 4 archivos SQLite físicos a la caché local del usuario en `%LocalAppData%/IntranetCoordinadores/db_cache/` (obtenido vía `app.getPath('userData')/db_cache`).
-4.  **Lecturas Locales Integradas (`read-db`)**: El frontend realiza todas las consultas de lectura (`SELECT`) a través del canal `window.dbAPI.read(dbKey, query, params)`. Estas consultas se resuelven exclusivamente sobre las bases de datos de la caché local de forma instantánea, eliminando retrasos por fluctuaciones de red.
+### A. Lectura Local Única y Persistencia Local
+1. **Bases de Datos Locales**: Cada terminal mantiene sus 4 bases de datos SQLite (`operativa_rrhh.db`, `finanzas_inventario.db`, `comercial.db` y `catalogos_maestros.db`) en la caché local del usuario en `%LocalAppData%/IntranetCoordinadores/db_cache/`.
+2. **Lecturas Locales**: Todas las consultas `SELECT` se resuelven directamente sobre SQLite local, eliminando bloqueos de red y cuelgues por conectividad lenta.
+3. **Joins Cruzados (ATTACH DATABASE)**: Electron ejecuta `ATTACH DATABASE '<ruta_local>/catalogos_maestros.db' AS catalogos;`, permitiendo `JOIN` cruzados con tablas maestras de forma transparente.
 
-### B. Joins Cruzados mediante ATTACH DATABASE
-Para mantener la compatibilidad con consultas complejas del frontend legado que realizan uniones (`JOIN`) entre tablas de operativa/finanzas y tablas maestras (como `agentes` o `aparcamientos`), el cargador de conexiones locales ejecuta la sentencia SQLite `ATTACH DATABASE` al abrir las conexiones locales:
-*   Al inicializar la base de datos `operativa`, `finanzas` o `comercial` en caché local, se ejecuta dinámicamente:
-    `ATTACH DATABASE '<ruta_local>/catalogos_maestros.db' AS catalogos;`
-*   Esto mapea de forma transparente las tablas de catálogos dentro del mismo contexto de conexión, permitiendo resolver consultas con sintaxis del tipo `JOIN catalogos.agentes a ON q.agente_id = a.id` sin necesidad de reescribir la lógica de consultas de la interfaz de usuario.
+### B. Motor de Deltas Atómicos en SMB (`/deltas/`)
+1. **Escritura por Deltas**: Al realizar un `INSERT`, `UPDATE` o `DELETE`, el proceso principal `main.js`:
+   * Aplica el cambio directamente en la base de datos SQLite local del cliente.
+   * Genera un archivo JSON de delta único en `NETWORK_DIR/deltas/[timestamp]_[uuid]_[dbKey].json`.
+   * El archivo JSON contiene la acción, tabla, sentencia SQL, parámetros, versión, usuario y `clientId`.
+   * **Atomicidad en SMB**: Escribir un archivo JSON individual con GUID único en SMB es una operación 100% atómica y segura en Windows, eliminando colisiones de archivos.
 
-### C. Exclusión Mutua Atómica (Mutex de Red en Escritura con Auto-caducidad y Override)
-Para evitar la corrupción de datos que ocurre cuando múltiples instancias de SQLite escriben de forma concurrente en un archivo compartido en red, el proceso principal canaliza todas las consultas de modificación (`INSERT`, `UPDATE`, `DELETE`) a través del canal `write-db` bajo un estricto patrón de exclusión mutua:
-1.  **Solicitud de Escritura**: El cliente solicita una escritura llamando a `window.dbAPI.write(dbKey, query, params)`.
-2.  **Adquisición de Candado Físico (`acquireLock`)**: El backend de Electron intenta crear un directorio físico llamado `_<dbKey>.lock` (por ejemplo, `_operativa.lock`) en la carpeta de red compartida (`NETWORK_DIR`) mediante `fs.mkdirSync(lockDir)`.
-    *   **Si la carpeta ya existe (`EEXIST`)**: Significa que hay un bloqueo activo. Para evitar que bloqueos huérfanos (por cuelgues o desconexiones) paralicen la aplicación, se obtiene la fecha de creación/modificación de la carpeta usando `fs.statSync(lockDir)`. Si la antigüedad de la carpeta supera los **3 minutos** (180,000 ms), se asume que es un candado fantasma y se destruye automáticamente (`fs.rmSync(lockDir, { recursive: true, force: true })`). Luego, el proceso reintenta la creación. Si tiene menos de 3 minutos, entra en un bucle de reintento automático (15 intentos espaciados por 1 segundo).
-    *   **Si expira el reintento**: La petición falla, informando del bloqueo para proteger la integridad.
-    *   **Override manual (Modo Dios)**: El canal IPC `force-unlock-db` permite a usuarios con privilegios de "Jefe de Operaciones" forzar la eliminación del candado de red independientemente de su antigüedad.
-3.  **Escritura Directa en Red**: Una vez adquirido el candado, Electron:
-    *   Abre una conexión directa exclusiva a la base de datos correspondiente en red.
-    *   Ejecuta `PRAGMA foreign_keys = ON;` para garantizar la integridad referencial de claves foráneas en cada conexión.
-    *   Ejecuta `PRAGMA journal_mode = DELETE;` para desactivar el diario de transacciones en red, escribiendo directamente sobre el archivo principal.
-    *   Ejecuta la consulta SQL con los parámetros proporcionados.
-    *   Cierra la conexión física a la base de datos de red de forma limpia.
-4.  **Liberación del Mutex (`releaseLock`)**: Elimina el directorio físico de bloqueo `_<dbKey>.lock` utilizando `fs.rmdirSync(lockDir)` o `fs.rmSync`.
-5.  **Refresco de Caché Local**: Inmediatamente después de liberar el candado en red, Electron ejecuta `syncToLocal(dbKey)` para cerrar la conexión local, copiar el archivo modificado de red a la caché local de `%LocalAppData%` y reabrir la conexión de lectura. Esto asegura que la caché local esté sincronizada al 100%.
+2. **Consumo y Replicación en Tiempo Real**:
+   * Un watcher en segundo plano en `main.js` vigila la carpeta `NETWORK_DIR/deltas/` mediante `fs.watch` y polling continuo a 1.5s.
+   * Al detectar un delta producido por otra terminal (`clientId` distinto), ejecuta la sentencia SQL en el SQLite local del usuario y registra la transacción en `_applied_deltas` para asegurar idempotencia.
+   * Emite el evento IPC `app:data-changed` a `preload.js`, notificando a las vistas reactivas de Alpine.js para refrescar la pantalla en menos de 3 segundos sin reiniciar la aplicación.
 
-> [!IMPORTANT]
-> **Bloqueos y Concurrencia**:
-> *   **Mutex de Red (`_<dbKey>.lock`)**: Control físico de bajo nivel a nivel de archivo SQLite para evitar corrupción de base de datos durante operaciones de escritura rápidas. Cuenta con auto-caducidad de 3 minutos y posibilidad de desbloqueo manual forzado por parte del Jefe de Operaciones.
-> *   **Doble Escritura Multishard**: Operaciones complejas que afectan a múltiples bases de datos a la vez (ej. asistentes de importación) utilizan `ATTACH DATABASE` junto con `BEGIN IMMEDIATE TRANSACTION` para asegurar la atomicidad y prevenir deadlocks.
-> *   **Control de Concurrencia Optimista (OCC)**: Implementado en las tablas interactivas (como `empleados`). Se basa en una columna `version` que se incrementa en cada actualización, rechazando escrituras que presenten colisión de versiones con un error `CONFLICT`.
-> *   **Concurrencia Cooperativa Relacional**: Las funciones heredadas de bloqueo relacional cooperativo visual (`~quadrant_[coord].lock`) y cálculo de alertas han sido inhabilitadas para permitir edición concurrente libre a nivel de UI, delegando la consistencia en el mutex físico.
+### C. Copias de Seguridad Diarias, Rotación y Compactación Automática
+1. **Respaldo Diario**: La función `realizarBackupDiarioYRotacion()` en `main.js` respalda las bases de datos locales en `NETWORK_DIR/Backups/daily_YYYY-MM-DD_*.db`.
+2. **Rotación de Backups (7 días)**: Eliminación automática de copias de seguridad en `NETWORK_DIR/Backups/` con antigüedad superior a 7 días.
+3. **Compactación y Purga de Deltas (Cota 100)**: La función `compactarDeltasEnRedSiEsNecesario()` detecta si existen más de 100 deltas en `NETWORK_DIR/deltas/`. Si se supera la cota, adquiere `_compaction.lock`, consolida los cambios en las bases máster de red, traslada los deltas mayores a 7 días a `NETWORK_DIR/deltas/archive/` y libera el candado. Si otra terminal detecta `_compaction.lock`, pausa 2 segundos automáticamente.
+4. **Comprobación de Clock Drift**: Al iniciar, `comprobarDesvioRelojSMB()` verifica la diferencia de tiempo entre el equipo local y el servidor SMB (`.clock_check_[uuid]`). Si difieren más de 60 segundos, emite `app:clock-drift-warning` a la interfaz.
+
+### D. Control de Concurrencia Optimista (OCC)
+1. **Validación de Versión**: Las consultas de modificación `UPDATE` incluyen la validación del campo `version` en la cláusula `WHERE` (`WHERE id = ? AND version = ?`) e incrementan automáticamente la versión.
+2. **Gestión de Conflictos**: Si la consulta afecta a 0 filas (porque otro usuario modificó el registro previamente), la API devuelve `{ success: false, code: 'OCC_CONFLICT' }`, solicitando al usuario refrescar la información antes de guardar para impedir sobreescrituras ciegas (*Last-Write-Wins*).
 
 ---
 
 ## 5. Auditoría y Tareas de Mantenimiento
-La aplicación se autogestiona para mantener la integridad de los históricos y evitar la saturación de los sistemas:
-
-*   **Sistema de Doble Backup Local Multishard**:
-    Para evitar la pérdida de información por fallos en red, cortes eléctricos o corrupción accidental, se ha implementado un sistema automático de backups locales en la carpeta `Documents/Coordinadores_Backups/dades_[coordinador]/` de cada estación de trabajo:
-    1.  **Backup Diario (`realizarBackupDiario`)**: En el evento `will-quit` de Electron (al cerrar el programa), la aplicación itera sobre las 4 bases de datos activas en red y las respalda en la subcarpeta `Diario/` con la nomenclatura `[dbKey]_[coordinador]_diario.db`. Esta copia se sobrescribe de manera diaria garantizando el respaldo de la última jornada de trabajo.
-    2.  **Cierre Mensual Congelado (`verificarCierreMensual`)**: Al iniciar la conexión con las bases de datos, el sistema evalúa si el mes del calendario ha cambiado respecto al último registro. De ser así, copia las bases de datos de red activas a la subcarpeta `Historico/` con el formato `[dbKey]_[coordinador]_[año]_[mes].db`. Si el archivo del mes ya existe, la operación se omite para evitar sobrescribir cierres contables cerrados.
+La aplicación se autogestiona para mantener la integridad de los históricos y evitar la saturación de los sistemas mediante `realizarBackupDiarioYRotacion()`.
 
 ---
 

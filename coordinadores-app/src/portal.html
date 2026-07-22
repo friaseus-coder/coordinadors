@@ -11,6 +11,11 @@
        // Forzar traducción inmediata al cargar
        document.addEventListener('DOMContentLoaded', () => {
            if(typeof applyTranslations === 'function') applyTranslations();
+           if(window.api && window.api.onClockDriftWarning) {
+               window.api.onClockDriftWarning(({ diffSeconds }) => {
+                   alert("⚠️ ALERTA DE RELOJ DE SISTEMA:\n\nEl reloj de esta estación de trabajo en Windows está desajustado " + diffSeconds + " segundos respecto al servidor de red SMB.\n\nPor favor, sincroniza la hora de tu equipo para evitar desfases en los deltas de datos.");
+               });
+           }
        });
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">

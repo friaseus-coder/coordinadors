@@ -18,6 +18,11 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on('app:delta-applied', handler);
     return () => ipcRenderer.removeListener('app:delta-applied', handler);
   },
+  onClockDriftWarning: (callback) => {
+    const handler = (_event, data) => callback(data);
+    ipcRenderer.on('app:clock-drift-warning', handler);
+    return () => ipcRenderer.removeListener('app:clock-drift-warning', handler);
+  },
 
   // Gestión de sesión y RBAC
   setSession: (user, role) => ipcRenderer.invoke('app:session:set', { user, role }),
@@ -55,11 +60,13 @@ contextBridge.exposeInMainWorld('api', {
   despeses: {
     obtener: () => ipcRenderer.invoke('app:despeses:obtener'),
     guardar: (datos) => ipcRenderer.invoke('app:despeses:guardar', datos),
+    actualizar: (datos, expectedVersion) => ipcRenderer.invoke('app:despeses:actualizar', { datos, expectedVersion }),
     eliminar: (id) => ipcRenderer.invoke('app:despeses:eliminar', { id })
   },
   deutes: {
     obtener: () => ipcRenderer.invoke('app:deutes:obtener'),
     guardar: (datos) => ipcRenderer.invoke('app:deutes:guardar', datos),
+    actualizar: (datos, expectedVersion) => ipcRenderer.invoke('app:deutes:actualizar', { datos, expectedVersion }),
     eliminar: (id) => ipcRenderer.invoke('app:deutes:eliminar', { id })
   },
 
